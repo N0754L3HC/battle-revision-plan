@@ -370,6 +370,65 @@ function daysUntil(d) {
   return Math.ceil((t-n)/86400000);
 }
 
+// Raw mark boundaries per paper per year.
+// Keys must match strings used in PAPER_SUGGESTIONS / score logging.
+// Format: { maxMark, "A*", A, B, C, D, E }
+const RAW_BOUNDARIES = {
+  // ── Edexcel Further Maths 9FM0/01 Core Pure 1 (max 75) ──────────────
+  "Edexcel 9FM0/01 Core Pure 1 — 2024": { max:75, "A*":67, A:56, B:44, C:33, D:22, E:12 },
+  "Edexcel 9FM0/01 Core Pure 1 — 2023": { max:75, "A*":62, A:51, B:40, C:29, D:19, E:10 },
+  "Edexcel 9FM0/01 Core Pure 1 — 2022": { max:75, "A*":61, A:51, B:41, C:31, D:21, E:12 },
+  "Edexcel 9FM0/01 Core Pure 1 — 2019": { max:75, "A*":68, A:56, B:45, C:34, D:23, E:12 },
+  // ── Edexcel Further Maths 9FM0/02 Core Pure 2 (max 75) ──────────────
+  "Edexcel 9FM0/02 Core Pure 2 — 2024": { max:75, "A*":65, A:54, B:43, C:32, D:22, E:12 },
+  "Edexcel 9FM0/02 Core Pure 2 — 2023": { max:75, "A*":61, A:50, B:39, C:29, D:19, E:10 },
+  "Edexcel 9FM0/02 Core Pure 2 — 2022": { max:75, "A*":60, A:50, B:40, C:30, D:20, E:11 },
+  "Edexcel 9FM0/02 Core Pure 2 — 2019": { max:75, "A*":66, A:55, B:44, C:33, D:22, E:12 },
+  // ── Edexcel Further Maths 9FM0/3D Decision Maths 1 (max 75) ─────────
+  "Edexcel 9FM0/3D Decision Maths 1 — 2024": { max:75, "A*":66, A:55, B:44, C:33, D:22, E:12 },
+  "Edexcel 9FM0/3D Decision Maths 1 — 2023": { max:75, "A*":64, A:53, B:42, C:31, D:21, E:11 },
+  "Edexcel 9FM0/3D Decision Maths 1 — 2022": { max:75, "A*":62, A:52, B:42, C:31, D:21, E:11 },
+  "Edexcel 9FM0/3D Decision Maths 1 — 2019": { max:75, "A*":66, A:55, B:44, C:33, D:22, E:12 },
+  // ── Edexcel Further Maths 9FM0/3A Further Pure 1 (max 75) ───────────
+  "Edexcel 9FM0/3A Further Pure 1 — 2024": { max:75, "A*":63, A:52, B:41, C:30, D:20, E:11 },
+  "Edexcel 9FM0/3A Further Pure 1 — 2023": { max:75, "A*":60, A:49, B:38, C:27, D:18, E:10 },
+  "Edexcel 9FM0/3A Further Pure 1 — 2022": { max:75, "A*":65, A:54, B:43, C:32, D:22, E:12 },
+  "Edexcel 9FM0/3A Further Pure 1 — 2019": { max:75, "A*":64, A:53, B:42, C:31, D:21, E:11 },
+  // ── Edexcel Maths 9MA0/01 Pure 1 (max 100) ──────────────────────────
+  "Edexcel 9MA0/01 Pure 1 — 2024": { max:100, "A*":77, A:65, B:54, C:43, D:32, E:22 },
+  "Edexcel 9MA0/01 Pure 1 — 2023": { max:100, "A*":73, A:61, B:50, C:39, D:29, E:19 },
+  "Edexcel 9MA0/01 Pure 1 — 2022": { max:100, "A*":72, A:60, B:49, C:38, D:28, E:18 },
+  "Edexcel 9MA0/01 Pure 1 — 2019": { max:100, "A*":77, A:64, B:53, C:42, D:32, E:22 },
+  // ── Edexcel Maths 9MA0/02 Pure 2 (max 100) ──────────────────────────
+  "Edexcel 9MA0/02 Pure 2 — 2024": { max:100, "A*":74, A:61, B:50, C:39, D:29, E:19 },
+  "Edexcel 9MA0/02 Pure 2 — 2023": { max:100, "A*":72, A:59, B:48, C:37, D:27, E:17 },
+  "Edexcel 9MA0/02 Pure 2 — 2022": { max:100, "A*":71, A:58, B:47, C:36, D:26, E:17 },
+  "Edexcel 9MA0/02 Pure 2 — 2019": { max:100, "A*":76, A:63, B:52, C:41, D:31, E:21 },
+  // ── Edexcel Maths 9MA0/03 Stats & Mechanics (max 100) ───────────────
+  "Edexcel 9MA0/03 Stats & Mech — 2024": { max:100, "A*":73, A:60, B:49, C:38, D:28, E:18 },
+  "Edexcel 9MA0/03 Stats & Mech — 2023": { max:100, "A*":70, A:57, B:46, C:35, D:25, E:16 },
+  "Edexcel 9MA0/03 Stats & Mech — 2022": { max:100, "A*":68, A:55, B:44, C:33, D:23, E:14 },
+  "Edexcel 9MA0/03 Stats & Mech — 2019": { max:100, "A*":73, A:60, B:49, C:38, D:28, E:18 },
+};
+
+// Returns { grade, exact } — exact=true means raw boundaries were found for this paper.
+function getGradeForPaper(got, max, paper, subject, gradeBoundaries=GRADE_BOUNDARIES) {
+  const rb = RAW_BOUNDARIES[paper];
+  if (rb) {
+    for (const g of ["A*","A","B","C","D","E"]) {
+      if (got >= rb[g]) return { grade: g, exact: true };
+    }
+    return { grade: "U", exact: true };
+  }
+  // Fallback: percentage-based
+  const pct = Math.round((got/max)*100);
+  const b = gradeBoundaries[subject] || {};
+  for (const g of ["A*","A","B","C","D","E"]) {
+    if (pct >= b[g]) return { grade: g, exact: false };
+  }
+  return { grade: "U", exact: false };
+}
+
 function getGrade(pct, subject, boundaries=GRADE_BOUNDARIES) {
   const b = boundaries[subject] || {};
   for (const g of ["A*","A","B","C","D","E"]) {
@@ -764,7 +823,7 @@ function RevisionPlan({ profile: profileName, onProfileChange }) {
               </div>
               {filteredScores.length===0&&<div style={{fontSize:15,color:"#333",textAlign:"center",padding:"16px 0"}}>No papers logged yet.</div>}
               {filteredScores.map(s=>{
-                const grade=getGrade(s.pct,s.subject,GRADE_BOUNDARIES);
+                const {grade,exact}=getGradeForPaper(s.got,s.max,s.paper,s.subject,GRADE_BOUNDARIES);
                 return (
                   <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderTop:"1px solid rgba(255,255,255,0.04)"}}>
                     <div style={{width:3,height:32,borderRadius:2,background:SUBJECT_COLORS[s.subject]||"#888",flexShrink:0}}/>
@@ -774,8 +833,8 @@ function RevisionPlan({ profile: profileName, onProfileChange }) {
                     </div>
                     <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
                       <div style={{textAlign:"right"}}>
-                        <div style={{fontSize:18,fontWeight:800,color:gradeColor(grade),fontFamily:"'Inter',sans-serif"}}>{grade} <span style={{fontSize:15}}>{s.pct}%</span></div>
-                        <div style={{fontSize:13,color:"#555"}}>{s.got}/{s.max}</div>
+                        <div style={{fontSize:18,fontWeight:800,color:gradeColor(grade),fontFamily:"'Inter',sans-serif"}}>{exact?"":""}{grade}<span style={{fontSize:11,opacity:0.5,marginLeft:2}}>{exact?"":"~"}</span> <span style={{fontSize:15}}>{s.pct}%</span></div>
+                        <div style={{fontSize:13,color:"#555"}}>{s.got}/{s.max}{!exact&&<span style={{color:"#444",marginLeft:4}}>est.</span>}</div>
                       </div>
                       {confirmDel===s.id?(
                         <div style={{display:"flex",gap:3}}>
