@@ -5,13 +5,13 @@ import { supabase } from '../lib/supabase';
 const font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 
 const colors = {
-  bg:      '#09090f',
-  surface: '#111118',
+  bg:      '#0d0f14',
+  surface: '#13161e',
   border:  'rgba(255,255,255,0.07)',
-  text:    '#f1f5f9',
-  muted:   '#64748b',
-  subtle:  '#334155',
-  accent:  '#ef4444',
+  text:    '#e8eaf0',
+  muted:   '#6b7280',
+  subtle:  '#374151',
+  accent:  '#818cf8',
 };
 
 const MAX_SUBJECTS = 4;

@@ -597,6 +597,8 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
   const [efilt, setEfilt]           = useState("All");
   const [confirmDel, setConfirmDel] = useState(null);
   const [chartSubject, setChartSubject] = useState(SUBJECTS[0]);
+  const [confirmDeletion, setConfirmDeletion] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(()=>save(sScores,scores),[scores]);
   useEffect(()=>save(sErrors,errors),[errors]);
@@ -637,6 +639,18 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
     setErrTopic(""); setErrNote("");
   };
 
+  const deleteAccount = async () => {
+    if (!user) return;
+    setDeleting(true);
+    try {
+      await supabase.from("user_data").delete().eq("user_id", user.id);
+      await supabase.from("user_profiles").delete().eq("id", user.id);
+      await supabase.rpc("delete_current_user");
+    } catch(_) {}
+    setDeleting(false);
+    onLogout();
+  };
+
   const subjectAvg = s => { const ss=scores.filter(x=>x.subject===s); return ss.length?Math.round(ss.reduce((a,x)=>a+x.pct,0)/ss.length):null; };
   const nextSuggested = (PAPER_SUGGESTIONS[scoreSubject]||[]).find(p=>!scores.filter(s=>s.subject===scoreSubject).map(s=>s.paper).includes(p));
   const filteredScores = sfilt==="All"?scores:scores.filter(s=>s.subject===sfilt);
@@ -648,39 +662,25 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
   ];
 
   return (
-    <div style={{minHeight:"100vh",background:"#09090f",color:"#e2e8f0",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif"}}>
-      <div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",background:"radial-gradient(ellipse at 50% 0%,rgba(255,61,0,0.04) 0%,transparent 50%)"}}/>
-      <nav style={{position:"sticky",top:0,zIndex:50,background:"rgba(8,8,13,0.97)",backdropFilter:"blur(16px)",borderBottom:"1px solid rgba(255,255,255,0.06)",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 20px",height:54}}>
-        {/* Logo + profile switcher */}
-        <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <div style={{display:"flex",alignItems:"center",gap:7}}>
-            <div style={{width:24,height:24,borderRadius:6,background:"#ef4444",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'JetBrains Mono',monospace",fontWeight:900,fontSize:10,color:"#fff",flexShrink:0}}>A*</div>
-            <span style={{fontWeight:700,fontSize:14,color:"#fff",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",letterSpacing:0.2}}>Battle Plan</span>
-          </div>
-          <div style={{display:"flex",gap:2,marginLeft:2,background:"rgba(255,255,255,0.04)",borderRadius:7,padding:2,border:"1px solid rgba(255,255,255,0.06)"}}>
-            {["me","friend"].map(p=>(
-              <button key={p} onClick={()=>onProfileChange(p)} style={{background:profileName===p?"rgba(255,255,255,0.1)":"transparent",border:"none",color:profileName===p?"#e2e8f0":"#475569",padding:"4px 10px",borderRadius:5,cursor:"pointer",fontSize:12,fontWeight:profileName===p?600:400,fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
-                {p==="me"?"Me":"Friend"}
-              </button>
-            ))}
-          </div>
+    <div style={{minHeight:"100vh",background:"#0d0f14",color:"#e8eaf0",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif"}}>
+      <nav style={{position:"sticky",top:0,zIndex:50,background:"rgba(13,15,20,0.97)",backdropFilter:"blur(16px)",borderBottom:"1px solid rgba(255,255,255,0.06)",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 20px",height:54}}>
+        <div style={{display:"flex",alignItems:"center",gap:7}}>
+          <div style={{width:24,height:24,borderRadius:6,background:"#6366f1",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'JetBrains Mono',monospace",fontWeight:900,fontSize:10,color:"#fff",flexShrink:0}}>A*</div>
+          <span style={{fontWeight:700,fontSize:14,color:"#e8eaf0",letterSpacing:0.2}}>Battle Plan</span>
         </div>
-        {/* Nav links */}
         <div style={{display:"flex",gap:1,alignItems:"center"}}>
           {navItems.map(n=>(
-            <button key={n.id} onClick={()=>setView(n.id)} style={{background:view===n.id?"rgba(255,255,255,0.07)":"transparent",border:`1px solid ${view===n.id?"rgba(255,255,255,0.1)":"transparent"}`,color:view===n.id?"#e2e8f0":"#475569",padding:"7px 12px",borderRadius:6,cursor:"pointer",fontSize:13,fontWeight:view===n.id?500:400,fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",transition:"color 0.15s"}}>
+            <button key={n.id} onClick={()=>setView(n.id)} style={{background:view===n.id?"rgba(255,255,255,0.07)":"transparent",border:`1px solid ${view===n.id?"rgba(255,255,255,0.1)":"transparent"}`,color:view===n.id?"#e8eaf0":"#4b5563",padding:"7px 12px",borderRadius:6,cursor:"pointer",fontSize:13,fontWeight:view===n.id?500:400,position:"relative",transition:"color 0.15s"}}>
               {n.l}
               {n.id==="tracker"&&notifications.length>0&&<span style={{position:"absolute",top:4,right:4,width:6,height:6,borderRadius:"50%",background:"#ef4444"}}/>}
             </button>
           ))}
-          {/* User */}
           {user?(
-            <div style={{display:"flex",alignItems:"center",gap:6,marginLeft:8,paddingLeft:10,borderLeft:"1px solid rgba(255,255,255,0.06)"}}>
-              <span style={{fontSize:12,color:"#475569",maxWidth:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>{userProfile?.display_name||user.email}</span>
-              <button onClick={onLogout} style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)",color:"#475569",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontSize:12,fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>Log out</button>
-            </div>
+            <button onClick={()=>setView("account")} style={{marginLeft:8,paddingLeft:10,borderLeft:"1px solid rgba(255,255,255,0.06)",background:"transparent",border:"none",color:view==="account"?"#818cf8":"#4b5563",fontSize:12,cursor:"pointer",maxWidth:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+              {userProfile?.display_name||user.email}
+            </button>
           ):(
-            <span style={{fontSize:12,color:"#334155",marginLeft:10,fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>Local mode</span>
+            <span style={{fontSize:12,color:"#374151",marginLeft:10}}>Local mode</span>
           )}
         </div>
       </nav>
@@ -1059,6 +1059,78 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                 ))}
               </div>
             ))}
+          </div>
+        )}
+
+        {view==="account"&&(
+          <div style={{maxWidth:480}}>
+            <div style={{marginBottom:20}}>
+              <h1 style={{fontSize:20,fontWeight:700,color:"#f1f5f9",margin:"0 0 4px"}}>Account</h1>
+              <p style={{fontSize:13,color:"#64748b",margin:0}}>Manage your profile and account settings.</p>
+            </div>
+
+            {/* Profile info */}
+            <div style={{background:"rgba(255,255,255,0.025)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:10,padding:20,marginBottom:12}}>
+              <div style={{fontSize:11,fontWeight:600,color:"#64748b",letterSpacing:0.5,textTransform:"uppercase",marginBottom:14}}>Profile</div>
+              {userProfile?.display_name&&(
+                <div style={{marginBottom:12}}>
+                  <div style={{fontSize:12,color:"#64748b",marginBottom:3}}>Name</div>
+                  <div style={{fontSize:14,color:"#e2e8f0",fontWeight:500}}>{userProfile.display_name}</div>
+                </div>
+              )}
+              <div>
+                <div style={{fontSize:12,color:"#64748b",marginBottom:3}}>Email</div>
+                <div style={{fontSize:14,color:"#e2e8f0"}}>{user?.email||"Local mode"}</div>
+              </div>
+            </div>
+
+            {/* Sign out */}
+            <div style={{background:"rgba(255,255,255,0.025)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:10,padding:20,marginBottom:12}}>
+              <div style={{fontSize:11,fontWeight:600,color:"#64748b",letterSpacing:0.5,textTransform:"uppercase",marginBottom:14}}>Session</div>
+              <button
+                onClick={onLogout}
+                style={{padding:"10px 18px",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:7,color:"#e2e8f0",fontSize:14,fontFamily:"inherit",cursor:"pointer"}}
+              >
+                Sign out
+              </button>
+            </div>
+
+            {/* Delete account */}
+            {user&&(
+              <div style={{background:"rgba(239,68,68,0.04)",border:"1px solid rgba(239,68,68,0.12)",borderRadius:10,padding:20}}>
+                <div style={{fontSize:11,fontWeight:600,color:"#64748b",letterSpacing:0.5,textTransform:"uppercase",marginBottom:8}}>Danger zone</div>
+                <p style={{fontSize:13,color:"#64748b",margin:"0 0 14px",lineHeight:1.6}}>
+                  Permanently deletes your account and all data. This cannot be undone.
+                </p>
+                {!confirmDeletion?(
+                  <button
+                    onClick={()=>setConfirmDeletion(true)}
+                    style={{padding:"10px 18px",background:"transparent",border:"1px solid rgba(239,68,68,0.3)",borderRadius:7,color:"#f87171",fontSize:14,fontFamily:"inherit",cursor:"pointer"}}
+                  >
+                    Delete account
+                  </button>
+                ):(
+                  <div>
+                    <p style={{fontSize:13,fontWeight:600,color:"#f87171",margin:"0 0 12px"}}>Are you sure? This is permanent.</p>
+                    <div style={{display:"flex",gap:8}}>
+                      <button
+                        onClick={()=>setConfirmDeletion(false)}
+                        style={{flex:1,padding:"10px 0",background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:7,color:"#e2e8f0",fontSize:14,fontFamily:"inherit",cursor:"pointer"}}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={deleteAccount}
+                        disabled={deleting}
+                        style={{flex:1,padding:"10px 0",background:"rgba(239,68,68,0.15)",border:"1px solid rgba(239,68,68,0.3)",borderRadius:7,color:"#f87171",fontSize:14,fontWeight:600,fontFamily:"inherit",cursor:deleting?"not-allowed":"pointer"}}
+                      >
+                        {deleting?"Deleting...":"Yes, delete everything"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

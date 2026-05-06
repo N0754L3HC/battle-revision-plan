@@ -8,15 +8,15 @@ const font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
 const mono = "'JetBrains Mono', 'SF Mono', monospace";
 
 const colors = {
-  bg:       '#08080f',
-  surface:  '#0f0f1a',
+  bg:       '#0d0f14',
+  surface:  '#13161e',
   border:   'rgba(255,255,255,0.07)',
   borderHover: 'rgba(255,255,255,0.14)',
-  text:     '#e2e8f0',
-  muted:    '#64748b',
-  accent:   '#ef4444',
-  accentBg: 'rgba(239,68,68,0.1)',
-  accentBorder: 'rgba(239,68,68,0.3)',
+  text:     '#e8eaf0',
+  muted:    '#6b7280',
+  accent:   '#818cf8',
+  accentBg: 'rgba(129,140,248,0.1)',
+  accentBorder: 'rgba(129,140,248,0.25)',
 };
 
 // ── Small components ─────────────────────────────────────────────────────────
