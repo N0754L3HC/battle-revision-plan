@@ -287,7 +287,7 @@ const WEEKS = [
     {day:"16 Jun ★",blocks:[{t:"EXAM: FM Paper 3D — Decision Mathematics 1 (PM, 1h30)",d:"1.5h",s:"FM"}]},
     {day:"17 Jun ★",blocks:[{t:"EXAM: CS Paper 2 — Algorithms & Programming (AM, 2h30)",d:"2.5h",s:"CS"}]},
     {day:"18 Jun ★",blocks:[{t:"EXAM: Maths Paper 3 — Statistics & Mechanics (PM, 2h)",d:"2h",s:"Maths"}]},
-    {day:"19 Jun ★",blocks:[{t:"EXAM: FM Paper 3A — Further Pure Mathematics 1 (PM, 1h30) — LAST EXAM 🎉",d:"1.5h",s:"FM"}]},
+    {day:"19 Jun ★",blocks:[{t:"EXAM: FM Paper 3A — Further Pure Mathematics 1 (PM, 1h30) — LAST EXAM",d:"1.5h",s:"FM"}]},
   ]},
 ];
 

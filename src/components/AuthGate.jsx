@@ -78,22 +78,18 @@ function Button({ children, variant = 'primary', loading, disabled, ...props }) 
 
 const FEATURES = [
   {
-    icon: '📋',
     title: 'Past paper tracker',
-    desc: 'Log every paper you do. Get your actual grade using real mark-scheme boundaries — not rough percentages.',
+    desc: 'Log every paper you do. Get your actual grade using real mark-scheme boundaries, not rough percentages.',
   },
   {
-    icon: '⚡',
     title: 'Battle Readiness score',
     desc: 'A single score that tells you how prepared you are for each exam. Updated every time you log a paper.',
   },
   {
-    icon: '🔍',
     title: 'Error pattern analysis',
     desc: 'Track the mistakes you keep making. Spot patterns. Fix them before the exam.',
   },
   {
-    icon: '📅',
     title: 'Week-by-week revision plan',
     desc: 'A structured plan from now to your last exam, built around your specific subjects.',
   },
@@ -350,17 +346,13 @@ export default function AuthGate({ onAuth }) {
               Battle Plan tracks every past paper you do, shows you where your marks are being dropped, and gives you a clear readiness score before each exam.
             </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
               {FEATURES.map(f => (
-                <div key={f.title} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                <div key={f.title} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                   <div style={{
-                    width: 36, height: 36, borderRadius: 9, flexShrink: 0,
-                    background: 'rgba(255,255,255,0.05)', border: `1px solid ${colors.border}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 16,
-                  }}>
-                    {f.icon}
-                  </div>
+                    width: 4, height: 4, borderRadius: '50%',
+                    background: colors.accent, flexShrink: 0, marginTop: 7,
+                  }}/>
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 600, color: colors.text, marginBottom: 3 }}>{f.title}</div>
                     <div style={{ fontSize: 13, color: colors.muted, lineHeight: 1.6 }}>{f.desc}</div>
