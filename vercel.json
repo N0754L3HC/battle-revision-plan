@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/((?!admin\\.html|assets|icons\\.svg|favicon|apple-touch).*)", "destination": "/index.html" }
+  ]
+}

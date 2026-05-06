@@ -1,4 +1,7 @@
 import { useState, useEffect, useRef } from "react";
+import { supabase, isSupabaseConfigured } from "./lib/supabase";
+import AuthGate from "./components/AuthGate";
+import TermsOfService from "./components/TermsOfService";
 
 const EXAMS = [
   { date: "2026-05-14", subject: "Further Maths", paper: "Paper 1: Core Pure Mathematics 1", code: "9FM0/01", time: "PM", duration: "1h 30m", board: "Edexcel", topics: "Proof, complex numbers, matrices, further algebra, further calculus, further vectors", maxMark: 75 },
@@ -560,7 +563,7 @@ function BattleGauge({ score, label, labelColor }) {
   );
 }
 
-function RevisionPlan({ profile: profileName, onProfileChange }) {
+function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile, onLogout }) {
   const P = PROFILES[profileName];
   // Shadow module-level constants with profile-specific data inside this component
   const { exams: EXAMS, gradeBoundaries: GRADE_BOUNDARIES, paperSuggestions: PAPER_SUGGESTIONS,
@@ -598,6 +601,21 @@ function RevisionPlan({ profile: profileName, onProfileChange }) {
   useEffect(()=>save(sChecks,checks),[checks]);
   useEffect(()=>save(sNotifs,dismissed),[dismissed]);
   useEffect(()=>save(sTargets,targets),[targets]);
+
+  const [showTos, setShowTos] = useState(false);
+
+  // Sync to Supabase when data changes (debounced — fires 2s after last change)
+  useEffect(()=>{
+    if(!user||!isSupabaseConfigured()) return;
+    const t = setTimeout(()=>{
+      supabase.from("user_data").upsert({
+        user_id: user.id, profile: profileName,
+        scores, errors, checks, targets,
+        updated_at: new Date().toISOString(),
+      },{onConflict:"user_id,profile"});
+    }, 2000);
+    return ()=>clearTimeout(t);
+  },[scores,errors,checks,targets,user,profileName]);
 
   const notifications = getNotifications(scores,errors,{exams:EXAMS,subjects:SUBJECTS,paperSuggestions:PAPER_SUGGESTIONS}).filter(n=>!dismissed.includes(n.id));
   const br = calcBattleReadiness(scores,errors,checks);
@@ -644,15 +662,24 @@ function RevisionPlan({ profile: profileName, onProfileChange }) {
             ))}
           </div>
         </div>
-        <div style={{display:"flex",gap:4}}>
+        <div style={{display:"flex",gap:4,alignItems:"center"}}>
           {navItems.map(n=>(
             <button key={n.id} onClick={()=>setView(n.id)} style={{background:view===n.id?"rgba(255,255,255,0.08)":"transparent",border:`1px solid ${view===n.id?"rgba(255,255,255,0.12)":"transparent"}`,color:view===n.id?"#fff":"#444",padding:"8px 13px",borderRadius:6,cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"inherit",position:"relative"}}>
               {n.l}
               {n.id==="tracker"&&notifications.length>0&&<span style={{position:"absolute",top:-3,right:-3,width:7,height:7,borderRadius:"50%",background:"#FF3D00",border:"1px solid #08080D"}}/>}
             </button>
           ))}
+          {user?(
+            <div style={{display:"flex",alignItems:"center",gap:8,marginLeft:8,paddingLeft:8,borderLeft:"1px solid rgba(255,255,255,0.06)"}}>
+              <span style={{fontSize:11,color:"#555",maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user.email}</span>
+              <button onClick={onLogout} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.08)",color:"#555",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:11,fontFamily:"inherit"}}>Out</button>
+            </div>
+          ):(
+            <span style={{fontSize:11,color:"#333",marginLeft:8}}>Local only</span>
+          )}
         </div>
       </nav>
+      {showTos&&<TermsOfService onClose={()=>setShowTos(false)}/>}
       <div style={{maxWidth:1100,margin:"0 auto",padding:"24px 20px 100px",position:"relative",zIndex:1}}>
         {notifications.length>0&&(view==="tracker"||view==="analytics")&&(
           <div style={{marginBottom:16}}>
@@ -1030,12 +1057,67 @@ function RevisionPlan({ profile: profileName, onProfileChange }) {
           </div>
         )}
       </div>
+      <div style={{textAlign:"center",padding:"24px 0 8px",borderTop:"1px solid rgba(255,255,255,0.04)",color:"#333",fontSize:11}}>
+        A* Battle Plan &nbsp;·&nbsp;
+        <span style={{cursor:"pointer",textDecoration:"underline"}} onClick={()=>setShowTos(true)}>Terms of Service &amp; Privacy Policy</span>
+      </div>
     </div>
   );
 }
 
 export default function App() {
   const [profile, setProfile] = useState(()=>load("rbp_active_profile","me"));
+  const [user, setUser] = useState(undefined); // undefined = checking, null = no user, object = logged in
+  const [userProfile, setUserProfile] = useState(null);
+
   useEffect(()=>save("rbp_active_profile",profile),[profile]);
-  return <RevisionPlan key={profile} profile={profile} onProfileChange={setProfile}/>;
+
+  // Restore session on mount
+  useEffect(()=>{
+    if(!isSupabaseConfigured()){ setUser(null); return; }
+    supabase.auth.getSession().then(async({data:{session}})=>{
+      if(session?.user){
+        const {data:prof}=await supabase.from("user_profiles").select("*").eq("id",session.user.id).single();
+        setUser(session.user);
+        setUserProfile(prof||{});
+      } else {
+        setUser(null);
+      }
+    });
+    const {data:{subscription}}=supabase.auth.onAuthStateChange(async(_,session)=>{
+      if(session?.user){
+        const {data:prof}=await supabase.from("user_profiles").select("*").eq("id",session.user.id).single();
+        setUser(session.user);
+        setUserProfile(prof||{});
+      } else {
+        setUser(null);
+        setUserProfile(null);
+      }
+    });
+    return ()=>subscription.unsubscribe();
+  },[]);
+
+  const handleAuth = (u, prof={}) => { setUser(u); setUserProfile(prof); };
+  const handleLogout = async () => { await supabase.auth.signOut(); setUser(null); setUserProfile(null); };
+
+  // Still checking session
+  if(user===undefined) return (
+    <div style={{minHeight:"100vh",background:"#08080D",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'JetBrains Mono',monospace",color:"#333",fontSize:13}}>
+      Loading...
+    </div>
+  );
+
+  // Not logged in — show auth gate
+  if(user===null&&isSupabaseConfigured()) return <AuthGate onAuth={handleAuth}/>;
+
+  return (
+    <RevisionPlan
+      key={profile}
+      profile={profile}
+      onProfileChange={setProfile}
+      user={user}
+      userProfile={userProfile}
+      onLogout={handleLogout}
+    />
+  );
 }
