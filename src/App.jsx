@@ -569,7 +569,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
   const P = PROFILES[profileName];
 
   // Use the user's own catalog selection if available, else fall back to hardcoded profile
-  const catalogSubs = (userSubjectSelection?.length > 0) ? subjectsFromSelection(userSubjectSelection) : null;
+  const catalogSubs = (Array.isArray(userSubjectSelection) && userSubjectSelection.length > 0) ? subjectsFromSelection(userSubjectSelection) : null;
   const SUBJECTS = catalogSubs ? catalogSubs.map(s=>s.name) : P.subjects;
   const SUBJECT_COLORS = catalogSubs ? Object.fromEntries(catalogSubs.map(s=>[s.name,s.color])) : P.subjectColors;
   const GRADE_BOUNDARIES = catalogSubs ? Object.fromEntries(catalogSubs.map(s=>[s.name,s.gradeBoundaries])) : P.gradeBoundaries;
@@ -1211,10 +1211,14 @@ export default function App() {
         prof = {id:uid, email:session.user.email};
       }
       const {data:ud} = await supabase.from('user_data').select('*').eq('user_id',uid).maybeSingle();
-      const stored = prof?.subjects || localStorage.getItem('rbp_subjects');
+      let parsed = [];
+      if (prof?.subjects) {
+        try { const p = JSON.parse(prof.subjects); if (Array.isArray(p)) parsed = p; } catch(_) {}
+      }
+      try { localStorage.removeItem('rbp_subjects'); } catch(_) {}
       setUser(session.user);
       setUserProfile(prof);
-      setSubjectSelection(stored ? JSON.parse(stored) : []);
+      setSubjectSelection(parsed);
       if(ud) setCloudData(ud);
     };
     const {data:{subscription}} = supabase.auth.onAuthStateChange(applySession);
@@ -1253,7 +1257,7 @@ export default function App() {
       user={user}
       userProfile={userProfile}
       onLogout={handleLogout}
-      userSubjectSelection={subjectSelection || []}
+      userSubjectSelection={Array.isArray(subjectSelection) ? subjectSelection : []}
       cloudData={cloudData}
     />
   );
