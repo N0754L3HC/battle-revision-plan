@@ -1,13 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 
-const url = import.meta.env.VITE_SUPABASE_URL;
-const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const rawUrl = import.meta.env.VITE_SUPABASE_URL;
+const rawKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!url || !key || url === 'your-project-url-here') {
-  console.warn('[Supabase] Missing env vars — app runs in local-only mode.');
+const url = typeof rawUrl === 'string' ? rawUrl.trim() : '';
+const key = typeof rawKey === 'string' ? rawKey.trim() : '';
+
+const configured = url.startsWith('https://') && key.length > 30;
+
+if (!configured) {
+  console.warn('[Supabase] Missing or invalid env vars — running in local-only mode.');
 }
 
-export const supabase = createClient(url || 'https://placeholder.supabase.co', key || 'placeholder');
+export const supabase = configured
+  ? createClient(url, key)
+  : createClient('https://placeholder.supabase.co', 'placeholder-key-placeholder-key-placeholder-key');
 
-export const isSupabaseConfigured = () =>
-  !!url && url !== 'your-project-url-here' && !!key && key !== 'your-anon-key-here';
+export const isSupabaseConfigured = () => configured;
