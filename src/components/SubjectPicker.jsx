@@ -5,8 +5,8 @@ import { supabase } from '../lib/supabase';
 const font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 
 const colors = {
-  bg:      '#f7f5f1',
-  surface: '#ffffff',
+  bg:      '#e8e4dd',
+  surface: '#f0ece5',
   border:  'rgba(0,0,0,0.09)',
   text:    '#2b2b2b',
   muted:   '#7a7268',

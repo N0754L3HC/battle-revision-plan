@@ -534,7 +534,7 @@ function TrendChart({ scores, subject, subjectColors=SUBJECT_COLORS, gradeBounda
       <polyline points={polyline} fill="none" stroke={col} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
       {pts.map((p,i)=>(
         <g key={i}>
-          <circle cx={p[0]} cy={p[1]} r="4" fill={col} stroke="#f7f5f1" strokeWidth="1.5"/>
+          <circle cx={p[0]} cy={p[1]} r="4" fill={col} stroke="#e8e4dd" strokeWidth="1.5"/>
           <text x={p[0]} y={H-PAD.b+10} fill="#7a7268" fontSize="7" textAnchor="middle">
             {data[i].date?.split(" ").slice(0,2).join(" ")||`P${i+1}`}
           </text>
@@ -662,8 +662,8 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
   ];
 
   return (
-    <div style={{minHeight:"100vh",background:"#f7f5f1",color:"#2b2b2b",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif"}}>
-      <nav style={{position:"sticky",top:0,zIndex:50,background:"rgba(247,245,241,0.97)",backdropFilter:"blur(16px)",borderBottom:"1px solid rgba(0,0,0,0.08)",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 20px",height:54}}>
+    <div style={{minHeight:"100vh",background:"#e8e4dd",color:"#2b2b2b",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif"}}>
+      <nav style={{position:"sticky",top:0,zIndex:50,background:"rgba(232,228,221,0.97)",backdropFilter:"blur(16px)",borderBottom:"1px solid rgba(0,0,0,0.08)",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 20px",height:54}}>
         <div style={{display:"flex",alignItems:"center",gap:7}}>
           <div style={{width:24,height:24,borderRadius:6,background:"#b5735a",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'JetBrains Mono',monospace",fontWeight:900,fontSize:10,color:"#fff",flexShrink:0}}>A*</div>
           <span style={{fontWeight:700,fontSize:14,color:"#2b2b2b",letterSpacing:0.2}}>Battle Plan</span>
@@ -708,7 +708,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
               <p style={{fontSize:13,color:"#7a7268",margin:0}}>Track your scores and readiness across all subjects.</p>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"200px 1fr",gap:12,marginBottom:16}}>
-              <div style={{background:"#ffffff",border:`1px solid ${br.labelColor}40`,borderRadius:10,padding:"16px 12px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+              <div style={{background:"#f0ece5",border:`1px solid ${br.labelColor}40`,borderRadius:10,padding:"16px 12px",display:"flex",flexDirection:"column",alignItems:"center"}}>
                 <div style={{fontSize:11,fontWeight:600,color:"#7a7268",letterSpacing:0.5,textTransform:"uppercase",marginBottom:8}}>Battle Readiness</div>
                 <BattleGauge score={br.total} label={br.label} labelColor={br.labelColor}/>
                 <div style={{width:"100%",marginTop:12}}>
@@ -733,7 +733,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                   const ss=[...scores].filter(x=>x.subject===s).reverse();
                   const trend=ss.length>=2?ss[ss.length-1].pct-ss[ss.length-2].pct:null;
                   return (
-                    <div key={s} style={{background:"#ffffff",border:`1px solid ${col}40`,borderRadius:10,padding:"12px 16px"}}>
+                    <div key={s} style={{background:"#f0ece5",border:`1px solid ${col}40`,borderRadius:10,padding:"12px 16px"}}>
                       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
                         <div>
                           <div style={{fontSize:12,color:col,fontWeight:600}}>{s}</div>
@@ -773,7 +773,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                 })}
               </div>
             </div>
-            <div style={{background:"#ffffff",border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:18,marginBottom:12}}>
+            <div style={{background:"#f0ece5",border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:18,marginBottom:12}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
                 <div style={{fontSize:12,fontWeight:600,color:"#7a7268"}}>Score trend</div>
                 <div style={{display:"flex",gap:4}}>
@@ -821,7 +821,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
               <h1 style={{fontSize:20,fontWeight:700,color:"#2b2b2b",margin:"0 0 4px"}}>Tracker</h1>
               <p style={{fontSize:13,color:"#7a7268",margin:0}}>Log past papers and errors. Everything is saved to your browser.</p>
             </div>
-            <div style={{background:"#ffffff",border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:16,marginBottom:12}}>
+            <div style={{background:"#f0ece5",border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:16,marginBottom:12}}>
               <div style={{fontSize:12,fontWeight:600,color:"#7a7268",marginBottom:10}}>Log a past paper</div>
               {nextSuggested&&(
                 <div onClick={()=>setScorePaper(nextSuggested)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:8,background:"rgba(34,197,94,0.05)",border:"1px solid rgba(34,197,94,0.14)",marginBottom:10,cursor:"pointer"}}>
@@ -841,7 +841,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                 <button onClick={addScore} style={{background:"#22c55e",border:"none",color:"#fff",padding:"8px 16px",borderRadius:7,cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"inherit"}}>Save</button>
               </div>
             </div>
-            <div style={{background:"#ffffff",border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:16,marginBottom:12}}>
+            <div style={{background:"#f0ece5",border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:16,marginBottom:12}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
                 <div style={{fontSize:12,fontWeight:600,color:"#7a7268"}}>Paper history ({filteredScores.length})</div>
                 <div style={{display:"flex",gap:3}}>
@@ -881,7 +881,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                 );
               })}
             </div>
-            <div style={{background:"#ffffff",border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:16,marginBottom:12}}>
+            <div style={{background:"#f0ece5",border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:16,marginBottom:12}}>
               <div style={{fontSize:12,fontWeight:600,color:"#7a7268",marginBottom:10}}>Log an error</div>
               <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>
                 <select value={errSubject} onChange={e=>setErrSubject(e.target.value)} style={{...iS,flex:"1 1 90px",background:"rgba(0,0,0,0.07)"}}>{SUBJECTS.map(s=><option key={s}>{s}</option>)}</select>
@@ -893,7 +893,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                 <button onClick={addError} style={{background:"#ef4444",border:"none",color:"#fff",padding:"8px 16px",borderRadius:7,cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"inherit"}}>Save</button>
               </div>
             </div>
-            <div style={{background:"#ffffff",border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:16}}>
+            <div style={{background:"#f0ece5",border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:16}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
                 <div style={{fontSize:12,fontWeight:600,color:"#7a7268"}}>Error log ({filteredErrors.length})</div>
                 <div style={{display:"flex",gap:3}}>
@@ -946,7 +946,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
               <div style={{fontSize:12,fontWeight:600,color:"#7a7268",marginBottom:10}}>All exams</div>
               {EXAMS.map((e,i)=>{
                 const d=daysUntil(e.date),col=SUBJECT_COLORS[e.subject]||"#888",past=d<0;
-                return <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",marginBottom:4,borderRadius:8,background:past?"rgba(0,0,0,0.02)":"#ffffff",border:`1px solid ${past?"rgba(0,0,0,0.02)":col+"22"}`,opacity:past?0.3:1}}>
+                return <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",marginBottom:4,borderRadius:8,background:past?"rgba(0,0,0,0.02)":"#f0ece5",border:`1px solid ${past?"rgba(0,0,0,0.02)":col+"22"}`,opacity:past?0.3:1}}>
                   <div style={{width:4,height:30,borderRadius:2,background:col,flexShrink:0}}/>
                   <div style={{flex:1}}>
                     <div style={{fontSize:14,fontWeight:600,color:"#3a3a3a"}}>{e.subject}: {e.paper.split(":")[1]?.trim()||e.paper}</div>
@@ -1011,7 +1011,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
               <p style={{fontSize:13,color:"#7a7268",margin:0}}>How to pick up extra marks in each subject.</p>
             </div>
             {TECHNIQUE.map((subj,si)=>(
-              <div key={si} style={{marginBottom:14,background:"#ffffff",border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:18}}>
+              <div key={si} style={{marginBottom:14,background:"#f0ece5",border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:18}}>
                 <div style={{fontSize:13,fontWeight:600,color:subj.color,marginBottom:12}}>{subj.subject}</div>
                 {subj.tips.map((tip,ti)=>(
                   <div key={ti} style={{marginBottom:10,paddingBottom:10,borderBottom:ti<subj.tips.length-1?"1px solid rgba(0,0,0,0.06)":"none"}}>
@@ -1050,7 +1050,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
               <p style={{fontSize:13,color:"#7a7268",margin:0}}>Past papers, video solutions, and revision notes for each subject.</p>
             </div>
             {RESOURCES.map((r,ri)=>(
-              <div key={ri} style={{marginBottom:14,background:"#ffffff",border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:18}}>
+              <div key={ri} style={{marginBottom:14,background:"#f0ece5",border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:18}}>
                 <div style={{fontSize:12,fontWeight:600,color:SUBJECT_COLORS[r.subject]||"#7a7268",marginBottom:12}}>{r.subject}</div>
                 {r.items.map((item,ii)=>(
                   <a key={ii} href={item.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:14,color:"#4a4a4a",textDecoration:"none",padding:"8px 0",borderBottom:ii<r.items.length-1?"1px solid rgba(0,0,0,0.06)":"none",transition:"color 0.12s"}}>
@@ -1070,7 +1070,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
             </div>
 
             {/* Profile info */}
-            <div style={{background:"#ffffff",border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:20,marginBottom:12}}>
+            <div style={{background:"#f0ece5",border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:20,marginBottom:12}}>
               <div style={{fontSize:11,fontWeight:600,color:"#7a7268",letterSpacing:0.5,textTransform:"uppercase",marginBottom:14}}>Profile</div>
               {userProfile?.display_name&&(
                 <div style={{marginBottom:12}}>
@@ -1085,7 +1085,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
             </div>
 
             {/* Sign out */}
-            <div style={{background:"#ffffff",border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:20,marginBottom:12}}>
+            <div style={{background:"#f0ece5",border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:20,marginBottom:12}}>
               <div style={{fontSize:11,fontWeight:600,color:"#7a7268",letterSpacing:0.5,textTransform:"uppercase",marginBottom:14}}>Session</div>
               <button
                 onClick={onLogout}
@@ -1194,7 +1194,7 @@ export default function App() {
   // Still checking session
   if (user === undefined) return (
     <div style={{
-      minHeight:"100vh", background:"#f7f5f1",
+      minHeight:"100vh", background:"#e8e4dd",
       display:"flex", alignItems:"center", justifyContent:"center",
       fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
       color:"#7a7268", fontSize:13,
