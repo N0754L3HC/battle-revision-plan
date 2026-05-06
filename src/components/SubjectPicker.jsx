@@ -254,8 +254,7 @@ export default function SubjectPicker({ user, onComplete }) {
     const subjectsJson = JSON.stringify(selection);
     if (user) {
       await supabase.from('user_profiles')
-        .update({ subjects: subjectsJson })
-        .eq('id', user.id);
+        .upsert({ id: user.id, subjects: subjectsJson }, { onConflict: 'id' });
     } else {
       localStorage.setItem('rbp_subjects', subjectsJson);
     }
