@@ -2,79 +2,127 @@ import { useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import TermsOfService from './TermsOfService';
 
-const S = {
-  root: {
-    minHeight: '100vh', background: '#08080D',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontFamily: "'JetBrains Mono','SF Mono',monospace", padding: 16,
-  },
-  card: {
-    background: '#0f0f18', border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: 12, padding: '36px 32px', width: '100%', maxWidth: 400,
-  },
-  logo: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 28 },
-  logoA: { fontSize: 22, fontWeight: 800, color: '#FF3D00' },
-  logoT: { fontWeight: 700, fontSize: 14, letterSpacing: 2, color: '#fff' },
-  tabs: { display: 'flex', gap: 4, marginBottom: 24 },
-  tab: (active) => ({
-    flex: 1, padding: '8px 0', textAlign: 'center',
-    background: active ? 'rgba(255,61,0,0.15)' : 'transparent',
-    border: `1px solid ${active ? 'rgba(255,61,0,0.4)' : 'rgba(255,255,255,0.08)'}`,
-    color: active ? '#FF3D00' : '#555', borderRadius: 6, cursor: 'pointer',
-    fontSize: 13, fontWeight: 700, fontFamily: 'inherit',
-  }),
-  label: { fontSize: 11, color: '#666', marginBottom: 5, display: 'block', letterSpacing: 1 },
-  input: {
-    width: '100%', background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6,
-    padding: '10px 12px', color: '#ddd', fontSize: 14,
-    fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', marginBottom: 14,
-  },
-  btn: (disabled) => ({
-    width: '100%', background: disabled ? '#2a1008' : '#FF3D00',
-    color: disabled ? '#553020' : '#fff', border: 'none',
-    padding: '11px 0', borderRadius: 6, cursor: disabled ? 'not-allowed' : 'pointer',
-    fontSize: 14, fontWeight: 700, fontFamily: 'inherit', marginTop: 6,
-  }),
-  err: { color: '#FF3D00', fontSize: 12, marginBottom: 12, lineHeight: 1.5 },
-  ok: { color: '#00E676', fontSize: 12, marginBottom: 12 },
-  tosRow: { display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 16, marginTop: 2 },
-  tosLink: { color: '#FF3D00', cursor: 'pointer', textDecoration: 'underline', fontSize: 12 },
-  hint: { fontSize: 11, color: '#444', marginTop: 16, textAlign: 'center', lineHeight: 1.5 },
+// ── Tokens ──────────────────────────────────────────────────────────────────
+
+const font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+const mono = "'JetBrains Mono', 'SF Mono', monospace";
+
+const colors = {
+  bg:       '#08080f',
+  surface:  '#0f0f1a',
+  border:   'rgba(255,255,255,0.07)',
+  borderHover: 'rgba(255,255,255,0.14)',
+  text:     '#e2e8f0',
+  muted:    '#64748b',
+  accent:   '#ef4444',
+  accentBg: 'rgba(239,68,68,0.1)',
+  accentBorder: 'rgba(239,68,68,0.3)',
 };
 
+// ── Small components ─────────────────────────────────────────────────────────
+
+function Label({ children }) {
+  return (
+    <div style={{ fontSize: 12, fontWeight: 500, color: colors.muted, marginBottom: 6, fontFamily: font }}>
+      {children}
+    </div>
+  );
+}
+
+function Input({ type = 'text', ...props }) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <input
+      type={type}
+      {...props}
+      onFocus={e => { setFocused(true); props.onFocus?.(e); }}
+      onBlur={e => { setFocused(false); props.onBlur?.(e); }}
+      style={{
+        width: '100%', boxSizing: 'border-box',
+        background: 'rgba(255,255,255,0.04)',
+        border: `1px solid ${focused ? colors.borderHover : colors.border}`,
+        borderRadius: 8, padding: '11px 14px',
+        color: colors.text, fontSize: 14, fontFamily: font,
+        outline: 'none', transition: 'border-color 0.15s',
+        ...props.style,
+      }}
+    />
+  );
+}
+
+function Button({ children, variant = 'primary', loading, disabled, ...props }) {
+  const isPrimary = variant === 'primary';
+  return (
+    <button
+      {...props}
+      disabled={disabled || loading}
+      style={{
+        width: '100%', padding: '12px 0',
+        background: isPrimary
+          ? (disabled || loading ? 'rgba(239,68,68,0.3)' : colors.accent)
+          : 'transparent',
+        border: `1px solid ${isPrimary ? 'transparent' : colors.border}`,
+        borderRadius: 8, color: isPrimary ? '#fff' : colors.muted,
+        fontSize: 14, fontWeight: isPrimary ? 600 : 400,
+        fontFamily: font, cursor: disabled || loading ? 'not-allowed' : 'pointer',
+        transition: 'all 0.15s', letterSpacing: 0.2,
+        ...props.style,
+      }}
+    >
+      {loading ? 'Please wait…' : children}
+    </button>
+  );
+}
+
+// ── Feature highlights shown on the right panel ───────────────────────────
+
+const FEATURES = [
+  {
+    icon: '📋',
+    title: 'Past paper tracker',
+    desc: 'Log every paper you do. Get your actual grade using real mark-scheme boundaries — not rough percentages.',
+  },
+  {
+    icon: '⚡',
+    title: 'Battle Readiness score',
+    desc: 'A single score that tells you how prepared you are for each exam. Updated every time you log a paper.',
+  },
+  {
+    icon: '🔍',
+    title: 'Error pattern analysis',
+    desc: 'Track the mistakes you keep making. Spot patterns. Fix them before the exam.',
+  },
+  {
+    icon: '📅',
+    title: 'Week-by-week revision plan',
+    desc: 'A structured plan from now to your last exam, built around your specific subjects.',
+  },
+];
+
+// ── Main component ────────────────────────────────────────────────────────────
+
 export default function AuthGate({ onAuth }) {
-  const [mode, setMode] = useState('login');
+  const [tab, setTab] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [tosAgreed, setTosAgreed] = useState(false);
-  const [showTos, setShowTos] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showTos, setShowTos] = useState(false);
 
   if (!isSupabaseConfigured()) {
     return (
-      <div style={S.root}>
-        <div style={S.card}>
-          <div style={S.logo}>
-            <span style={S.logoA}>A*</span>
-            <span style={S.logoT}>BATTLE PLAN</span>
+      <div style={{ minHeight: '100vh', background: colors.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: font, padding: 16 }}>
+        <div style={{ maxWidth: 400, width: '100%', textAlign: 'center' }}>
+          <div style={{ fontSize: 24, fontWeight: 700, color: colors.text, marginBottom: 8 }}>
+            Configuration needed
           </div>
-          <p style={{ color: '#FF3D00', fontSize: 13, marginBottom: 12 }}>Supabase not configured</p>
-          <p style={{ color: '#888', fontSize: 12, lineHeight: 1.7 }}>
-            Add your Supabase credentials to <code style={{ color: '#ddd' }}>.env</code> then restart the dev server.
-            <br /><br />
-            <code style={{ color: '#ddd' }}>VITE_SUPABASE_URL=...</code><br />
-            <code style={{ color: '#ddd' }}>VITE_SUPABASE_ANON_KEY=...</code>
+          <p style={{ color: colors.muted, fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
+            Add your Supabase credentials to <code style={{ color: colors.text, background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: 4 }}>.env</code> and restart the dev server.
           </p>
-          <button
-            style={{ ...S.btn(false), marginTop: 20 }}
-            onClick={() => onAuth(null)}
-          >
-            Continue without account (local only)
-          </button>
+          <Button onClick={() => onAuth(null)}>Continue without account</Button>
         </div>
       </div>
     );
@@ -86,143 +134,262 @@ export default function AuthGate({ onAuth }) {
     const { data, error: err } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (err) return setError(err.message);
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('id', data.user.id)
-      .single();
+    const { data: profile } = await supabase.from('user_profiles').select('*').eq('id', data.user.id).single();
     onAuth(data.user, profile || {});
   };
 
   const handleSignup = async () => {
     if (!email || !password) return setError('Enter your email and password.');
     if (password.length < 8) return setError('Password must be at least 8 characters.');
-    if (!tosAgreed) return setError('You must agree to the Terms of Service to create an account.');
+    if (!tosAgreed) return setError('You need to agree to the Terms of Service to continue.');
     setLoading(true); setError('');
     const { data, error: err } = await supabase.auth.signUp({ email, password });
     setLoading(false);
     if (err) return setError(err.message);
     if (data.user) {
       await supabase.from('user_profiles').upsert({
-        id: data.user.id,
-        email,
+        id: data.user.id, email,
         display_name: name.trim() || null,
         tos_agreed_at: new Date().toISOString(),
       }, { onConflict: 'id' });
     }
-    setSuccess('Account created! Check your email to confirm, then log in.');
-    setMode('login');
+    setSuccess('Account created — check your email to confirm, then log in.');
+    setTab('login');
   };
 
   const handleForgot = async () => {
-    if (!email) return setError('Enter your email address first.');
+    if (!email) return setError('Enter your email address above first.');
     setLoading(true); setError('');
     const { error: err } = await supabase.auth.resetPasswordForEmail(email);
     setLoading(false);
     if (err) return setError(err.message);
-    setSuccess('Password reset email sent — check your inbox.');
+    setSuccess('Password reset email sent. Check your inbox.');
   };
+
+  const submit = tab === 'login' ? handleLogin : handleSignup;
 
   return (
     <>
       {showTos && <TermsOfService onClose={() => setShowTos(false)} />}
-      <div style={S.root}>
-        <div style={S.card}>
-          <div style={S.logo}>
-            <span style={S.logoA}>A*</span>
-            <span style={S.logoT}>BATTLE PLAN</span>
-          </div>
 
-          <div style={S.tabs}>
-            <button style={S.tab(mode === 'login')} onClick={() => { setMode('login'); setError(''); setSuccess(''); }}>
-              Log In
-            </button>
-            <button style={S.tab(mode === 'signup')} onClick={() => { setMode('signup'); setError(''); setSuccess(''); }}>
-              Sign Up
-            </button>
-          </div>
+      <div style={{
+        minHeight: '100vh', background: colors.bg,
+        display: 'flex', alignItems: 'stretch',
+        fontFamily: font,
+      }}>
 
-          {error && <div style={S.err}>{error}</div>}
-          {success && <div style={S.ok}>{success}</div>}
+        {/* ── Left: auth form ───────────────────────────── */}
+        <div style={{
+          width: '100%', maxWidth: 440,
+          display: 'flex', flexDirection: 'column',
+          justifyContent: 'center', padding: '48px 40px',
+          borderRight: `1px solid ${colors.border}`,
+          flexShrink: 0,
+        }}>
 
-          {mode === 'signup' && (
-            <>
-              <label style={S.label}>DISPLAY NAME (OPTIONAL)</label>
-              <input
-                style={S.input}
-                placeholder="e.g. Alex"
-                value={name}
-                onChange={e => setName(e.target.value)}
-              />
-            </>
-          )}
-
-          <label style={S.label}>EMAIL</label>
-          <input
-            style={S.input}
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && (mode === 'login' ? handleLogin() : handleSignup())}
-          />
-
-          <label style={S.label}>PASSWORD</label>
-          <input
-            style={S.input}
-            type="password"
-            placeholder={mode === 'signup' ? 'Min. 8 characters' : 'Your password'}
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && (mode === 'login' ? handleLogin() : handleSignup())}
-          />
-
-          {mode === 'signup' && (
-            <div style={S.tosRow}>
-              <input
-                type="checkbox"
-                id="tos"
-                checked={tosAgreed}
-                onChange={e => setTosAgreed(e.target.checked)}
-                style={{ marginTop: 2, accentColor: '#FF3D00', cursor: 'pointer' }}
-              />
-              <label htmlFor="tos" style={{ fontSize: 12, color: '#888', cursor: 'pointer', lineHeight: 1.6 }}>
-                I have read and agree to the{' '}
-                <span style={S.tosLink} onClick={() => setShowTos(true)}>
-                  Terms of Service &amp; Privacy Policy
-                </span>
-              </label>
-            </div>
-          )}
-
-          <button
-            style={S.btn(loading)}
-            onClick={mode === 'login' ? handleLogin : handleSignup}
-            disabled={loading}
-          >
-            {loading ? 'Please wait...' : mode === 'login' ? 'Log In' : 'Create Account'}
-          </button>
-
-          {mode === 'login' && (
-            <div style={S.hint}>
-              <span
-                style={{ color: '#555', cursor: 'pointer', textDecoration: 'underline' }}
-                onClick={handleForgot}
-              >
-                Forgot password?
+          {/* Logo */}
+          <div style={{ marginBottom: 36 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 7,
+                background: colors.accent,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: mono, fontWeight: 900, fontSize: 13, color: '#fff',
+              }}>
+                A*
+              </div>
+              <span style={{ fontSize: 15, fontWeight: 700, color: colors.text, letterSpacing: 0.3 }}>
+                Battle Plan
+              </span>
+              <span style={{
+                fontSize: 10, fontWeight: 600, color: colors.accent,
+                background: colors.accentBg, border: `1px solid ${colors.accentBorder}`,
+                padding: '1px 6px', borderRadius: 4, letterSpacing: 0.5,
+              }}>
+                FREE BETA
               </span>
             </div>
+            <p style={{ fontSize: 22, fontWeight: 700, color: colors.text, margin: 0, lineHeight: 1.3 }}>
+              Your A-Level revision,<br />tracked properly.
+            </p>
+          </div>
+
+          {/* Tabs */}
+          <div style={{
+            display: 'flex', background: 'rgba(255,255,255,0.04)',
+            borderRadius: 8, padding: 3, marginBottom: 24, border: `1px solid ${colors.border}`,
+          }}>
+            {['login', 'signup'].map(t => (
+              <button key={t} onClick={() => { setTab(t); setError(''); setSuccess(''); }} style={{
+                flex: 1, padding: '8px 0', borderRadius: 6, border: 'none',
+                background: tab === t ? 'rgba(255,255,255,0.08)' : 'transparent',
+                color: tab === t ? colors.text : colors.muted,
+                fontSize: 13, fontWeight: tab === t ? 600 : 400,
+                fontFamily: font, cursor: 'pointer', transition: 'all 0.15s',
+              }}>
+                {t === 'login' ? 'Log in' : 'Create account'}
+              </button>
+            ))}
+          </div>
+
+          {/* Alerts */}
+          {error && (
+            <div style={{
+              background: 'rgba(239,68,68,0.08)', border: `1px solid ${colors.accentBorder}`,
+              borderRadius: 8, padding: '10px 14px', marginBottom: 16,
+              fontSize: 13, color: '#fca5a5', lineHeight: 1.5,
+            }}>
+              {error}
+            </div>
+          )}
+          {success && (
+            <div style={{
+              background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)',
+              borderRadius: 8, padding: '10px 14px', marginBottom: 16,
+              fontSize: 13, color: '#86efac', lineHeight: 1.5,
+            }}>
+              {success}
+            </div>
           )}
 
-          <div style={S.hint}>
-            <span
-              style={{ color: '#444', cursor: 'pointer', textDecoration: 'underline' }}
+          {/* Fields */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {tab === 'signup' && (
+              <div>
+                <Label>Your name (optional)</Label>
+                <Input
+                  placeholder="e.g. Alex"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                />
+              </div>
+            )}
+            <div>
+              <Label>Email address</Label>
+              <Input
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && submit()}
+              />
+            </div>
+            <div>
+              <Label>Password{tab === 'signup' ? ' (min. 8 characters)' : ''}</Label>
+              <Input
+                type="password"
+                placeholder={tab === 'signup' ? 'Choose a strong password' : 'Your password'}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && submit()}
+              />
+            </div>
+
+            {tab === 'signup' && (
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={tosAgreed}
+                  onChange={e => setTosAgreed(e.target.checked)}
+                  style={{ marginTop: 3, accentColor: colors.accent, cursor: 'pointer', flexShrink: 0 }}
+                />
+                <span style={{ fontSize: 12, color: colors.muted, lineHeight: 1.6 }}>
+                  I've read and agree to the{' '}
+                  <span
+                    onClick={e => { e.preventDefault(); setShowTos(true); }}
+                    style={{ color: colors.text, textDecoration: 'underline', cursor: 'pointer' }}
+                  >
+                    Terms of Service & Privacy Policy
+                  </span>
+                </span>
+              </label>
+            )}
+
+            <Button onClick={submit} loading={loading}>
+              {tab === 'login' ? 'Log in' : 'Create account'}
+            </Button>
+
+            {tab === 'login' && (
+              <button
+                onClick={handleForgot}
+                disabled={loading}
+                style={{
+                  background: 'none', border: 'none', color: colors.muted,
+                  fontSize: 12, fontFamily: font, cursor: 'pointer',
+                  textAlign: 'center', padding: 0,
+                  textDecoration: 'underline', textDecorationColor: 'rgba(100,116,139,0.4)',
+                }}
+              >
+                Forgot your password?
+              </button>
+            )}
+          </div>
+
+          {/* Skip */}
+          <div style={{ marginTop: 28, paddingTop: 20, borderTop: `1px solid ${colors.border}`, textAlign: 'center' }}>
+            <button
               onClick={() => onAuth(null)}
+              style={{
+                background: 'none', border: 'none', color: colors.muted,
+                fontSize: 12, fontFamily: font, cursor: 'pointer',
+                textDecoration: 'underline', textDecorationColor: 'rgba(100,116,139,0.3)',
+              }}
             >
-              Continue without an account (data saved locally only)
-            </span>
+              Continue without an account — data saved locally only
+            </button>
           </div>
         </div>
+
+        {/* ── Right: value prop (hidden on narrow screens) ──────────── */}
+        <div style={{
+          flex: 1, display: 'flex', flexDirection: 'column',
+          justifyContent: 'center', padding: '48px 56px',
+          background: 'linear-gradient(135deg, rgba(239,68,68,0.03) 0%, transparent 50%)',
+        }}>
+          <div style={{ maxWidth: 440 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: colors.accent, letterSpacing: 1.5, marginBottom: 16, textTransform: 'uppercase' }}>
+              Built for UK & Wales A-Level students
+            </div>
+            <h2 style={{ fontSize: 26, fontWeight: 700, color: colors.text, margin: '0 0 8px', lineHeight: 1.3 }}>
+              Stop guessing how prepared you are.
+            </h2>
+            <p style={{ fontSize: 15, color: colors.muted, lineHeight: 1.7, margin: '0 0 40px' }}>
+              Battle Plan tracks every past paper you do, shows you where your marks are being dropped, and gives you a clear readiness score before each exam.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {FEATURES.map(f => (
+                <div key={f.title} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 9, flexShrink: 0,
+                    background: 'rgba(255,255,255,0.05)', border: `1px solid ${colors.border}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 16,
+                  }}>
+                    {f.icon}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: colors.text, marginBottom: 3 }}>{f.title}</div>
+                    <div style={{ fontSize: 13, color: colors.muted, lineHeight: 1.6 }}>{f.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{
+              marginTop: 40, padding: '14px 18px',
+              background: 'rgba(255,255,255,0.025)', borderRadius: 10, border: `1px solid ${colors.border}`,
+            }}>
+              <div style={{ fontSize: 13, color: colors.text, fontWeight: 600, marginBottom: 4 }}>
+                Free during beta
+              </div>
+              <div style={{ fontSize: 12, color: colors.muted, lineHeight: 1.6 }}>
+                All features are free right now. No credit card, no trial period — just sign up and start tracking. Supports all major A-Level subjects and exam boards, including WJEC/Eduqas.
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </>
   );

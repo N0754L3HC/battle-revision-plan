@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase, isSupabaseConfigured } from "./lib/supabase";
 import AuthGate from "./components/AuthGate";
+import SubjectPicker from "./components/SubjectPicker";
 import TermsOfService from "./components/TermsOfService";
+import { subjectsFromSelection } from "./data/subjects";
 
 const EXAMS = [
   { date: "2026-05-14", subject: "Further Maths", paper: "Paper 1: Core Pure Mathematics 1", code: "9FM0/01", time: "PM", duration: "1h 30m", board: "Edexcel", topics: "Proof, complex numbers, matrices, further algebra, further calculus, further vectors", maxMark: 75 },
@@ -563,7 +565,7 @@ function BattleGauge({ score, label, labelColor }) {
   );
 }
 
-function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile, onLogout }) {
+function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile, onLogout, userSubjectSelection }) {
   const P = PROFILES[profileName];
   // Shadow module-level constants with profile-specific data inside this component
   const { exams: EXAMS, gradeBoundaries: GRADE_BOUNDARIES, paperSuggestions: PAPER_SUGGESTIONS,
@@ -648,34 +650,37 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
   return (
     <div style={{minHeight:"100vh",background:"#08080D",color:"#E0E0E5",fontFamily:"'JetBrains Mono','SF Mono',monospace"}}>
       <div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",background:"radial-gradient(ellipse at 50% 0%,rgba(255,61,0,0.04) 0%,transparent 50%)"}}/>
-      <nav style={{position:"sticky",top:0,zIndex:50,background:"rgba(8,8,13,0.95)",backdropFilter:"blur(16px)",borderBottom:"1px solid rgba(255,255,255,0.06)",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 16px",height:56}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{display:"flex",alignItems:"center",gap:5}}>
-            <span style={{fontSize:16,fontWeight:800,color:"#FF3D00"}}>A*</span>
-            <span style={{fontWeight:700,fontSize:13,letterSpacing:2,color:"#fff"}}>BATTLE PLAN</span>
+      <nav style={{position:"sticky",top:0,zIndex:50,background:"rgba(8,8,13,0.97)",backdropFilter:"blur(16px)",borderBottom:"1px solid rgba(255,255,255,0.06)",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 20px",height:54}}>
+        {/* Logo + profile switcher */}
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:7}}>
+            <div style={{width:24,height:24,borderRadius:6,background:"#ef4444",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'JetBrains Mono',monospace",fontWeight:900,fontSize:10,color:"#fff",flexShrink:0}}>A*</div>
+            <span style={{fontWeight:700,fontSize:14,color:"#fff",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",letterSpacing:0.2}}>Battle Plan</span>
           </div>
-          <div style={{display:"flex",gap:3,marginLeft:6}}>
+          <div style={{display:"flex",gap:2,marginLeft:2,background:"rgba(255,255,255,0.04)",borderRadius:7,padding:2,border:"1px solid rgba(255,255,255,0.06)"}}>
             {["me","friend"].map(p=>(
-              <button key={p} onClick={()=>onProfileChange(p)} style={{background:profileName===p?"rgba(255,255,255,0.1)":"transparent",border:`1px solid ${profileName===p?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.06)"}`,color:profileName===p?"#fff":"#555",padding:"3px 8px",borderRadius:5,cursor:"pointer",fontSize:12,fontWeight:700,fontFamily:"inherit"}}>
+              <button key={p} onClick={()=>onProfileChange(p)} style={{background:profileName===p?"rgba(255,255,255,0.1)":"transparent",border:"none",color:profileName===p?"#e2e8f0":"#475569",padding:"4px 10px",borderRadius:5,cursor:"pointer",fontSize:12,fontWeight:profileName===p?600:400,fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>
                 {p==="me"?"Me":"Friend"}
               </button>
             ))}
           </div>
         </div>
-        <div style={{display:"flex",gap:4,alignItems:"center"}}>
+        {/* Nav links */}
+        <div style={{display:"flex",gap:1,alignItems:"center"}}>
           {navItems.map(n=>(
-            <button key={n.id} onClick={()=>setView(n.id)} style={{background:view===n.id?"rgba(255,255,255,0.08)":"transparent",border:`1px solid ${view===n.id?"rgba(255,255,255,0.12)":"transparent"}`,color:view===n.id?"#fff":"#444",padding:"8px 13px",borderRadius:6,cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"inherit",position:"relative"}}>
+            <button key={n.id} onClick={()=>setView(n.id)} style={{background:view===n.id?"rgba(255,255,255,0.07)":"transparent",border:`1px solid ${view===n.id?"rgba(255,255,255,0.1)":"transparent"}`,color:view===n.id?"#e2e8f0":"#475569",padding:"7px 12px",borderRadius:6,cursor:"pointer",fontSize:13,fontWeight:view===n.id?500:400,fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative",transition:"color 0.15s"}}>
               {n.l}
-              {n.id==="tracker"&&notifications.length>0&&<span style={{position:"absolute",top:-3,right:-3,width:7,height:7,borderRadius:"50%",background:"#FF3D00",border:"1px solid #08080D"}}/>}
+              {n.id==="tracker"&&notifications.length>0&&<span style={{position:"absolute",top:4,right:4,width:6,height:6,borderRadius:"50%",background:"#ef4444"}}/>}
             </button>
           ))}
+          {/* User */}
           {user?(
-            <div style={{display:"flex",alignItems:"center",gap:8,marginLeft:8,paddingLeft:8,borderLeft:"1px solid rgba(255,255,255,0.06)"}}>
-              <span style={{fontSize:11,color:"#555",maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user.email}</span>
-              <button onClick={onLogout} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.08)",color:"#555",padding:"4px 8px",borderRadius:5,cursor:"pointer",fontSize:11,fontFamily:"inherit"}}>Out</button>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginLeft:8,paddingLeft:10,borderLeft:"1px solid rgba(255,255,255,0.06)"}}>
+              <span style={{fontSize:12,color:"#475569",maxWidth:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>{userProfile?.display_name||user.email}</span>
+              <button onClick={onLogout} style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)",color:"#475569",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontSize:12,fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>Log out</button>
             </div>
           ):(
-            <span style={{fontSize:11,color:"#333",marginLeft:8}}>Local only</span>
+            <span style={{fontSize:12,color:"#334155",marginLeft:10,fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"}}>Local mode</span>
           )}
         </div>
       </nav>
@@ -1067,8 +1072,9 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
 
 export default function App() {
   const [profile, setProfile] = useState(()=>load("rbp_active_profile","me"));
-  const [user, setUser] = useState(undefined); // undefined = checking, null = no user, object = logged in
+  const [user, setUser] = useState(undefined);
   const [userProfile, setUserProfile] = useState(null);
+  const [subjectSelection, setSubjectSelection] = useState(null); // null = not yet loaded
 
   useEffect(()=>save("rbp_active_profile",profile),[profile]);
 
@@ -1097,18 +1103,40 @@ export default function App() {
     return ()=>subscription.unsubscribe();
   },[]);
 
-  const handleAuth = (u, prof={}) => { setUser(u); setUserProfile(prof); };
-  const handleLogout = async () => { await supabase.auth.signOut(); setUser(null); setUserProfile(null); };
+  const handleAuth = (u, prof={}) => {
+    setUser(u);
+    setUserProfile(prof);
+    // Load subject selection from profile or localStorage
+    const stored = prof?.subjects || localStorage.getItem('rbp_subjects');
+    setSubjectSelection(stored ? JSON.parse(stored) : []);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null); setUserProfile(null); setSubjectSelection(null);
+  };
+
+  const handleSubjectsDone = (sel) => setSubjectSelection(sel);
 
   // Still checking session
-  if(user===undefined) return (
-    <div style={{minHeight:"100vh",background:"#08080D",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'JetBrains Mono',monospace",color:"#333",fontSize:13}}>
-      Loading...
+  if (user === undefined) return (
+    <div style={{
+      minHeight:"100vh", background:"#08080f",
+      display:"flex", alignItems:"center", justifyContent:"center",
+      fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+      color:"#334155", fontSize:13,
+    }}>
+      Loading…
     </div>
   );
 
-  // Not logged in — show auth gate
-  if(user===null&&isSupabaseConfigured()) return <AuthGate onAuth={handleAuth}/>;
+  // Not logged in
+  if (user === null && isSupabaseConfigured()) return <AuthGate onAuth={handleAuth}/>;
+
+  // Logged in but no subjects chosen yet → onboarding
+  if (Array.isArray(subjectSelection) && subjectSelection.length === 0) {
+    return <SubjectPicker user={user} onComplete={handleSubjectsDone}/>;
+  }
 
   return (
     <RevisionPlan
@@ -1118,6 +1146,7 @@ export default function App() {
       user={user}
       userProfile={userProfile}
       onLogout={handleLogout}
+      userSubjectSelection={subjectSelection || []}
     />
   );
 }
