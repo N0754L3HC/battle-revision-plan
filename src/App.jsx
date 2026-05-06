@@ -1159,25 +1159,20 @@ export default function App() {
   // Restore session on mount
   useEffect(()=>{
     if(!isSupabaseConfigured()){ setUser(null); return; }
-    supabase.auth.getSession().then(async({data:{session}})=>{
+    const applySession = async (session) => {
       if(session?.user){
         const {data:prof}=await supabase.from("user_profiles").select("*").eq("id",session.user.id).single();
+        const stored = prof?.subjects || localStorage.getItem('rbp_subjects');
         setUser(session.user);
         setUserProfile(prof||{});
-      } else {
-        setUser(null);
-      }
-    });
-    const {data:{subscription}}=supabase.auth.onAuthStateChange(async(_,session)=>{
-      if(session?.user){
-        const {data:prof}=await supabase.from("user_profiles").select("*").eq("id",session.user.id).single();
-        setUser(session.user);
-        setUserProfile(prof||{});
+        setSubjectSelection(stored ? JSON.parse(stored) : []);
       } else {
         setUser(null);
         setUserProfile(null);
       }
-    });
+    };
+    supabase.auth.getSession().then(({data:{session}})=>applySession(session));
+    const {data:{subscription}}=supabase.auth.onAuthStateChange((_,session)=>applySession(session));
     return ()=>subscription.unsubscribe();
   },[]);
 
