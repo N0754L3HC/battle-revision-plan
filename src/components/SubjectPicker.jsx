@@ -5,13 +5,13 @@ import { supabase } from '../lib/supabase';
 const font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 
 const colors = {
-  bg:      '#0d0f14',
-  surface: '#13161e',
-  border:  'rgba(255,255,255,0.07)',
-  text:    '#e8eaf0',
-  muted:   '#6b7280',
-  subtle:  '#374151',
-  accent:  '#818cf8',
+  bg:      '#f7f5f1',
+  surface: '#ffffff',
+  border:  'rgba(0,0,0,0.09)',
+  text:    '#2b2b2b',
+  muted:   '#7a7268',
+  subtle:  '#9a9490',
+  accent:  '#b5735a',
 };
 
 const MAX_SUBJECTS = 4;
@@ -79,8 +79,8 @@ function PickSubjects({ selection, onChange }) {
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'flex-start',
                 padding: '14px 14px 12px',
-                background: selected ? `${s.color}10` : 'rgba(255,255,255,0.02)',
-                border: `1.5px solid ${selected ? s.color + '66' : locked ? 'rgba(255,255,255,0.03)' : colors.border}`,
+                background: selected ? `${s.color}10` : 'rgba(0,0,0,0.02)',
+                border: `1.5px solid ${selected ? s.color + '66' : locked ? 'rgba(0,0,0,0.03)' : colors.border}`,
                 borderRadius: 10, cursor: locked ? 'not-allowed' : 'pointer',
                 textAlign: 'left', transition: 'border-color 0.12s, background 0.12s',
                 opacity: locked ? 0.3 : 1,
@@ -102,7 +102,7 @@ function PickSubjects({ selection, onChange }) {
               <span style={{
                 marginTop: 10,
                 fontSize: 13, fontWeight: 600,
-                color: selected ? colors.text : '#94a3b8',
+                color: selected ? colors.text : '#7a7268',
                 fontFamily: font, lineHeight: 1.3,
               }}>
                 {s.name}
@@ -146,7 +146,7 @@ function PickBoards({ selection, onChange }) {
           if (!subject) return null;
           return (
             <div key={subjectId} style={{
-              background: 'rgba(255,255,255,0.02)',
+              background: 'rgba(0,0,0,0.02)',
               border: `1px solid ${colors.border}`,
               borderRadius: 10, padding: '16px 18px',
             }}>
@@ -163,7 +163,7 @@ function PickBoards({ selection, onChange }) {
                     onClick={() => update(subjectId, b.id)}
                     style={{
                       padding: '6px 12px',
-                      background: boardId === b.id ? `${subject.color}14` : 'rgba(255,255,255,0.03)',
+                      background: boardId === b.id ? `${subject.color}14` : 'rgba(0,0,0,0.03)',
                       border: `1.5px solid ${boardId === b.id ? subject.color + '55' : colors.border}`,
                       borderRadius: 6,
                       color: boardId === b.id ? colors.text : colors.muted,
@@ -298,7 +298,7 @@ export default function SubjectPicker({ user, onComplete }) {
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
                   <div style={{
                     width: 28, height: 28, borderRadius: '50%',
-                    background: done ? colors.accent : active ? 'rgba(239,68,68,0.12)' : 'rgba(255,255,255,0.04)',
+                    background: done ? colors.accent : active ? 'rgba(181,115,90,0.12)' : 'rgba(0,0,0,0.04)',
                     border: `1.5px solid ${done || active ? colors.accent : colors.border}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 11, fontWeight: 700,

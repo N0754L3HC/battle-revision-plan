@@ -8,15 +8,15 @@ const font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
 const mono = "'JetBrains Mono', 'SF Mono', monospace";
 
 const colors = {
-  bg:       '#0d0f14',
-  surface:  '#13161e',
-  border:   'rgba(255,255,255,0.07)',
-  borderHover: 'rgba(255,255,255,0.14)',
-  text:     '#e8eaf0',
-  muted:    '#6b7280',
-  accent:   '#818cf8',
-  accentBg: 'rgba(129,140,248,0.1)',
-  accentBorder: 'rgba(129,140,248,0.25)',
+  bg:       '#f7f5f1',
+  surface:  '#ffffff',
+  border:   'rgba(0,0,0,0.09)',
+  borderHover: 'rgba(0,0,0,0.18)',
+  text:     '#2b2b2b',
+  muted:    '#7a7268',
+  accent:   '#b5735a',
+  accentBg: 'rgba(181,115,90,0.1)',
+  accentBorder: 'rgba(181,115,90,0.25)',
 };
 
 // ── Small components ─────────────────────────────────────────────────────────
@@ -59,7 +59,7 @@ function Button({ children, variant = 'primary', loading, disabled, ...props }) 
       style={{
         width: '100%', padding: '12px 0',
         background: isPrimary
-          ? (disabled || loading ? 'rgba(239,68,68,0.3)' : colors.accent)
+          ? (disabled || loading ? 'rgba(181,115,90,0.35)' : colors.accent)
           : 'transparent',
         border: `1px solid ${isPrimary ? 'transparent' : colors.border}`,
         borderRadius: 8, color: isPrimary ? '#fff' : colors.muted,
@@ -224,7 +224,7 @@ export default function AuthGate({ onAuth }) {
           {/* Alerts */}
           {error && (
             <div style={{
-              background: 'rgba(239,68,68,0.08)', border: `1px solid ${colors.accentBorder}`,
+              background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.2)',
               borderRadius: 8, padding: '10px 14px', marginBottom: 16,
               fontSize: 13, color: '#fca5a5', lineHeight: 1.5,
             }}>
@@ -333,7 +333,7 @@ export default function AuthGate({ onAuth }) {
         <div style={{
           flex: 1, display: 'flex', flexDirection: 'column',
           justifyContent: 'center', padding: '48px 56px',
-          background: 'linear-gradient(135deg, rgba(239,68,68,0.03) 0%, transparent 50%)',
+          background: 'linear-gradient(135deg, rgba(181,115,90,0.06) 0%, transparent 50%)',
         }}>
           <div style={{ maxWidth: 440 }}>
             <div style={{ fontSize: 11, fontWeight: 600, color: colors.muted, letterSpacing: 0.5, marginBottom: 16, textTransform: 'uppercase' }}>
