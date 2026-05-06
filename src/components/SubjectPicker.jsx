@@ -2,35 +2,34 @@ import { useState } from 'react';
 import { SUBJECT_CATALOG } from '../data/subjects';
 import { supabase } from '../lib/supabase';
 
-const font   = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+const font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
 const colors = {
-  bg:      '#08080f',
-  surface: '#0f0f1a',
+  bg:      '#09090f',
+  surface: '#111118',
   border:  'rgba(255,255,255,0.07)',
-  text:    '#e2e8f0',
+  text:    '#f1f5f9',
   muted:   '#64748b',
   subtle:  '#334155',
   accent:  '#ef4444',
-  accentBg:'rgba(239,68,68,0.1)',
-  accentBorder:'rgba(239,68,68,0.25)',
 };
 
 const MAX_SUBJECTS = 4;
 
-function Pill({ children, color }) {
+function SubjectBadge({ subject, size = 32 }) {
   return (
-    <span style={{
-      display: 'inline-block',
-      background: `${color}18`, border: `1px solid ${color}44`,
-      color, fontSize: 10, fontWeight: 600,
-      padding: '1px 7px', borderRadius: 4,
+    <div style={{
+      width: size, height: size, borderRadius: 8,
+      background: `${subject.color}18`,
+      border: `1px solid ${subject.color}30`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: size < 28 ? 9 : 11, fontWeight: 700, color: subject.color,
+      fontFamily: font, flexShrink: 0,
     }}>
-      {children}
-    </span>
+      {subject.abbr}
+    </div>
   );
 }
-
-// ── Step 1: pick subjects ──────────────────────────────────────────────────
 
 function PickSubjects({ selection, onChange }) {
   const selectedIds = selection.map(s => s.subjectId);
@@ -49,12 +48,11 @@ function PickSubjects({ selection, onChange }) {
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: '0 0 6px', fontFamily: font }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: colors.text, margin: '0 0 6px', fontFamily: font }}>
           Which subjects are you studying?
         </h2>
         <p style={{ fontSize: 13, color: colors.muted, margin: 0, fontFamily: font }}>
-          Select 2–4 subjects. You can change these later.
-          &nbsp;
+          Select 2 to 4 subjects. You can change these later.{' '}
           <span style={{
             fontSize: 12, fontWeight: 600,
             color: atMax ? colors.accent : colors.muted,
@@ -66,8 +64,8 @@ function PickSubjects({ selection, onChange }) {
 
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-        gap: 10,
+        gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))',
+        gap: 8,
       }}>
         {SUBJECT_CATALOG.map(s => {
           const selected = selectedIds.includes(s.id);
@@ -81,11 +79,11 @@ function PickSubjects({ selection, onChange }) {
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'flex-start',
                 padding: '14px 14px 12px',
-                background: selected ? `${s.color}12` : 'rgba(255,255,255,0.025)',
-                border: `1.5px solid ${selected ? s.color : (locked ? 'rgba(255,255,255,0.03)' : colors.border)}`,
+                background: selected ? `${s.color}10` : 'rgba(255,255,255,0.02)',
+                border: `1.5px solid ${selected ? s.color + '66' : locked ? 'rgba(255,255,255,0.03)' : colors.border}`,
                 borderRadius: 10, cursor: locked ? 'not-allowed' : 'pointer',
-                textAlign: 'left', transition: 'all 0.15s',
-                opacity: locked ? 0.35 : 1,
+                textAlign: 'left', transition: 'border-color 0.12s, background 0.12s',
+                opacity: locked ? 0.3 : 1,
                 position: 'relative',
               }}
             >
@@ -100,18 +98,19 @@ function PickSubjects({ selection, onChange }) {
                   ✓
                 </div>
               )}
-              <span style={{ fontSize: 20, marginBottom: 8, lineHeight: 1 }}>{s.emoji}</span>
+              <SubjectBadge subject={s} size={32} />
               <span style={{
+                marginTop: 10,
                 fontSize: 13, fontWeight: 600,
                 color: selected ? colors.text : '#94a3b8',
                 fontFamily: font, lineHeight: 1.3,
               }}>
                 {s.name}
               </span>
-              {s.popular && (
+              {s.popular && !selected && (
                 <span style={{
-                  marginTop: 6, fontSize: 9, fontWeight: 600,
-                  color: colors.muted, letterSpacing: 0.5, textTransform: 'uppercase',
+                  marginTop: 5, fontSize: 10, fontWeight: 500,
+                  color: colors.subtle,
                   fontFamily: font,
                 }}>
                   Popular
@@ -125,8 +124,6 @@ function PickSubjects({ selection, onChange }) {
   );
 }
 
-// ── Step 2: pick boards ───────────────────────────────────────────────────
-
 function PickBoards({ selection, onChange }) {
   const update = (subjectId, boardId) => {
     onChange(selection.map(s => s.subjectId === subjectId ? { ...s, boardId } : s));
@@ -135,7 +132,7 @@ function PickBoards({ selection, onChange }) {
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: '0 0 6px', fontFamily: font }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: colors.text, margin: '0 0 6px', fontFamily: font }}>
           Which exam board are you with?
         </h2>
         <p style={{ fontSize: 13, color: colors.muted, margin: 0, fontFamily: font }}>
@@ -143,34 +140,32 @@ function PickBoards({ selection, onChange }) {
         </p>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {selection.map(({ subjectId, boardId }) => {
           const subject = SUBJECT_CATALOG.find(s => s.id === subjectId);
           if (!subject) return null;
           return (
             <div key={subjectId} style={{
-              background: 'rgba(255,255,255,0.025)',
+              background: 'rgba(255,255,255,0.02)',
               border: `1px solid ${colors.border}`,
               borderRadius: 10, padding: '16px 18px',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <span style={{ fontSize: 18 }}>{subject.emoji}</span>
+                <SubjectBadge subject={subject} size={28} />
                 <span style={{ fontSize: 14, fontWeight: 600, color: colors.text, fontFamily: font }}>
                   {subject.name}
                 </span>
               </div>
-              <div style={{
-                display: 'flex', flexWrap: 'wrap', gap: 7,
-              }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {subject.boards.map(b => (
                   <button
                     key={b.id}
                     onClick={() => update(subjectId, b.id)}
                     style={{
-                      padding: '7px 13px',
-                      background: boardId === b.id ? `${subject.color}18` : 'rgba(255,255,255,0.04)',
-                      border: `1.5px solid ${boardId === b.id ? subject.color : colors.border}`,
-                      borderRadius: 7,
+                      padding: '6px 12px',
+                      background: boardId === b.id ? `${subject.color}14` : 'rgba(255,255,255,0.03)',
+                      border: `1.5px solid ${boardId === b.id ? subject.color + '55' : colors.border}`,
+                      borderRadius: 6,
                       color: boardId === b.id ? colors.text : colors.muted,
                       fontSize: 12, fontWeight: boardId === b.id ? 600 : 400,
                       fontFamily: font, cursor: 'pointer', transition: 'all 0.12s',
@@ -188,22 +183,19 @@ function PickBoards({ selection, onChange }) {
   );
 }
 
-// ── Step 3: confirmation ───────────────────────────────────────────────────
-
 function Confirm({ selection }) {
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 32, marginBottom: 8 }}>🎯</div>
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: colors.text, margin: '0 0 6px', fontFamily: font }}>
-          You're all set
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: colors.text, margin: '0 0 6px', fontFamily: font }}>
+          You are all set
         </h2>
         <p style={{ fontSize: 13, color: colors.muted, margin: 0, fontFamily: font }}>
-          Here's your subject lineup. Start logging past papers to build your readiness score.
+          Here is your subject lineup. Start logging past papers to build your readiness score.
         </p>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {selection.map(({ subjectId, boardId }) => {
           const subject = SUBJECT_CATALOG.find(s => s.id === subjectId);
           if (!subject) return null;
@@ -212,15 +204,15 @@ function Confirm({ selection }) {
             <div key={subjectId} style={{
               display: 'flex', alignItems: 'center', gap: 12,
               padding: '12px 16px',
-              background: `${subject.color}0d`,
-              border: `1px solid ${subject.color}33`,
+              background: `${subject.color}08`,
+              border: `1px solid ${subject.color}25`,
               borderRadius: 10,
             }}>
               <div style={{
-                width: 4, height: 36, borderRadius: 2,
+                width: 3, height: 36, borderRadius: 2,
                 background: subject.color, flexShrink: 0,
               }}/>
-              <span style={{ fontSize: 20 }}>{subject.emoji}</span>
+              <SubjectBadge subject={subject} size={28} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: colors.text, fontFamily: font }}>
                   {subject.name}
@@ -229,9 +221,14 @@ function Confirm({ selection }) {
                   {board.name}
                 </div>
               </div>
-              <Pill color={subject.color}>
-                A*: {subject.gradeBoundaries['A*']}%
-              </Pill>
+              <div style={{
+                fontSize: 11, fontWeight: 600, color: subject.color,
+                background: `${subject.color}14`,
+                border: `1px solid ${subject.color}30`,
+                padding: '3px 8px', borderRadius: 4,
+              }}>
+                A* at {subject.gradeBoundaries['A*']}%
+              </div>
             </div>
           );
         })}
@@ -239,8 +236,6 @@ function Confirm({ selection }) {
     </div>
   );
 }
-
-// ── Root ──────────────────────────────────────────────────────────────────
 
 export default function SubjectPicker({ user, onComplete }) {
   const [step, setStep] = useState(1);
@@ -255,7 +250,6 @@ export default function SubjectPicker({ user, onComplete }) {
 
   const handleNext = async () => {
     if (step < 3) { setStep(step + 1); return; }
-    // Save
     setSaving(true);
     const subjectsJson = JSON.stringify(selection);
     if (user) {
@@ -279,7 +273,6 @@ export default function SubjectPicker({ user, onComplete }) {
     }}>
       <div style={{ width: '100%', maxWidth: 640 }}>
 
-        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 36 }}>
           <div style={{
             width: 26, height: 26, borderRadius: 6,
@@ -295,18 +288,17 @@ export default function SubjectPicker({ user, onComplete }) {
           </span>
         </div>
 
-        {/* Steps indicator */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 32 }}>
           {STEP_LABELS.map((label, i) => {
-            const n     = i + 1;
-            const done  = step > n;
+            const n      = i + 1;
+            const done   = step > n;
             const active = step === n;
             return (
               <div key={n} style={{ display: 'flex', alignItems: 'center', flex: i < 2 ? 1 : 0 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
                   <div style={{
                     width: 28, height: 28, borderRadius: '50%',
-                    background: done ? colors.accent : active ? 'rgba(239,68,68,0.15)' : 'rgba(255,255,255,0.04)',
+                    background: done ? colors.accent : active ? 'rgba(239,68,68,0.12)' : 'rgba(255,255,255,0.04)',
                     border: `1.5px solid ${done || active ? colors.accent : colors.border}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 11, fontWeight: 700,
@@ -335,20 +327,18 @@ export default function SubjectPicker({ user, onComplete }) {
           })}
         </div>
 
-        {/* Step content */}
         <div style={{
           background: colors.surface,
           border: `1px solid ${colors.border}`,
           borderRadius: 14, padding: '28px 28px 24px',
-          marginBottom: 16,
+          marginBottom: 12,
         }}>
           {step === 1 && <PickSubjects selection={selection} onChange={setSelection} />}
           {step === 2 && <PickBoards  selection={selection} onChange={setSelection} />}
           {step === 3 && <Confirm     selection={selection} />}
         </div>
 
-        {/* Navigation */}
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
           {step > 1 && (
             <button
               onClick={() => setStep(step - 1)}
@@ -368,15 +358,15 @@ export default function SubjectPicker({ user, onComplete }) {
             disabled={!canNext || saving}
             style={{
               flex: 2, padding: '12px 0',
-              background: canNext ? colors.accent : 'rgba(239,68,68,0.2)',
+              background: canNext ? colors.accent : 'rgba(239,68,68,0.15)',
               border: 'none', borderRadius: 8,
-              color: canNext ? '#fff' : 'rgba(239,68,68,0.5)',
+              color: canNext ? '#fff' : 'rgba(239,68,68,0.4)',
               fontSize: 14, fontWeight: 600, fontFamily: font,
               cursor: canNext ? 'pointer' : 'not-allowed',
               transition: 'all 0.15s',
             }}
           >
-            {saving ? 'Saving…' : step === 3 ? 'Start tracking' : 'Continue'}
+            {saving ? 'Saving...' : step === 3 ? 'Start tracking' : 'Continue'}
           </button>
         </div>
 

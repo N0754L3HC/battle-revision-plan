@@ -334,17 +334,17 @@ const RESOURCES = [
 ];
 
 const DAILY_ROUTINE = [
-  { time: "07:00", block: "Wake + Move", desc: "15-min bodyweight or walk. Cold water. No phone for 30 min.", color: "#FF3D00", icon: "⚡" },
-  { time: "07:30", block: "Plan the Day", desc: "Check today's blocks. Write 3 priorities. Set a timer.", color: "#FF6D00", icon: "📝" },
-  { time: "08:00", block: "Deep Block 1", desc: "Hardest subject. Timed past paper or topic questions. Phone away. 90 min.", color: "#2979FF", icon: "🧠" },
-  { time: "09:30", block: "Mark + Error Log", desc: "Mark with official mark scheme. For EVERY wrong answer: log topic, what went wrong, correct method. Most important 30 min of your day.", color: "#FF9100", icon: "🔍" },
-  { time: "10:00", block: "Break", desc: "20 min. Walk outside. No scrolling.", color: "#78909C", icon: "🌿" },
-  { time: "10:20", block: "Deep Block 2", desc: "Second subject. Topic-based questions on your weak areas. 90 min.", color: "#2979FF", icon: "📐" },
-  { time: "11:50", block: "Lunch + Rest", desc: "Proper food. Step away. 40 min.", color: "#78909C", icon: "🍽️" },
-  { time: "12:30", block: "Deep Block 3", desc: "Third subject OR redo wrong questions from this morning. 60-90 min.", color: "#2979FF", icon: "💻" },
-  { time: "14:00", block: "Active Recall", desc: "Close notes. Write everything you remember. Check what you missed.", color: "#E040FB", icon: "🧩" },
-  { time: "14:30", block: "Done", desc: "4+ hours of genuine focused revision = done. Basketball, Taekwondo, relax. You've earned it.", color: "#26A69A", icon: "🏀" },
-  { time: "21:30", block: "Shutdown", desc: "What did I learn? What's tomorrow's focus? Screens off by 22:00.", color: "#37474F", icon: "🌙" },
+  { time: "07:00", block: "Wake + Move", desc: "15 min bodyweight or walk. Cold water. No phone for 30 min.", color: "#64748b" },
+  { time: "07:30", block: "Plan the Day", desc: "Check today's blocks. Write 3 priorities. Set a timer.", color: "#64748b" },
+  { time: "08:00", block: "Deep Block 1", desc: "Hardest subject. Timed past paper or topic questions. Phone away. 90 min.", color: "#3b82f6" },
+  { time: "09:30", block: "Mark + Error Log", desc: "Mark with the official mark scheme. For every wrong answer: log topic, what went wrong, correct method. Most important 30 min of your day.", color: "#f97316" },
+  { time: "10:00", block: "Break", desc: "20 min. Walk outside. No scrolling.", color: "#64748b" },
+  { time: "10:20", block: "Deep Block 2", desc: "Second subject. Topic-based questions on your weak areas. 90 min.", color: "#3b82f6" },
+  { time: "11:50", block: "Lunch + Rest", desc: "Proper food. Step away. 40 min.", color: "#64748b" },
+  { time: "12:30", block: "Deep Block 3", desc: "Third subject or redo wrong questions from this morning. 60 to 90 min.", color: "#3b82f6" },
+  { time: "14:00", block: "Active Recall", desc: "Close notes. Write everything you remember. Check what you missed.", color: "#8b5cf6" },
+  { time: "14:30", block: "Done", desc: "4+ hours of genuine focused revision is done. Basketball, Taekwondo, relax. You have earned it.", color: "#22c55e" },
+  { time: "21:30", block: "Shutdown", desc: "What did I learn? What is tomorrow's focus? Screens off by 22:00.", color: "#475569" },
 ];
 
 const PROFILES = {
@@ -443,7 +443,7 @@ function getGrade(pct, subject, boundaries=GRADE_BOUNDARIES) {
 }
 
 function gradeColor(g) {
-  return { "A*":"#00E676", A:"#69F0AE", B:"#FFD600", C:"#FF9100", D:"#FF6D00", E:"#FF3D00", U:"#555" }[g] || "#555";
+  return { "A*":"#22c55e", A:"#4ade80", B:"#fbbf24", C:"#fb923c", D:"#f87171", E:"#ef4444", U:"#475569" }[g] || "#475569";
 }
 
 function calcBattleReadiness(scores, errors, checks) {
@@ -469,19 +469,19 @@ function getNotifications(scores, errors, {exams=EXAMS,subjects=SUBJECTS,paperSu
   const upcoming = exams.map(e=>({...e,d:Math.ceil((new Date(e.date)-now)/86400000)})).filter(e=>e.d>0).sort((a,b)=>a.d-b.d);
   if (upcoming.length && upcoming[0].d<=14) {
     const n=upcoming[0];
-    notes.push({id:`exam_${n.code}`,type:"urgent",icon:"⚠️",title:`${n.subject} exam in ${n.d} days`,body:`${n.paper} — ${n.time}, ${n.duration}`});
+    notes.push({id:`exam_${n.code}`,type:"urgent",title:`${n.subject} exam in ${n.d} days`,body:`${n.paper} · ${n.time}, ${n.duration}`});
   }
   subjects.forEach(subj=>{
     const done=scores.filter(s=>s.subject===subj).map(s=>s.paper);
     const next=(paperSuggestions[subj]||[]).find(p=>!done.includes(p));
     if(next){
       const examD=upcoming.find(e=>e.subject===subj)?.d??999;
-      notes.push({id:`paper_${subj}_${next}`,type:examD<=21?"urgent":examD<=42?"warn":"info",icon:"📋",title:`Do this paper next: ${subj}`,body:next});
+      notes.push({id:`paper_${subj}_${next}`,type:examD<=21?"urgent":examD<=42?"warn":"info",title:`Suggested next: ${subj}`,body:next});
     }
     const ss=scores.filter(s=>s.subject===subj);
     if(ss.length){
       const daysSince=Math.floor((Date.now()-ss.sort((a,b)=>b.id-a.id)[0].id)/86400000);
-      if(daysSince>=7) notes.push({id:`overdue_${subj}`,type:"warn",icon:"⏰",title:`${subj}: no paper in ${daysSince} days`,body:`Last: ${ss[0].paper}`});
+      if(daysSince>=7) notes.push({id:`overdue_${subj}`,type:"warn",title:`${subj}: no paper in ${daysSince} days`,body:`Last: ${ss[0].paper}`});
     }
   });
   if(errors.length>=5){
@@ -489,16 +489,16 @@ function getNotifications(scores, errors, {exams=EXAMS,subjects=SUBJECTS,paperSu
     errors.forEach(e=>{counts[e.type]=(counts[e.type]||0)+1;});
     const top=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
     const et=ERROR_TYPES.find(t=>t.id===top[0]);
-    if(et&&top[1]>=3) notes.push({id:`errpat_${top[0]}`,type:"warn",icon:"🔁",title:`Recurring: "${et.label}" (×${top[1]})`,body:"Dedicate a full session to fixing this."});
+    if(et&&top[1]>=3) notes.push({id:`errpat_${top[0]}`,type:"warn",title:`Recurring pattern: "${et.label}" (x${top[1]})`,body:"Dedicate a full session to fixing this."});
   }
   const today=new Date().toDateString();
   const ts=scores.find(s=>new Date(s.id).toDateString()===today);
-  if(ts) notes.push({id:`today_${today}`,type:"success",icon:"✅",title:"Paper done today!",body:`${ts.subject} — ${ts.paper} · ${ts.pct}%`});
+  if(ts) notes.push({id:`today_${today}`,type:"success",title:"Paper logged today",body:`${ts.subject} · ${ts.paper} · ${ts.pct}%`});
   return notes;
 }
 
-const notifColor = {urgent:"#FF3D00",warn:"#FF9100",info:"#2979FF",success:"#00E676"};
-const iS = {width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:6,padding:"8px 10px",color:"#ddd",fontSize:15,fontFamily:"inherit",outline:"none",boxSizing:"border-box"};
+const notifColor = {urgent:"#ef4444",warn:"#f97316",info:"#3b82f6",success:"#22c55e"};
+const iS = {width:"100%",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:7,padding:"9px 12px",color:"#e2e8f0",fontSize:14,fontFamily:"inherit",outline:"none",boxSizing:"border-box"};
 
 function TrendChart({ scores, subject, subjectColors=SUBJECT_COLORS, gradeBoundaries=GRADE_BOUNDARIES }) {
   const data = [...scores].filter(s=>s.subject===subject).reverse();
@@ -557,8 +557,8 @@ function BattleGauge({ score, label, labelColor }) {
         strokeDasharray={`${strokeDash} ${circumference}`}
         style={{transition:"stroke-dasharray 1s ease"}}
       />
-      <text x={CX} y={CY-8} textAnchor="middle" fill="#fff" fontSize="22" fontWeight="900" fontFamily="'Inter',sans-serif">{score}</text>
-      <text x={CX} y={CY+8} textAnchor="middle" fill={col} fontSize="7" fontWeight="700" letterSpacing="1">{label}</text>
+      <text x={CX} y={CY-8} textAnchor="middle" fill="#f1f5f9" fontSize="22" fontWeight="700" fontFamily="inherit">{score}</text>
+      <text x={CX} y={CY+8} textAnchor="middle" fill={col} fontSize="7" fontWeight="600" letterSpacing="0.5">{label}</text>
       <text x={CX-R} y={CY+14} fill="#444" fontSize="7" textAnchor="middle">0</text>
       <text x={CX+R} y={CY+14} fill="#444" fontSize="7" textAnchor="middle">100</text>
     </svg>
@@ -648,7 +648,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
   ];
 
   return (
-    <div style={{minHeight:"100vh",background:"#08080D",color:"#E0E0E5",fontFamily:"'JetBrains Mono','SF Mono',monospace"}}>
+    <div style={{minHeight:"100vh",background:"#09090f",color:"#e2e8f0",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif"}}>
       <div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",background:"radial-gradient(ellipse at 50% 0%,rgba(255,61,0,0.04) 0%,transparent 50%)"}}/>
       <nav style={{position:"sticky",top:0,zIndex:50,background:"rgba(8,8,13,0.97)",backdropFilter:"blur(16px)",borderBottom:"1px solid rgba(255,255,255,0.06)",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 20px",height:54}}>
         {/* Logo + profile switcher */}
@@ -689,13 +689,13 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
         {notifications.length>0&&(view==="tracker"||view==="analytics")&&(
           <div style={{marginBottom:16}}>
             {notifications.slice(0,3).map(n=>(
-              <div key={n.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"9px 12px",marginBottom:5,borderRadius:8,background:`${notifColor[n.type]}10`,border:`1px solid ${notifColor[n.type]}28`}}>
-                <span style={{fontSize:17,flexShrink:0}}>{n.icon}</span>
+              <div key={n.id} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 14px",marginBottom:5,borderRadius:8,background:`${notifColor[n.type]}0c`,border:`1px solid ${notifColor[n.type]}22`}}>
+                <div style={{width:6,height:6,borderRadius:"50%",background:notifColor[n.type],flexShrink:0,marginTop:5}}/>
                 <div style={{flex:1}}>
-                  <div style={{fontSize:14,fontWeight:700,color:notifColor[n.type]}}>{n.title}</div>
-                  <div style={{fontSize:13,color:"#777",marginTop:1}}>{n.body}</div>
+                  <div style={{fontSize:13,fontWeight:600,color:notifColor[n.type]}}>{n.title}</div>
+                  <div style={{fontSize:12,color:"#64748b",marginTop:2}}>{n.body}</div>
                 </div>
-                <button onClick={()=>setDismissed(p=>[...p,n.id])} style={{background:"transparent",border:"none",color:"#444",cursor:"pointer",fontSize:17,padding:0,lineHeight:1}}>×</button>
+                <button onClick={()=>setDismissed(p=>[...p,n.id])} style={{background:"transparent",border:"none",color:"#475569",cursor:"pointer",fontSize:16,padding:0,lineHeight:1,flexShrink:0}}>×</button>
               </div>
             ))}
           </div>
@@ -704,15 +704,15 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
         {view==="analytics"&&(
           <div>
             <div style={{marginBottom:20}}>
-              <div style={{fontSize:13,letterSpacing:3,color:"#FF3D00",fontWeight:700,marginBottom:6}}>ANALYTICS</div>
-              <h1 style={{fontSize:22,fontWeight:800,color:"#fff",margin:0,fontFamily:"'Inter',sans-serif"}}>Performance Dashboard</h1>
+              <h1 style={{fontSize:20,fontWeight:700,color:"#f1f5f9",margin:"0 0 4px"}}>Performance</h1>
+              <p style={{fontSize:13,color:"#64748b",margin:0}}>Track your scores and readiness across all subjects.</p>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"200px 1fr",gap:12,marginBottom:16}}>
               <div style={{background:"rgba(255,255,255,0.025)",border:`1px solid ${br.labelColor}22`,borderRadius:10,padding:"16px 12px",display:"flex",flexDirection:"column",alignItems:"center"}}>
-                <div style={{fontSize:13,letterSpacing:2,color:br.labelColor,fontWeight:700,marginBottom:8}}>BATTLE READINESS</div>
+                <div style={{fontSize:11,fontWeight:600,color:"#64748b",letterSpacing:0.5,textTransform:"uppercase",marginBottom:8}}>Battle Readiness</div>
                 <BattleGauge score={br.total} label={br.label} labelColor={br.labelColor}/>
                 <div style={{width:"100%",marginTop:12}}>
-                  {[["Papers",br.paperComp,20,"#2979FF"],["Avg Score",br.scoreComp,40,"#E040FB"],["Error ctrl",br.errorComp,20,"#FF9100"],["Plan done",br.checkComp,20,"#00E676"]].map(([l,v,mx,c])=>(
+                  {[["Papers",br.paperComp,20,"#3b82f6"],["Avg score",br.scoreComp,40,"#8b5cf6"],["Error ctrl",br.errorComp,20,"#f97316"],["Plan done",br.checkComp,20,"#22c55e"]].map(([l,v,mx,c])=>(
                     <div key={l} style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
                       <div style={{fontSize:13,color:"#555",width:50,flexShrink:0}}>{l}</div>
                       <div style={{flex:1,height:4,borderRadius:2,background:"rgba(255,255,255,0.05)",overflow:"hidden"}}>
@@ -736,7 +736,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                     <div key={s} style={{background:"rgba(255,255,255,0.025)",border:`1px solid ${col}22`,borderRadius:10,padding:"12px 16px"}}>
                       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
                         <div>
-                          <div style={{fontSize:13,color:col,fontWeight:700,letterSpacing:2}}>{s.toUpperCase()}</div>
+                          <div style={{fontSize:12,color:col,fontWeight:600}}>{s}</div>
                           <div style={{display:"flex",alignItems:"baseline",gap:6,marginTop:2}}>
                             <span style={{fontSize:28,fontWeight:900,color:grade?gradeColor(grade):"#333",fontFamily:"'Inter',sans-serif"}}>{grade||"—"}</span>
                             {avg&&<span style={{fontSize:15,color:"#666"}}>{avg}% avg</span>}
@@ -744,7 +744,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                           </div>
                         </div>
                         <div style={{textAlign:"right"}}>
-                          <div style={{fontSize:13,color:"#555",marginBottom:4}}>{cnt} paper{cnt!==1?"s":""} · Target:
+                          <div style={{fontSize:12,color:"#64748b",marginBottom:4}}>{cnt} paper{cnt!==1?"s":""} · Target:
                             <select value={target} onChange={e=>setTargets(p=>({...p,[s]:e.target.value}))} style={{background:"transparent",border:"none",color:gradeColor(target),fontSize:13,fontWeight:700,fontFamily:"inherit",cursor:"pointer",outline:"none",marginLeft:4}}>
                               {["A*","A","B","C"].map(g=><option key={g} value={g}>{g}</option>)}
                             </select>
@@ -775,10 +775,10 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
             </div>
             <div style={{background:"rgba(255,255,255,0.025)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:10,padding:18,marginBottom:12}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-                <div style={{fontSize:13,letterSpacing:2,color:"#FF9100",fontWeight:700}}>SCORE TREND CHART</div>
+                <div style={{fontSize:12,fontWeight:600,color:"#64748b"}}>Score trend</div>
                 <div style={{display:"flex",gap:4}}>
                   {SUBJECTS.map(s=>(
-                    <button key={s} onClick={()=>setChartSubject(s)} style={{background:chartSubject===s?`${SUBJECT_COLORS[s]}20`:"transparent",border:`1px solid ${chartSubject===s?SUBJECT_COLORS[s]+"44":"rgba(255,255,255,0.06)"}`,color:chartSubject===s?SUBJECT_COLORS[s]:"#555",padding:"4px 8px",borderRadius:4,cursor:"pointer",fontSize:13,fontFamily:"inherit",fontWeight:700}}>
+                    <button key={s} onClick={()=>setChartSubject(s)} style={{background:chartSubject===s?`${SUBJECT_COLORS[s]}14`:"transparent",border:`1px solid ${chartSubject===s?SUBJECT_COLORS[s]+"44":"rgba(255,255,255,0.07)"}`,color:chartSubject===s?SUBJECT_COLORS[s]:"#64748b",padding:"4px 10px",borderRadius:5,cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:chartSubject===s?600:400}}>
                       {s==="Further Maths"?"FM":s}
                     </button>
                   ))}
@@ -802,7 +802,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
               return (
                 <div style={{padding:14,borderRadius:10,background:`${col}08`,border:`1px solid ${col}22`}}>
                   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-                    <div style={{fontSize:13,letterSpacing:2,color:col,fontWeight:700}}>NEXT EXAM PRESSURE</div>
+                    <div style={{fontSize:12,fontWeight:600,color:"#64748b"}}>Next exam</div>
                     <div style={{fontSize:15,fontWeight:800,color:n.d<=14?"#FF3D00":"#FF9100"}}>{n.d} days</div>
                   </div>
                   <div style={{height:6,borderRadius:3,background:"rgba(255,255,255,0.05)",overflow:"hidden",marginBottom:8}}>
@@ -818,20 +818,19 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
         {view==="tracker"&&(
           <div>
             <div style={{marginBottom:20}}>
-              <div style={{fontSize:13,letterSpacing:3,color:"#E040FB",fontWeight:700,marginBottom:6}}>TRACKER</div>
-              <h1 style={{fontSize:22,fontWeight:800,color:"#fff",margin:0,fontFamily:"'Inter',sans-serif"}}>Paper Scores & Error Log</h1>
-              <p style={{color:"#555",fontSize:14,marginTop:4}}>Everything saved to your browser. Persistent across sessions.</p>
+              <h1 style={{fontSize:20,fontWeight:700,color:"#f1f5f9",margin:"0 0 4px"}}>Tracker</h1>
+              <p style={{fontSize:13,color:"#64748b",margin:0}}>Log past papers and errors. Everything is saved to your browser.</p>
             </div>
             <div style={{background:"rgba(255,255,255,0.025)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:10,padding:16,marginBottom:12}}>
-              <div style={{fontSize:13,letterSpacing:2,color:"#00E676",fontWeight:700,marginBottom:10}}>LOG A PAST PAPER</div>
+              <div style={{fontSize:12,fontWeight:600,color:"#64748b",marginBottom:10}}>Log a past paper</div>
               {nextSuggested&&(
-                <div onClick={()=>setScorePaper(nextSuggested)} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",borderRadius:6,background:"rgba(0,230,118,0.06)",border:"1px solid rgba(0,230,118,0.12)",marginBottom:10,cursor:"pointer"}}>
-                  <span style={{fontSize:15}}>💡</span>
+                <div onClick={()=>setScorePaper(nextSuggested)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:8,background:"rgba(34,197,94,0.05)",border:"1px solid rgba(34,197,94,0.14)",marginBottom:10,cursor:"pointer"}}>
+                  <div style={{width:6,height:6,borderRadius:"50%",background:"#22c55e",flexShrink:0}}/>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:13,color:"#00E676",fontWeight:700}}>SUGGESTED NEXT</div>
-                    <div style={{fontSize:15,color:"#bbb"}}>{nextSuggested}</div>
+                    <div style={{fontSize:11,fontWeight:600,color:"#22c55e",textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>Suggested next</div>
+                    <div style={{fontSize:13,color:"#e2e8f0"}}>{nextSuggested}</div>
                   </div>
-                  <span style={{fontSize:13,color:"#00E67650"}}>tap to fill →</span>
+                  <span style={{fontSize:12,color:"#64748b"}}>Tap to fill</span>
                 </div>
               )}
               <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
@@ -839,12 +838,12 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                 <input value={scorePaper} onChange={e=>setScorePaper(e.target.value)} placeholder="Paper name / year" style={{...iS,flex:"2 1 150px"}}/>
                 <input value={scoreGot} onChange={e=>setScoreGot(e.target.value)} placeholder="Score" type="number" style={{...iS,flex:"0 0 60px"}}/>
                 <input value={scoreMax} onChange={e=>setScoreMax(e.target.value)} placeholder="/Max" type="number" style={{...iS,flex:"0 0 60px"}}/>
-                <button onClick={addScore} style={{background:"#00E676",border:"none",color:"#000",padding:"8px 14px",borderRadius:6,cursor:"pointer",fontSize:14,fontWeight:800,fontFamily:"inherit"}}>SAVE</button>
+                <button onClick={addScore} style={{background:"#22c55e",border:"none",color:"#fff",padding:"8px 16px",borderRadius:7,cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"inherit"}}>Save</button>
               </div>
             </div>
             <div style={{background:"rgba(255,255,255,0.025)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:10,padding:16,marginBottom:12}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-                <div style={{fontSize:13,letterSpacing:2,color:"#FF9100",fontWeight:700}}>PAPER HISTORY ({filteredScores.length})</div>
+                <div style={{fontSize:12,fontWeight:600,color:"#64748b"}}>Paper history ({filteredScores.length})</div>
                 <div style={{display:"flex",gap:3}}>
                   {["All",...SUBJECTS].map(s=>(
                     <button key={s} onClick={()=>setSfilt(s)} style={{background:sfilt===s?"rgba(255,255,255,0.08)":"transparent",border:"1px solid rgba(255,255,255,0.06)",color:sfilt===s?"#fff":"#555",padding:"3px 6px",borderRadius:4,cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>
@@ -860,21 +859,22 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                   <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderTop:"1px solid rgba(255,255,255,0.04)"}}>
                     <div style={{width:3,height:32,borderRadius:2,background:SUBJECT_COLORS[s.subject]||"#888",flexShrink:0}}/>
                     <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:15,color:"#ccc",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.subject} — <span style={{color:"#777"}}>{s.paper}</span></div>
-                      <div style={{fontSize:13,color:"#444"}}>{s.date}</div>
+                      <div style={{fontSize:13,fontWeight:600,color:"#94a3b8",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.subject}</div>
+                      <div style={{fontSize:13,color:"#64748b",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.paper}</div>
+                      <div style={{fontSize:11,color:"#475569",marginTop:2}}>{s.date}</div>
                     </div>
                     <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
                       <div style={{textAlign:"right"}}>
-                        <div style={{fontSize:18,fontWeight:800,color:gradeColor(grade),fontFamily:"'Inter',sans-serif"}}>{exact?"":""}{grade}<span style={{fontSize:11,opacity:0.5,marginLeft:2}}>{exact?"":"~"}</span> <span style={{fontSize:15}}>{s.pct}%</span></div>
-                        <div style={{fontSize:13,color:"#555"}}>{s.got}/{s.max}{!exact&&<span style={{color:"#444",marginLeft:4}}>est.</span>}</div>
+                        <div style={{fontSize:17,fontWeight:700,color:gradeColor(grade)}}>{grade}{!exact&&<span style={{fontSize:10,opacity:0.5,marginLeft:1}}>~</span>} <span style={{fontSize:14,color:"#94a3b8"}}>{s.pct}%</span></div>
+                        <div style={{fontSize:12,color:"#475569"}}>{s.got}/{s.max}{!exact&&<span style={{marginLeft:3,color:"#475569"}}>est.</span>}</div>
                       </div>
                       {confirmDel===s.id?(
                         <div style={{display:"flex",gap:3}}>
-                          <button onClick={()=>{setScores(p=>p.filter(x=>x.id!==s.id));setConfirmDel(null);}} style={{background:"#FF3D00",border:"none",color:"#fff",padding:"3px 7px",borderRadius:4,cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>DEL</button>
-                          <button onClick={()=>setConfirmDel(null)} style={{background:"rgba(255,255,255,0.06)",border:"none",color:"#888",padding:"3px 7px",borderRadius:4,cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>×</button>
+                          <button onClick={()=>{setScores(p=>p.filter(x=>x.id!==s.id));setConfirmDel(null);}} style={{background:"rgba(239,68,68,0.12)",border:"1px solid rgba(239,68,68,0.25)",color:"#ef4444",padding:"3px 8px",borderRadius:5,cursor:"pointer",fontSize:12,fontFamily:"inherit"}}>Delete</button>
+                          <button onClick={()=>setConfirmDel(null)} style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.06)",color:"#64748b",padding:"3px 8px",borderRadius:5,cursor:"pointer",fontSize:12,fontFamily:"inherit"}}>Cancel</button>
                         </div>
                       ):(
-                        <button onClick={()=>setConfirmDel(s.id)} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.06)",color:"#444",padding:"3px 6px",borderRadius:4,cursor:"pointer",fontSize:14,fontFamily:"inherit"}}>–</button>
+                        <button onClick={()=>setConfirmDel(s.id)} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.07)",color:"#475569",padding:"3px 8px",borderRadius:5,cursor:"pointer",fontSize:12,fontFamily:"inherit"}}>Del</button>
                       )}
                     </div>
                   </div>
@@ -882,7 +882,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
               })}
             </div>
             <div style={{background:"rgba(255,255,255,0.025)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:10,padding:16,marginBottom:12}}>
-              <div style={{fontSize:13,letterSpacing:2,color:"#FF3D00",fontWeight:700,marginBottom:10}}>LOG AN ERROR</div>
+              <div style={{fontSize:12,fontWeight:600,color:"#64748b",marginBottom:10}}>Log an error</div>
               <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>
                 <select value={errSubject} onChange={e=>setErrSubject(e.target.value)} style={{...iS,flex:"1 1 90px",background:"rgba(255,255,255,0.06)"}}>{SUBJECTS.map(s=><option key={s}>{s}</option>)}</select>
                 <input value={errTopic} onChange={e=>setErrTopic(e.target.value)} placeholder="Topic" style={{...iS,flex:"2 1 140px"}}/>
@@ -890,12 +890,12 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
               </div>
               <div style={{display:"flex",gap:5}}>
                 <input value={errNote} onChange={e=>setErrNote(e.target.value)} placeholder="What specifically went wrong? (optional)" style={{...iS,flex:1}}/>
-                <button onClick={addError} style={{background:"#FF3D00",border:"none",color:"#fff",padding:"8px 14px",borderRadius:6,cursor:"pointer",fontSize:14,fontWeight:800,fontFamily:"inherit"}}>SAVE</button>
+                <button onClick={addError} style={{background:"#ef4444",border:"none",color:"#fff",padding:"8px 16px",borderRadius:7,cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"inherit"}}>Save</button>
               </div>
             </div>
             <div style={{background:"rgba(255,255,255,0.025)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:10,padding:16}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-                <div style={{fontSize:13,letterSpacing:2,color:"#FF6D00",fontWeight:700}}>ERROR LOG ({filteredErrors.length})</div>
+                <div style={{fontSize:12,fontWeight:600,color:"#64748b"}}>Error log ({filteredErrors.length})</div>
                 <div style={{display:"flex",gap:3}}>
                   {["All",...SUBJECTS].map(s=>(
                     <button key={s} onClick={()=>setEfilt(s)} style={{background:efilt===s?"rgba(255,255,255,0.08)":"transparent",border:"1px solid rgba(255,255,255,0.06)",color:efilt===s?"#fff":"#555",padding:"3px 6px",borderRadius:4,cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>
@@ -921,10 +921,10 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                     <div key={e.id} style={{display:"flex",gap:8,padding:"7px 0",borderTop:"1px solid rgba(255,255,255,0.04)",alignItems:"flex-start"}}>
                       <div style={{width:3,borderRadius:2,background:et?.color||"#555",flexShrink:0,alignSelf:"stretch"}}/>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:15,color:"#ccc"}}><span style={{color:SUBJECT_COLORS[e.subject]||"#888"}}>{e.subject}</span> — {e.topic}</div>
-                        <div style={{fontSize:13,color:"#555"}}>{et?.label} · {e.date}{e.note&&` · ${e.note}`}</div>
+                        <div style={{fontSize:13,color:"#94a3b8"}}><span style={{color:SUBJECT_COLORS[e.subject]||"#64748b",fontWeight:600}}>{e.subject}</span> · {e.topic}</div>
+                        <div style={{fontSize:12,color:"#475569",marginTop:2}}>{et?.label} · {e.date}{e.note&&` · ${e.note}`}</div>
                       </div>
-                      <button onClick={()=>setErrors(p=>p.filter(x=>x.id!==e.id))} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.05)",color:"#444",padding:"2px 6px",borderRadius:4,cursor:"pointer",fontSize:14,fontFamily:"inherit",flexShrink:0}}>–</button>
+                      <button onClick={()=>setErrors(p=>p.filter(x=>x.id!==e.id))} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.07)",color:"#475569",padding:"3px 8px",borderRadius:5,cursor:"pointer",fontSize:12,fontFamily:"inherit",flexShrink:0}}>Del</button>
                     </div>
                   );
                 })}
@@ -938,24 +938,24 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
           const next=upcoming.find(e=>e.d>0);
           return (
             <div>
-              {next&&<div style={{textAlign:"center",marginBottom:28}}>
-                <div style={{fontSize:13,letterSpacing:3,color:"#FF3D00",fontWeight:700,marginBottom:10}}>FIRST EXAM IN</div>
-                <div style={{fontSize:72,fontWeight:900,color:"#fff",fontFamily:"'Inter',sans-serif",lineHeight:1}}>{next.d}</div>
-                <div style={{fontSize:17,color:"#555",marginTop:4}}>days · {next.subject} — {next.paper}</div>
+              {next&&<div style={{textAlign:"center",marginBottom:28,padding:"28px 0"}}>
+                <div style={{fontSize:11,fontWeight:600,color:"#64748b",letterSpacing:0.5,textTransform:"uppercase",marginBottom:12}}>First exam in</div>
+                <div style={{fontSize:68,fontWeight:700,color:"#f1f5f9",lineHeight:1}}>{next.d}</div>
+                <div style={{fontSize:14,color:"#64748b",marginTop:8}}>{next.subject} · {next.paper}</div>
               </div>}
-              <div style={{fontSize:13,letterSpacing:2,color:"#555",fontWeight:700,marginBottom:10}}>ALL EXAMS</div>
+              <div style={{fontSize:12,fontWeight:600,color:"#64748b",marginBottom:10}}>All exams</div>
               {EXAMS.map((e,i)=>{
                 const d=daysUntil(e.date),col=SUBJECT_COLORS[e.subject]||"#888",past=d<0;
                 return <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",marginBottom:4,borderRadius:8,background:past?"rgba(255,255,255,0.01)":"rgba(255,255,255,0.025)",border:`1px solid ${past?"rgba(255,255,255,0.02)":col+"22"}`,opacity:past?0.3:1}}>
                   <div style={{width:4,height:30,borderRadius:2,background:col,flexShrink:0}}/>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:15,fontWeight:700,color:"#ddd"}}>{e.subject}: {e.paper.split(":")[1]?.trim()||e.paper}</div>
-                    <div style={{fontSize:13,color:"#555"}}>{e.code} · {e.board} · {e.time} · {e.duration}</div>
-                    <div style={{fontSize:13,color:"#666",marginTop:2,lineHeight:1.4}}>{e.topics}</div>
+                    <div style={{fontSize:14,fontWeight:600,color:"#e2e8f0"}}>{e.subject}: {e.paper.split(":")[1]?.trim()||e.paper}</div>
+                    <div style={{fontSize:12,color:"#64748b",marginTop:2}}>{e.code} · {e.board} · {e.time} · {e.duration}</div>
+                    <div style={{fontSize:12,color:"#475569",marginTop:4,lineHeight:1.5}}>{e.topics}</div>
                   </div>
                   <div style={{textAlign:"right",flexShrink:0}}>
-                    <div style={{fontSize:13,color:"#555"}}>{new Date(e.date).toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</div>
-                    <div style={{fontSize:16,fontWeight:800,color:d<=7?"#FF3D00":d<=30?"#FF6D00":col}}>{d>0?`${d}d`:"DONE"}</div>
+                    <div style={{fontSize:12,color:"#64748b"}}>{new Date(e.date).toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</div>
+                    <div style={{fontSize:14,fontWeight:700,color:d<=7?"#ef4444":d<=30?"#f97316":col}}>{d>0?`${d}d`:"Done"}</div>
                   </div>
                 </div>;
               })}
@@ -968,8 +968,8 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
           return (
             <div>
               <div style={{marginBottom:16}}>
-                <div style={{fontSize:13,letterSpacing:3,color:"#FF6D00",fontWeight:700,marginBottom:6}}>10-WEEK PLAN</div>
-                <h1 style={{fontSize:22,fontWeight:800,color:"#fff",margin:0,fontFamily:"'Inter',sans-serif"}}>Week by Week to A*A*A*</h1>
+                <h1 style={{fontSize:20,fontWeight:700,color:"#f1f5f9",margin:"0 0 4px"}}>10-Week Plan</h1>
+                <p style={{fontSize:13,color:"#64748b",margin:0}}>Your week-by-week revision schedule to exam day.</p>
               </div>
               <div style={{display:"flex",gap:3,marginBottom:16,flexWrap:"wrap"}}>
                 {WEEKS.map(w=>(
@@ -978,22 +978,22 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
               </div>
               {week&&<div>
                 <div style={{marginBottom:14}}>
-                  <div style={{fontSize:20,fontWeight:800,color:"#fff",fontFamily:"'Inter',sans-serif"}}>Week {week.num}: {week.title}</div>
-                  <div style={{fontSize:14,color:"#555",marginTop:2}}>{week.start} — {week.end} · {week.focus}</div>
+                  <div style={{fontSize:18,fontWeight:700,color:"#f1f5f9"}}>Week {week.num}: {week.title}</div>
+                  <div style={{fontSize:13,color:"#64748b",marginTop:3}}>{week.start} to {week.end} · {week.focus}</div>
                 </div>
                 {week.days.map((day,di)=>(
                   <div key={di} style={{marginBottom:10,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.05)",borderRadius:8,padding:"12px 14px"}}>
-                    <div style={{fontSize:13,fontWeight:700,color:"#777",marginBottom:8,letterSpacing:1}}>{day.day.toUpperCase()}</div>
+                    <div style={{fontSize:12,fontWeight:600,color:"#64748b",marginBottom:8}}>{day.day}</div>
                     {day.blocks.map((b,bi)=>{
                       const k=`${week.num}-${di}-${bi}`,done=checks[k],col=SUBJECT_COLORS[b.s]||"#78909C";
                       return <div key={bi} onClick={()=>toggle(k)} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"6px 0",borderBottom:bi<day.blocks.length-1?"1px solid rgba(255,255,255,0.03)":"none",cursor:"pointer",opacity:done?0.3:1}}>
                         <div style={{width:14,height:14,borderRadius:3,flexShrink:0,marginTop:2,border:done?"none":`2px solid ${col}44`,background:done?col:"transparent",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                          {done&&<span style={{color:"#000",fontSize:13,fontWeight:800}}>✓</span>}
+                          {done&&<span style={{color:"#fff",fontSize:9,fontWeight:800}}>✓</span>}
                         </div>
                         <div style={{width:3,borderRadius:2,background:col,opacity:0.5,flexShrink:0,alignSelf:"stretch"}}/>
                         <div style={{flex:1}}>
-                          <div style={{fontSize:15,lineHeight:1.5,color:done?"#444":"#bbb",textDecoration:done?"line-through":"none"}}>{b.t}</div>
-                          {b.d&&<div style={{fontSize:13,color:"#444",marginTop:1}}>{b.d}</div>}
+                          <div style={{fontSize:14,lineHeight:1.5,color:done?"#334155":"#cbd5e1",textDecoration:done?"line-through":"none"}}>{b.t}</div>
+                          {b.d&&<div style={{fontSize:12,color:"#475569",marginTop:2}}>{b.d}</div>}
                         </div>
                       </div>;
                     })}
@@ -1007,16 +1007,16 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
         {view==="technique"&&(
           <div>
             <div style={{marginBottom:20}}>
-              <div style={{fontSize:13,letterSpacing:3,color:"#FFD600",fontWeight:700,marginBottom:6}}>EXAM TECHNIQUE</div>
-              <h1 style={{fontSize:22,fontWeight:800,color:"#fff",margin:0,fontFamily:"'Inter',sans-serif"}}>How to Pick Up Extra Marks</h1>
+              <h1 style={{fontSize:20,fontWeight:700,color:"#f1f5f9",margin:"0 0 4px"}}>Exam Technique</h1>
+              <p style={{fontSize:13,color:"#64748b",margin:0}}>How to pick up extra marks in each subject.</p>
             </div>
             {TECHNIQUE.map((subj,si)=>(
               <div key={si} style={{marginBottom:14,background:"rgba(255,255,255,0.025)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:10,padding:18}}>
-                <div style={{fontSize:13,letterSpacing:2,fontWeight:700,color:subj.color,marginBottom:12}}>{subj.subject.toUpperCase()}</div>
+                <div style={{fontSize:13,fontWeight:600,color:subj.color,marginBottom:12}}>{subj.subject}</div>
                 {subj.tips.map((tip,ti)=>(
                   <div key={ti} style={{marginBottom:10,paddingBottom:10,borderBottom:ti<subj.tips.length-1?"1px solid rgba(255,255,255,0.04)":"none"}}>
-                    <div style={{fontSize:15,fontWeight:700,color:"#ddd",marginBottom:3}}>{tip.title}</div>
-                    <div style={{fontSize:14,lineHeight:1.6,color:"#888"}}>{tip.text}</div>
+                    <div style={{fontSize:14,fontWeight:600,color:"#e2e8f0",marginBottom:4}}>{tip.title}</div>
+                    <div style={{fontSize:13,lineHeight:1.65,color:"#64748b"}}>{tip.text}</div>
                   </div>
                 ))}
               </div>
@@ -1027,16 +1027,16 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
         {view==="daily"&&(
           <div>
             <div style={{marginBottom:20}}>
-              <div style={{fontSize:13,letterSpacing:3,color:"#FF9100",fontWeight:700,marginBottom:6}}>DAILY ROUTINE</div>
-              <h1 style={{fontSize:22,fontWeight:800,color:"#fff",margin:0,fontFamily:"'Inter',sans-serif"}}>Your Revision Day</h1>
+              <h1 style={{fontSize:20,fontWeight:700,color:"#f1f5f9",margin:"0 0 4px"}}>Daily Routine</h1>
+              <p style={{fontSize:13,color:"#64748b",margin:0}}>A structured revision day that builds focus and retains more.</p>
             </div>
             {DAILY_ROUTINE.map((b,i)=>(
               <div key={i} style={{display:"flex",gap:12,padding:"11px 0",borderBottom:"1px solid rgba(255,255,255,0.035)"}}>
-                <div style={{width:44,flexShrink:0,textAlign:"right"}}><div style={{fontSize:14,fontWeight:700,color:b.color}}>{b.time}</div></div>
-                <div style={{width:3,flexShrink:0,borderRadius:2,background:b.color,opacity:0.5}}/>
+                <div style={{width:44,flexShrink:0,textAlign:"right"}}><div style={{fontSize:12,fontWeight:500,color:"#64748b"}}>{b.time}</div></div>
+                <div style={{width:3,flexShrink:0,borderRadius:2,background:b.color,opacity:0.6}}/>
                 <div style={{flex:1}}>
-                  <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:2}}><span>{b.icon}</span><span style={{fontSize:15,fontWeight:700,color:"#fff"}}>{b.block}</span></div>
-                  <p style={{margin:0,fontSize:14,lineHeight:1.6,color:"#777"}}>{b.desc}</p>
+                  <div style={{fontSize:14,fontWeight:600,color:"#e2e8f0",marginBottom:3}}>{b.block}</div>
+                  <p style={{margin:0,fontSize:13,lineHeight:1.6,color:"#64748b"}}>{b.desc}</p>
                 </div>
               </div>
             ))}
@@ -1046,15 +1046,15 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
         {view==="resources"&&(
           <div>
             <div style={{marginBottom:20}}>
-              <div style={{fontSize:13,letterSpacing:3,color:"#00E676",fontWeight:700,marginBottom:6}}>RESOURCES</div>
-              <h1 style={{fontSize:22,fontWeight:800,color:"#fff",margin:0,fontFamily:"'Inter',sans-serif"}}>Everything You Need</h1>
+              <h1 style={{fontSize:20,fontWeight:700,color:"#f1f5f9",margin:"0 0 4px"}}>Resources</h1>
+              <p style={{fontSize:13,color:"#64748b",margin:0}}>Past papers, video solutions, and revision notes for each subject.</p>
             </div>
             {RESOURCES.map((r,ri)=>(
               <div key={ri} style={{marginBottom:14,background:"rgba(255,255,255,0.025)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:10,padding:18}}>
-                <div style={{fontSize:13,letterSpacing:2,fontWeight:700,color:SUBJECT_COLORS[r.subject],marginBottom:12}}>{r.subject.toUpperCase()}</div>
+                <div style={{fontSize:12,fontWeight:600,color:SUBJECT_COLORS[r.subject]||"#64748b",marginBottom:12}}>{r.subject}</div>
                 {r.items.map((item,ii)=>(
-                  <a key={ii} href={item.url} target="_blank" rel="noopener noreferrer" style={{display:"block",fontSize:16,color:"#ddd",textDecoration:"none",padding:"7px 0",borderBottom:ii<r.items.length-1?"1px solid rgba(255,255,255,0.04)":"none"}}>
-                    {item.name} <span style={{color:SUBJECT_COLORS[r.subject],opacity:0.5}}>↗</span>
+                  <a key={ii} href={item.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:14,color:"#cbd5e1",textDecoration:"none",padding:"8px 0",borderBottom:ii<r.items.length-1?"1px solid rgba(255,255,255,0.04)":"none",transition:"color 0.12s"}}>
+                    <span>{item.name}</span><span style={{color:"#475569",fontSize:12}}>↗</span>
                   </a>
                 ))}
               </div>

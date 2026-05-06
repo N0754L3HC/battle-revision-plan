@@ -4,7 +4,7 @@ export const SUBJECT_CATALOG = [
   {
     id: 'maths',
     name: 'Mathematics',
-    emoji: '∑',
+    abbr: 'Ma',
     color: '#3b82f6',
     popular: true,
     boards: [
@@ -39,7 +39,7 @@ export const SUBJECT_CATALOG = [
   {
     id: 'further-maths',
     name: 'Further Mathematics',
-    emoji: 'ℝ',
+    abbr: 'FM',
     color: '#8b5cf6',
     popular: false,
     boards: [
@@ -71,7 +71,7 @@ export const SUBJECT_CATALOG = [
   {
     id: 'biology',
     name: 'Biology',
-    emoji: '🧬',
+    abbr: 'Bi',
     color: '#22c55e',
     popular: true,
     boards: [
@@ -106,7 +106,7 @@ export const SUBJECT_CATALOG = [
   {
     id: 'chemistry',
     name: 'Chemistry',
-    emoji: '⚗️',
+    abbr: 'Ch',
     color: '#f43f5e',
     popular: true,
     boards: [
@@ -139,7 +139,7 @@ export const SUBJECT_CATALOG = [
   {
     id: 'physics',
     name: 'Physics',
-    emoji: '⚛',
+    abbr: 'Ph',
     color: '#0ea5e9',
     popular: true,
     boards: [
@@ -174,7 +174,7 @@ export const SUBJECT_CATALOG = [
   {
     id: 'cs',
     name: 'Computer Science',
-    emoji: '</> ',
+    abbr: 'CS',
     color: '#10b981',
     popular: false,
     boards: [
@@ -205,7 +205,7 @@ export const SUBJECT_CATALOG = [
   {
     id: 'economics',
     name: 'Economics',
-    emoji: '📈',
+    abbr: 'Ec',
     color: '#f59e0b',
     popular: true,
     boards: [
@@ -238,7 +238,7 @@ export const SUBJECT_CATALOG = [
   {
     id: 'psychology',
     name: 'Psychology',
-    emoji: '🧠',
+    abbr: 'Ps',
     color: '#a78bfa',
     popular: true,
     boards: [
@@ -269,7 +269,7 @@ export const SUBJECT_CATALOG = [
   {
     id: 'history',
     name: 'History',
-    emoji: '📜',
+    abbr: 'Hi',
     color: '#d97706',
     popular: true,
     boards: [
@@ -299,7 +299,7 @@ export const SUBJECT_CATALOG = [
   {
     id: 'geography',
     name: 'Geography',
-    emoji: '🌍',
+    abbr: 'Ge',
     color: '#14b8a6',
     popular: true,
     boards: [
@@ -330,7 +330,7 @@ export const SUBJECT_CATALOG = [
   {
     id: 'english-lit',
     name: 'English Literature',
-    emoji: '📖',
+    abbr: 'En',
     color: '#ec4899',
     popular: true,
     boards: [
@@ -361,7 +361,7 @@ export const SUBJECT_CATALOG = [
   {
     id: 'business',
     name: 'Business',
-    emoji: '📊',
+    abbr: 'Bu',
     color: '#f97316',
     popular: false,
     boards: [
@@ -391,7 +391,7 @@ export const SUBJECT_CATALOG = [
   {
     id: 'sociology',
     name: 'Sociology',
-    emoji: '👥',
+    abbr: 'So',
     color: '#6366f1',
     popular: false,
     boards: [

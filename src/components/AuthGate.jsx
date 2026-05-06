@@ -189,7 +189,7 @@ export default function AuthGate({ onAuth }) {
 
           {/* Logo */}
           <div style={{ marginBottom: 36 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
               <div style={{
                 width: 28, height: 28, borderRadius: 7,
                 background: colors.accent,
@@ -198,15 +198,8 @@ export default function AuthGate({ onAuth }) {
               }}>
                 A*
               </div>
-              <span style={{ fontSize: 15, fontWeight: 700, color: colors.text, letterSpacing: 0.3 }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: colors.text, letterSpacing: 0.2 }}>
                 Battle Plan
-              </span>
-              <span style={{
-                fontSize: 10, fontWeight: 600, color: colors.accent,
-                background: colors.accentBg, border: `1px solid ${colors.accentBorder}`,
-                padding: '1px 6px', borderRadius: 4, letterSpacing: 0.5,
-              }}>
-                FREE BETA
               </span>
             </div>
             <p style={{ fontSize: 22, fontWeight: 700, color: colors.text, margin: 0, lineHeight: 1.3 }}>
@@ -347,10 +340,10 @@ export default function AuthGate({ onAuth }) {
           background: 'linear-gradient(135deg, rgba(239,68,68,0.03) 0%, transparent 50%)',
         }}>
           <div style={{ maxWidth: 440 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: colors.accent, letterSpacing: 1.5, marginBottom: 16, textTransform: 'uppercase' }}>
-              Built for UK & Wales A-Level students
+            <div style={{ fontSize: 11, fontWeight: 600, color: colors.muted, letterSpacing: 0.5, marginBottom: 16, textTransform: 'uppercase' }}>
+              UK and Wales A-Level
             </div>
-            <h2 style={{ fontSize: 26, fontWeight: 700, color: colors.text, margin: '0 0 8px', lineHeight: 1.3 }}>
+            <h2 style={{ fontSize: 24, fontWeight: 700, color: colors.text, margin: '0 0 8px', lineHeight: 1.3 }}>
               Stop guessing how prepared you are.
             </h2>
             <p style={{ fontSize: 15, color: colors.muted, lineHeight: 1.7, margin: '0 0 40px' }}>
@@ -384,7 +377,7 @@ export default function AuthGate({ onAuth }) {
                 Free during beta
               </div>
               <div style={{ fontSize: 12, color: colors.muted, lineHeight: 1.6 }}>
-                All features are free right now. No credit card, no trial period — just sign up and start tracking. Supports all major A-Level subjects and exam boards, including WJEC/Eduqas.
+                All features are free right now. No credit card, no trial period. Supports all major A-Level subjects and exam boards, including WJEC/Eduqas.
               </div>
             </div>
           </div>
