@@ -252,11 +252,13 @@ export default function SubjectPicker({ user, onComplete }) {
     if (step < 3) { setStep(step + 1); return; }
     setSaving(true);
     const subjectsJson = JSON.stringify(selection);
+    // Always save to localStorage as backup
+    try { localStorage.setItem('rbp_subjects', subjectsJson); } catch(_) {}
     if (user) {
-      await supabase.from('user_profiles')
-        .upsert({ id: user.id, subjects: subjectsJson }, { onConflict: 'id' });
-    } else {
-      localStorage.setItem('rbp_subjects', subjectsJson);
+      try {
+        await supabase.from('user_profiles')
+          .upsert({ id: user.id, subjects: subjectsJson }, { onConflict: 'id' });
+      } catch(_) {}
     }
     setSaving(false);
     onComplete(selection);

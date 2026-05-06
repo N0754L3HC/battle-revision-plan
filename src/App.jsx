@@ -6,15 +6,15 @@ import TermsOfService from "./components/TermsOfService";
 import { subjectsFromSelection } from "./data/subjects";
 
 const EXAMS = [
-  { date: "2026-05-14", subject: "Further Maths", paper: "Paper 1: Core Pure Mathematics 1", code: "9FM0/01", time: "PM", duration: "1h 30m", board: "Edexcel", topics: "Proof, complex numbers, matrices, further algebra, further calculus, further vectors", maxMark: 75 },
-  { date: "2026-05-21", subject: "Further Maths", paper: "Paper 2: Core Pure Mathematics 2", code: "9FM0/02", time: "PM", duration: "1h 30m", board: "Edexcel", topics: "Polar coords, hyperbolic functions, differential equations, plus anything from CP1", maxMark: 75 },
-  { date: "2026-06-02", subject: "Maths", paper: "Paper 1: Pure Mathematics 1", code: "9MA0/01", time: "PM", duration: "2h", board: "Edexcel", topics: "Proof, algebra, functions, coordinate geometry, sequences, trigonometry, exponentials, differentiation", maxMark: 100 },
-  { date: "2026-06-10", subject: "CS", paper: "Paper 1: Computer Systems", code: "H446/01", time: "PM", duration: "2h 30m", board: "OCR", topics: "Processors, software, networking, data types, data structures, legal/moral/ethical issues", maxMark: 140 },
-  { date: "2026-06-12", subject: "Maths", paper: "Paper 2: Pure Mathematics 2", code: "9MA0/02", time: "PM", duration: "2h", board: "Edexcel", topics: "Integration, numerical methods, vectors, plus anything from Paper 1 topics", maxMark: 100 },
-  { date: "2026-06-16", subject: "Further Maths", paper: "Paper 3D: Decision Mathematics 1", code: "9FM0/3D", time: "PM", duration: "1h 30m", board: "Edexcel", topics: "Algorithms, graphs, networks, linear programming, critical path analysis, bin packing, matchings", maxMark: 75 },
-  { date: "2026-06-17", subject: "CS", paper: "Paper 2: Algorithms & Programming", code: "H446/02", time: "AM", duration: "2h 30m", board: "OCR", topics: "Computational thinking, programming, algorithms (sorting/searching), OOP, problem solving", maxMark: 140 },
-  { date: "2026-06-18", subject: "Maths", paper: "Paper 3: Statistics & Mechanics", code: "9MA0/03", time: "PM", duration: "2h", board: "Edexcel", topics: "Stats: sampling, probability, distributions, hypothesis testing. Mechanics: kinematics, forces, moments", maxMark: 100 },
-  { date: "2026-06-19", subject: "Further Maths", paper: "Paper 3A: Further Pure Mathematics 1", code: "9FM0/3A", time: "PM", duration: "1h 30m", board: "Edexcel", topics: "t-formulae, Taylor series, Leibnitz theorem, L'Hôpital, Weierstrass, further differential equations", maxMark: 75 },
+  { date: "2026-05-14", subject: "Further Mathematics", paper: "Paper 1: Core Pure Mathematics 1", code: "9FM0/01", time: "PM", duration: "1h 30m", board: "Edexcel", topics: "Proof, complex numbers, matrices, further algebra, further calculus, further vectors", maxMark: 75 },
+  { date: "2026-05-21", subject: "Further Mathematics", paper: "Paper 2: Core Pure Mathematics 2", code: "9FM0/02", time: "PM", duration: "1h 30m", board: "Edexcel", topics: "Polar coords, hyperbolic functions, differential equations, plus anything from CP1", maxMark: 75 },
+  { date: "2026-06-02", subject: "Mathematics", paper: "Paper 1: Pure Mathematics 1", code: "9MA0/01", time: "PM", duration: "2h", board: "Edexcel", topics: "Proof, algebra, functions, coordinate geometry, sequences, trigonometry, exponentials, differentiation", maxMark: 100 },
+  { date: "2026-06-10", subject: "Computer Science", paper: "Paper 1: Computer Systems", code: "H446/01", time: "PM", duration: "2h 30m", board: "OCR", topics: "Processors, software, networking, data types, data structures, legal/moral/ethical issues", maxMark: 140 },
+  { date: "2026-06-12", subject: "Mathematics", paper: "Paper 2: Pure Mathematics 2", code: "9MA0/02", time: "PM", duration: "2h", board: "Edexcel", topics: "Integration, numerical methods, vectors, plus anything from Paper 1 topics", maxMark: 100 },
+  { date: "2026-06-16", subject: "Further Mathematics", paper: "Paper 3D: Decision Mathematics 1", code: "9FM0/3D", time: "PM", duration: "1h 30m", board: "Edexcel", topics: "Algorithms, graphs, networks, linear programming, critical path analysis, bin packing, matchings", maxMark: 75 },
+  { date: "2026-06-17", subject: "Computer Science", paper: "Paper 2: Algorithms & Programming", code: "H446/02", time: "AM", duration: "2h 30m", board: "OCR", topics: "Computational thinking, programming, algorithms (sorting/searching), OOP, problem solving", maxMark: 140 },
+  { date: "2026-06-18", subject: "Mathematics", paper: "Paper 3: Statistics & Mechanics", code: "9MA0/03", time: "PM", duration: "2h", board: "Edexcel", topics: "Stats: sampling, probability, distributions, hypothesis testing. Mechanics: kinematics, forces, moments", maxMark: 100 },
+  { date: "2026-06-19", subject: "Further Mathematics", paper: "Paper 3A: Further Pure Mathematics 1", code: "9FM0/3A", time: "PM", duration: "1h 30m", board: "Edexcel", topics: "t-formulae, Taylor series, Leibnitz theorem, L'Hôpital, Weierstrass, further differential equations", maxMark: 75 },
 ];
 
 const GRADE_BOUNDARIES = {
@@ -314,18 +314,18 @@ const TECHNIQUE = [
 ];
 
 const RESOURCES = [
-  { subject: "Maths", items: [
+  { subject: "Mathematics", items: [
     { name: "Physics & Maths Tutor — Edexcel past papers + topic Qs", url: "https://www.physicsandmathstutor.com/a-level-maths/edexcel-a-level/" },
     { name: "ExamSolutions — video walkthroughs", url: "https://www.examsolutions.net/a-level-maths/edexcel/" },
     { name: "Save My Exams — Edexcel A-Level Maths", url: "https://www.savemyexams.com/a-level/maths/edexcel/" },
     { name: "Desmos — graphing calculator", url: "https://www.desmos.com/calculator" },
   ]},
-  { subject: "Further Maths", items: [
+  { subject: "Further Mathematics", items: [
     { name: "Physics & Maths Tutor — FM past papers", url: "https://www.physicsandmathstutor.com/a-level-maths/edexcel-a-level-further/" },
     { name: "ExamSolutions — FM video solutions", url: "https://www.examsolutions.net/a-level-further-maths/edexcel/" },
     { name: "Save My Exams — FM revision notes", url: "https://www.savemyexams.com/a-level/further-maths/edexcel/" },
   ]},
-  { subject: "CS", items: [
+  { subject: "Computer Science", items: [
     { name: "Physics & Maths Tutor — OCR CS past papers", url: "https://www.physicsandmathstutor.com/past-papers/a-level-computer-science/" },
     { name: "Craig'n'Dave — OCR A-Level CS YouTube", url: "https://www.youtube.com/@craigndave" },
     { name: "Isaac Computer Science — OCR revision", url: "https://isaaccomputerscience.org/" },
@@ -574,7 +574,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
   const SUBJECT_COLORS = catalogSubs ? Object.fromEntries(catalogSubs.map(s=>[s.name,s.color])) : P.subjectColors;
   const GRADE_BOUNDARIES = catalogSubs ? Object.fromEntries(catalogSubs.map(s=>[s.name,s.gradeBoundaries])) : P.gradeBoundaries;
   const PAPER_SUGGESTIONS = catalogSubs
-    ? Object.fromEntries(catalogSubs.map(s=>[s.name,(s.papers&&s.boardId&&s.papers[s.boardId])||[]]))
+    ? Object.fromEntries(catalogSubs.map(s=>[s.name, Array.isArray(s.papers) ? s.papers : []]))
     : P.paperSuggestions;
   const TECHNIQUE = catalogSubs ? catalogSubs.map(s=>({subject:s.name,color:s.color,tips:s.techniques||[]})) : P.technique;
   const RESOURCES = catalogSubs ? catalogSubs.map(s=>({subject:s.name,items:s.resources||[]})) : P.resources;
@@ -584,6 +584,8 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
   const WEEKS = P.weeks;
   const defaultTargets = catalogSubs ? Object.fromEntries(SUBJECTS.map(s=>[s,'A*'])) : P.defaultTargets;
   const sk = profileName === "friend" ? "friend_" : "";
+  const BLOCK_COLOR_MAP = {"Maths":"Mathematics","FM":"Further Mathematics","CS":"Computer Science","Further Maths":"Further Mathematics"};
+  const blockColor = s => SUBJECT_COLORS[BLOCK_COLOR_MAP[s]||s] || SUBJECT_COLORS[SUBJECTS[0]] || "#888";
   const sScores  = `rbp_${sk}scores_v3`;
   const sErrors  = `rbp_${sk}errors_v3`;
   const sChecks  = `rbp_${sk}checks_v3`;
@@ -1056,8 +1058,8 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                 <div style={{fontSize:13,fontWeight:600,color:subj.color,marginBottom:12}}>{subj.subject}</div>
                 {subj.tips.map((tip,ti)=>(
                   <div key={ti} style={{marginBottom:10,paddingBottom:10,borderBottom:ti<subj.tips.length-1?"1px solid rgba(0,0,0,0.06)":"none"}}>
-                    <div style={{fontSize:14,fontWeight:600,color:"#3a3a3a",marginBottom:4}}>{tip.title}</div>
-                    <div style={{fontSize:13,lineHeight:1.65,color:C.muted}}>{tip.text}</div>
+                    <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:4}}>{tip.title}</div>
+                    <div style={{fontSize:13,lineHeight:1.65,color:C.muted}}>{tip.text||tip.body}</div>
                   </div>
                 ))}
               </div>
