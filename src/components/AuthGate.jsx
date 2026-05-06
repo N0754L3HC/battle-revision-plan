@@ -8,12 +8,12 @@ const font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
 const mono = "'JetBrains Mono', 'SF Mono', monospace";
 
 const colors = {
-  bg:       '#f7f5f1',
-  surface:  '#ffffff',
-  border:   'rgba(0,0,0,0.09)',
-  borderHover: 'rgba(0,0,0,0.18)',
-  text:     '#2b2b2b',
-  muted:    '#7a7268',
+  bg:       '#0d0f14',
+  surface:  '#13161e',
+  border:   'rgba(255,255,255,0.07)',
+  borderHover: 'rgba(255,255,255,0.14)',
+  text:     '#e8eaf0',
+  muted:    '#6b7280',
   accent:   '#b5735a',
   accentBg: 'rgba(181,115,90,0.1)',
   accentBorder: 'rgba(181,115,90,0.25)',
@@ -39,7 +39,7 @@ function Input({ type = 'text', ...props }) {
       onBlur={e => { setFocused(false); props.onBlur?.(e); }}
       style={{
         width: '100%', boxSizing: 'border-box',
-        background: 'rgba(255,255,255,0.04)',
+        background: 'rgba(255,255,255,0.05)',
         border: `1px solid ${focused ? colors.borderHover : colors.border}`,
         borderRadius: 8, padding: '11px 14px',
         color: colors.text, fontSize: 14, fontFamily: font,
@@ -333,7 +333,7 @@ export default function AuthGate({ onAuth }) {
         <div style={{
           flex: 1, display: 'flex', flexDirection: 'column',
           justifyContent: 'center', padding: '48px 56px',
-          background: 'linear-gradient(135deg, rgba(181,115,90,0.06) 0%, transparent 50%)',
+          background: 'linear-gradient(135deg, rgba(181,115,90,0.04) 0%, transparent 50%)',
         }}>
           <div style={{ maxWidth: 440 }}>
             <div style={{ fontSize: 11, fontWeight: 600, color: colors.muted, letterSpacing: 0.5, marginBottom: 16, textTransform: 'uppercase' }}>
