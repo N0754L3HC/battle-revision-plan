@@ -297,6 +297,142 @@ function getNotifications(scores, errors, subjects, examSched=EXAM_SCHEDULE) {
 
 const NOTIF_COLOR={urgent:'#ef4444',warn:'#f97316',info:'#3b82f6',success:'#22c55e'};
 
+// ── Insurance eligibility ──────────────────────────────────────────────────
+function computeEligibility(scores) {
+  const WINDOW = 60 * 86400000;
+  const now = Date.now();
+  const recent = [...scores]
+    .filter(s => now - (s.ts||s.id) < WINDOW)
+    .sort((a,b) => (a.ts||a.id) - (b.ts||b.id));
+
+  const papersLogged = recent.length;
+  const papersNeeded = Math.max(0, 8 - papersLogged);
+
+  let longestGap = 0;
+  for (let i=1; i<recent.length; i++) {
+    const gap = Math.floor(((recent[i].ts||recent[i].id) - (recent[i-1].ts||recent[i-1].id)) / 86400000);
+    if (gap > longestGap) longestGap = gap;
+  }
+
+  let trend = 'stable';
+  if (recent.length >= 4) {
+    const half = Math.floor(recent.length / 2);
+    const firstAvg = recent.slice(0, half).reduce((a,s)=>a+s.pct,0) / half;
+    const lastSlice = recent.slice(half);
+    const lastAvg  = lastSlice.reduce((a,s)=>a+s.pct,0) / lastSlice.length;
+    if (lastAvg - firstAvg > 3) trend = 'improving';
+    else if (firstAvg - lastAvg > 3) trend = 'declining';
+  }
+
+  const blockers = [];
+  if (papersNeeded > 0) blockers.push(`Log ${papersNeeded} more paper${papersNeeded!==1?'s':''}`);
+  if (longestGap > 10) blockers.push('Keep gap under 10 days');
+  if (trend === 'declining') blockers.push('Reverse your score decline');
+
+  return { isEligible: blockers.length===0, papersLogged, papersNeeded, longestGap, trend, blockers };
+}
+
+function EligChip({ ok, label, C }) {
+  return (
+    <div style={{fontSize:11, padding:'3px 8px', borderRadius:4, fontWeight:600,
+      background: ok ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
+      color: ok ? '#22c55e' : '#ef4444'}}>
+      {ok ? '✓' : '✗'} {label}
+    </div>
+  );
+}
+
+function InsuranceEligibilityCard({ scores, uid, C, font }) {
+  const [expanded, setExpanded] = useState(false);
+  const [noted, setNoted]       = useState(()=>ls.get(`rbp_ins_noted_${uid}`, false));
+
+  if (scores.length < 2) return null;
+
+  const elig = computeEligibility(scores);
+  const pct  = Math.min(100, Math.round((elig.papersLogged / 8) * 100));
+
+  return (
+    <div style={{background:C.surface, border:`1px solid ${elig.isEligible?'#22c55e44':C.border}`,
+      borderRadius:10, padding:'14px 18px', marginBottom:12}}>
+
+      <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10}}>
+        <div>
+          <div style={{fontSize:11, fontWeight:700, letterSpacing:0.5, textTransform:'uppercase',
+            color: elig.isEligible ? '#22c55e' : C.accent}}>Revision Insurance</div>
+          <div style={{fontSize:14, fontWeight:600, color:C.text, marginTop:2}}>
+            {elig.isEligible
+              ? 'You qualify — miss your grade, get £100 back'
+              : `${elig.papersNeeded > 0 ? `${elig.papersNeeded} more paper${elig.papersNeeded!==1?'s':''} to qualify` : 'Almost eligible'}`}
+          </div>
+        </div>
+        {elig.isEligible && !noted && (
+          <button onClick={()=>setExpanded(e=>!e)}
+            style={{background:'#22c55e', border:'none', color:'#fff',
+              padding:'8px 14px', borderRadius:7, fontSize:13, fontWeight:600,
+              fontFamily:font, cursor:'pointer', flexShrink:0}}>
+            {expanded ? 'Close' : 'Get covered'}
+          </button>
+        )}
+        {noted && (
+          <span style={{fontSize:12, color:'#22c55e', fontWeight:600, flexShrink:0}}>✓ We'll notify you</span>
+        )}
+      </div>
+
+      {/* Progress */}
+      <div style={{marginBottom:10}}>
+        <div style={{display:'flex', justifyContent:'space-between', marginBottom:4}}>
+          <span style={{fontSize:12, color:C.muted}}>Papers logged in last 60 days (need 8)</span>
+          <span style={{fontSize:12, fontWeight:600, color:C.text}}>{elig.papersLogged}/8</span>
+        </div>
+        <div style={{height:4, background:C.border, borderRadius:2, overflow:'hidden'}}>
+          <div style={{height:'100%', width:`${pct}%`, borderRadius:2, transition:'width 1s ease',
+            background: elig.isEligible ? '#22c55e' : C.accent}}/>
+        </div>
+      </div>
+
+      {/* Chips */}
+      <div style={{display:'flex', gap:6, flexWrap:'wrap',
+        marginBottom: expanded || (!elig.isEligible && elig.blockers.length) ? 10 : 0}}>
+        <EligChip ok={elig.papersLogged>=8}  label={`${elig.papersLogged}/8 papers`} C={C}/>
+        <EligChip ok={elig.longestGap<=10}   label={`Max gap: ${elig.longestGap||0}d`} C={C}/>
+        <EligChip ok={elig.trend!=='declining'} label={`Trend: ${elig.trend}`} C={C}/>
+      </div>
+
+      {/* How it works panel */}
+      {expanded && (
+        <div style={{padding:'12px 14px', background:C.card2, borderRadius:8,
+          border:`1px solid ${C.border}`, marginTop:4}}>
+          <div style={{fontSize:13, fontWeight:700, color:C.text, marginBottom:6}}>How it works</div>
+          <div style={{fontSize:12, color:C.muted, lineHeight:1.7, marginBottom:12}}>
+            Pay <strong style={{color:C.text}}>£20</strong> before your first exam. If you miss your
+            target grade in any covered subject on results day, we pay you{' '}
+            <strong style={{color:C.text}}>£100 back</strong>. Only available to students who've been
+            consistently revising — which you have been.
+          </div>
+          <div style={{display:'flex', gap:6, flexWrap:'wrap', marginBottom:14}}>
+            {['£20 one-time','Up to £100 payout','Results day claim','48hr processing'].map(t=>(
+              <span key={t} style={{fontSize:11, padding:'3px 8px', borderRadius:4,
+                background:'rgba(34,197,94,0.08)', color:'#22c55e', fontWeight:600}}>{t}</span>
+            ))}
+          </div>
+          <button onClick={()=>{setNoted(true); ls.set(`rbp_ins_noted_${uid}`,true); setExpanded(false);}}
+            style={{background:'#22c55e', border:'none', color:'#fff',
+              padding:'9px 18px', borderRadius:7, fontSize:13, fontWeight:600,
+              fontFamily:font, cursor:'pointer'}}>
+            Notify me when it launches
+          </button>
+        </div>
+      )}
+
+      {!elig.isEligible && elig.blockers.length>0 && (
+        <div style={{fontSize:12, color:C.muted, marginTop:4}}>
+          To qualify: {elig.blockers.join(' · ')}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Trend chart ────────────────────────────────────────────────────────────
 function TrendChart({scores, subject, subjectColors={}, gradeBoundaries={}, bgColor='#e8e4dd', textColor='#7a7268'}) {
   const data=[...scores].filter(s=>s.subject===subject).reverse();
@@ -528,6 +664,8 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
           ))}
         </div>
       </div>
+
+      <InsuranceEligibilityCard scores={scores} uid={uid} C={C} font={font}/>
     </div>
   );
 }
@@ -945,8 +1083,59 @@ function Tips({subjects,C,font}) {
   );
 }
 
+// ── University ad card ─────────────────────────────────────────────────────
+const MOCK_ADS = [
+  {
+    university: 'University of Manchester',
+    course: 'BSc Mathematics',
+    headline: 'Strong in Maths? Explore our top-5 ranked Mathematics programme.',
+    body: 'AAB entry · Russell Group · Industry placement year available',
+    url: 'https://www.manchester.ac.uk/study/undergraduate/courses/2026/00560/bsc-mathematics/',
+    subjects: ['Mathematics','Further Mathematics'],
+  },
+  {
+    university: 'University of Edinburgh',
+    course: 'BSc Computer Science',
+    headline: 'Interested in Computer Science? We're ranked #3 in the UK.',
+    body: 'ABB entry · Russell Group · Strong industry links',
+    url: 'https://www.ed.ac.uk/studying/undergraduate/degrees/index.php?action=programme&code=G400',
+    subjects: ['Computer Science','Mathematics'],
+  },
+  {
+    university: 'University of Bristol',
+    course: 'MEng Chemistry',
+    headline: 'Passionate about Chemistry? Join one of the UK's top programmes.',
+    body: 'AAA entry · Russell Group · World-leading research facilities',
+    url: 'https://www.bristol.ac.uk/study/undergraduate/2026/chemistry/',
+    subjects: ['Chemistry','Biology'],
+  },
+];
+
+function UniversityAdCard({ subjects, uid, C, font }) {
+  const consented = ls.get(`rbp_analytics_${uid}`, true);
+  if (!consented) return null;
+
+  const subjectNames = subjects.map(s => s.name);
+  const ad = MOCK_ADS.find(a => a.subjects.some(s => subjectNames.includes(s))) ?? MOCK_ADS[0];
+
+  return (
+    <div style={{background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:'14px 18px'}}>
+      <div style={{fontSize:9, fontWeight:700, color:C.muted, textTransform:'uppercase',
+        letterSpacing:0.5, marginBottom:8}}>Sponsored · {ad.university}</div>
+      <div style={{fontSize:14, fontWeight:700, color:C.text, marginBottom:4}}>{ad.headline}</div>
+      <div style={{fontSize:12, color:C.muted, lineHeight:1.5, marginBottom:12}}>{ad.body}</div>
+      <a href={ad.url} target="_blank" rel="noopener noreferrer"
+        style={{fontSize:12, color:C.accent, fontWeight:600, textDecoration:'none',
+          border:`1px solid ${C.accent}40`, borderRadius:6, padding:'5px 12px',
+          display:'inline-block'}}>
+        Find out more →
+      </a>
+    </div>
+  );
+}
+
 // ── Resources ──────────────────────────────────────────────────────────────
-function Resources({subjects,C,font}) {
+function Resources({subjects,uid,C,font}) {
   return (
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
       {subjects.map(s=>(
@@ -970,12 +1159,25 @@ function Resources({subjects,C,font}) {
           </div>
         </div>
       ))}
+      <UniversityAdCard subjects={subjects} uid={uid} C={C} font={font}/>
     </div>
   );
 }
 
 // ── Account ────────────────────────────────────────────────────────────────
-function Account({user,subjects,dark,setDark,onSignOut,onResetSubjects,C,font}) {
+function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,font}) {
+  const [analyticsConsent, setAnalyticsConsent] = useState(()=>ls.get(`rbp_analytics_${uid}`,true));
+
+  const toggleConsent = async (v) => {
+    setAnalyticsConsent(v);
+    ls.set(`rbp_analytics_${uid}`, v);
+    if (isSupabaseConfigured()) {
+      await supabase.from('analytics_consent')
+        .upsert({user_id:uid, opted_in:v, updated_at:new Date().toISOString()},
+          {onConflict:'user_id'});
+    }
+  };
+
   return (
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
@@ -1017,6 +1219,26 @@ function Account({user,subjects,dark,setDark,onSignOut,onResetSubjects,C,font}) 
               </button>
             ))}
           </div>
+        </div>
+      </div>
+
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Research contribution</div>
+        <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:16}}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:4}}>Share anonymised data with universities</div>
+            <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>
+              Your scores are aggregated and anonymised — never individual — to help universities understand how students revise. You can opt out at any time.
+            </div>
+          </div>
+          <button onClick={()=>toggleConsent(!analyticsConsent)}
+            style={{flexShrink:0,width:44,height:24,borderRadius:12,padding:0,
+              background:analyticsConsent?C.accent:C.border,border:'none',cursor:'pointer',
+              position:'relative',transition:'background 0.2s'}}>
+            <div style={{position:'absolute',top:3,width:18,height:18,borderRadius:'50%',
+              background:'#fff',transition:'left 0.2s',
+              left:analyticsConsent?23:3}}/>
+          </button>
         </div>
       </div>
 
