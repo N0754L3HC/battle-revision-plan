@@ -304,6 +304,274 @@ function BroadcastPanel({users}) {
   );
 }
 
+// ── Known subjects (for exam editor) ──────────────────────────────────────
+const KNOWN_SUBJECTS = [
+  {id:'maths',name:'Mathematics'},{id:'further-maths',name:'Further Mathematics'},
+  {id:'cs',name:'Computer Science'},{id:'chemistry',name:'Chemistry'},
+  {id:'physics',name:'Physics'},{id:'biology',name:'Biology'},
+  {id:'economics',name:'Economics'},{id:'history',name:'History'},
+  {id:'psychology',name:'Psychology'},{id:'geography',name:'Geography'},
+  {id:'english-lit',name:'English Literature'},{id:'english-lang',name:'English Language'},
+  {id:'business',name:'Business'},{id:'sociology',name:'Sociology'},
+  {id:'french',name:'French'},{id:'spanish',name:'Spanish'},
+  {id:'german',name:'German'},{id:'art',name:'Art & Design'},
+];
+
+// ── Exam Editor ────────────────────────────────────────────────────────────
+function ExamEditor() {
+  const [schedule,setSchedule]=useState({});
+  const [activeSub,setActiveSub]=useState('maths');
+  const [loading,setLoading]=useState(true);
+  const [saving,setSaving]=useState(false);
+  const [saved,setSaved]=useState(false);
+  const [newSubId,setNewSubId]=useState('');
+  const DEF={date:'',paper:'',code:'',board:'',time:'PM',duration:'',maxMark:100};
+
+  useEffect(()=>{ loadSchedule(); },[]);
+
+  const loadSchedule=async()=>{
+    setLoading(true);
+    const {data}=await supabase.from('app_config').select('value').eq('key','exam_schedule').single();
+    if (data?.value) {
+      try { setSchedule(typeof data.value==='string'?JSON.parse(data.value):data.value); } catch(_) {}
+    }
+    setLoading(false);
+  };
+
+  const saveSchedule=async()=>{
+    setSaving(true);
+    await supabase.from('app_config').upsert({key:'exam_schedule',value:JSON.stringify(schedule),updated_at:new Date().toISOString()},{onConflict:'key'});
+    setSaved(true); setTimeout(()=>setSaved(false),2500); setSaving(false);
+  };
+
+  const addExam=()=>setSchedule(p=>({...p,[activeSub]:[...(p[activeSub]||[]),{...DEF}]}));
+
+  const updateExam=(sub,idx,field,val)=>setSchedule(p=>({
+    ...p,[sub]:p[sub].map((e,i)=>i===idx?{...e,[field]:val}:e)
+  }));
+
+  const deleteExam=(sub,idx)=>setSchedule(p=>({...p,[sub]:p[sub].filter((_,i)=>i!==idx)}));
+
+  const addSubject=()=>{
+    if (!newSubId.trim()) return;
+    const id=newSubId.trim().toLowerCase().replace(/\s+/g,'-');
+    setSchedule(p=>({...p,[id]:[]})); setActiveSub(id); setNewSubId('');
+  };
+
+  const allSubjects=[
+    ...KNOWN_SUBJECTS,
+    ...Object.keys(schedule).filter(id=>!KNOWN_SUBJECTS.find(s=>s.id===id)).map(id=>({id,name:id})),
+  ];
+  const activeExams=schedule[activeSub]||[];
+
+  return (
+    <div style={{display:'grid',gridTemplateColumns:'210px 1fr',gap:16,alignItems:'start'}}>
+      {/* Subject sidebar */}
+      <div style={{...card,padding:14}}>
+        <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:10,fontWeight:700}}>SUBJECTS</div>
+        <div style={{maxHeight:'60vh',overflowY:'auto'}}>
+          {allSubjects.map(s=>(
+            <button key={s.id} onClick={()=>setActiveSub(s.id)} style={{
+              display:'flex',alignItems:'center',justifyContent:'space-between',
+              width:'100%',textAlign:'left',padding:'7px 10px',
+              background:activeSub===s.id?'rgba(255,61,0,0.12)':'transparent',
+              border:activeSub===s.id?'1px solid rgba(255,61,0,0.3)':'1px solid transparent',
+              borderRadius:5,cursor:'pointer',marginBottom:2,
+              color:activeSub===s.id?'#FF3D00':'#bbb',fontFamily:mono,fontSize:11,
+            }}>
+              <span>{s.name}</span>
+              {schedule[s.id]?.length>0&&<span style={{fontSize:9,color:DIM}}>{schedule[s.id].length}</span>}
+            </button>
+          ))}
+        </div>
+        <div style={{marginTop:10,paddingTop:10,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
+          <input style={{...iS,marginBottom:6,fontSize:11}} value={newSubId}
+            onChange={e=>setNewSubId(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addSubject()}
+            placeholder="new-subject-id"/>
+          <button onClick={addSubject} style={{...btn('#FF3D00'),width:'100%',textAlign:'center',padding:'7px'}}>+ ADD SUBJECT</button>
+        </div>
+      </div>
+
+      {/* Exam rows */}
+      <div>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+          <div>
+            <span style={{fontSize:14,fontWeight:700,color:'#ddd'}}>
+              {allSubjects.find(s=>s.id===activeSub)?.name||activeSub}
+            </span>
+            <span style={{fontSize:10,color:MUT,marginLeft:8}}>{activeExams.length} exam{activeExams.length!==1?'s':''}</span>
+          </div>
+          <div style={{display:'flex',gap:8}}>
+            <button onClick={addExam} style={btn('#00E676')}>+ ADD EXAM</button>
+            <button onClick={saveSchedule} disabled={saving} style={btn('#FF3D00',true)}>
+              {saving?'SAVING...':saved?'SAVED ✓':'SAVE ALL CHANGES'}
+            </button>
+          </div>
+        </div>
+
+        {loading?(
+          <div style={{color:DIM,fontSize:12,padding:24}}>// LOADING SCHEDULE FROM DATABASE...</div>
+        ):activeExams.length===0?(
+          <div style={{...card,padding:28,textAlign:'center',color:DIM,fontSize:12,lineHeight:1.8}}>
+            No exams for this subject yet.<br/>Click "+ ADD EXAM" to add one.
+          </div>
+        ):activeExams.map((e,idx)=>(
+          <div key={idx} style={{...card,padding:'10px 12px',marginBottom:8}}>
+            <div style={{display:'grid',gridTemplateColumns:'140px 1fr 90px 80px 52px 90px 80px 34px',gap:6,alignItems:'center'}}>
+              <input style={{...iS,fontSize:11,padding:'7px 10px'}} type="date" value={e.date}
+                onChange={ev=>updateExam(activeSub,idx,'date',ev.target.value)}/>
+              <input style={{...iS,fontSize:11,padding:'7px 10px'}} value={e.paper}
+                onChange={ev=>updateExam(activeSub,idx,'paper',ev.target.value)} placeholder="Paper name"/>
+              <input style={{...iS,fontSize:11,padding:'7px 10px'}} value={e.code||''}
+                onChange={ev=>updateExam(activeSub,idx,'code',ev.target.value)} placeholder="Code"/>
+              <input style={{...iS,fontSize:11,padding:'7px 10px'}} value={e.board||''}
+                onChange={ev=>updateExam(activeSub,idx,'board',ev.target.value)} placeholder="Board"/>
+              <select style={{...iS,fontSize:11,padding:'7px 8px'}} value={e.time||'PM'}
+                onChange={ev=>updateExam(activeSub,idx,'time',ev.target.value)}>
+                <option>AM</option><option>PM</option>
+              </select>
+              <input style={{...iS,fontSize:11,padding:'7px 10px'}} value={e.duration||''}
+                onChange={ev=>updateExam(activeSub,idx,'duration',ev.target.value)} placeholder="e.g. 2h 30m"/>
+              <input style={{...iS,fontSize:11,padding:'7px 10px'}} type="number" value={e.maxMark||''}
+                onChange={ev=>updateExam(activeSub,idx,'maxMark',Number(ev.target.value))} placeholder="Marks"/>
+              <button onClick={()=>deleteExam(activeSub,idx)} style={{...btn('#FF3D00'),padding:'7px 8px',textAlign:'center'}}>✕</button>
+            </div>
+            {e.date&&<div style={{fontSize:9,color:DIM,marginTop:5,paddingLeft:2}}>
+              {new Date(e.date+' 12:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})} · {e.time||'PM'}
+            </div>}
+          </div>
+        ))}
+
+        <div style={{marginTop:12,fontSize:10,color:DIM,lineHeight:1.7}}>
+          Changes are saved to the <code style={{color:'#888'}}>app_config</code> Supabase table (key: <code style={{color:'#888'}}>exam_schedule</code>). The main app reads this on login and merges with built-in dates. Requires an <code style={{color:'#888'}}>app_config</code> table with columns <code style={{color:'#888'}}>key TEXT PRIMARY KEY, value TEXT, updated_at TIMESTAMPTZ</code>.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Resources Panel ────────────────────────────────────────────────────────
+function ResourcesPanel() {
+  const [title,setTitle]=useState('');
+  const [desc,setDesc]=useState('');
+  const [file,setFile]=useState(null);
+  const [uploading,setUploading]=useState(false);
+  const [resources,setResources]=useState([]);
+  const [err,setErr]=useState('');
+  const [dragOver,setDragOver]=useState(false);
+  const fileRef=useRef(null);
+
+  useEffect(()=>{ loadResources(); },[]);
+
+  const loadResources=async()=>{
+    const {data}=await supabase.from('resources').select('*').order('created_at',{ascending:false});
+    if (data) setResources(data);
+  };
+
+  const handleUpload=async()=>{
+    if (!file||!title.trim()) { setErr('File and title are required'); return; }
+    setUploading(true); setErr('');
+    const path=`${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    const {error:upErr}=await supabase.storage.from('resources').upload(path,file);
+    if (upErr) { setErr(`Upload failed: ${upErr.message}`); setUploading(false); return; }
+    const {data:{publicUrl}}=supabase.storage.from('resources').getPublicUrl(path);
+    const {error:dbErr}=await supabase.from('resources').insert({
+      title:title.trim(),description:desc.trim(),file_url:publicUrl,
+      file_name:file.name,file_size:file.size,storage_path:path,
+    });
+    if (dbErr) { setErr(`Save failed: ${dbErr.message}`); setUploading(false); return; }
+    setTitle(''); setDesc(''); setFile(null);
+    await loadResources();
+    setUploading(false);
+  };
+
+  const handleDelete=async(r)=>{
+    if (r.storage_path) await supabase.storage.from('resources').remove([r.storage_path]);
+    await supabase.from('resources').delete().eq('id',r.id);
+    setResources(prev=>prev.filter(x=>x.id!==r.id));
+  };
+
+  const onDrop=ev=>{
+    ev.preventDefault(); setDragOver(false);
+    const f=ev.dataTransfer.files[0]; if (f) setFile(f);
+  };
+
+  const fmtSize=b=>b>1048576?`${(b/1048576).toFixed(1)} MB`:`${(b/1024).toFixed(0)} KB`;
+
+  return (
+    <div style={{display:'grid',gridTemplateColumns:'1fr 380px',gap:16,alignItems:'start'}}>
+      {/* Upload form */}
+      <div style={{...card,padding:24}}>
+        <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:20,fontWeight:700}}>UPLOAD RESOURCE</div>
+
+        {/* Drop zone */}
+        <div
+          onDragOver={e=>{e.preventDefault();setDragOver(true)}}
+          onDragLeave={()=>setDragOver(false)}
+          onDrop={onDrop}
+          onClick={()=>fileRef.current?.click()}
+          style={{border:`2px dashed ${dragOver?'#FF3D00':'rgba(255,255,255,0.12)'}`,borderRadius:8,
+            padding:'32px 20px',textAlign:'center',cursor:'pointer',marginBottom:18,
+            background:dragOver?'rgba(255,61,0,0.05)':'rgba(255,255,255,0.02)',transition:'all 0.2s'}}
+        >
+          <input ref={fileRef} type="file" style={{display:'none'}} onChange={e=>setFile(e.target.files[0]||null)}/>
+          {file?(
+            <div>
+              <div style={{fontSize:22,marginBottom:6}}>📄</div>
+              <div style={{fontSize:13,color:'#ddd',fontWeight:600,marginBottom:3}}>{file.name}</div>
+              <div style={{fontSize:10,color:MUT}}>{fmtSize(file.size)}</div>
+              <button onClick={e=>{e.stopPropagation();setFile(null);}} style={{...btn('#FF3D00'),marginTop:10,fontSize:10}}>✕ REMOVE</button>
+            </div>
+          ):(
+            <div>
+              <div style={{fontSize:28,marginBottom:8,opacity:0.4}}>↑</div>
+              <div style={{fontSize:13,color:MUT,marginBottom:3}}>Drop file here or click to browse</div>
+              <div style={{fontSize:10,color:DIM}}>PDF, DOCX, PPTX, MP4, images — any format</div>
+            </div>
+          )}
+        </div>
+
+        <div style={{fontSize:9,color:SEC,letterSpacing:2,marginBottom:5,fontWeight:700}}>TITLE</div>
+        <input style={{...iS,marginBottom:12}} value={title} onChange={e=>setTitle(e.target.value)}
+          placeholder="e.g. Chemistry — Organic Reactions Summary"/>
+        <div style={{fontSize:9,color:SEC,letterSpacing:2,marginBottom:5,fontWeight:700}}>DESCRIPTION</div>
+        <textarea style={{...iS,marginBottom:18,height:90,resize:'vertical'}} value={desc}
+          onChange={e=>setDesc(e.target.value)} placeholder="What is this? Which students should use it? Key topics covered..."/>
+        <button onClick={handleUpload} disabled={uploading} style={{...btn('#FF3D00',true),padding:'12px',width:'100%',fontSize:12,letterSpacing:2}}>
+          {uploading?'UPLOADING...':'↑ UPLOAD RESOURCE'}
+        </button>
+        {err&&<div style={{color:'#FF9100',fontSize:11,marginTop:10}}>{err}</div>}
+        <div style={{fontSize:9,color:DIM,marginTop:14,lineHeight:1.8,borderTop:'1px solid rgba(255,255,255,0.05)',paddingTop:12}}>
+          Requires Supabase Storage bucket <code style={{color:'#888'}}>resources</code> (public) and a <code style={{color:'#888'}}>resources</code> table with columns: id, title, description, file_url, file_name, file_size, storage_path, created_at.
+        </div>
+      </div>
+
+      {/* Resource list */}
+      <div>
+        <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:14,fontWeight:700}}>RESOURCES ({resources.length})</div>
+        {resources.length===0?(
+          <div style={{...card,padding:20,textAlign:'center',color:DIM,fontSize:12}}>No resources uploaded yet.</div>
+        ):resources.map(r=>(
+          <div key={r.id} style={{...card,padding:'14px 16px',marginBottom:8}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,fontWeight:700,color:'#ddd',marginBottom:3}}>{r.title}</div>
+                {r.description&&<div style={{fontSize:11,color:'#aaa',marginBottom:6,lineHeight:1.5}}>{r.description}</div>}
+                <div style={{fontSize:9,color:DIM}}>{r.file_name}{r.file_size?` · ${fmtSize(r.file_size)}`:''} · {fmtDate(r.created_at)}</div>
+              </div>
+              <div style={{display:'flex',gap:5,flexShrink:0}}>
+                <a href={r.file_url} target="_blank" rel="noopener noreferrer"
+                  style={{...btn('#00E676'),textDecoration:'none',padding:'6px 10px',fontSize:13}}>↓</a>
+                <button onClick={()=>handleDelete(r)} style={{...btn('#FF3D00'),padding:'6px 10px'}}>✕</button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Dashboard ──────────────────────────────────────────────────────────────
 function Dashboard({adminUser,adminProfile,onLogout}) {
   const [users,setUsers]=useState([]);
@@ -403,7 +671,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
   const topByReadiness=[...users].sort((a,b)=>b.readiness-a.readiness).slice(0,5);
   const recentSignups=[...users].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5);
 
-  const TABS=['overview','users','analytics','broadcast','system'];
+  const TABS=['overview','users','analytics','exams','resources','broadcast','system'];
 
   return (
     <>
@@ -645,6 +913,12 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
               </div>
             </div>
           )}
+
+          {/* EXAMS */}
+          {tab==='exams'&&<ExamEditor/>}
+
+          {/* RESOURCES */}
+          {tab==='resources'&&<ResourcesPanel/>}
 
           {/* BROADCAST */}
           {tab==='broadcast'&&<BroadcastPanel users={users}/>}

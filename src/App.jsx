@@ -229,10 +229,10 @@ function getPaperSuggestions(subject) {
   return subject.papers.flatMap(p=>years.map(y=>`${p} — ${y}`));
 }
 
-function getNotifications(scores, errors, subjects) {
+function getNotifications(scores, errors, subjects, examSched=EXAM_SCHEDULE) {
   const now=new Date(); now.setHours(0,0,0,0);
   const notes=[];
-  const allExams=subjects.flatMap(s=>(EXAM_SCHEDULE[s.id]??[]).map(e=>({...e,subject:s.name,color:s.color})));
+  const allExams=subjects.flatMap(s=>(examSched[s.id]??[]).map(e=>({...e,subject:s.name,color:s.color})));
   const upcoming=allExams.map(e=>({...e,d:Math.ceil((new Date(e.date)-now)/86400000)}))
     .filter(e=>e.d>0).sort((a,b)=>a.d-b.d);
   if (upcoming.length&&upcoming[0].d<=14) {
@@ -331,7 +331,7 @@ function BattleGauge({score, label, labelColor, textColor='#2b2b2b', mutedColor=
 }
 
 // ── Analytics ──────────────────────────────────────────────────────────────
-function Analytics({subjects, scores, errors, uid, C, font}) {
+function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE}) {
   const SUBJ_COLORS  = Object.fromEntries(subjects.map(s=>[s.name,s.color]));
   const GRADE_BOUNDS = Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
 
@@ -344,7 +344,7 @@ function Analytics({subjects, scores, errors, uid, C, font}) {
   useEffect(()=>ls.set(`rbp_notifs_${uid}`, dismissed),  [dismissed]);
 
   const br = calcBattleReadiness(scores, errors);
-  const notifications = getNotifications(scores, errors, subjects).filter(n=>!dismissed.includes(n.id));
+  const notifications = getNotifications(scores, errors, subjects, examSched).filter(n=>!dismissed.includes(n.id));
 
   const subjectAvg = name => {
     const ss=scores.filter(x=>x.subject===name);
@@ -746,8 +746,8 @@ function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font}) {
 }
 
 // ── Exams ──────────────────────────────────────────────────────────────────
-function Exams({subjects,C,font}) {
-  const allExams=subjects.flatMap(s=>(EXAM_SCHEDULE[s.id]??[]).map(e=>({...e,subjectName:s.name,color:s.color})))
+function Exams({subjects,C,font,examSched=EXAM_SCHEDULE}) {
+  const allExams=subjects.flatMap(s=>(examSched[s.id]??[]).map(e=>({...e,subjectName:s.name,color:s.color})))
     .sort((a,b)=>new Date(a.date)-new Date(b.date));
   const upcoming=allExams.filter(e=>daysUntil(e.date)>=0);
   const past=allExams.filter(e=>daysUntil(e.date)<0);
@@ -1033,7 +1033,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects}) {
     {id:'account',label:'Account'},
   ];
 
-  const vp={subjects,scores,errors,uid,C,font};
+  const vp={subjects,scores,errors,uid,C,font,examSched};
 
   return (
     <div style={{minHeight:'100vh',background:C.bg,fontFamily:font,color:C.text}}>
@@ -1118,6 +1118,7 @@ export default function App() {
   const [phase,setPhase]         = useState('loading');
   const [user,setUser]           = useState(null);
   const [selection,setSelection] = useState([]);
+  const [examSched,setExamSched] = useState(EXAM_SCHEDULE);
 
   const dark = ls.get('rbp_dark',false);
   const C    = dark?T.dark:T.light;
@@ -1166,6 +1167,19 @@ export default function App() {
     });
     return ()=>{ alive=false; subscription.unsubscribe(); };
   },[]);
+
+  useEffect(()=>{
+    if (phase!=='app') return;
+    supabase.from('app_config').select('value').eq('key','exam_schedule').single()
+      .then(({data})=>{
+        if (data?.value) {
+          try {
+            const db=typeof data.value==='string'?JSON.parse(data.value):data.value;
+            setExamSched(prev=>({...prev,...db}));
+          } catch(_) {}
+        }
+      });
+  },[phase]);
 
   function handleSubjectsDone(sel) { setSelection(sel); setPhase('app'); }
 
