@@ -1,4 +1,22 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
+
+class ErrorBoundary extends React.Component {
+  constructor(p) { super(p); this.state = { err: null }; }
+  static getDerivedStateFromError(e) { return { err: e }; }
+  render() {
+    if (this.state.err) {
+      const dark = (() => { try { return JSON.parse(localStorage.getItem('rbp_dark')||'false'); } catch { return false; } })();
+      return (
+        <div style={{minHeight:'100vh',background:dark?'#0d0f14':'#e8e4dd',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:14,padding:24,fontFamily:'system-ui,sans-serif'}}>
+          <div style={{fontSize:16,fontWeight:700,color:dark?'#e2ddd6':'#2b2b2b'}}>Something went wrong</div>
+          <div style={{fontSize:13,color:'#7a7268',maxWidth:380,textAlign:'center',lineHeight:1.7}}>{this.state.err?.message||'An unexpected error occurred.'}</div>
+          <button onClick={()=>window.location.reload()} style={{padding:'9px 20px',background:'#b5735a',border:'none',borderRadius:7,color:'#fff',cursor:'pointer',fontSize:14,fontWeight:600}}>Reload</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 import { supabase, isSupabaseConfigured } from "./lib/supabase";
 import AuthGate from "./components/AuthGate";
 import SubjectPicker from "./components/SubjectPicker";
@@ -541,7 +559,7 @@ const notifColor = {urgent:"#ef4444",warn:"#f97316",info:"#3b82f6",success:"#22c
 function TrendChart({ scores, subject, subjectColors=SUBJECT_COLORS, gradeBoundaries=GRADE_BOUNDARIES, bgColor="#ede9e2", textColor="#7a7268" }) {
   const data = [...scores].filter(s=>s.subject===subject).reverse();
   if (data.length < 2) return (
-    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:120,fontSize:14,color:"#4a4542"}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:120,fontSize:14,color:C.muted}}>
       Need 2+ papers to show trend
     </div>
   );
@@ -776,7 +794,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                   <div style={{fontSize:13,fontWeight:600,color:notifColor[n.type]}}>{n.title}</div>
                   <div style={{fontSize:12,color:C.muted,marginTop:2}}>{n.body}</div>
                 </div>
-                <button onClick={()=>setDismissed(p=>[...p,n.id])} style={{background:"transparent",border:"none",color:"#8a847c",cursor:"pointer",fontSize:16,padding:0,lineHeight:1,flexShrink:0}}>×</button>
+                <button onClick={()=>setDismissed(p=>[...p,n.id])} style={{background:"transparent",border:"none",color:C.muted,cursor:"pointer",fontSize:16,padding:0,lineHeight:1,flexShrink:0}}>×</button>
               </div>
             ))}
           </div>
@@ -795,8 +813,8 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                 <div style={{width:"100%",marginTop:12}}>
                   {[["Papers",br.paperComp,20,"#3b82f6"],["Avg score",br.scoreComp,40,"#8b5cf6"],["Error ctrl",br.errorComp,20,"#f97316"],["Plan done",br.checkComp,20,"#22c55e"]].map(([l,v,mx,c])=>(
                     <div key={l} style={{display:"flex",alignItems:"center",gap:6,marginBottom:5}}>
-                      <div style={{fontSize:13,color:"#555",width:50,flexShrink:0}}>{l}</div>
-                      <div style={{flex:1,height:4,borderRadius:2,background:"rgba(0,0,0,0.06)",overflow:"hidden"}}>
+                      <div style={{fontSize:13,color:C.muted,width:50,flexShrink:0}}>{l}</div>
+                      <div style={{flex:1,height:4,borderRadius:2,background:C.border,overflow:"hidden"}}>
                         <div style={{height:"100%",width:`${(v/mx)*100}%`,background:c,borderRadius:2,transition:"width 1s ease"}}/>
                       </div>
                       <div style={{fontSize:13,color:c,width:20,textAlign:"right"}}>{v}</div>
@@ -831,7 +849,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                             </select>
                           </div>
                           <div style={{display:"flex",alignItems:"center",gap:6}}>
-                            <div style={{width:80,height:4,borderRadius:2,background:"rgba(0,0,0,0.07)",overflow:"hidden"}}>
+                            <div style={{width:80,height:4,borderRadius:2,background:C.border,overflow:"hidden"}}>
                               <div style={{height:"100%",width:`${progress}%`,background:col,borderRadius:2,transition:"width 1s ease"}}/>
                             </div>
                             <span style={{fontSize:13,color:progress>=100?"#00E676":col}}>{progress}%</span>
@@ -854,12 +872,12 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                 })}
               </div>
             </div>
-            <div style={{background:C.surface,border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:18,marginBottom:12}}>
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:18,marginBottom:12}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
                 <div style={{fontSize:12,fontWeight:600,color:C.muted}}>Score trend</div>
                 <div style={{display:"flex",gap:4}}>
                   {SUBJECTS.map(s=>(
-                    <button key={s} onClick={()=>setChartSubject(s)} style={{background:chartSubject===s?`${SUBJECT_COLORS[s]}14`:"transparent",border:`1px solid ${chartSubject===s?SUBJECT_COLORS[s]+"44":"rgba(0,0,0,0.09)"}`,color:chartSubject===s?SUBJECT_COLORS[s]:"#7a7268",padding:"4px 10px",borderRadius:5,cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:chartSubject===s?600:400}}>
+                    <button key={s} onClick={()=>setChartSubject(s)} style={{background:chartSubject===s?`${SUBJECT_COLORS[s]}14`:"transparent",border:`1px solid ${chartSubject===s?SUBJECT_COLORS[s]+"44":C.border}`,color:chartSubject===s?SUBJECT_COLORS[s]:C.muted,padding:"4px 10px",borderRadius:5,cursor:"pointer",fontSize:12,fontFamily:"inherit",fontWeight:chartSubject===s?600:400}}>
                       {s==="Further Maths"?"FM":s}
                     </button>
                   ))}
@@ -886,7 +904,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                     <div style={{fontSize:12,fontWeight:600,color:C.muted}}>Next exam</div>
                     <div style={{fontSize:15,fontWeight:800,color:n.d<=14?"#FF3D00":"#FF9100"}}>{n.d} days</div>
                   </div>
-                  <div style={{height:6,borderRadius:3,background:"rgba(0,0,0,0.08)",overflow:"hidden",marginBottom:8}}>
+                  <div style={{height:6,borderRadius:3,background:C.border,overflow:"hidden",marginBottom:8}}>
                     <div style={{height:"100%",width:`${urgency}%`,background:`linear-gradient(90deg,#2979FF,#FF3D00)`,borderRadius:3,transition:"width 1s ease"}}/>
                   </div>
                   <div style={{fontSize:14,color:C.subtle}}>{n.subject}: {n.paper}</div>
@@ -900,9 +918,9 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
           <div>
             <div style={{marginBottom:20}}>
               <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:"0 0 4px"}}>Tracker</h1>
-              <p style={{fontSize:13,color:C.muted,margin:0}}>Log past papers and errors. Everything is saved to your browser.</p>
+              <p style={{fontSize:13,color:C.muted,margin:0}}>Log past papers and errors. Synced to your account automatically.</p>
             </div>
-            <div style={{background:C.surface,border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:16,marginBottom:12}}>
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:16,marginBottom:12}}>
               <div style={{fontSize:12,fontWeight:600,color:C.muted,marginBottom:10}}>Log a past paper</div>
               {nextSuggested&&(
                 <div onClick={()=>setScorePaper(nextSuggested)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:8,background:"rgba(34,197,94,0.05)",border:"1px solid rgba(34,197,94,0.14)",marginBottom:10,cursor:"pointer"}}>
@@ -915,71 +933,71 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                 </div>
               )}
               <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-                <select value={scoreSubject} onChange={e=>{setScoreSubject(e.target.value);setScorePaper("");}} style={{...iS,flex:"1 1 100px",background:"rgba(0,0,0,0.07)"}}>{SUBJECTS.map(s=><option key={s}>{s}</option>)}</select>
+                <select value={scoreSubject} onChange={e=>{setScoreSubject(e.target.value);setScorePaper("");}} style={{...iS,flex:"1 1 100px",background:darkMode?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.07)"}}>{SUBJECTS.map(s=><option key={s}>{s}</option>)}</select>
                 <input value={scorePaper} onChange={e=>setScorePaper(e.target.value)} placeholder="Paper name / year" style={{...iS,flex:"2 1 150px"}}/>
                 <input value={scoreGot} onChange={e=>setScoreGot(e.target.value)} placeholder="Score" type="number" style={{...iS,flex:"0 0 60px"}}/>
                 <input value={scoreMax} onChange={e=>setScoreMax(e.target.value)} placeholder="/Max" type="number" style={{...iS,flex:"0 0 60px"}}/>
                 <button onClick={addScore} style={{background:"#22c55e",border:"none",color:"#fff",padding:"8px 16px",borderRadius:7,cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"inherit"}}>Save</button>
               </div>
             </div>
-            <div style={{background:C.surface,border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:16,marginBottom:12}}>
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:16,marginBottom:12}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
                 <div style={{fontSize:12,fontWeight:600,color:C.muted}}>Paper history ({filteredScores.length})</div>
                 <div style={{display:"flex",gap:3}}>
                   {["All",...SUBJECTS].map(s=>(
-                    <button key={s} onClick={()=>setSfilt(s)} style={{background:sfilt===s?"rgba(0,0,0,0.1)":"transparent",border:"1px solid rgba(0,0,0,0.08)",color:sfilt===s?"#2b2b2b":"#7a7268",padding:"3px 6px",borderRadius:4,cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>
+                    <button key={s} onClick={()=>setSfilt(s)} style={{background:sfilt===s?C.card2:"transparent",border:`1px solid ${C.border}`,color:sfilt===s?C.text:C.muted,padding:"3px 6px",borderRadius:4,cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>
                       {s==="Further Maths"?"FM":s==="Computer Science"?"CS":s}
                     </button>
                   ))}
                 </div>
               </div>
-              {filteredScores.length===0&&<div style={{fontSize:15,color:"#4a4542",textAlign:"center",padding:"16px 0"}}>No papers logged yet.</div>}
+              {filteredScores.length===0&&<div style={{fontSize:15,color:C.muted,textAlign:"center",padding:"16px 0"}}>No papers logged yet.</div>}
               {filteredScores.map(s=>{
                 const {grade,exact}=getGradeForPaper(s.got,s.max,s.paper,s.subject,GRADE_BOUNDARIES);
                 return (
-                  <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderTop:"1px solid rgba(0,0,0,0.06)"}}>
+                  <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderTop:`1px solid ${C.border}`}}>
                     <div style={{width:3,height:32,borderRadius:2,background:SUBJECT_COLORS[s.subject]||"#888",flexShrink:0}}/>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontSize:13,fontWeight:600,color:C.muted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.subject}</div>
                       <div style={{fontSize:13,color:C.muted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.paper}</div>
-                      <div style={{fontSize:11,color:"#8a847c",marginTop:2}}>{s.date}</div>
+                      <div style={{fontSize:11,color:C.muted,marginTop:2}}>{s.date}</div>
                     </div>
                     <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
                       <div style={{textAlign:"right"}}>
                         <div style={{fontSize:17,fontWeight:700,color:gradeColor(grade)}}>{grade}{!exact&&<span style={{fontSize:10,opacity:0.5,marginLeft:1}}>~</span>} <span style={{fontSize:14,color:C.muted}}>{s.pct}%</span></div>
-                        <div style={{fontSize:12,color:"#8a847c"}}>{s.got}/{s.max}{!exact&&<span style={{marginLeft:3,color:"#8a847c"}}>est.</span>}</div>
+                        <div style={{fontSize:12,color:C.muted}}>{s.got}/{s.max}{!exact&&<span style={{marginLeft:3,color:C.muted}}>est.</span>}</div>
                       </div>
                       {confirmDel===s.id?(
                         <div style={{display:"flex",gap:3}}>
                           <button onClick={()=>{setScores(p=>p.filter(x=>x.id!==s.id));setConfirmDel(null);}} style={{background:"rgba(239,68,68,0.12)",border:"1px solid rgba(239,68,68,0.25)",color:"#ef4444",padding:"3px 8px",borderRadius:5,cursor:"pointer",fontSize:12,fontFamily:"inherit"}}>Delete</button>
-                          <button onClick={()=>setConfirmDel(null)} style={{background:"rgba(0,0,0,0.04)",border:"1px solid rgba(0,0,0,0.08)",color:C.muted,padding:"3px 8px",borderRadius:5,cursor:"pointer",fontSize:12,fontFamily:"inherit"}}>Cancel</button>
+                          <button onClick={()=>setConfirmDel(null)} style={{background:"rgba(0,0,0,0.04)",border:`1px solid ${C.border}`,color:C.muted,padding:"3px 8px",borderRadius:5,cursor:"pointer",fontSize:12,fontFamily:"inherit"}}>Cancel</button>
                         </div>
                       ):(
-                        <button onClick={()=>setConfirmDel(s.id)} style={{background:"transparent",border:"1px solid rgba(0,0,0,0.09)",color:"#8a847c",padding:"3px 8px",borderRadius:5,cursor:"pointer",fontSize:12,fontFamily:"inherit"}}>Del</button>
+                        <button onClick={()=>setConfirmDel(s.id)} style={{background:"transparent",border:`1px solid ${C.border}`,color:C.muted,padding:"3px 8px",borderRadius:5,cursor:"pointer",fontSize:12,fontFamily:"inherit"}}>Del</button>
                       )}
                     </div>
                   </div>
                 );
               })}
             </div>
-            <div style={{background:C.surface,border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:16,marginBottom:12}}>
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:16,marginBottom:12}}>
               <div style={{fontSize:12,fontWeight:600,color:C.muted,marginBottom:10}}>Log an error</div>
               <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>
-                <select value={errSubject} onChange={e=>setErrSubject(e.target.value)} style={{...iS,flex:"1 1 90px",background:"rgba(0,0,0,0.07)"}}>{SUBJECTS.map(s=><option key={s}>{s}</option>)}</select>
+                <select value={errSubject} onChange={e=>setErrSubject(e.target.value)} style={{...iS,flex:"1 1 90px",background:darkMode?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.07)"}}>{SUBJECTS.map(s=><option key={s}>{s}</option>)}</select>
                 <input value={errTopic} onChange={e=>setErrTopic(e.target.value)} placeholder="Topic" style={{...iS,flex:"2 1 140px"}}/>
-                <select value={errType} onChange={e=>setErrType(e.target.value)} style={{...iS,flex:"1 1 120px",background:"rgba(0,0,0,0.07)"}}>{ERROR_TYPES.map(et=><option key={et.id} value={et.id}>{et.label}</option>)}</select>
+                <select value={errType} onChange={e=>setErrType(e.target.value)} style={{...iS,flex:"1 1 120px",background:darkMode?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.07)"}}>{ERROR_TYPES.map(et=><option key={et.id} value={et.id}>{et.label}</option>)}</select>
               </div>
               <div style={{display:"flex",gap:5}}>
                 <input value={errNote} onChange={e=>setErrNote(e.target.value)} placeholder="What specifically went wrong? (optional)" style={{...iS,flex:1}}/>
                 <button onClick={addError} style={{background:"#ef4444",border:"none",color:"#fff",padding:"8px 16px",borderRadius:7,cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"inherit"}}>Save</button>
               </div>
             </div>
-            <div style={{background:C.surface,border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:16}}>
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:16}}>
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
                 <div style={{fontSize:12,fontWeight:600,color:C.muted}}>Error log ({filteredErrors.length})</div>
                 <div style={{display:"flex",gap:3}}>
                   {["All",...SUBJECTS].map(s=>(
-                    <button key={s} onClick={()=>setEfilt(s)} style={{background:efilt===s?"rgba(0,0,0,0.1)":"transparent",border:"1px solid rgba(0,0,0,0.08)",color:efilt===s?"#2b2b2b":"#7a7268",padding:"3px 6px",borderRadius:4,cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>
+                    <button key={s} onClick={()=>setEfilt(s)} style={{background:efilt===s?C.card2:"transparent",border:`1px solid ${C.border}`,color:efilt===s?C.text:C.muted,padding:"3px 6px",borderRadius:4,cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>
                       {s==="Further Maths"?"FM":s==="Computer Science"?"CS":s}
                     </button>
                   ))}
@@ -994,18 +1012,18 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                   })}
                 </div>
               )}
-              {filteredErrors.length===0&&<div style={{fontSize:15,color:"#4a4542",textAlign:"center",padding:"14px 0"}}>No errors logged{efilt!=="All"?` for ${efilt}`:""} yet.</div>}
+              {filteredErrors.length===0&&<div style={{fontSize:15,color:C.muted,textAlign:"center",padding:"14px 0"}}>No errors logged{efilt!=="All"?` for ${efilt}`:""} yet.</div>}
               <div style={{maxHeight:300,overflowY:"auto"}}>
                 {filteredErrors.map(e=>{
                   const et=ERROR_TYPES.find(t=>t.id===e.type);
                   return (
-                    <div key={e.id} style={{display:"flex",gap:8,padding:"7px 0",borderTop:"1px solid rgba(0,0,0,0.06)",alignItems:"flex-start"}}>
+                    <div key={e.id} style={{display:"flex",gap:8,padding:"7px 0",borderTop:`1px solid ${C.border}`,alignItems:"flex-start"}}>
                       <div style={{width:3,borderRadius:2,background:et?.color||"#555",flexShrink:0,alignSelf:"stretch"}}/>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:13,color:C.muted}}><span style={{color:SUBJECT_COLORS[e.subject]||"#7a7268",fontWeight:600}}>{e.subject}</span> · {e.topic}</div>
-                        <div style={{fontSize:12,color:"#8a847c",marginTop:2}}>{et?.label} · {e.date}{e.note&&` · ${e.note}`}</div>
+                        <div style={{fontSize:12,color:C.muted,marginTop:2}}>{et?.label} · {e.date}{e.note&&` · ${e.note}`}</div>
                       </div>
-                      <button onClick={()=>setErrors(p=>p.filter(x=>x.id!==e.id))} style={{background:"transparent",border:"1px solid rgba(0,0,0,0.09)",color:"#8a847c",padding:"3px 8px",borderRadius:5,cursor:"pointer",fontSize:12,fontFamily:"inherit",flexShrink:0}}>Del</button>
+                      <button onClick={()=>setErrors(p=>p.filter(x=>x.id!==e.id))} style={{background:"transparent",border:`1px solid ${C.border}`,color:C.muted,padding:"3px 8px",borderRadius:5,cursor:"pointer",fontSize:12,fontFamily:"inherit",flexShrink:0}}>Del</button>
                     </div>
                   );
                 })}
@@ -1032,7 +1050,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                   <div style={{flex:1}}>
                     <div style={{fontSize:14,fontWeight:600,color:C.text}}>{e.subject}: {e.paper.split(":")[1]?.trim()||e.paper}</div>
                     <div style={{fontSize:12,color:C.muted,marginTop:2}}>{e.code} · {e.board} · {e.time} · {e.duration}</div>
-                    <div style={{fontSize:12,color:"#8a847c",marginTop:4,lineHeight:1.5}}>{e.topics}</div>
+                    <div style={{fontSize:12,color:C.muted,marginTop:4,lineHeight:1.5}}>{e.topics}</div>
                   </div>
                   <div style={{textAlign:"right",flexShrink:0}}>
                     <div style={{fontSize:12,color:C.muted}}>{new Date(e.date).toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</div>
@@ -1054,7 +1072,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
               </div>
               <div style={{display:"flex",gap:3,marginBottom:16,flexWrap:"wrap"}}>
                 {WEEKS.map(w=>(
-                  <button key={w.num} onClick={()=>setActiveWeek(w.num)} style={{background:activeWeek===w.num?"rgba(255,109,0,0.15)":"rgba(0,0,0,0.03)",border:`1px solid ${activeWeek===w.num?"#FF6D0044":"rgba(0,0,0,0.07)"}`,color:activeWeek===w.num?"#FF6D00":"#555",padding:"5px 9px",borderRadius:5,cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit"}}>W{w.num}</button>
+                  <button key={w.num} onClick={()=>setActiveWeek(w.num)} style={{background:activeWeek===w.num?"rgba(255,109,0,0.15)":C.card3,border:`1px solid ${activeWeek===w.num?"#FF6D0044":C.border}`,color:activeWeek===w.num?"#FF6D00":C.muted,padding:"5px 9px",borderRadius:5,cursor:"pointer",fontSize:13,fontWeight:700,fontFamily:"inherit"}}>W{w.num}</button>
                 ))}
               </div>
               {week&&<div>
@@ -1063,18 +1081,18 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                   <div style={{fontSize:13,color:C.muted,marginTop:3}}>{week.start} to {week.end} · {week.focus}</div>
                 </div>
                 {week.days.map((day,di)=>(
-                  <div key={di} style={{marginBottom:10,background:"rgba(0,0,0,0.02)",border:"1px solid rgba(0,0,0,0.07)",borderRadius:8,padding:"12px 14px"}}>
+                  <div key={di} style={{marginBottom:10,background:C.card3,border:`1px solid ${C.border}`,borderRadius:8,padding:"12px 14px"}}>
                     <div style={{fontSize:12,fontWeight:600,color:C.muted,marginBottom:8}}>{day.day}</div>
                     {day.blocks.map((b,bi)=>{
-                      const k=`${week.num}-${di}-${bi}`,done=checks[k],col=SUBJECT_COLORS[b.s]||"#78909C";
-                      return <div key={bi} onClick={()=>toggle(k)} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"6px 0",borderBottom:bi<day.blocks.length-1?"1px solid rgba(0,0,0,0.05)":"none",cursor:"pointer",opacity:done?0.3:1}}>
+                      const k=`${week.num}-${di}-${bi}`,done=checks[k],col=blockColor(b.s);
+                      return <div key={bi} onClick={()=>toggle(k)} style={{display:"flex",alignItems:"flex-start",gap:10,padding:"6px 0",borderBottom:bi<day.blocks.length-1?`1px solid ${C.border}`:"none",cursor:"pointer",opacity:done?0.3:1}}>
                         <div style={{width:14,height:14,borderRadius:3,flexShrink:0,marginTop:2,border:done?"none":`2px solid ${col}44`,background:done?col:"transparent",display:"flex",alignItems:"center",justifyContent:"center"}}>
                           {done&&<span style={{color:"#fff",fontSize:9,fontWeight:800}}>✓</span>}
                         </div>
                         <div style={{width:3,borderRadius:2,background:col,opacity:0.5,flexShrink:0,alignSelf:"stretch"}}/>
                         <div style={{flex:1}}>
-                          <div style={{fontSize:14,lineHeight:1.5,color:done?"#7a7268":"#4a4a4a",textDecoration:done?"line-through":"none"}}>{b.t}</div>
-                          {b.d&&<div style={{fontSize:12,color:"#8a847c",marginTop:2}}>{b.d}</div>}
+                          <div style={{fontSize:14,lineHeight:1.5,color:done?C.muted:C.text,textDecoration:done?"line-through":"none"}}>{b.t}</div>
+                          {b.d&&<div style={{fontSize:12,color:C.muted,marginTop:2}}>{b.d}</div>}
                         </div>
                       </div>;
                     })}
@@ -1117,7 +1135,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
               <p style={{fontSize:13,color:C.muted,margin:0}}>A structured revision day that builds focus and retains more.</p>
             </div>
             {DAILY_ROUTINE.map((b,i)=>(
-              <div key={i} style={{display:"flex",gap:12,padding:"11px 0",borderBottom:"1px solid rgba(0,0,0,0.06)"}}>
+              <div key={i} style={{display:"flex",gap:12,padding:"11px 0",borderBottom:`1px solid ${C.border}`}}>
                 <div style={{width:44,flexShrink:0,textAlign:"right"}}><div style={{fontSize:12,fontWeight:500,color:C.muted}}>{b.time}</div></div>
                 <div style={{width:3,flexShrink:0,borderRadius:2,background:b.color,opacity:0.6}}/>
                 <div style={{flex:1}}>
@@ -1136,11 +1154,11 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
               <p style={{fontSize:13,color:C.muted,margin:0}}>Past papers, video solutions, and revision notes for each subject.</p>
             </div>
             {RESOURCES.map((r,ri)=>(
-              <div key={ri} style={{marginBottom:14,background:C.surface,border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:18}}>
+              <div key={ri} style={{marginBottom:14,background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:18}}>
                 <div style={{fontSize:12,fontWeight:600,color:SUBJECT_COLORS[r.subject]||"#7a7268",marginBottom:12}}>{r.subject}</div>
                 {r.items.map((item,ii)=>(
-                  <a key={ii} href={item.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:14,color:"#4a4a4a",textDecoration:"none",padding:"8px 0",borderBottom:ii<r.items.length-1?"1px solid rgba(0,0,0,0.06)":"none",transition:"color 0.12s"}}>
-                    <span>{item.name}</span><span style={{color:"#8a847c",fontSize:12}}>↗</span>
+                  <a key={ii} href={item.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:14,color:C.text,textDecoration:"none",padding:"8px 0",borderBottom:ii<r.items.length-1?`1px solid ${C.border}`:"none",transition:"color 0.12s"}}>
+                    <span>{item.name}</span><span style={{color:C.muted,fontSize:12}}>↗</span>
                   </a>
                 ))}
               </div>
@@ -1156,7 +1174,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
             </div>
 
             {/* Profile info */}
-            <div style={{background:C.surface,border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:20,marginBottom:12}}>
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:20,marginBottom:12}}>
               <div style={{fontSize:11,fontWeight:600,color:C.muted,letterSpacing:0.5,textTransform:"uppercase",marginBottom:14}}>Profile</div>
               {userProfile?.display_name&&(
                 <div style={{marginBottom:12}}>
@@ -1171,7 +1189,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
             </div>
 
             {/* Sign out */}
-            <div style={{background:C.surface,border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:20,marginBottom:12}}>
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:20,marginBottom:12}}>
               <div style={{fontSize:11,fontWeight:600,color:C.muted,letterSpacing:0.5,textTransform:"uppercase",marginBottom:14}}>Session</div>
               <button
                 onClick={onLogout}
@@ -1220,7 +1238,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
           </div>
         )}
       </div>
-      <div style={{textAlign:"center",padding:"24px 0 8px",borderTop:"1px solid rgba(0,0,0,0.06)",color:"#4a4542",fontSize:11}}>
+      <div style={{textAlign:"center",padding:"24px 0 8px",borderTop:`1px solid ${C.border}`,color:C.muted,fontSize:11}}>
         A* Battle Plan &nbsp;·&nbsp;
         <span style={{cursor:"pointer",textDecoration:"underline"}} onClick={()=>setShowTos(true)}>Terms of Service &amp; Privacy Policy</span>
       </div>
@@ -1228,7 +1246,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
   );
 }
 
-export default function App() {
+function App() {
   const [profile, setProfile] = useState(()=>load("rbp_active_profile","me"));
   const [user, setUser] = useState(undefined);
   const [userProfile, setUserProfile] = useState(null);
@@ -1275,16 +1293,14 @@ export default function App() {
 
   const handleSubjectsDone = (sel) => setSubjectSelection(sel);
 
-  if (user === undefined) return (
-    <div style={{
-      minHeight:"100vh", background:"#ede9e2",
-      display:"flex", alignItems:"center", justifyContent:"center",
-      fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
-      color:"#7a7268", fontSize:13,
-    }}>
-      Loading…
-    </div>
-  );
+  if (user === undefined) {
+    const _dark = (() => { try { return JSON.parse(localStorage.getItem('rbp_dark')||'false'); } catch { return false; } })();
+    return (
+      <div style={{minHeight:"100vh",background:_dark?"#0d0f14":"#e8e4dd",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",color:_dark?"#9a9490":"#7a7268",fontSize:13}}>
+        Loading…
+      </div>
+    );
+  }
 
   if (user === null && isSupabaseConfigured()) return <AuthGate onAuth={()=>{}} />;
 
@@ -1304,4 +1320,8 @@ export default function App() {
       cloudData={cloudData}
     />
   );
+}
+
+export default function AppWithBoundary() {
+  return <ErrorBoundary><App /></ErrorBoundary>;
 }
