@@ -5,6 +5,45 @@ import SubjectPicker from "./components/SubjectPicker";
 import TermsOfService from "./components/TermsOfService";
 import { subjectsFromSelection } from "./data/subjects";
 
+const GENERIC_TIPS = [
+  { category:"Past Paper Strategy", color:"#3b82f6", tips:[
+    { title:"Time under exam conditions first", body:"Your first attempt at any paper must be timed and closed-book. Comfortable practice gives false confidence — exam conditions reveal real gaps." },
+    { title:"Mark immediately and log every mistake", body:"Don't skip the mark scheme. Every question you dropped marks on goes into your error log with a topic tag and reason (method / knowledge / careless)." },
+    { title:"Work backwards from mark schemes", body:"When you lose marks, find the expected answer and reverse-engineer why the examiner accepted it. Then rewrite the answer in your own words from memory." },
+    { title:"Do the same paper twice", body:"Two weeks after marking, redo any question you dropped marks on — from scratch, no notes. If you still can't do it, the topic needs more active review." },
+  ]},
+  { category:"Active Recall", color:"#8b5cf6", tips:[
+    { title:"Close the notes before you write", body:"Every time you review a topic, write what you remember before opening any resource. Retrieval practice beats re-reading by 2–3× for long-term retention." },
+    { title:"Brain-dump before each session", body:"Spend 5 minutes writing everything you remember from the last session. This primes recall and highlights what didn't stick overnight." },
+    { title:"Teach it in one sentence", body:"If you can't explain a concept in a single sentence a non-student would understand, your understanding has gaps. Simplicity is a proxy for depth." },
+    { title:"Spaced repetition for key facts", body:"Review definitions and formulae on day 1, 3, 7, 14, 30. Anything you still recall at 30 days is in long-term memory." },
+  ]},
+  { category:"Exam Technique", color:"#f97316", tips:[
+    { title:"Read the command word first", body:'"Describe" needs observation. "Explain" needs cause and effect. "Evaluate" needs a judgement. Miss the command word and you miss the marks regardless of knowledge.' },
+    { title:"Write to the mark allocation", body:"3 marks = 3 distinct points. If a question is worth 6 marks and you wrote 3 lines, you left marks on the table. Always count marks before moving on." },
+    { title:"Show all working — always", body:"Even if the final answer is wrong, method marks are available throughout. A wrong answer with correct working can still score 70% of the available marks." },
+    { title:"Attempt every question", body:"A blank answer scores 0 with certainty. A partial answer, a formula, a diagram — any of these can pick up method or context marks." },
+  ]},
+  { category:"Error Pattern Analysis", color:"#ef4444", tips:[
+    { title:"Tag every error by type", body:"Every mistake is one of three types: knowledge gap (didn't know it), method error (applied it wrong), careless slip. Different types need different fixes." },
+    { title:"Weekly error review", body:"At the end of each week, scan your error log for recurring topics. One topic appearing three times is more urgent than three one-off errors." },
+    { title:"Recreate the error from scratch", body:"Don't just read your mistake — reproduce it, then correct it. Physically writing the correction embeds the fix far better than reading a mark scheme." },
+    { title:"Build a personal formula sheet", body:"Any formula or rule you've dropped marks on more than once goes on a single A4 sheet. Review it before every practice session." },
+  ]},
+  { category:"Time Management", color:"#22c55e", tips:[
+    { title:"Weekly paper quota", body:"Aim for 2–3 past papers per subject per week in the final 8 weeks. More and quality drops; fewer and you won't build stamina." },
+    { title:"Prioritise by mark per minute", body:"Not all questions are equal. A 1-mark question costing 4 minutes is less efficient than a 4-mark question in the same time. Learn to identify and skip time sinks." },
+    { title:"Revision in 50-minute blocks", body:"Focus degrades after 45–60 minutes. Set a timer. After 50 minutes: 10 minutes off screens, then back in." },
+    { title:"Hardest subject first", body:"Willpower depletes during the day. Put your most difficult subject in the first block when concentration is highest." },
+  ]},
+  { category:"Mental Performance", color:"#0ea5e9", tips:[
+    { title:"Sleep is part of the revision", body:"Memory consolidation happens during sleep. Cutting sleep to revise more is a net loss — you encode less and retrieve slower the next day." },
+    { title:"Progress ≠ comfort", body:"If revision feels easy, it's probably not working. The feeling of struggle during retrieval practice is the signal that memory traces are being strengthened." },
+    { title:"Data over gut feeling", body:"Students consistently misjudge their weakest subjects. Your error log and past paper averages are more accurate than your intuition. Let data set the priority." },
+    { title:"One day per week fully off", body:"Sustained output requires recovery. A planned day off each week maintains performance across 8+ weeks. Burning out in week 4 is worse than slightly less revision overall." },
+  ]},
+];
+
 const EXAMS = [
   { date: "2026-05-14", subject: "Further Mathematics", paper: "Paper 1: Core Pure Mathematics 1", code: "9FM0/01", time: "PM", duration: "1h 30m", board: "Edexcel", topics: "Proof, complex numbers, matrices, further algebra, further calculus, further vectors", maxMark: 75 },
   { date: "2026-05-21", subject: "Further Mathematics", paper: "Paper 2: Core Pure Mathematics 2", code: "9FM0/02", time: "PM", duration: "1h 30m", board: "Edexcel", topics: "Polar coords, hyperbolic functions, differential equations, plus anything from CP1", maxMark: 75 },
@@ -715,9 +754,8 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
           ))}
           <button
             onClick={()=>setDarkMode(d=>!d)}
-            title={darkMode?"Switch to light mode":"Switch to dark mode"}
-            style={{marginLeft:4,padding:"6px 8px",background:"transparent",border:`1px solid ${C.border}`,borderRadius:6,cursor:"pointer",fontSize:14,color:C.muted,lineHeight:1}}
-          >{darkMode?'☀':'🌙'}</button>
+            style={{marginLeft:4,padding:"5px 10px",background:darkMode?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.05)",border:`1px solid ${C.border}`,borderRadius:6,cursor:"pointer",fontSize:12,color:C.muted,lineHeight:1,display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}
+          >{darkMode?'☀ Light':'🌙 Dark'}</button>
           {user?(
             <button onClick={()=>setView("account")} style={{marginLeft:4,paddingLeft:10,borderLeft:`1px solid ${C.border}`,background:"transparent",border:"none",color:view==="account"?C.accent:C.muted,fontSize:12,cursor:"pointer",maxWidth:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
               {userProfile?.display_name||user.email}
@@ -1050,20 +1088,25 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
         {view==="technique"&&(
           <div>
             <div style={{marginBottom:20}}>
-              <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:"0 0 4px"}}>Exam Technique</h1>
-              <p style={{fontSize:13,color:C.muted,margin:0}}>How to pick up extra marks in each subject.</p>
+              <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:"0 0 4px"}}>Study Technique</h1>
+              <p style={{fontSize:13,color:C.muted,margin:0}}>Evidence-based strategies that raise scores regardless of subject.</p>
             </div>
-            {TECHNIQUE.map((subj,si)=>(
-              <div key={si} style={{marginBottom:14,background:C.surface,border:"1px solid rgba(0,0,0,0.08)",borderRadius:10,padding:18}}>
-                <div style={{fontSize:13,fontWeight:600,color:subj.color,marginBottom:12}}>{subj.subject}</div>
-                {subj.tips.map((tip,ti)=>(
-                  <div key={ti} style={{marginBottom:10,paddingBottom:10,borderBottom:ti<subj.tips.length-1?"1px solid rgba(0,0,0,0.06)":"none"}}>
-                    <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:4}}>{tip.title}</div>
-                    <div style={{fontSize:13,lineHeight:1.65,color:C.muted}}>{tip.text||tip.body}</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:12}}>
+              {GENERIC_TIPS.map((cat,ci)=>(
+                <div key={ci} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:18,display:"flex",flexDirection:"column"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                    <div style={{width:3,height:16,borderRadius:2,background:cat.color,flexShrink:0}}/>
+                    <div style={{fontSize:12,fontWeight:700,color:cat.color,letterSpacing:0.3,textTransform:"uppercase"}}>{cat.category}</div>
                   </div>
-                ))}
-              </div>
-            ))}
+                  {cat.tips.map((tip,ti)=>(
+                    <div key={ti} style={{marginBottom:12,paddingBottom:12,borderBottom:ti<cat.tips.length-1?`1px solid ${C.border}`:"none"}}>
+                      <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:3}}>{tip.title}</div>
+                      <div style={{fontSize:12,lineHeight:1.65,color:C.muted}}>{tip.body}</div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -1237,7 +1280,7 @@ export default function App() {
       minHeight:"100vh", background:"#ede9e2",
       display:"flex", alignItems:"center", justifyContent:"center",
       fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
-      color:C.muted, fontSize:13,
+      color:"#7a7268", fontSize:13,
     }}>
       Loading…
     </div>
