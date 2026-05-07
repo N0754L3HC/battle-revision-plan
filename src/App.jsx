@@ -180,6 +180,18 @@ function getGrade(got, maxMark, paperKey, boundaries) {
   return {grade:'U',exact:false};
 }
 
+function getGradeForPaper(got, max, paper, subject, gradeBoundaries) {
+  const rb = RAW_BOUNDARIES[paper];
+  if (rb) {
+    for (const g of ['A*','A','B','C','D','E']) if (got>=rb[g]) return {grade:g,exact:true};
+    return {grade:'U',exact:true};
+  }
+  const pct = Math.round((got/max)*100);
+  const b = (gradeBoundaries||{})[subject] || {};
+  for (const g of ['A*','A','B','C','D','E']) if (pct>=(b[g]??0)) return {grade:g,exact:false};
+  return {grade:'U',exact:false};
+}
+
 function calcReadiness(scores, errors) {
   if (!scores.length) return {total:0,label:'No data yet',color:'#71717a',avg:0,scoreComp:0,paperComp:0,errorComp:0};
   const avg     = scores.reduce((a,s)=>a+s.pct,0)/scores.length;
@@ -416,216 +428,243 @@ function Analytics({subjects,scores,errors,C,font}) {
 
 // ── Tracker ────────────────────────────────────────────────────────────────
 function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font}) {
-  const [form,setForm]=useState({subj:'',paper:'',got:'',maxMark:'',errs:[]});
-  const [showForm,setShowForm]=useState(false);
-  const [sfilt,setSfilt]=useState('All');
+  const SUBJECTS      = subjects.map(s=>s.name);
+  const SUBJ_COLORS   = Object.fromEntries(subjects.map(s=>[s.name,s.color]));
+  const GRADE_BOUNDS  = Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
+  const PAPER_SUGGS   = Object.fromEntries(subjects.map(s=>[s.name,getPaperSuggestions(s)]));
 
-  const selectedSubj=subjects.find(s=>s.name===form.subj);
-  const suggestions=selectedSubj?getPaperSuggestions(selectedSubj):[];
+  const iS = {width:'100%',background:C.card2,border:`1px solid ${C.border}`,borderRadius:7,
+    padding:'9px 12px',color:C.text,fontSize:14,fontFamily:'inherit',outline:'none',boxSizing:'border-box'};
 
-  function submit() {
-    const got=parseFloat(form.got);
-    const max=parseFloat(form.maxMark)||100;
-    if (!form.subj||!form.paper||isNaN(got)||got<0||got>max) return;
-    const pct=Math.round((got/max)*100);
-    const ts=Date.now();
-    const date=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-    const entry={id:ts,ts,subject:form.subj,paper:form.paper,got,maxMark:max,pct,date};
+  const [scoreSubject, setScoreSubject] = useState(SUBJECTS[0]??'');
+  const [scorePaper,   setScorePaper]   = useState('');
+  const [scoreGot,     setScoreGot]     = useState('');
+  const [scoreMax,     setScoreMax]     = useState('');
+  const [sfilt,        setSfilt]        = useState('All');
+  const [errSubject,   setErrSubject]   = useState(SUBJECTS[0]??'');
+  const [errTopic,     setErrTopic]     = useState('');
+  const [errType,      setErrType]      = useState('method');
+  const [errNote,      setErrNote]      = useState('');
+  const [efilt,        setEfilt]        = useState('All');
+  const [confirmDel,   setConfirmDel]   = useState(null);
+
+  const nextSuggested = (PAPER_SUGGS[scoreSubject]||[]).find(p=>
+    !scores.filter(s=>s.subject===scoreSubject).map(s=>s.paper).includes(p)
+  );
+  const filteredScores = sfilt==='All' ? scores : scores.filter(s=>s.subject===sfilt);
+  const filteredErrors = efilt==='All' ? errors : errors.filter(e=>e.subject===efilt);
+
+  const abbr = s => s==='Further Mathematics'||s==='Further Maths'?'FM':s==='Computer Science'?'CS':s;
+
+  const addScore = () => {
+    if (!scorePaper||!scoreGot||!scoreMax) return;
+    const got=parseInt(scoreGot), max=parseInt(scoreMax);
+    if (isNaN(got)||isNaN(max)||max===0) return;
+    const entry={
+      subject:scoreSubject, paper:scorePaper, got, max, maxMark:max,
+      pct:Math.round((got/max)*100),
+      date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),
+      id:Date.now(), ts:Date.now(),
+    };
     const updated=[entry,...scores];
     setScores(updated); ls.set(`rbp_scores_${uid}`,updated);
-    if (form.errs.length) {
-      const newErrs=form.errs.map(t=>({id:ts+Math.random(),ts,type:t,subject:form.subj,paper:form.paper}));
-      const updatedE=[...newErrs,...errors];
-      setErrors(updatedE); ls.set(`rbp_errors_${uid}`,updatedE);
-    }
-    setForm({subj:'',paper:'',got:'',maxMark:'',errs:[]});
-    setShowForm(false);
-  }
+    setScorePaper(''); setScoreGot(''); setScoreMax('');
+  };
 
-  const displayed=sfilt==='All'?scores:scores.filter(s=>s.subject===sfilt);
+  const addError = () => {
+    if (!errTopic.trim()) return;
+    const entry={
+      subject:errSubject, topic:errTopic.trim(), type:errType,
+      note:errNote.trim(), date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'}),
+      id:Date.now(), ts:Date.now(),
+    };
+    const updated=[entry,...errors].slice(0,200);
+    setErrors(updated); ls.set(`rbp_errors_${uid}`,updated);
+    setErrTopic(''); setErrNote('');
+  };
 
   return (
-    <div style={{display:'flex',flexDirection:'column',gap:16}}>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-        <div>
-          <h2 style={{fontSize:17,fontWeight:700,color:C.text,margin:0}}>Paper Tracker</h2>
-          <p style={{fontSize:12,color:C.muted,margin:'3px 0 0'}}>
-            {scores.length} paper{scores.length!==1?'s':''} logged · synced to your account
-          </p>
-        </div>
-        <button onClick={()=>setShowForm(!showForm)}
-          style={{padding:'9px 16px',background:C.accent,border:'none',borderRadius:7,
-            color:'#fff',fontSize:13,fontWeight:700,fontFamily:font,cursor:'pointer'}}>
-          + Log paper
-        </button>
+    <div>
+      <div style={{marginBottom:20}}>
+        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:'0 0 4px'}}>Tracker</h1>
+        <p style={{fontSize:13,color:C.muted,margin:0}}>Log past papers and errors. Synced to your account automatically.</p>
       </div>
 
-      {showForm&&(
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'20px 20px 18px'}}>
-          <h3 style={{fontSize:14,fontWeight:700,color:C.text,margin:'0 0 16px'}}>Log a past paper</h3>
-          <div style={{display:'flex',flexDirection:'column',gap:12}}>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-              <div>
-                <label style={{fontSize:11,color:C.muted,fontWeight:600,display:'block',marginBottom:5}}>Subject</label>
-                <select value={form.subj} onChange={e=>setForm({...form,subj:e.target.value,paper:''})}
-                  style={{width:'100%',padding:'9px 10px',border:`1px solid ${C.border}`,borderRadius:8,
-                    background:C.card2,color:C.text,fontSize:13,fontFamily:font}}>
-                  <option value=''>Select…</option>
-                  {subjects.map(s=><option key={s.name} value={s.name}>{s.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={{fontSize:11,color:C.muted,fontWeight:600,display:'block',marginBottom:5}}>Paper</label>
-                <select value={form.paper} onChange={e=>setForm({...form,paper:e.target.value})}
-                  style={{width:'100%',padding:'9px 10px',border:`1px solid ${C.border}`,borderRadius:8,
-                    background:C.card2,color:C.text,fontSize:13,fontFamily:font}}>
-                  <option value=''>Select…</option>
-                  {suggestions.map(p=><option key={p} value={p}>{p}</option>)}
-                </select>
-              </div>
+      {/* Log a past paper */}
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:16,marginBottom:12}}>
+        <div style={{fontSize:12,fontWeight:600,color:C.muted,marginBottom:10}}>Log a past paper</div>
+        {nextSuggested&&(
+          <div onClick={()=>setScorePaper(nextSuggested)} style={{display:'flex',alignItems:'center',gap:10,
+            padding:'10px 12px',borderRadius:8,background:'rgba(34,197,94,0.05)',
+            border:'1px solid rgba(34,197,94,0.14)',marginBottom:10,cursor:'pointer'}}>
+            <div style={{width:6,height:6,borderRadius:'50%',background:'#22c55e',flexShrink:0}}/>
+            <div style={{flex:1}}>
+              <div style={{fontSize:11,fontWeight:600,color:'#22c55e',textTransform:'uppercase',letterSpacing:0.5,marginBottom:2}}>Suggested next</div>
+              <div style={{fontSize:13,color:C.text}}>{nextSuggested}</div>
             </div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-              <div>
-                <label style={{fontSize:11,color:C.muted,fontWeight:600,display:'block',marginBottom:5}}>Marks scored</label>
-                <input type='number' min={0} value={form.got} placeholder='e.g. 72'
-                  onChange={e=>setForm({...form,got:e.target.value})}
-                  style={{width:'100%',padding:'9px 10px',border:`1px solid ${C.border}`,borderRadius:8,
-                    background:C.card2,color:C.text,fontSize:13,fontFamily:font,boxSizing:'border-box'}}/>
-              </div>
-              <div>
-                <label style={{fontSize:11,color:C.muted,fontWeight:600,display:'block',marginBottom:5}}>Out of</label>
-                <input type='number' min={1} value={form.maxMark} placeholder='100'
-                  onChange={e=>setForm({...form,maxMark:e.target.value})}
-                  style={{width:'100%',padding:'9px 10px',border:`1px solid ${C.border}`,borderRadius:8,
-                    background:C.card2,color:C.text,fontSize:13,fontFamily:font,boxSizing:'border-box'}}/>
-              </div>
-            </div>
-            {form.got&&form.subj&&(()=>{
-              const max=parseFloat(form.maxMark)||100;
-              const got=parseFloat(form.got);
-              if (!isNaN(got)&&!isNaN(max)&&max>0) {
-                const pct=Math.round((got/max)*100);
-                const {grade}=getGrade(got,max,form.paper,selectedSubj?.gradeBoundaries);
-                return (
-                  <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',background:C.card2,borderRadius:8}}>
-                    <span style={{fontSize:13,color:C.muted}}>{pct}%</span>
-                    <span style={{fontSize:15,fontWeight:800,color:gradeColor(grade)}}>→ {grade}</span>
-                    {selectedSubj?.gradeBoundaries?.['A*']&&(
-                      <span style={{fontSize:11,color:C.subtle,marginLeft:'auto'}}>
-                        A* boundary: {selectedSubj.gradeBoundaries['A*']}%
-                      </span>
-                    )}
-                  </div>
-                );
-              }
-            })()}
-            <div>
-              <label style={{fontSize:11,color:C.muted,fontWeight:600,display:'block',marginBottom:8}}>Error types (optional)</label>
-              <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
-                {ERROR_TYPES.map(et=>{
-                  const on=form.errs.includes(et.id);
-                  return (
-                    <button key={et.id}
-                      onClick={()=>setForm({...form,errs:on?form.errs.filter(x=>x!==et.id):[...form.errs,et.id]})}
-                      style={{padding:'5px 11px',borderRadius:6,border:`1.5px solid ${on?et.color+'66':C.border}`,
-                        background:on?`${et.color}14`:'transparent',color:on?et.color:C.muted,
-                        fontSize:11,fontWeight:on?700:400,fontFamily:font,cursor:'pointer'}}>
-                      {et.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <div style={{display:'flex',gap:8,marginTop:4}}>
-              <button onClick={()=>setShowForm(false)}
-                style={{flex:1,padding:'10px',background:'transparent',border:`1px solid ${C.border}`,
-                  borderRadius:8,color:C.muted,fontSize:13,fontFamily:font,cursor:'pointer'}}>Cancel</button>
-              <button onClick={submit} disabled={!form.subj||!form.paper||!form.got}
-                style={{flex:2,padding:'10px',
-                  background:form.subj&&form.paper&&form.got?C.accent:C.card2,
-                  border:'none',borderRadius:8,
-                  color:form.subj&&form.paper&&form.got?'#fff':C.subtle,
-                  fontSize:13,fontWeight:700,fontFamily:font,cursor:'pointer'}}>Save</button>
-            </div>
+            <span style={{fontSize:12,color:C.muted}}>Tap to fill</span>
+          </div>
+        )}
+        <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
+          <select value={scoreSubject} onChange={e=>{setScoreSubject(e.target.value);setScorePaper('');}}
+            style={{...iS,flex:'1 1 100px'}}>
+            {SUBJECTS.map(s=><option key={s}>{s}</option>)}
+          </select>
+          <input value={scorePaper} onChange={e=>setScorePaper(e.target.value)}
+            placeholder="Paper name / year" style={{...iS,flex:'2 1 150px'}}/>
+          <input value={scoreGot} onChange={e=>setScoreGot(e.target.value)}
+            placeholder="Score" type="number" style={{...iS,flex:'0 0 60px'}}/>
+          <input value={scoreMax} onChange={e=>setScoreMax(e.target.value)}
+            placeholder="/Max" type="number" style={{...iS,flex:'0 0 60px'}}/>
+          <button onClick={addScore} style={{background:'#22c55e',border:'none',color:'#fff',
+            padding:'8px 16px',borderRadius:7,cursor:'pointer',fontSize:13,fontWeight:600,fontFamily:'inherit'}}>
+            Save
+          </button>
+        </div>
+      </div>
+
+      {/* Paper history */}
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:16,marginBottom:12}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+          <div style={{fontSize:12,fontWeight:600,color:C.muted}}>Paper history ({filteredScores.length})</div>
+          <div style={{display:'flex',gap:3,flexWrap:'wrap'}}>
+            {['All',...SUBJECTS].map(s=>(
+              <button key={s} onClick={()=>setSfilt(s)}
+                style={{background:sfilt===s?C.card2:'transparent',border:`1px solid ${C.border}`,
+                  color:sfilt===s?C.text:C.muted,padding:'3px 6px',borderRadius:4,
+                  cursor:'pointer',fontSize:13,fontFamily:'inherit'}}>
+                {abbr(s)}
+              </button>
+            ))}
           </div>
         </div>
-      )}
-
-      {scores.length>0&&(
-        <div style={{display:'flex',gap:6,overflowX:'auto',paddingBottom:2}}>
-          {['All',...subjects.map(s=>s.name)].map(s=>{
-            const on=sfilt===s;
-            const subj=subjects.find(x=>x.name===s);
-            return (
-              <button key={s} onClick={()=>setSfilt(s)}
-                style={{padding:'6px 14px',borderRadius:7,
-                  border:`1.5px solid ${on?(subj?.color||C.accent)+'55':C.border}`,
-                  background:on?`${subj?.color||C.accent}10`:'transparent',
-                  color:on?subj?.color||C.accent:C.muted,
-                  fontSize:12,fontWeight:on?700:400,fontFamily:font,cursor:'pointer',whiteSpace:'nowrap',flexShrink:0}}>
-                {s}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {displayed.length===0?(
-        <div style={{padding:'32px 0',textAlign:'center',color:C.subtle,fontSize:13}}>
-          No papers logged yet. Hit <strong style={{color:C.accent}}>+ Log paper</strong> above.
-        </div>
-      ):(
-        <div style={{display:'flex',flexDirection:'column',gap:8}}>
-          {displayed.slice(0,40).map(s=>{
-            const subj=subjects.find(x=>x.name===s.subject);
-            const {grade,exact}=getGrade(s.got,s.maxMark,s.paper,subj?.gradeBoundaries);
-            return (
-              <div key={s.id} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:8,
-                padding:'14px 16px',display:'flex',alignItems:'center',gap:12}}>
-                <div style={{width:3,height:38,borderRadius:2,background:subj?.color||C.accent,flexShrink:0}}/>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:2,
-                    whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{s.paper}</div>
-                  <div style={{fontSize:11,color:C.muted}}>{s.subject} · {s.date}</div>
-                </div>
-                <div style={{textAlign:'right',flexShrink:0}}>
-                  <div style={{fontSize:17,fontWeight:800,color:gradeColor(grade)}}>{grade}</div>
-                  <div style={{fontSize:11,color:C.muted}}>{s.pct}%{!exact?' ≈':''}</div>
-                </div>
+        {filteredScores.length===0&&(
+          <div style={{fontSize:15,color:C.muted,textAlign:'center',padding:'16px 0'}}>No papers logged yet.</div>
+        )}
+        {filteredScores.map(s=>{
+          const maxVal=s.max??s.maxMark??100;
+          const {grade,exact}=getGradeForPaper(s.got,maxVal,s.paper,s.subject,GRADE_BOUNDS);
+          return (
+            <div key={s.id} style={{display:'flex',alignItems:'center',gap:10,
+              padding:'8px 0',borderTop:`1px solid ${C.border}`}}>
+              <div style={{width:3,height:32,borderRadius:2,background:SUBJ_COLORS[s.subject]||'#888',flexShrink:0}}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,fontWeight:600,color:C.muted,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s.subject}</div>
+                <div style={{fontSize:13,color:C.muted,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s.paper}</div>
+                <div style={{fontSize:11,color:C.muted,marginTop:2}}>{s.date}</div>
               </div>
-            );
-          })}
-        </div>
-      )}
-
-      {errors.length>=3&&(()=>{
-        const counts={};
-        errors.forEach(e=>{counts[e.type]=(counts[e.type]||0)+1;});
-        const top=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,3);
-        return (
-          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'16px 18px'}}>
-            <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:10}}>
-              Your error patterns
+              <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
+                <div style={{textAlign:'right'}}>
+                  <div style={{fontSize:17,fontWeight:700,color:gradeColor(grade)}}>
+                    {grade}{!exact&&<span style={{fontSize:10,opacity:0.5,marginLeft:1}}>~</span>}
+                    {' '}<span style={{fontSize:14,color:C.muted}}>{s.pct}%</span>
+                  </div>
+                  <div style={{fontSize:12,color:C.muted}}>{s.got}/{maxVal}{!exact&&<span style={{marginLeft:3}}>est.</span>}</div>
+                </div>
+                {confirmDel===s.id?(
+                  <div style={{display:'flex',gap:3}}>
+                    <button onClick={()=>{const u=scores.filter(x=>x.id!==s.id);setScores(u);ls.set(`rbp_scores_${uid}`,u);setConfirmDel(null);}}
+                      style={{background:'rgba(239,68,68,0.12)',border:'1px solid rgba(239,68,68,0.25)',color:'#ef4444',
+                        padding:'3px 8px',borderRadius:5,cursor:'pointer',fontSize:12,fontFamily:'inherit'}}>Delete</button>
+                    <button onClick={()=>setConfirmDel(null)}
+                      style={{background:'rgba(0,0,0,0.04)',border:`1px solid ${C.border}`,color:C.muted,
+                        padding:'3px 8px',borderRadius:5,cursor:'pointer',fontSize:12,fontFamily:'inherit'}}>Cancel</button>
+                  </div>
+                ):(
+                  <button onClick={()=>setConfirmDel(s.id)}
+                    style={{background:'transparent',border:`1px solid ${C.border}`,color:C.muted,
+                      padding:'3px 8px',borderRadius:5,cursor:'pointer',fontSize:12,fontFamily:'inherit'}}>Del</button>
+                )}
+              </div>
             </div>
-            {top.map(([id,count])=>{
-              const et=ERROR_TYPES.find(e=>e.id===id);
-              if (!et) return null;
-              const pct=Math.round((count/errors.length)*100);
+          );
+        })}
+      </div>
+
+      {/* Log an error */}
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:16,marginBottom:12}}>
+        <div style={{fontSize:12,fontWeight:600,color:C.muted,marginBottom:10}}>Log an error</div>
+        <div style={{display:'flex',gap:5,flexWrap:'wrap',marginBottom:8}}>
+          <select value={errSubject} onChange={e=>setErrSubject(e.target.value)}
+            style={{...iS,flex:'1 1 90px'}}>
+            {SUBJECTS.map(s=><option key={s}>{s}</option>)}
+          </select>
+          <input value={errTopic} onChange={e=>setErrTopic(e.target.value)}
+            placeholder="Topic" style={{...iS,flex:'2 1 140px'}}/>
+          <select value={errType} onChange={e=>setErrType(e.target.value)}
+            style={{...iS,flex:'1 1 120px'}}>
+            {ERROR_TYPES.map(et=><option key={et.id} value={et.id}>{et.label}</option>)}
+          </select>
+        </div>
+        <div style={{display:'flex',gap:5}}>
+          <input value={errNote} onChange={e=>setErrNote(e.target.value)}
+            placeholder="What specifically went wrong? (optional)" style={{...iS,flex:1}}/>
+          <button onClick={addError} style={{background:'#ef4444',border:'none',color:'#fff',
+            padding:'8px 16px',borderRadius:7,cursor:'pointer',fontSize:13,fontWeight:600,fontFamily:'inherit'}}>
+            Save
+          </button>
+        </div>
+      </div>
+
+      {/* Error log */}
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:16}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+          <div style={{fontSize:12,fontWeight:600,color:C.muted}}>Error log ({filteredErrors.length})</div>
+          <div style={{display:'flex',gap:3,flexWrap:'wrap'}}>
+            {['All',...SUBJECTS].map(s=>(
+              <button key={s} onClick={()=>setEfilt(s)}
+                style={{background:efilt===s?C.card2:'transparent',border:`1px solid ${C.border}`,
+                  color:efilt===s?C.text:C.muted,padding:'3px 6px',borderRadius:4,
+                  cursor:'pointer',fontSize:13,fontFamily:'inherit'}}>
+                {abbr(s)}
+              </button>
+            ))}
+          </div>
+        </div>
+        {errors.length>=3&&(
+          <div style={{display:'flex',gap:3,marginBottom:10,flexWrap:'wrap'}}>
+            {ERROR_TYPES.map(et=>{
+              const cnt=filteredErrors.filter(e=>e.type===et.id).length;
+              if (!cnt) return null;
               return (
-                <div key={id} style={{marginBottom:8}}>
-                  <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
-                    <span style={{fontSize:12,color:C.text}}>{et.label}</span>
-                    <span style={{fontSize:12,fontWeight:700,color:et.color}}>×{count} ({pct}%)</span>
-                  </div>
-                  <div style={{height:4,borderRadius:2,background:C.card2}}>
-                    <div style={{height:'100%',width:`${pct}%`,background:et.color,borderRadius:2}}/>
-                  </div>
+                <div key={et.id} style={{fontSize:13,padding:'3px 7px',borderRadius:4,
+                  background:`${et.color}12`,color:et.color,fontWeight:700}}>
+                  {et.label}: {cnt}
                 </div>
               );
             })}
           </div>
-        );
-      })()}
+        )}
+        {filteredErrors.length===0&&(
+          <div style={{fontSize:15,color:C.muted,textAlign:'center',padding:'14px 0'}}>
+            No errors logged{efilt!=='All'?` for ${efilt}`:''} yet.
+          </div>
+        )}
+        <div style={{maxHeight:300,overflowY:'auto'}}>
+          {filteredErrors.map(e=>{
+            const et=ERROR_TYPES.find(t=>t.id===e.type);
+            return (
+              <div key={e.id} style={{display:'flex',gap:8,padding:'7px 0',
+                borderTop:`1px solid ${C.border}`,alignItems:'flex-start'}}>
+                <div style={{width:3,borderRadius:2,background:et?.color||'#555',flexShrink:0,alignSelf:'stretch'}}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,color:C.muted}}>
+                    <span style={{color:SUBJ_COLORS[e.subject]||'#7a7268',fontWeight:600}}>{e.subject}</span> · {e.topic}
+                  </div>
+                  <div style={{fontSize:12,color:C.muted,marginTop:2}}>
+                    {et?.label} · {e.date}{e.note&&` · ${e.note}`}
+                  </div>
+                </div>
+                <button onClick={()=>{const u=errors.filter(x=>x.id!==e.id);setErrors(u);ls.set(`rbp_errors_${uid}`,u);}}
+                  style={{background:'transparent',border:`1px solid ${C.border}`,color:C.muted,
+                    padding:'3px 8px',borderRadius:5,cursor:'pointer',fontSize:12,fontFamily:'inherit',flexShrink:0}}>
+                  Del
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
