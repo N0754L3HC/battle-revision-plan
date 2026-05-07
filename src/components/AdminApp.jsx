@@ -33,9 +33,13 @@ function gradeFromPct(pct,subject='') {
 }
 
 // ── Shared input style ─────────────────────────────────────────────────────
-const iS = {background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,61,0,0.2)',borderRadius:6,padding:'10px 14px',color:'#ccc',fontSize:13,fontFamily:mono,outline:'none',width:'100%',boxSizing:'border-box'};
-const card = {background:'rgba(255,255,255,0.025)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:8};
-const btn = (col='#FF3D00',fill=false) => ({background:fill?col:'transparent',border:`1px solid ${col}44`,color:fill?'#fff':col,padding:'6px 14px',borderRadius:5,cursor:'pointer',fontSize:11,fontWeight:700,fontFamily:mono,letterSpacing:1,transition:'all 0.15s'});
+const iS = {background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:6,padding:'10px 14px',color:'#ddd',fontSize:13,fontFamily:mono,outline:'none',width:'100%',boxSizing:'border-box'};
+const card = {background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:8};
+const btn = (col='#FF3D00',fill=false) => ({background:fill?col:'transparent',border:`1px solid ${col}66`,color:fill?'#fff':col,padding:'6px 14px',borderRadius:5,cursor:'pointer',fontSize:11,fontWeight:700,fontFamily:mono,letterSpacing:1,transition:'all 0.15s'});
+// colour tokens — all readable on #050508 background
+const DIM = '#5a5550';   // timestamps, ranks, footnotes
+const MUT = '#8a8480';   // secondary labels, sub-text
+const SEC = '#b04020';   // section header labels (red-ish but legible)
 
 // ── Cursor ─────────────────────────────────────────────────────────────────
 function Cursor() {
@@ -46,7 +50,7 @@ function Cursor() {
 
 // ── Mini sparkline ─────────────────────────────────────────────────────────
 function Spark({scores,color='#FF3D00',w=80,h=24}) {
-  if (scores.length<2) return <span style={{color:'#333',fontSize:10}}>—</span>;
+  if (scores.length<2) return <span style={{color:DIM,fontSize:10}}>—</span>;
   const pts=scores.slice(-12);
   const min=Math.min(...pts.map(s=>s.pct)),max=Math.max(...pts.map(s=>s.pct));
   const range=max-min||1;
@@ -92,33 +96,33 @@ function LoginScreen({onAuth}) {
       <div style={{position:'fixed',top:'22%',left:'50%',transform:'translate(-50%,-50%)',width:900,height:500,borderRadius:'50%',background:'radial-gradient(ellipse,rgba(255,30,0,0.05) 0%,transparent 70%)',pointerEvents:'none'}}/>
       <div style={{width:'100%',maxWidth:380,position:'relative',zIndex:1}}>
         <div style={{textAlign:'center',marginBottom:44}}>
-          <div style={{fontSize:9,letterSpacing:5,color:'#1f0000',marginBottom:16,fontWeight:700}}>▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓</div>
+          <div style={{fontSize:9,letterSpacing:5,color:'#3d1810',marginBottom:16,fontWeight:700}}>▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓</div>
           <div style={{fontSize:34,fontWeight:900,color:'#FF3D00',letterSpacing:10,marginBottom:4}}>GOD MODE</div>
-          <div style={{fontSize:9,letterSpacing:3,color:'#5a0000',marginTop:2}}>A* BATTLE PLAN · RESTRICTED SYSTEM ACCESS</div>
-          <div style={{fontSize:9,letterSpacing:5,color:'#1f0000',marginTop:16,fontWeight:700}}>▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓</div>
+          <div style={{fontSize:9,letterSpacing:3,color:'#cc4422',marginTop:2}}>A* BATTLE PLAN · RESTRICTED SYSTEM ACCESS</div>
+          <div style={{fontSize:9,letterSpacing:5,color:'#3d1810',marginTop:16,fontWeight:700}}>▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓</div>
         </div>
-        <div style={{fontSize:11,color:'#660000',marginBottom:18,letterSpacing:1,minHeight:18}}>
+        <div style={{fontSize:11,color:'#cc4422',marginBottom:18,letterSpacing:1,minHeight:18}}>
           {status==='checking'?'// VERIFYING CREDENTIALS...':status==='denied'?'// ACCESS DENIED — UNAUTHORIZED':status==='ok'?'// ACCESS GRANTED — LOADING...':(<>// ENTER CREDENTIALS <Cursor/></>)}
         </div>
         {status==='denied'&&<div style={{background:'rgba(255,0,0,0.06)',border:'1px solid rgba(255,0,0,0.2)',borderRadius:6,padding:'12px 14px',marginBottom:14,fontSize:12,color:'#FF3D00',letterSpacing:0.5}}>⛔ ADMINISTRATOR PRIVILEGES REQUIRED</div>}
         {err&&status==='idle'&&<div style={{color:'#FF6D00',fontSize:12,marginBottom:12}}>{err}</div>}
         <div style={{opacity:status!=='idle'?0.3:1,transition:'opacity 0.3s',pointerEvents:status!=='idle'?'none':'auto'}}>
-          <div style={{fontSize:9,color:'#550000',letterSpacing:2,marginBottom:5,fontWeight:700}}>EMAIL</div>
-          <input style={{...iS,marginBottom:11}} type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==='Enter'&&attempt()} autoComplete="username" placeholder="admin@example.com"/>
-          <div style={{fontSize:9,color:'#550000',letterSpacing:2,marginBottom:5,fontWeight:700}}>PASSWORD</div>
-          <input style={{...iS,marginBottom:20}} type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==='Enter'&&attempt()} autoComplete="current-password" placeholder="················"/>
+          <div style={{fontSize:9,color:'#cc4422',letterSpacing:2,marginBottom:5,fontWeight:700}}>EMAIL</div>
+          <input style={{...iS,marginBottom:11,border:'1px solid rgba(255,61,0,0.25)',background:'rgba(255,61,0,0.04)'}} type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==='Enter'&&attempt()} autoComplete="username" placeholder="admin@example.com"/>
+          <div style={{fontSize:9,color:'#cc4422',letterSpacing:2,marginBottom:5,fontWeight:700}}>PASSWORD</div>
+          <input style={{...iS,marginBottom:20,border:'1px solid rgba(255,61,0,0.25)',background:'rgba(255,61,0,0.04)'}} type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==='Enter'&&attempt()} autoComplete="current-password" placeholder="················"/>
           <button onClick={attempt} disabled={loading} style={{width:'100%',padding:'13px',background:'rgba(255,61,0,0.9)',border:'1px solid rgba(255,61,0,0.6)',borderRadius:6,color:'#fff',fontSize:12,fontWeight:800,fontFamily:mono,letterSpacing:3,cursor:'pointer'}}>
             {status==='checking'?'VERIFYING...':status==='ok'?'GRANTED ✓':'ACCESS SYSTEM →'}
           </button>
           <div style={{display:'flex',alignItems:'center',gap:10,margin:'16px 0'}}>
-            <div style={{flex:1,height:1,background:'rgba(255,61,0,0.08)'}}/><div style={{fontSize:9,color:'#440000',letterSpacing:2}}>OR</div><div style={{flex:1,height:1,background:'rgba(255,61,0,0.08)'}}/>
+            <div style={{flex:1,height:1,background:'rgba(255,61,0,0.12)'}}/><div style={{fontSize:9,color:'#aa4422',letterSpacing:2}}>OR</div><div style={{flex:1,height:1,background:'rgba(255,61,0,0.12)'}}/>
           </div>
-          <button onClick={googleLogin} disabled={loading} style={{width:'100%',padding:'12px',background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,61,0,0.14)',borderRadius:6,color:'#884433',fontSize:11,fontWeight:700,fontFamily:mono,letterSpacing:2,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+          <button onClick={googleLogin} disabled={loading} style={{width:'100%',padding:'12px',background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,61,0,0.14)',borderRadius:6,color:'#cc7755',fontSize:11,fontWeight:700,fontFamily:mono,letterSpacing:2,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
             <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#EA4335" d="M5.27 9.76A7.08 7.08 0 0 1 19.07 12H12v4h7.93A8 8 0 1 1 12 4a7.93 7.93 0 0 1 5.4 2.1L14.93 8.6A4.5 4.5 0 0 0 12 7.5a4.49 4.49 0 0 0-4.24 3L5.27 9.76Z"/></svg>
             CONTINUE WITH GOOGLE
           </button>
         </div>
-        <div style={{fontSize:9,color:'#1a0000',marginTop:28,textAlign:'center',letterSpacing:1.5}}>UNAUTHORIZED ACCESS IS PROHIBITED AND MONITORED</div>
+        <div style={{fontSize:9,color:'#6a3020',marginTop:28,textAlign:'center',letterSpacing:1.5}}>UNAUTHORIZED ACCESS IS PROHIBITED AND MONITORED</div>
       </div>
     </div>
   );
@@ -149,8 +153,8 @@ function UserDetail({u,onClose,onToggleAdmin,onDeleteUser}) {
       <div style={{background:'#080810',borderBottom:'1px solid rgba(255,61,0,0.12)',padding:'12px 24px',display:'flex',alignItems:'center',gap:14,flexShrink:0}}>
         <button onClick={onClose} style={btn()}>← BACK</button>
         <div style={{flex:1}}>
-          <div style={{fontSize:15,fontWeight:700,color:'#fff'}}>{u.display_name||<span style={{color:'#444'}}>No name</span>} <span style={{fontSize:11,color:'#444',fontWeight:400}}>{u.email}</span></div>
-          <div style={{fontSize:10,color:'#333',marginTop:2}}>JOINED {fmtDate(u.created_at)} · LAST ACTIVE {timeSince(u.lastActive)} · {u.tos_agreed_at?'ToS ✓':'ToS pending'}</div>
+          <div style={{fontSize:15,fontWeight:700,color:'#fff'}}>{u.display_name||<span style={{color:MUT}}>No name</span>} <span style={{fontSize:11,color:MUT,fontWeight:400}}>{u.email}</span></div>
+          <div style={{fontSize:10,color:DIM,marginTop:2}}>JOINED {fmtDate(u.created_at)} · LAST ACTIVE {timeSince(u.lastActive)} · {u.tos_agreed_at?'ToS ✓':'ToS pending'}</div>
         </div>
         <button onClick={doToggle} disabled={toggling} style={btn(u.is_admin?'#FF3D00':'#555')}>
           {toggling?'...':(u.is_admin?'REVOKE ADMIN':'GRANT ADMIN')}
@@ -164,14 +168,14 @@ function UserDetail({u,onClose,onToggleAdmin,onDeleteUser}) {
         <div style={{display:'grid',gridTemplateColumns:'160px 1fr',gap:10,marginBottom:12}}>
           <div style={{...card,padding:'16px 20px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',borderColor:`${R(br.t)}22`}}>
             <div style={{fontSize:48,fontWeight:900,color:R(br.t),lineHeight:1}}>{br.t}</div>
-            <div style={{fontSize:9,color:'#444',letterSpacing:2,marginTop:3}}>READINESS</div>
+            <div style={{fontSize:9,color:MUT,letterSpacing:2,marginTop:3}}>READINESS</div>
             <div style={{height:3,width:'80%',background:'rgba(255,255,255,0.05)',borderRadius:2,marginTop:8,overflow:'hidden'}}><div style={{height:'100%',width:`${br.t}%`,background:R(br.t)}}/></div>
           </div>
           <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8}}>
             {[{v:allScores.length,l:'PAPERS',c:'#fff'},{v:allErrors.length,l:'ERRORS',c:allErrors.length>10?'#FF9100':'#fff'},{v:`${br.avg}%`,l:'AVG SCORE',c:br.avg>=70?'#00E676':br.avg>=50?'#FFD600':'#FF3D00'},{v:u.subjectList?.length||0,l:'SUBJECTS',c:'#40C4FF'}].map(({v,l,c})=>(
               <div key={l} style={{...card,padding:'14px 16px'}}>
                 <div style={{fontSize:28,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
-                <div style={{fontSize:9,color:'#444',letterSpacing:1.5,marginTop:4}}>{l}</div>
+                <div style={{fontSize:9,color:MUT,letterSpacing:1.5,marginTop:4}}>{l}</div>
               </div>
             ))}
           </div>
@@ -179,11 +183,11 @@ function UserDetail({u,onClose,onToggleAdmin,onDeleteUser}) {
         {/* Subject breakdown */}
         {bySubject.length>0&&(
           <div style={{...card,padding:'16px 20px',marginBottom:12}}>
-            <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:12}}>SUBJECT BREAKDOWN</div>
+            <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:12}}>SUBJECT BREAKDOWN</div>
             <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
               {bySubject.map(({sub,avg,g,n})=>(
                 <div key={sub} style={{...card,padding:'12px 16px',minWidth:140,flex:'1 1 140px',borderColor:`${SC[sub]||'#888'}33`}}>
-                  <div style={{fontSize:9,letterSpacing:2,color:'#555',marginBottom:6,textTransform:'uppercase'}}>{sub.replace(/-/g,' ')}</div>
+                  <div style={{fontSize:9,letterSpacing:2,color:'#aaa',marginBottom:6,textTransform:'uppercase'}}>{sub.replace(/-/g,' ')}</div>
                   <div style={{fontSize:32,fontWeight:900,color:GC[g]||'#555'}}>{g}</div>
                   <div style={{fontSize:11,color:'#777',marginTop:2}}>{avg}% · {n} paper{n!==1?'s':''}</div>
                   <Spark scores={allScores.filter(s=>s.subject===sub)} color={SC[sub]||'#888'} w={80} h={20}/>
@@ -195,7 +199,7 @@ function UserDetail({u,onClose,onToggleAdmin,onDeleteUser}) {
         {/* Error types */}
         {Object.keys(errTypes).length>0&&(
           <div style={{...card,padding:'14px 20px',marginBottom:12}}>
-            <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:10}}>ERROR PATTERN</div>
+            <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:10}}>ERROR PATTERN</div>
             <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
               {Object.entries(errTypes).sort((a,b)=>b[1]-a[1]).map(([t,n])=>(
                 <div key={t} style={{...card,padding:'8px 14px',display:'flex',gap:8,alignItems:'center'}}>
@@ -208,31 +212,31 @@ function UserDetail({u,onClose,onToggleAdmin,onDeleteUser}) {
         )}
         {/* Papers table */}
         <div style={{...card,padding:'16px 20px',marginBottom:12}}>
-          <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:12}}>PAPERS ({allScores.length})</div>
-          {allScores.length===0?<div style={{color:'#333',fontSize:12}}>No papers logged.</div>:allScores.slice(0,30).map((sc,i)=>(
+          <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:12}}>PAPERS ({allScores.length})</div>
+          {allScores.length===0?<div style={{color:DIM,fontSize:12}}>No papers logged.</div>:allScores.slice(0,30).map((sc,i)=>(
             <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'7px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12}}>
               <div style={{display:'flex',alignItems:'center',gap:8,flex:1,minWidth:0}}>
                 <span style={pill(SC[sc.subject]||'#888')}>{sc.subject}</span>
                 <span style={{color:'#aaa',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{sc.paper}</span>
               </div>
               <div style={{display:'flex',gap:12,alignItems:'center',flexShrink:0}}>
-                <span style={{color:'#444',fontSize:10}}>{sc.date}</span>
-                <span style={{color:'#555'}}>{sc.got}/{sc.max??sc.maxMark??100}</span>
+                <span style={{color:MUT,fontSize:10}}>{sc.date}</span>
+                <span style={{color:'#aaa'}}>{sc.got}/{sc.max??sc.maxMark??100}</span>
                 <span style={{fontWeight:800,color:GC[gradeFromPct(sc.pct,sc.subject)]}}>{sc.pct}%</span>
               </div>
             </div>
           ))}
-          {allScores.length>30&&<div style={{fontSize:11,color:'#333',marginTop:8}}>+ {allScores.length-30} more</div>}
+          {allScores.length>30&&<div style={{fontSize:11,color:DIM,marginTop:8}}>+ {allScores.length-30} more</div>}
         </div>
         {/* Errors */}
         <div style={{...card,padding:'16px 20px'}}>
-          <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:12}}>ERROR LOG ({allErrors.length})</div>
-          {allErrors.length===0?<div style={{color:'#333',fontSize:12}}>No errors logged.</div>:allErrors.slice(0,20).map((e,i)=>(
+          <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:12}}>ERROR LOG ({allErrors.length})</div>
+          {allErrors.length===0?<div style={{color:DIM,fontSize:12}}>No errors logged.</div>:allErrors.slice(0,20).map((e,i)=>(
             <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'6px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12}}>
               <div style={{display:'flex',alignItems:'center',gap:8}}>
                 <span style={pill(SC[e.subject]||'#888',true)}>{e.subject||'?'}</span>
                 <span style={{color:'#ccc'}}>{e.topic}</span>
-                {e.note&&<span style={{color:'#444',fontSize:11}}>— {e.note}</span>}
+                {e.note&&<span style={{color:MUT,fontSize:11}}>— {e.note}</span>}
               </div>
               <span style={pill('#FF9100',true)}>{e.type}</span>
             </div>
@@ -272,27 +276,27 @@ function BroadcastPanel({users}) {
   return (
     <div style={{display:'grid',gridTemplateColumns:'1fr 360px',gap:16}}>
       <div style={{...card,padding:24}}>
-        <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:20,fontWeight:700}}>COMPOSE BROADCAST</div>
-        <div style={{fontSize:9,color:'#440000',letterSpacing:2,marginBottom:5}}>TITLE</div>
+        <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:20,fontWeight:700}}>COMPOSE BROADCAST</div>
+        <div style={{fontSize:9,color:SEC,letterSpacing:2,marginBottom:5}}>TITLE</div>
         <input style={{...iS,marginBottom:14}} value={title} onChange={e=>setTitle(e.target.value)} placeholder="e.g. Important update"/>
-        <div style={{fontSize:9,color:'#440000',letterSpacing:2,marginBottom:5}}>MESSAGE</div>
+        <div style={{fontSize:9,color:SEC,letterSpacing:2,marginBottom:5}}>MESSAGE</div>
         <textarea style={{...iS,marginBottom:14,height:120,resize:'vertical'}} value={body} onChange={e=>setBody(e.target.value)} placeholder="Message to all users..."/>
         <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:10}}>
           <button onClick={send} disabled={sending} style={{...btn('#FF3D00',true),padding:'10px 24px'}}>
             {sending?'SENDING...':sent?'SENT ✓':'BROADCAST TO ALL USERS'}
           </button>
-          <span style={{fontSize:10,color:'#444'}}>{users.length} recipient{users.length!==1?'s':''}</span>
+          <span style={{fontSize:10,color:MUT}}>{users.length} recipient{users.length!==1?'s':''}</span>
         </div>
         {err&&<div style={{fontSize:11,color:'#FF9100'}}>{err}</div>}
-        <div style={{fontSize:10,color:'#333',marginTop:12,borderTop:'1px solid rgba(255,255,255,0.04)',paddingTop:10}}>Broadcasts are stored in the <code style={{color:'#666'}}>broadcasts</code> table. The main app reads them on login and shows as notifications. Requires <code style={{color:'#666'}}>broadcasts</code> table to exist in Supabase.</div>
+        <div style={{fontSize:10,color:DIM,marginTop:12,borderTop:'1px solid rgba(255,255,255,0.04)',paddingTop:10}}>Broadcasts are stored in the <code style={{color:'#666'}}>broadcasts</code> table. The main app reads them on login and shows as notifications. Requires <code style={{color:'#666'}}>broadcasts</code> table to exist in Supabase.</div>
       </div>
       <div style={{...card,padding:20}}>
-        <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:14,fontWeight:700}}>RECENT BROADCASTS</div>
-        {history.length===0?<div style={{color:'#333',fontSize:12}}>No broadcasts yet.</div>:history.map((b,i)=>(
+        <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:14,fontWeight:700}}>RECENT BROADCASTS</div>
+        {history.length===0?<div style={{color:DIM,fontSize:12}}>No broadcasts yet.</div>:history.map((b,i)=>(
           <div key={b.id||i} style={{...card,padding:'10px 14px',marginBottom:8}}>
             <div style={{fontSize:12,fontWeight:700,color:'#ddd',marginBottom:4}}>{b.title}</div>
-            <div style={{fontSize:11,color:'#555',marginBottom:6,lineHeight:1.5}}>{b.body}</div>
-            <div style={{fontSize:9,color:'#333'}}>{fmtDate(b.created_at)} · {b.recipient_count||0} recipients</div>
+            <div style={{fontSize:11,color:'#aaa',marginBottom:6,lineHeight:1.5}}>{b.body}</div>
+            <div style={{fontSize:9,color:DIM}}>{fmtDate(b.created_at)} · {b.recipient_count||0} recipients</div>
           </div>
         ))}
       </div>
@@ -412,17 +416,17 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
             <span style={{background:'rgba(255,61,0,0.1)',border:'1px solid rgba(255,61,0,0.25)',color:'#FF3D00',fontSize:8,fontWeight:900,letterSpacing:2,padding:'2px 7px',borderRadius:3}}>ADMIN</span>
             <div style={{display:'flex',gap:1,marginLeft:6}}>
               {TABS.map(t=>(
-                <button key={t} onClick={()=>setTab(t)} style={{background:tab===t?'rgba(255,61,0,0.1)':'transparent',border:'none',borderBottom:`2px solid ${tab===t?'#FF3D00':'transparent'}`,color:tab===t?'#FF3D00':'#444',padding:'0 12px',height:50,cursor:'pointer',fontSize:10,fontFamily:mono,letterSpacing:1,fontWeight:700,transition:'all 0.15s'}}>
+                <button key={t} onClick={()=>setTab(t)} style={{background:tab===t?'rgba(255,61,0,0.1)':'transparent',border:'none',borderBottom:`2px solid ${tab===t?'#FF3D00':'transparent'}`,color:tab===t?'#FF3D00':'#7a7570',padding:'0 12px',height:50,cursor:'pointer',fontSize:10,fontFamily:mono,letterSpacing:1,fontWeight:700,transition:'all 0.15s'}}>
                   {t.toUpperCase()}
                 </button>
               ))}
             </div>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:10}}>
-            {lastRefresh&&<span style={{fontSize:9,color:'#2a0000'}}>↺ {timeSince(lastRefresh)}</span>}
+            {lastRefresh&&<span style={{fontSize:9,color:'#8a4030'}}>↺ {timeSince(lastRefresh)}</span>}
             <button onClick={loadData} disabled={loading} style={btn()}>REFRESH</button>
             <button onClick={exportCSV} style={btn('#00E676')}>↓ CSV</button>
-            <span style={{fontSize:10,color:'#333',maxWidth:160,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{adminProfile?.email||adminUser?.email}</span>
+            <span style={{fontSize:10,color:DIM,maxWidth:160,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{adminProfile?.email||adminUser?.email}</span>
             <button onClick={onLogout} style={btn('#FF3D00')}>LOGOUT</button>
           </div>
         </div>
@@ -442,7 +446,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
             ].map(({v,l,c})=>(
               <div key={l} style={{...card,padding:'12px 14px'}}>
                 <div style={{fontSize:24,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
-                <div style={{fontSize:8,color:'#440000',letterSpacing:1.5,marginTop:4}}>{l}</div>
+                <div style={{fontSize:9,color:'#b07060',letterSpacing:1.5,marginTop:4}}>{l}</div>
               </div>
             ))}
           </div>
@@ -451,13 +455,13 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
           {tab==='overview'&&(
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
               <div style={{...card,padding:20}}>
-                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:16,fontWeight:700}}>TOP BY READINESS</div>
+                <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:16,fontWeight:700}}>TOP BY READINESS</div>
                 {topByReadiness.map((u,i)=>(
                   <div key={u.id} onClick={()=>setSelected(u)} style={{display:'flex',alignItems:'center',gap:12,padding:'9px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',cursor:'pointer'}}>
-                    <span style={{fontSize:11,color:'#333',width:16,textAlign:'right'}}>{i+1}</span>
+                    <span style={{fontSize:11,color:DIM,width:16,textAlign:'right'}}>{i+1}</span>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontSize:12,color:'#ccc',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{u.display_name||u.email}</div>
-                      <div style={{fontSize:9,color:'#444',marginTop:1}}>{u.totalScores} papers · {u.avgScore}% avg</div>
+                      <div style={{fontSize:9,color:MUT,marginTop:1}}>{u.totalScores} papers · {u.avgScore}% avg</div>
                     </div>
                     <div style={{display:'flex',alignItems:'center',gap:8}}>
                       <div style={{width:40,height:3,background:'rgba(255,255,255,0.05)',borderRadius:2,overflow:'hidden'}}><div style={{width:`${u.readiness}%`,height:'100%',background:R(u.readiness)}}/></div>
@@ -467,7 +471,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
                 ))}
               </div>
               <div style={{...card,padding:20}}>
-                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:16,fontWeight:700}}>RECENT SIGN-UPS</div>
+                <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:16,fontWeight:700}}>RECENT SIGN-UPS</div>
                 {recentSignups.map(u=>(
                   <div key={u.id} onClick={()=>setSelected(u)} style={{display:'flex',alignItems:'center',gap:12,padding:'9px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',cursor:'pointer'}}>
                     <div style={{flex:1,minWidth:0}}>
@@ -476,12 +480,12 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
                         {(u.subjectList||[]).slice(0,3).map(s=><span key={s} style={{fontSize:8,color:'#FF3D00',background:'rgba(255,61,0,0.08)',border:'1px solid rgba(255,61,0,0.2)',padding:'1px 5px',borderRadius:3,textTransform:'capitalize'}}>{s.replace(/-/g,' ')}</span>)}
                       </div>
                     </div>
-                    <span style={{fontSize:10,color:'#444',flexShrink:0}}>{timeSince(u.created_at)}</span>
+                    <span style={{fontSize:10,color:MUT,flexShrink:0}}>{timeSince(u.created_at)}</span>
                   </div>
                 ))}
               </div>
               <div style={{...card,padding:20}}>
-                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:16,fontWeight:700}}>ENGAGEMENT METRICS</div>
+                <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:16,fontWeight:700}}>ENGAGEMENT METRICS</div>
                 {[
                   {l:'Activation rate',v:`${users.length?Math.round((stats.activated/users.length)*100):0}%`,c:'#40C4FF'},
                   {l:'Avg papers / activated user',v:stats.activated?Math.round(stats.totalPapers/stats.activated):0,c:'#fff'},
@@ -490,13 +494,13 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
                   {l:'Users with no papers',v:users.filter(u=>u.totalScores===0).length,c:'#555'},
                 ].map(({l,v,c})=>(
                   <div key={l} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
-                    <span style={{fontSize:11,color:'#555'}}>{l}</span>
+                    <span style={{fontSize:11,color:'#aaa'}}>{l}</span>
                     <span style={{fontSize:14,fontWeight:800,color:c}}>{v}</span>
                   </div>
                 ))}
               </div>
               <div style={{...card,padding:20}}>
-                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:16,fontWeight:700}}>SUBJECT POPULARITY</div>
+                <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:16,fontWeight:700}}>SUBJECT POPULARITY</div>
                 {topSubjects.slice(0,6).map(([s,n])=>(
                   <div key={s} style={{marginBottom:10}}>
                     <div style={{display:'flex',justifyContent:'space-between',fontSize:10,color:'#666',marginBottom:3}}>
@@ -519,32 +523,32 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
                 <input style={{...iS,flex:1}} placeholder="// search by email, name, or subject..." value={search} onChange={e=>setSearch(e.target.value)}/>
                 <button onClick={()=>setFilterAdmin(p=>!p)} style={{...btn('#FF3D00'),background:filterAdmin?'rgba(255,61,0,0.12)':'transparent',whiteSpace:'nowrap'}}>ADMINS ONLY</button>
                 <button onClick={()=>setFilterActive(p=>!p)} style={{...btn('#00E676'),background:filterActive?'rgba(0,230,118,0.1)':'transparent',whiteSpace:'nowrap'}}>ACTIVE WEEK</button>
-                <span style={{fontSize:10,color:'#333',whiteSpace:'nowrap'}}>{filtered.length} / {users.length}</span>
+                <span style={{fontSize:10,color:DIM,whiteSpace:'nowrap'}}>{filtered.length} / {users.length}</span>
               </div>
-              {loading?<div style={{color:'#330000',fontSize:12,padding:40,textAlign:'center',letterSpacing:2}}>// LOADING USER DATA...</div>:(
+              {loading?<div style={{color:'#cc4422',fontSize:12,padding:40,textAlign:'center',letterSpacing:2}}>// LOADING USER DATA...</div>:(
                 <div style={{...card,overflow:'hidden'}}>
                   <table style={{width:'100%',borderCollapse:'collapse'}}>
                     <thead>
                       <tr style={{borderBottom:'1px solid rgba(255,61,0,0.1)'}}>
                         {[{k:'email',l:'USER'},{k:'created_at',l:'JOINED'},{k:'lastActive',l:'LAST ACTIVE'},{k:'totalScores',l:'PAPERS'},{k:'avgScore',l:'AVG'},{k:'readiness',l:'READINESS'},{k:'totalErrors',l:'ERRORS'},{k:'tos_agreed_at',l:'ToS'},{k:'is_admin',l:'ROLE'}].map(({k,l})=>(
-                          <th key={k} onClick={()=>cycleSort(k)} style={{textAlign:'left',padding:'10px 14px',fontSize:8,color:'#440000',letterSpacing:2,fontWeight:700,cursor:'pointer',userSelect:'none',whiteSpace:'nowrap'}}>
+                          <th key={k} onClick={()=>cycleSort(k)} style={{textAlign:'left',padding:'10px 14px',fontSize:10,color:'#c05030',letterSpacing:1.5,fontWeight:700,cursor:'pointer',userSelect:'none',whiteSpace:'nowrap'}}>
                             {l} <span style={{opacity:0.5,fontSize:9}}>{sa(k)}</span>
                           </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {filtered.length===0&&<tr><td colSpan={9} style={{padding:'32px 14px',color:'#333',fontSize:12,textAlign:'center'}}>No users found.</td></tr>}
+                      {filtered.length===0&&<tr><td colSpan={9} style={{padding:'32px 14px',color:DIM,fontSize:12,textAlign:'center'}}>No users found.</td></tr>}
                       {filtered.map(u=>(
                         <tr key={u.id} onClick={()=>setSelected(u)} onMouseEnter={()=>setHover(u.id)} onMouseLeave={()=>setHover(null)}
                           style={{background:hover===u.id?'rgba(255,61,0,0.04)':'transparent',cursor:'pointer',borderBottom:'1px solid rgba(255,255,255,0.025)',transition:'background 0.1s'}}>
                           <td style={{padding:'10px 14px'}}>
-                            <div style={{fontSize:12,fontWeight:600,color:'#ddd'}}>{u.display_name||<span style={{color:'#444'}}>—</span>}</div>
-                            <div style={{fontSize:9,color:'#333',marginTop:1}}>{u.email}</div>
+                            <div style={{fontSize:12,fontWeight:600,color:'#ddd'}}>{u.display_name||<span style={{color:MUT}}>—</span>}</div>
+                            <div style={{fontSize:9,color:DIM,marginTop:1}}>{u.email}</div>
                             <div style={{display:'flex',gap:3,flexWrap:'wrap',marginTop:3}}>{(u.subjectList||[]).slice(0,3).map(s=><span key={s} style={{fontSize:7,color:'#FF3D00',background:'rgba(255,61,0,0.08)',border:'1px solid rgba(255,61,0,0.18)',padding:'1px 4px',borderRadius:2,textTransform:'capitalize'}}>{s.replace(/-/g,' ')}</span>)}</div>
                           </td>
-                          <td style={{padding:'10px 14px',fontSize:10,color:'#444',whiteSpace:'nowrap'}}>{fmtDate(u.created_at)}</td>
-                          <td style={{padding:'10px 14px',fontSize:10,color:'#444',whiteSpace:'nowrap'}}>{timeSince(u.lastActive)}</td>
+                          <td style={{padding:'10px 14px',fontSize:10,color:MUT,whiteSpace:'nowrap'}}>{fmtDate(u.created_at)}</td>
+                          <td style={{padding:'10px 14px',fontSize:10,color:MUT,whiteSpace:'nowrap'}}>{timeSince(u.lastActive)}</td>
                           <td style={{padding:'10px 14px',fontSize:14,fontWeight:800,color:'#fff'}}>{u.totalScores}</td>
                           <td style={{padding:'10px 14px',fontSize:12,fontWeight:700,color:u.avgScore>=70?'#00E676':u.avgScore>=50?'#FFD600':'#FF3D00'}}>{u.avgScore?`${u.avgScore}%`:'—'}</td>
                           <td style={{padding:'10px 14px'}}>
@@ -569,12 +573,12 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
           {tab==='analytics'&&(
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
               <div style={{...card,padding:20}}>
-                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:16,fontWeight:700}}>SUBJECT POPULARITY</div>
+                <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:16,fontWeight:700}}>SUBJECT POPULARITY</div>
                 {topSubjects.map(([s,n])=>(
                   <div key={s} style={{marginBottom:12}}>
                     <div style={{display:'flex',justifyContent:'space-between',fontSize:10,marginBottom:3}}>
                       <span style={{textTransform:'capitalize',color:SC[s]||'#888'}}>{s.replace(/-/g,' ')}</span>
-                      <span style={{color:'#FF3D00'}}>{n} user{n!==1?'s':''} &nbsp;<span style={{color:'#333'}}>({users.length?Math.round((n/users.length)*100):0}%)</span></span>
+                      <span style={{color:'#FF3D00'}}>{n} user{n!==1?'s':''} &nbsp;<span style={{color:DIM}}>({users.length?Math.round((n/users.length)*100):0}%)</span></span>
                     </div>
                     <div style={{height:5,background:'rgba(255,255,255,0.04)',borderRadius:3,overflow:'hidden'}}>
                       <div style={{height:'100%',width:`${(n/maxSub)*100}%`,background:SC[s]||'#FF3D00',borderRadius:3}}/>
@@ -583,7 +587,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
                 ))}
               </div>
               <div style={{...card,padding:20}}>
-                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:16,fontWeight:700}}>READINESS DISTRIBUTION</div>
+                <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:16,fontWeight:700}}>READINESS DISTRIBUTION</div>
                 {[{l:'Battle Ready (80+)',min:80,max:101,c:'#00E676'},{l:'On Track (60–79)',min:60,max:80,c:'#FFD600'},{l:'Building (40–59)',min:40,max:60,c:'#FF9100'},{l:'Just Started (<40)',min:0,max:40,c:'#FF3D00'}].map(({l,min,max,c})=>{
                   const count=users.filter(u=>u.readiness>=min&&u.readiness<max).length;
                   const pct=users.length?Math.round((count/users.length)*100):0;
@@ -591,7 +595,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
                     <div key={l} style={{marginBottom:12}}>
                       <div style={{display:'flex',justifyContent:'space-between',fontSize:10,marginBottom:3}}>
                         <span style={{color:c,fontWeight:700}}>{l}</span>
-                        <span style={{color:'#555'}}>{count} ({pct}%)</span>
+                        <span style={{color:'#aaa'}}>{count} ({pct}%)</span>
                       </div>
                       <div style={{height:5,background:'rgba(255,255,255,0.04)',borderRadius:3,overflow:'hidden'}}>
                         <div style={{height:'100%',width:`${pct}%`,background:c,borderRadius:3}}/>
@@ -601,12 +605,12 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
                 })}
                 <div style={{marginTop:16,paddingTop:14,borderTop:'1px solid rgba(255,255,255,0.05)',display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
                   {[{l:'Activation rate',v:`${users.length?Math.round((stats.activated/users.length)*100):0}%`},{l:'Avg papers/user',v:users.length?Math.round(stats.totalPapers/users.length):0},{l:'Avg readiness',v:stats.avgReadiness},{l:'Total papers',v:stats.totalPapers}].map(({l,v})=>(
-                    <div key={l}><div style={{fontSize:9,color:'#333'}}>{l}</div><div style={{fontSize:16,fontWeight:700,color:'#ccc'}}>{v}</div></div>
+                    <div key={l}><div style={{fontSize:9,color:DIM}}>{l}</div><div style={{fontSize:16,fontWeight:700,color:'#ccc'}}>{v}</div></div>
                   ))}
                 </div>
               </div>
               <div style={{...card,padding:20}}>
-                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:16,fontWeight:700}}>SCORE DISTRIBUTION BY GRADE</div>
+                <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:16,fontWeight:700}}>SCORE DISTRIBUTION BY GRADE</div>
                 {['A*','A','B','C','D','E','U'].map(g=>{
                   const count=users.reduce((a,u)=>a+u.allScores.filter(s=>gradeFromPct(s.pct,s.subject)===g).length,0);
                   const total=stats.totalPapers||1;
@@ -616,13 +620,13 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
                       <div style={{flex:1,height:4,background:'rgba(255,255,255,0.04)',borderRadius:2,overflow:'hidden'}}>
                         <div style={{height:'100%',width:`${(count/total)*100}%`,background:GC[g],borderRadius:2}}/>
                       </div>
-                      <span style={{fontSize:10,color:'#555',minWidth:40,textAlign:'right'}}>{count}</span>
+                      <span style={{fontSize:10,color:'#aaa',minWidth:40,textAlign:'right'}}>{count}</span>
                     </div>
                   );
                 })}
               </div>
               <div style={{...card,padding:20}}>
-                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:16,fontWeight:700}}>ERROR PATTERN ACROSS ALL USERS</div>
+                <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:16,fontWeight:700}}>ERROR PATTERN ACROSS ALL USERS</div>
                 {(()=>{
                   const et={};
                   users.forEach(u=>Object.values(u.errors||{}).flat().forEach(e=>{et[e.type]=(et[e.type]||0)+1;}));
@@ -634,7 +638,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
                       <div style={{flex:1,height:4,background:'rgba(255,255,255,0.04)',borderRadius:2,overflow:'hidden'}}>
                         <div style={{height:'100%',width:`${(n/mx)*100}%`,background:'#FF9100',borderRadius:2,opacity:0.7}}/>
                       </div>
-                      <span style={{fontSize:10,color:'#555',minWidth:30,textAlign:'right'}}>{n}</span>
+                      <span style={{fontSize:10,color:'#aaa',minWidth:30,textAlign:'right'}}>{n}</span>
                     </div>
                   ));
                 })()}
@@ -649,7 +653,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
           {tab==='system'&&(
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
               <div style={{...card,padding:20}}>
-                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:16,fontWeight:700}}>SYSTEM STATUS</div>
+                <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:16,fontWeight:700}}>SYSTEM STATUS</div>
                 {[
                   {l:'Supabase URL',v:import.meta.env.VITE_SUPABASE_URL?'Configured':'Missing',ok:!!import.meta.env.VITE_SUPABASE_URL},
                   {l:'Supabase Key',v:import.meta.env.VITE_SUPABASE_ANON_KEY?'Configured':'Missing',ok:!!import.meta.env.VITE_SUPABASE_ANON_KEY},
@@ -658,46 +662,46 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
                   {l:'Admin accounts',v:stats.admins,ok:stats.admins>0},
                 ].map(({l,v,ok})=>(
                   <div key={l} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'9px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
-                    <span style={{fontSize:11,color:'#555'}}>{l}</span>
+                    <span style={{fontSize:11,color:'#aaa'}}>{l}</span>
                     <span style={{fontSize:12,fontWeight:700,color:ok?'#00E676':'#FF3D00'}}>{typeof v==='boolean'?(v?'Yes':'No'):v}</span>
                   </div>
                 ))}
               </div>
               <div style={{...card,padding:20}}>
-                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:16,fontWeight:700}}>ADMIN ACCOUNTS</div>
+                <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:16,fontWeight:700}}>ADMIN ACCOUNTS</div>
                 {users.filter(u=>u.is_admin).map(u=>(
                   <div key={u.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'9px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
                     <div>
                       <div style={{fontSize:12,color:'#ddd'}}>{u.display_name||u.email}</div>
-                      <div style={{fontSize:9,color:'#333',marginTop:1}}>{u.email}</div>
+                      <div style={{fontSize:9,color:DIM,marginTop:1}}>{u.email}</div>
                     </div>
                     {u.id!==adminUser?.id&&(
                       <button onClick={()=>toggleAdmin(u)} style={btn('#FF3D00')}>REVOKE</button>
                     )}
                   </div>
                 ))}
-                <div style={{marginTop:16,paddingTop:12,borderTop:'1px solid rgba(255,255,255,0.05)',fontSize:10,color:'#333',lineHeight:1.7}}>
+                <div style={{marginTop:16,paddingTop:12,borderTop:'1px solid rgba(255,255,255,0.05)',fontSize:10,color:DIM,lineHeight:1.7}}>
                   Hardcoded admin fallback emails:<br/>
                   {ADMIN_EMAILS.map(e=><span key={e} style={{color:'#FF3D00'}}>{e}</span>)}
                 </div>
               </div>
               <div style={{...card,padding:20}}>
-                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:14,fontWeight:700}}>DANGER ZONE</div>
-                <div style={{fontSize:11,color:'#555',marginBottom:14,lineHeight:1.7}}>Destructive actions. These cannot be undone.</div>
+                <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:14,fontWeight:700}}>DANGER ZONE</div>
+                <div style={{fontSize:11,color:'#aaa',marginBottom:14,lineHeight:1.7}}>Destructive actions. These cannot be undone.</div>
                 <div style={{display:'flex',flexDirection:'column',gap:8}}>
                   <button onClick={exportCSV} style={{...btn('#00E676'),padding:'10px 16px',textAlign:'left'}}>↓ EXPORT ALL USER DATA (CSV)</button>
                 </div>
               </div>
               <div style={{...card,padding:20}}>
-                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:14,fontWeight:700}}>LOGGED IN AS</div>
+                <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:14,fontWeight:700}}>LOGGED IN AS</div>
                 <div style={{fontSize:13,color:'#ddd',marginBottom:4}}>{adminProfile?.display_name||'Admin'}</div>
-                <div style={{fontSize:11,color:'#555',marginBottom:16}}>{adminUser?.email}</div>
+                <div style={{fontSize:11,color:'#aaa',marginBottom:16}}>{adminUser?.email}</div>
                 <button onClick={onLogout} style={{...btn('#FF3D00',true),padding:'10px 20px'}}>LOGOUT → SIGN OUT</button>
               </div>
             </div>
           )}
 
-          <div style={{fontSize:9,color:'#100000',marginTop:24,textAlign:'center',letterSpacing:2}}>
+          <div style={{fontSize:9,color:'#5a3020',marginTop:24,textAlign:'center',letterSpacing:2}}>
             // A* BATTLE PLAN · GOD MODE · ALL ACTIONS LOGGED //
           </div>
         </div>
@@ -742,7 +746,7 @@ export default function AdminApp() {
   const handleLogout=async()=>{ await supabase.auth.signOut(); setAdminUser(null); setAdminProfile(null); setPhase('login'); };
 
   if (phase==='init') return (
-    <div style={{minHeight:'100vh',background:'#050508',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:mono,color:'#330000',fontSize:11,letterSpacing:3}}>
+    <div style={{minHeight:'100vh',background:'#050508',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:mono,color:'#cc4422',fontSize:11,letterSpacing:3}}>
       // INITIALISING SYSTEM...
     </div>
   );
