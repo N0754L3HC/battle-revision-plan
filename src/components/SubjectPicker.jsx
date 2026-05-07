@@ -252,8 +252,8 @@ export default function SubjectPicker({ user, onComplete }) {
     if (step < 3) { setStep(step + 1); return; }
     setSaving(true);
     const subjectsJson = JSON.stringify(selection);
-    // Cache locally for instant restore on reload
-    try { localStorage.setItem('rbp_subjects_cache', subjectsJson); } catch(_) {}
+    // Cache locally for instant restore on reload (keyed by user ID to prevent cross-user contamination)
+    if(user?.id){ try { localStorage.setItem(`rbp_subjects_cache_${user.id}`, subjectsJson); } catch(_) {} }
     if (user) {
       // Profile always exists via DB trigger — use UPDATE not upsert
       await supabase.from('user_profiles')

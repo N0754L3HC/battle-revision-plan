@@ -1285,10 +1285,10 @@ function App() {
       const uid = session.user.id;
       // Resolve loading screen immediately — don't wait for DB queries
       setUser(session.user);
-      // Restore subjects from cache so app renders instantly on reload
+      // Restore subjects from user-specific cache so app renders instantly on reload
       let restoredFromCache = false;
       try {
-        const cached = localStorage.getItem('rbp_subjects_cache');
+        const cached = localStorage.getItem(`rbp_subjects_cache_${uid}`);
         if(cached){ const p=JSON.parse(cached); if(Array.isArray(p)&&p.length>0){ setSubjectSelection(p); restoredFromCache=true; } }
       } catch(_){}
       try {
@@ -1313,7 +1313,7 @@ function App() {
         }
         try{ localStorage.removeItem('rbp_subjects'); }catch(_){}
         if(parsed.length>0){
-          try{ localStorage.setItem('rbp_subjects_cache', JSON.stringify(parsed)); }catch(_){}
+          try{ localStorage.setItem(`rbp_subjects_cache_${uid}`, JSON.stringify(parsed)); }catch(_){}
           setSubjectSelection(parsed);
         } else if(!restoredFromCache){
           setSubjectSelection([]); // New user → SubjectPicker
@@ -1331,7 +1331,7 @@ function App() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    try{ localStorage.removeItem('rbp_subjects_cache'); }catch(_){}
+    if(user?.id){ try{ localStorage.removeItem(`rbp_subjects_cache_${user.id}`); }catch(_){} }
     setUser(null); setUserProfile(null); setSubjectSelection(null); setCloudData(null);
   };
 
