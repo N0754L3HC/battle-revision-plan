@@ -432,6 +432,7 @@ export function subjectsFromSelection(selection) {
     if (!s) return null;
     const board = s.boards.find(b => b.id === sel.boardId) || s.boards[0];
     return {
+      id: sel.subjectId,
       name: s.name,
       color: s.color,
       board: board.name,
