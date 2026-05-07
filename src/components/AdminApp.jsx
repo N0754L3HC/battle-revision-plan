@@ -903,9 +903,12 @@ export default function AdminApp() {
   const [adminProfile, setAdminProfile] = useState(null);
 
   useEffect(()=>{
-    supabase.auth.getSession().then(async({data:{session}})=>{
-      if (!session?.user) { setPhase('login'); return; }
-      const { data: prof } = await supabase.from('user_profiles').select('*').eq('id',session.user.id).single();
+    let alive = true;
+
+    async function checkAdmin(session) {
+      if (!session?.user) { if (alive) setPhase('login'); return; }
+      const { data: prof } = await supabase.from('user_profiles').select('*').eq('id', session.user.id).single();
+      if (!alive) return;
       if (prof?.is_admin) {
         setAdminUser(session.user);
         setAdminProfile(prof);
@@ -914,7 +917,18 @@ export default function AdminApp() {
         await supabase.auth.signOut();
         setPhase('login');
       }
+    }
+
+    supabase.auth.getSession().then(({data:{session}}) => checkAdmin(session));
+
+    const { data:{ subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') checkAdmin(session);
+      else if (event === 'SIGNED_OUT') {
+        if (alive) { setAdminUser(null); setAdminProfile(null); setPhase('login'); }
+      }
     });
+
+    return () => { alive = false; subscription.unsubscribe(); };
   },[]);
 
   const handleAuth = (user, prof) => {
