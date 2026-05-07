@@ -537,7 +537,6 @@ function getNotifications(scores, errors, {exams=EXAMS,subjects=SUBJECTS,paperSu
 }
 
 const notifColor = {urgent:"#ef4444",warn:"#f97316",info:"#3b82f6",success:"#22c55e"};
-const iS = {width:"100%",background:"rgba(0,0,0,0.04)",border:"1px solid rgba(0,0,0,0.1)",borderRadius:7,padding:"9px 12px",color:"#3a3a3a",fontSize:14,fontFamily:"inherit",outline:"none",boxSizing:"border-box"};
 
 function TrendChart({ scores, subject, subjectColors=SUBJECT_COLORS, gradeBoundaries=GRADE_BOUNDARIES, bgColor="#ede9e2", textColor="#7a7268" }) {
   const data = [...scores].filter(s=>s.subject===subject).reverse();
@@ -645,6 +644,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
     card3:   darkMode ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
     accent:  '#b5735a',
   };
+  const iS = {width:"100%",background:darkMode?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.04)",border:`1px solid ${C.border}`,borderRadius:7,padding:"9px 12px",color:C.text,fontSize:14,fontFamily:"inherit",outline:"none",boxSizing:"border-box"};
 
   const [view, setView]           = useState("analytics");
   const [activeWeek, setActiveWeek] = useState(2);
@@ -909,7 +909,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                   <div style={{width:6,height:6,borderRadius:"50%",background:"#22c55e",flexShrink:0}}/>
                   <div style={{flex:1}}>
                     <div style={{fontSize:11,fontWeight:600,color:"#22c55e",textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>Suggested next</div>
-                    <div style={{fontSize:13,color:"#3a3a3a"}}>{nextSuggested}</div>
+                    <div style={{fontSize:13,color:C.text}}>{nextSuggested}</div>
                   </div>
                   <span style={{fontSize:12,color:C.muted}}>Tap to fill</span>
                 </div>
@@ -1030,7 +1030,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                 return <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",marginBottom:4,borderRadius:8,background:past?"rgba(0,0,0,0.02)":C.surface,border:`1px solid ${past?"rgba(0,0,0,0.02)":col+"22"}`,opacity:past?0.3:1}}>
                   <div style={{width:4,height:30,borderRadius:2,background:col,flexShrink:0}}/>
                   <div style={{flex:1}}>
-                    <div style={{fontSize:14,fontWeight:600,color:"#3a3a3a"}}>{e.subject}: {e.paper.split(":")[1]?.trim()||e.paper}</div>
+                    <div style={{fontSize:14,fontWeight:600,color:C.text}}>{e.subject}: {e.paper.split(":")[1]?.trim()||e.paper}</div>
                     <div style={{fontSize:12,color:C.muted,marginTop:2}}>{e.code} · {e.board} · {e.time} · {e.duration}</div>
                     <div style={{fontSize:12,color:"#8a847c",marginTop:4,lineHeight:1.5}}>{e.topics}</div>
                   </div>
@@ -1121,7 +1121,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                 <div style={{width:44,flexShrink:0,textAlign:"right"}}><div style={{fontSize:12,fontWeight:500,color:C.muted}}>{b.time}</div></div>
                 <div style={{width:3,flexShrink:0,borderRadius:2,background:b.color,opacity:0.6}}/>
                 <div style={{flex:1}}>
-                  <div style={{fontSize:14,fontWeight:600,color:"#3a3a3a",marginBottom:3}}>{b.block}</div>
+                  <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:3}}>{b.block}</div>
                   <p style={{margin:0,fontSize:13,lineHeight:1.6,color:C.muted}}>{b.desc}</p>
                 </div>
               </div>
@@ -1161,12 +1161,12 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
               {userProfile?.display_name&&(
                 <div style={{marginBottom:12}}>
                   <div style={{fontSize:12,color:C.muted,marginBottom:3}}>Name</div>
-                  <div style={{fontSize:14,color:"#3a3a3a",fontWeight:500}}>{userProfile.display_name}</div>
+                  <div style={{fontSize:14,color:C.text,fontWeight:500}}>{userProfile.display_name}</div>
                 </div>
               )}
               <div>
                 <div style={{fontSize:12,color:C.muted,marginBottom:3}}>Email</div>
-                <div style={{fontSize:14,color:"#3a3a3a"}}>{user?.email||"Local mode"}</div>
+                <div style={{fontSize:14,color:C.text}}>{user?.email||"Local mode"}</div>
               </div>
             </div>
 
@@ -1175,7 +1175,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
               <div style={{fontSize:11,fontWeight:600,color:C.muted,letterSpacing:0.5,textTransform:"uppercase",marginBottom:14}}>Session</div>
               <button
                 onClick={onLogout}
-                style={{padding:"10px 18px",background:"rgba(0,0,0,0.06)",border:"1px solid rgba(0,0,0,0.12)",borderRadius:7,color:"#3a3a3a",fontSize:14,fontFamily:"inherit",cursor:"pointer"}}
+                style={{padding:"10px 18px",background:C.card2,border:`1px solid ${C.border}`,borderRadius:7,color:C.text,fontSize:14,fontFamily:"inherit",cursor:"pointer"}}
               >
                 Sign out
               </button>
@@ -1201,7 +1201,7 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
                     <div style={{display:"flex",gap:8}}>
                       <button
                         onClick={()=>setConfirmDeletion(false)}
-                        style={{flex:1,padding:"10px 0",background:"rgba(0,0,0,0.06)",border:"1px solid rgba(0,0,0,0.12)",borderRadius:7,color:"#3a3a3a",fontSize:14,fontFamily:"inherit",cursor:"pointer"}}
+                        style={{flex:1,padding:"10px 0",background:C.card2,border:`1px solid ${C.border}`,borderRadius:7,color:C.text,fontSize:14,fontFamily:"inherit",cursor:"pointer"}}
                       >
                         Cancel
                       </button>
