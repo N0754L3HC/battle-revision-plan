@@ -255,10 +255,8 @@ export default function SubjectPicker({ user, onComplete }) {
     // Cache locally for instant restore on reload (keyed by user ID to prevent cross-user contamination)
     if(user?.id){ try { localStorage.setItem(`rbp_subjects_cache_${user.id}`, subjectsJson); } catch(_) {} }
     if (user) {
-      // Profile always exists via DB trigger — use UPDATE not upsert
-      await supabase.from('user_profiles')
-        .update({ subjects: subjectsJson })
-        .eq('id', user.id);
+      // Use SECURITY DEFINER RPC — bypasses all RLS ambiguity, always writes correctly
+      await supabase.rpc('save_subjects', { p_subjects: subjectsJson });
     }
     setSaving(false);
     onComplete(selection);
