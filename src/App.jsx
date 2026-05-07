@@ -1096,7 +1096,7 @@ const MOCK_ADS = [
   {
     university: 'University of Edinburgh',
     course: 'BSc Computer Science',
-    headline: 'Interested in Computer Science? We're ranked #3 in the UK.',
+    headline: "Interested in Computer Science? We're ranked #3 in the UK.",
     body: 'ABB entry · Russell Group · Strong industry links',
     url: 'https://www.ed.ac.uk/studying/undergraduate/degrees/index.php?action=programme&code=G400',
     subjects: ['Computer Science','Mathematics'],
