@@ -1,882 +1,561 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
+// ── Constants ──────────────────────────────────────────────────────────────
+const mono = "'JetBrains Mono','SF Mono','Fira Code',monospace";
+const ADMIN_EMAILS = ['51r4h100@gmail.com'];
+const GC = { 'A*':'#00E676', A:'#69F0AE', B:'#FFD600', C:'#FF9100', D:'#FF6D00', E:'#FF3D00', U:'#555' };
+const SC = { maths:'#3b82f6','further-maths':'#E040FB',cs:'#00E676',chemistry:'#FF4081',physics:'#40C4FF',economics:'#FFD600',biology:'#84cc16',history:'#fb923c',psychology:'#a78bfa',geography:'#22d3ee' };
+const GRADE_BOUNDS = { Maths:{'A*':80,A:70,B:60,C:50,D:40,E:30},'Further Maths':{'A*':83,A:72,B:60,C:50,D:40,E:30},CS:{'A*':75,A:65,B:55,C:45,D:35,E:25},Chemistry:{'A*':80,A:70,B:60,C:50,D:40,E:30},Physics:{'A*':80,A:70,B:60,C:50,D:40,E:30},Economics:{'A*':75,A:65,B:55,C:45,D:35,E:25} };
+const R = (r) => r>=80?'#00E676':r>=60?'#FFD600':r>=40?'#FF9100':'#FF3D00';
+
 // ── Helpers ────────────────────────────────────────────────────────────────
-
-const GRADE_COLORS = { 'A*':'#00E676', A:'#69F0AE', B:'#FFD600', C:'#FF9100', D:'#FF6D00', E:'#FF3D00', U:'#444' };
-const SUB_COLORS = {
-  Maths:'#2979FF','Further Maths':'#E040FB',CS:'#00E676',
-  Chemistry:'#FF4081',Physics:'#40C4FF',Economics:'#FFD600',
+const fmtDate = iso => iso ? new Date(iso).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'}) : '—';
+const timeSince = ts => {
+  if (!ts) return '—';
+  const s=(Date.now()-new Date(ts))/1000;
+  if (s<60) return 'just now'; if (s<3600) return `${Math.floor(s/60)}m ago`;
+  if (s<86400) return `${Math.floor(s/3600)}h ago`; return `${Math.floor(s/86400)}d ago`;
 };
-
-function grade(pct, subject) {
-  const B = {
-    Maths:{'A*':80,A:70,B:60,C:50,D:40,E:30},
-    'Further Maths':{'A*':83,A:72,B:60,C:50,D:40,E:30},
-    CS:{'A*':75,A:65,B:55,C:45,D:35,E:25},
-    Chemistry:{'A*':80,A:70,B:60,C:50,D:40,E:30},
-    Physics:{'A*':80,A:70,B:60,C:50,D:40,E:30},
-    Economics:{'A*':75,A:65,B:55,C:45,D:35,E:25},
-  };
-  const b = B[subject] || {};
-  for (const g of ['A*','A','B','C','D','E']) if (pct >= (b[g]||0)) return g;
+const pill = (color,dim=false) => ({
+  display:'inline-block',background:`${color}${dim?'18':'22'}`,border:`1px solid ${color}${dim?'44':'66'}`,
+  color:dim?`${color}99`:color,fontSize:10,fontWeight:700,padding:'1px 7px',borderRadius:4,letterSpacing:0.5,
+});
+function calcReadiness(scores=[],errors=[]) {
+  const avg=scores.length?scores.reduce((a,s)=>a+s.pct,0)/scores.length:0;
+  const t=Math.round((avg/100)*40)+Math.min(20,Math.round((scores.length/12)*20))+Math.max(0,20-errors.filter(e=>Date.now()-(e.ts||e.id||0)<7*86400000).length*2);
+  return {t:Math.min(t,80),avg:Math.round(avg)};
+}
+function gradeFromPct(pct,subject='') {
+  const b=GRADE_BOUNDS[subject]||{};
+  for (const g of ['A*','A','B','C','D','E']) if (pct>=(b[g]||0)) return g;
   return 'U';
 }
 
-function readiness(scores, errors, checks) {
-  const avg = scores.length ? scores.reduce((a,s)=>a+s.pct,0)/scores.length : 0;
-  const t = Math.round((avg/100)*40)
-    + Math.min(20, Math.round((scores.length/12)*20))
-    + Math.max(0, 20 - errors.filter(e=>Date.now()-e.id<7*86400000).length*2)
-    + Math.min(20, Math.round((Object.keys(checks).length/40)*20));
-  return { t, label: t>=80?'BATTLE READY':t>=60?'ON TRACK':t>=40?'BUILDING':'JUST STARTED' };
-}
+// ── Shared input style ─────────────────────────────────────────────────────
+const iS = {background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,61,0,0.2)',borderRadius:6,padding:'10px 14px',color:'#ccc',fontSize:13,fontFamily:mono,outline:'none',width:'100%',boxSizing:'border-box'};
+const card = {background:'rgba(255,255,255,0.025)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:8};
+const btn = (col='#FF3D00',fill=false) => ({background:fill?col:'transparent',border:`1px solid ${col}44`,color:fill?'#fff':col,padding:'6px 14px',borderRadius:5,cursor:'pointer',fontSize:11,fontWeight:700,fontFamily:mono,letterSpacing:1,transition:'all 0.15s'});
 
-function fmtDate(iso) {
-  return new Date(iso).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'});
-}
-
-function timeSince(iso) {
-  const s = (Date.now()-new Date(iso))/1000;
-  if (s<60) return 'just now';
-  if (s<3600) return `${Math.floor(s/60)}m ago`;
-  if (s<86400) return `${Math.floor(s/3600)}h ago`;
-  return `${Math.floor(s/86400)}d ago`;
-}
-
-// ── Shared style atoms ─────────────────────────────────────────────────────
-
-const mono = "'JetBrains Mono','SF Mono','Fira Code',monospace";
-
-const pill = (color, dim=false) => ({
-  display:'inline-block', background:`${color}${dim?'18':'22'}`,
-  border:`1px solid ${color}${dim?'44':'66'}`, color: dim?`${color}99`:color,
-  fontSize:10, fontWeight:700, padding:'1px 7px', borderRadius:4, letterSpacing:0.5,
-});
-
-const inputStyle = {
-  background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)',
-  borderRadius:6, padding:'10px 14px', color:'#ddd', fontSize:13,
-  fontFamily:mono, outline:'none', width:'100%', boxSizing:'border-box',
-};
-
-// ── Blinking cursor ────────────────────────────────────────────────────────
-
+// ── Cursor ─────────────────────────────────────────────────────────────────
 function Cursor() {
-  const [on, setOn] = useState(true);
+  const [on,setOn]=useState(true);
   useEffect(()=>{ const t=setInterval(()=>setOn(p=>!p),530); return ()=>clearInterval(t); },[]);
   return <span style={{color:'#FF3D00',opacity:on?1:0}}>█</span>;
 }
 
-// ── Gate screen (passphrase before Supabase login) ─────────────────────────
-
-const GATE_PASS = import.meta.env.VITE_ADMIN_PASSPHRASE || '';
-
-function GateScreen({ onPass }) {
-  const [val, setVal]     = useState('');
-  const [phase, setPhase] = useState('idle'); // idle | denied
-  const inputRef = useRef(null);
-
-  useEffect(()=>{ inputRef.current?.focus(); },[]);
-
-  const attempt = () => {
-    if (val.trim() === GATE_PASS) { onPass(); return; }
-    setPhase('denied');
-    setVal('');
-    setTimeout(()=>setPhase('idle'), 2000);
-  };
-
+// ── Mini sparkline ─────────────────────────────────────────────────────────
+function Spark({scores,color='#FF3D00',w=80,h=24}) {
+  if (scores.length<2) return <span style={{color:'#333',fontSize:10}}>—</span>;
+  const pts=scores.slice(-12);
+  const min=Math.min(...pts.map(s=>s.pct)),max=Math.max(...pts.map(s=>s.pct));
+  const range=max-min||1;
+  const xs=pts.map((_,i)=>((i/(pts.length-1))*w).toFixed(1));
+  const ys=pts.map(s=>(h-((s.pct-min)/range)*(h-4)-2).toFixed(1));
+  const d=xs.map((x,i)=>`${i===0?'M':'L'}${x},${ys[i]}`).join(' ');
   return (
-    <div style={{
-      minHeight:'100vh', background:'#000', display:'flex', alignItems:'center',
-      justifyContent:'center', fontFamily:mono, padding:16, position:'relative', overflow:'hidden',
-    }}>
-      <div style={{position:'fixed',top:'30%',left:'50%',transform:'translate(-50%,-50%)',
-        width:600,height:300,borderRadius:'50%',
-        background:'radial-gradient(ellipse,rgba(255,30,0,0.08) 0%,transparent 70%)',
-        pointerEvents:'none'}}/>
-
-      <div style={{width:'100%',maxWidth:360,position:'relative',zIndex:1}}>
-        <div style={{textAlign:'center',marginBottom:40}}>
-          <div style={{fontSize:9,letterSpacing:6,color:'#3a0000',marginBottom:12}}>
-            ████████████████████████████████████████████████████
-          </div>
-          <div style={{fontSize:28,fontWeight:900,color:'#FF3D00',letterSpacing:8,marginBottom:4}}>
-            GOD MODE
-          </div>
-          <div style={{fontSize:9,letterSpacing:3,color:'#4a0000',marginTop:2}}>
-            A* BATTLE PLAN // RESTRICTED SYSTEM ACCESS
-          </div>
-          <div style={{fontSize:9,letterSpacing:6,color:'#3a0000',marginTop:12}}>
-            ████████████████████████████████████████████████████
-          </div>
-        </div>
-
-        <div style={{fontSize:11,color:'#550000',marginBottom:20,letterSpacing:1}}>
-          {phase==='denied' ? '// ACCESS DENIED — WRONG PASSPHRASE' : <>// ENTER PASSPHRASE <Cursor/></>}
-        </div>
-
-        {phase==='denied' && (
-          <div style={{background:'rgba(255,0,0,0.06)',border:'1px solid rgba(255,0,0,0.2)',
-            borderRadius:6,padding:'12px 14px',marginBottom:16,fontSize:12,
-            color:'#FF3D00',letterSpacing:1}}>
-            ⛔ &nbsp;INVALID PASSPHRASE
-          </div>
-        )}
-
-        <div style={{opacity:phase==='denied'?0.3:1,transition:'opacity 0.3s'}}>
-          <div style={{fontSize:10,color:'#440000',letterSpacing:2,marginBottom:5}}>PASSPHRASE</div>
-          <input
-            ref={inputRef}
-            style={{...inputStyle,marginBottom:20,borderColor:'rgba(255,61,0,0.2)',
-              background:'rgba(255,61,0,0.04)'}}
-            type="password"
-            value={val}
-            onChange={e=>setVal(e.target.value)}
-            disabled={phase!=='idle'}
-            onKeyDown={e=>e.key==='Enter'&&attempt()}
-            autoComplete="off"
-            placeholder="················"
-          />
-          <button
-            onClick={attempt}
-            disabled={phase!=='idle'}
-            style={{width:'100%',padding:'12px',background:'rgba(255,61,0,0.1)',
-              border:'1px solid rgba(255,61,0,0.3)',borderRadius:6,color:'#FF3D00',
-              fontSize:12,fontWeight:700,fontFamily:mono,cursor:'pointer',letterSpacing:2}}>
-            AUTHENTICATE →
-          </button>
-        </div>
-      </div>
-    </div>
+    <svg width={w} height={h} style={{overflow:'visible'}}>
+      <path d={d} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round"/>
+    </svg>
   );
 }
 
-// ── Login screen ───────────────────────────────────────────────────────────
+// ── Login Screen ───────────────────────────────────────────────────────────
+function LoginScreen({onAuth}) {
+  const [email,setEmail]=useState('');
+  const [pw,setPw]=useState('');
+  const [loading,setLoading]=useState(false);
+  const [err,setErr]=useState('');
+  const [status,setStatus]=useState('idle');
 
-function LoginScreen({ onAuth }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [phase, setPhase] = useState('idle'); // idle | checking | denied | ok
-
-  const attempt = async () => {
-    if (!email || !password) { setError('// fields cannot be empty'); return; }
-    setLoading(true); setError(''); setPhase('checking');
-
-    const { data, error: authErr } = await supabase.auth.signInWithPassword({ email, password });
-    if (authErr) { setLoading(false); setError(`// ${authErr.message}`); setPhase('idle'); return; }
-
-    const { data: prof } = await supabase.from('user_profiles').select('*').eq('id', data.user.id).single();
-
-    if (!prof?.is_admin) {
-      await supabase.auth.signOut();
-      setLoading(false);
-      setPhase('denied');
-      setTimeout(()=>setPhase('idle'), 3000);
-      return;
-    }
-
-    setPhase('ok');
-    setTimeout(()=>onAuth(data.user, prof), 600);
+  const attempt=async()=>{
+    if (!email||!pw) { setErr('Fields cannot be empty'); return; }
+    setLoading(true); setErr(''); setStatus('checking');
+    const {data,error:aE}=await supabase.auth.signInWithPassword({email,password:pw});
+    if (aE) { setLoading(false); setErr(aE.message); setStatus('idle'); return; }
+    const {data:prof}=await supabase.from('user_profiles').select('*').eq('id',data.user.id).single();
+    const isAdmin=prof?.is_admin||ADMIN_EMAILS.includes(data.user.email);
+    if (!isAdmin) { await supabase.auth.signOut(); setLoading(false); setStatus('denied'); setTimeout(()=>setStatus('idle'),3000); return; }
+    if (!prof?.is_admin) await supabase.from('user_profiles').update({is_admin:true}).eq('id',data.user.id);
+    setStatus('ok');
+    setTimeout(()=>onAuth(data.user,{...prof,is_admin:true}),600);
   };
 
-  const googleLogin = async () => {
-    setLoading(true); setError('');
-    sessionStorage.setItem('rbp_goto_admin', '1');
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin },
-    });
+  const googleLogin=async()=>{
+    setLoading(true); setErr('');
+    sessionStorage.setItem('rbp_goto_admin','1');
+    await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin}});
   };
 
   return (
-    <div style={{
-      minHeight:'100vh', background:'#000', display:'flex', alignItems:'center',
-      justifyContent:'center', fontFamily:mono, padding:16, position:'relative', overflow:'hidden',
-    }}>
-      {/* Ambient glow */}
-      <div style={{position:'fixed',top:'30%',left:'50%',transform:'translate(-50%,-50%)',
-        width:600,height:300,borderRadius:'50%',
-        background:'radial-gradient(ellipse,rgba(255,30,0,0.08) 0%,transparent 70%)',
-        pointerEvents:'none'}}/>
-
-      <div style={{width:'100%',maxWidth:360,position:'relative',zIndex:1}}>
-
-        {/* Header */}
-        <div style={{textAlign:'center',marginBottom:40}}>
-          <div style={{fontSize:9,letterSpacing:6,color:'#3a0000',marginBottom:12}}>
-            ████████████████████████████████████████████████████
-          </div>
-          <div style={{fontSize:28,fontWeight:900,color:'#FF3D00',letterSpacing:8,marginBottom:4}}>
-            GOD MODE
-          </div>
-          <div style={{fontSize:9,letterSpacing:3,color:'#4a0000',marginTop:2}}>
-            A* BATTLE PLAN // RESTRICTED SYSTEM ACCESS
-          </div>
-          <div style={{fontSize:9,letterSpacing:6,color:'#3a0000',marginTop:12}}>
-            ████████████████████████████████████████████████████
-          </div>
+    <div style={{minHeight:'100vh',background:'#050508',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:mono,padding:16,position:'relative',overflow:'hidden'}}>
+      <div style={{position:'fixed',top:'22%',left:'50%',transform:'translate(-50%,-50%)',width:900,height:500,borderRadius:'50%',background:'radial-gradient(ellipse,rgba(255,30,0,0.05) 0%,transparent 70%)',pointerEvents:'none'}}/>
+      <div style={{width:'100%',maxWidth:380,position:'relative',zIndex:1}}>
+        <div style={{textAlign:'center',marginBottom:44}}>
+          <div style={{fontSize:9,letterSpacing:5,color:'#1f0000',marginBottom:16,fontWeight:700}}>▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓</div>
+          <div style={{fontSize:34,fontWeight:900,color:'#FF3D00',letterSpacing:10,marginBottom:4}}>GOD MODE</div>
+          <div style={{fontSize:9,letterSpacing:3,color:'#5a0000',marginTop:2}}>A* BATTLE PLAN · RESTRICTED SYSTEM ACCESS</div>
+          <div style={{fontSize:9,letterSpacing:5,color:'#1f0000',marginTop:16,fontWeight:700}}>▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓</div>
         </div>
-
-        {/* Terminal prompt */}
-        <div style={{fontSize:11,color:'#550000',marginBottom:20,letterSpacing:1}}>
-          {phase==='checking' ? '// VERIFYING CREDENTIALS...' :
-           phase==='denied'  ? '// ACCESS DENIED — UNAUTHORIZED' :
-           phase==='ok'      ? '// ACCESS GRANTED — LOADING...' :
-           <>// ENTER CREDENTIALS <Cursor/></>}
+        <div style={{fontSize:11,color:'#660000',marginBottom:18,letterSpacing:1,minHeight:18}}>
+          {status==='checking'?'// VERIFYING CREDENTIALS...':status==='denied'?'// ACCESS DENIED — UNAUTHORIZED':status==='ok'?'// ACCESS GRANTED — LOADING...':(<>// ENTER CREDENTIALS <Cursor/></>)}
         </div>
-
-        {phase==='denied' && (
-          <div style={{
-            background:'rgba(255,0,0,0.06)', border:'1px solid rgba(255,0,0,0.2)',
-            borderRadius:6, padding:'12px 14px', marginBottom:16, fontSize:12,
-            color:'#FF3D00', letterSpacing:1,
-          }}>
-            ⛔ &nbsp;ADMINISTRATOR PRIVILEGES REQUIRED
-          </div>
-        )}
-
-        {error && phase==='idle' && (
-          <div style={{color:'#FF3D00',fontSize:12,marginBottom:14,letterSpacing:0.5}}>{error}</div>
-        )}
-
-        {/* Form */}
-        <div style={{opacity: phase!=='idle'?0.4:1, transition:'opacity 0.3s'}}>
-          <div style={{fontSize:10,color:'#440000',letterSpacing:2,marginBottom:5}}>EMAIL</div>
-          <input
-            style={{...inputStyle, marginBottom:12, borderColor:'rgba(255,61,0,0.2)',
-              background:'rgba(255,61,0,0.04)'}}
-            type="email"
-            value={email}
-            onChange={e=>setEmail(e.target.value)}
-            disabled={phase!=='idle'}
-            onKeyDown={e=>e.key==='Enter'&&attempt()}
-            autoComplete="username"
-          />
-          <div style={{fontSize:10,color:'#440000',letterSpacing:2,marginBottom:5}}>PASSWORD</div>
-          <input
-            style={{...inputStyle, marginBottom:20, borderColor:'rgba(255,61,0,0.2)',
-              background:'rgba(255,61,0,0.04)'}}
-            type="password"
-            value={password}
-            onChange={e=>setPassword(e.target.value)}
-            disabled={phase!=='idle'}
-            onKeyDown={e=>e.key==='Enter'&&attempt()}
-            autoComplete="current-password"
-          />
-          <button
-            onClick={attempt}
-            disabled={loading||phase!=='idle'}
-            style={{
-              width:'100%', background: phase!=='idle'?'#1a0000':'rgba(255,61,0,0.9)',
-              border:`1px solid ${phase!=='idle'?'#3a0000':'rgba(255,61,0,0.7)'}`,
-              color: phase!=='idle'?'#440000':'#fff',
-              padding:'12px 0', borderRadius:6, cursor:phase!=='idle'?'not-allowed':'pointer',
-              fontSize:12, fontWeight:800, fontFamily:mono, letterSpacing:3,
-              transition:'all 0.2s',
-            }}
-          >
-            {phase==='checking'?'VERIFYING...':phase==='ok'?'GRANTED':'ACCESS SYSTEM'}
+        {status==='denied'&&<div style={{background:'rgba(255,0,0,0.06)',border:'1px solid rgba(255,0,0,0.2)',borderRadius:6,padding:'12px 14px',marginBottom:14,fontSize:12,color:'#FF3D00',letterSpacing:0.5}}>⛔ ADMINISTRATOR PRIVILEGES REQUIRED</div>}
+        {err&&status==='idle'&&<div style={{color:'#FF6D00',fontSize:12,marginBottom:12}}>{err}</div>}
+        <div style={{opacity:status!=='idle'?0.3:1,transition:'opacity 0.3s',pointerEvents:status!=='idle'?'none':'auto'}}>
+          <div style={{fontSize:9,color:'#550000',letterSpacing:2,marginBottom:5,fontWeight:700}}>EMAIL</div>
+          <input style={{...iS,marginBottom:11}} type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==='Enter'&&attempt()} autoComplete="username" placeholder="admin@example.com"/>
+          <div style={{fontSize:9,color:'#550000',letterSpacing:2,marginBottom:5,fontWeight:700}}>PASSWORD</div>
+          <input style={{...iS,marginBottom:20}} type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==='Enter'&&attempt()} autoComplete="current-password" placeholder="················"/>
+          <button onClick={attempt} disabled={loading} style={{width:'100%',padding:'13px',background:'rgba(255,61,0,0.9)',border:'1px solid rgba(255,61,0,0.6)',borderRadius:6,color:'#fff',fontSize:12,fontWeight:800,fontFamily:mono,letterSpacing:3,cursor:'pointer'}}>
+            {status==='checking'?'VERIFYING...':status==='ok'?'GRANTED ✓':'ACCESS SYSTEM →'}
           </button>
-
           <div style={{display:'flex',alignItems:'center',gap:10,margin:'16px 0'}}>
-            <div style={{flex:1,height:1,background:'rgba(255,61,0,0.1)'}}/>
-            <div style={{fontSize:9,color:'#440000',letterSpacing:2}}>OR</div>
-            <div style={{flex:1,height:1,background:'rgba(255,61,0,0.1)'}}/>
+            <div style={{flex:1,height:1,background:'rgba(255,61,0,0.08)'}}/><div style={{fontSize:9,color:'#440000',letterSpacing:2}}>OR</div><div style={{flex:1,height:1,background:'rgba(255,61,0,0.08)'}}/>
           </div>
-
-          <button
-            onClick={googleLogin}
-            disabled={loading||phase!=='idle'}
-            style={{
-              width:'100%', background:'rgba(255,255,255,0.03)',
-              border:'1px solid rgba(255,61,0,0.2)',
-              color:'#883322', padding:'11px 0', borderRadius:6,
-              cursor:loading?'not-allowed':'pointer',
-              fontSize:11, fontWeight:700, fontFamily:mono, letterSpacing:2,
-              transition:'all 0.2s',
-            }}
-          >
+          <button onClick={googleLogin} disabled={loading} style={{width:'100%',padding:'12px',background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,61,0,0.14)',borderRadius:6,color:'#884433',fontSize:11,fontWeight:700,fontFamily:mono,letterSpacing:2,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+            <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#EA4335" d="M5.27 9.76A7.08 7.08 0 0 1 19.07 12H12v4h7.93A8 8 0 1 1 12 4a7.93 7.93 0 0 1 5.4 2.1L14.93 8.6A4.5 4.5 0 0 0 12 7.5a4.49 4.49 0 0 0-4.24 3L5.27 9.76Z"/></svg>
             CONTINUE WITH GOOGLE
           </button>
         </div>
+        <div style={{fontSize:9,color:'#1a0000',marginTop:28,textAlign:'center',letterSpacing:1.5}}>UNAUTHORIZED ACCESS IS PROHIBITED AND MONITORED</div>
+      </div>
+    </div>
+  );
+}
 
-        <div style={{fontSize:10,color:'#220000',marginTop:24,textAlign:'center',letterSpacing:1}}>
-          UNAUTHORIZED ACCESS IS PROHIBITED AND MONITORED
+// ── User Detail Modal ──────────────────────────────────────────────────────
+function UserDetail({u,onClose,onToggleAdmin,onDeleteUser}) {
+  const [toggling,setToggling]=useState(false);
+  const [confirmDel,setConfirmDel]=useState(false);
+  const allScores=Object.values(u.scores||{}).flat();
+  const allErrors=Object.values(u.errors||{}).flat();
+  const br=calcReadiness(allScores,allErrors);
+  const subjects=[...new Set(allScores.map(s=>s.subject))];
+  const bySubject=subjects.map(sub=>{
+    const ss=allScores.filter(x=>x.subject===sub);
+    const avg=Math.round(ss.reduce((a,x)=>a+x.pct,0)/ss.length);
+    return {sub,avg,g:gradeFromPct(avg,sub),n:ss.length};
+  });
+  const errTypes={};
+  allErrors.forEach(e=>{errTypes[e.type]=(errTypes[e.type]||0)+1;});
+
+  const doToggle=async()=>{ setToggling(true); await onToggleAdmin(u); setToggling(false); };
+  const doDelete=async()=>{ await onDeleteUser(u); onClose(); };
+
+  return (
+    <div style={{position:'fixed',inset:0,zIndex:200,background:'rgba(0,0,0,0.95)',display:'flex',flexDirection:'column',fontFamily:mono}}>
+      {/* Top bar */}
+      <div style={{background:'#080810',borderBottom:'1px solid rgba(255,61,0,0.12)',padding:'12px 24px',display:'flex',alignItems:'center',gap:14,flexShrink:0}}>
+        <button onClick={onClose} style={btn()}>← BACK</button>
+        <div style={{flex:1}}>
+          <div style={{fontSize:15,fontWeight:700,color:'#fff'}}>{u.display_name||<span style={{color:'#444'}}>No name</span>} <span style={{fontSize:11,color:'#444',fontWeight:400}}>{u.email}</span></div>
+          <div style={{fontSize:10,color:'#333',marginTop:2}}>JOINED {fmtDate(u.created_at)} · LAST ACTIVE {timeSince(u.lastActive)} · {u.tos_agreed_at?'ToS ✓':'ToS pending'}</div>
+        </div>
+        <button onClick={doToggle} disabled={toggling} style={btn(u.is_admin?'#FF3D00':'#555')}>
+          {toggling?'...':(u.is_admin?'REVOKE ADMIN':'GRANT ADMIN')}
+        </button>
+        {confirmDel
+          ? <><button onClick={doDelete} style={btn('#FF3D00',true)}>CONFIRM DELETE</button><button onClick={()=>setConfirmDel(false)} style={btn()}>CANCEL</button></>
+          : <button onClick={()=>setConfirmDel(true)} style={btn('#FF3D00')}>DELETE USER</button>}
+      </div>
+      <div style={{overflowY:'auto',flex:1,padding:24,maxWidth:1000,width:'100%',margin:'0 auto'}}>
+        {/* Readiness + stats */}
+        <div style={{display:'grid',gridTemplateColumns:'160px 1fr',gap:10,marginBottom:12}}>
+          <div style={{...card,padding:'16px 20px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',borderColor:`${R(br.t)}22`}}>
+            <div style={{fontSize:48,fontWeight:900,color:R(br.t),lineHeight:1}}>{br.t}</div>
+            <div style={{fontSize:9,color:'#444',letterSpacing:2,marginTop:3}}>READINESS</div>
+            <div style={{height:3,width:'80%',background:'rgba(255,255,255,0.05)',borderRadius:2,marginTop:8,overflow:'hidden'}}><div style={{height:'100%',width:`${br.t}%`,background:R(br.t)}}/></div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8}}>
+            {[{v:allScores.length,l:'PAPERS',c:'#fff'},{v:allErrors.length,l:'ERRORS',c:allErrors.length>10?'#FF9100':'#fff'},{v:`${br.avg}%`,l:'AVG SCORE',c:br.avg>=70?'#00E676':br.avg>=50?'#FFD600':'#FF3D00'},{v:u.subjectList?.length||0,l:'SUBJECTS',c:'#40C4FF'}].map(({v,l,c})=>(
+              <div key={l} style={{...card,padding:'14px 16px'}}>
+                <div style={{fontSize:28,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
+                <div style={{fontSize:9,color:'#444',letterSpacing:1.5,marginTop:4}}>{l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Subject breakdown */}
+        {bySubject.length>0&&(
+          <div style={{...card,padding:'16px 20px',marginBottom:12}}>
+            <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:12}}>SUBJECT BREAKDOWN</div>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+              {bySubject.map(({sub,avg,g,n})=>(
+                <div key={sub} style={{...card,padding:'12px 16px',minWidth:140,flex:'1 1 140px',borderColor:`${SC[sub]||'#888'}33`}}>
+                  <div style={{fontSize:9,letterSpacing:2,color:'#555',marginBottom:6,textTransform:'uppercase'}}>{sub.replace(/-/g,' ')}</div>
+                  <div style={{fontSize:32,fontWeight:900,color:GC[g]||'#555'}}>{g}</div>
+                  <div style={{fontSize:11,color:'#777',marginTop:2}}>{avg}% · {n} paper{n!==1?'s':''}</div>
+                  <Spark scores={allScores.filter(s=>s.subject===sub)} color={SC[sub]||'#888'} w={80} h={20}/>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* Error types */}
+        {Object.keys(errTypes).length>0&&(
+          <div style={{...card,padding:'14px 20px',marginBottom:12}}>
+            <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:10}}>ERROR PATTERN</div>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+              {Object.entries(errTypes).sort((a,b)=>b[1]-a[1]).map(([t,n])=>(
+                <div key={t} style={{...card,padding:'8px 14px',display:'flex',gap:8,alignItems:'center'}}>
+                  <span style={pill('#FF9100',true)}>{t}</span>
+                  <span style={{fontSize:13,fontWeight:700,color:'#FF9100'}}>{n}×</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* Papers table */}
+        <div style={{...card,padding:'16px 20px',marginBottom:12}}>
+          <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:12}}>PAPERS ({allScores.length})</div>
+          {allScores.length===0?<div style={{color:'#333',fontSize:12}}>No papers logged.</div>:allScores.slice(0,30).map((sc,i)=>(
+            <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'7px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12}}>
+              <div style={{display:'flex',alignItems:'center',gap:8,flex:1,minWidth:0}}>
+                <span style={pill(SC[sc.subject]||'#888')}>{sc.subject}</span>
+                <span style={{color:'#aaa',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{sc.paper}</span>
+              </div>
+              <div style={{display:'flex',gap:12,alignItems:'center',flexShrink:0}}>
+                <span style={{color:'#444',fontSize:10}}>{sc.date}</span>
+                <span style={{color:'#555'}}>{sc.got}/{sc.max??sc.maxMark??100}</span>
+                <span style={{fontWeight:800,color:GC[gradeFromPct(sc.pct,sc.subject)]}}>{sc.pct}%</span>
+              </div>
+            </div>
+          ))}
+          {allScores.length>30&&<div style={{fontSize:11,color:'#333',marginTop:8}}>+ {allScores.length-30} more</div>}
+        </div>
+        {/* Errors */}
+        <div style={{...card,padding:'16px 20px'}}>
+          <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:12}}>ERROR LOG ({allErrors.length})</div>
+          {allErrors.length===0?<div style={{color:'#333',fontSize:12}}>No errors logged.</div>:allErrors.slice(0,20).map((e,i)=>(
+            <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'6px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12}}>
+              <div style={{display:'flex',alignItems:'center',gap:8}}>
+                <span style={pill(SC[e.subject]||'#888',true)}>{e.subject||'?'}</span>
+                <span style={{color:'#ccc'}}>{e.topic}</span>
+                {e.note&&<span style={{color:'#444',fontSize:11}}>— {e.note}</span>}
+              </div>
+              <span style={pill('#FF9100',true)}>{e.type}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
   );
 }
 
-// ── User detail panel ──────────────────────────────────────────────────────
+// ── Broadcast Panel ────────────────────────────────────────────────────────
+function BroadcastPanel({users}) {
+  const [title,setTitle]=useState('');
+  const [body,setBody]=useState('');
+  const [sending,setSending]=useState(false);
+  const [sent,setSent]=useState(false);
+  const [err,setErr]=useState('');
+  const [history,setHistory]=useState([]);
 
-function UserDetail({ u, onClose, onToggleAdmin, onRefresh }) {
-  const [tab, setTab] = useState('me');
-  const [toggling, setToggling] = useState(false);
+  useEffect(()=>{ loadHistory(); },[]);
+  const loadHistory=async()=>{
+    const {data}=await supabase.from('broadcasts').select('*').order('created_at',{ascending:false}).limit(10);
+    if (data) setHistory(data);
+  };
 
-  const scores  = (u.scores  ||{})[tab]||[];
-  const errors  = (u.errors  ||{})[tab]||[];
-  const checks  = (u.checks  ||{})[tab]||{};
-  const targets = (u.targets ||{})[tab]||{};
-  const br = readiness(scores, errors, checks);
-  const brColor = br.t>=80?'#00E676':br.t>=60?'#FFD600':br.t>=40?'#FF9100':'#FF3D00';
-
-  const subjects = [...new Set(scores.map(s=>s.subject))];
-  const bySubject = subjects.map(s=>{
-    const ss=scores.filter(x=>x.subject===s);
-    const avg=Math.round(ss.reduce((a,x)=>a+x.pct,0)/ss.length);
-    return {s, avg, g:grade(avg,s), n:ss.length, target:targets[s]};
-  });
-
-  const errorTypes = {};
-  errors.forEach(e=>{errorTypes[e.type]=(errorTypes[e.type]||0)+1;});
-  const topErr = Object.entries(errorTypes).sort((a,b)=>b[1]-a[1])[0];
-
-  const handleToggle = async () => {
-    setToggling(true);
-    await onToggleAdmin(u);
-    setToggling(false);
+  const send=async()=>{
+    if (!title.trim()||!body.trim()) { setErr('Title and body required'); return; }
+    setSending(true); setErr('');
+    const {error}=await supabase.from('broadcasts').insert({title:title.trim(),body:body.trim(),sent_by_email:'admin',recipient_count:users.length});
+    if (error) { setErr('broadcasts table may not exist — run migration first'); setSending(false); return; }
+    setSent(true); setTitle(''); setBody('');
+    await loadHistory();
+    setTimeout(()=>setSent(false),3000);
+    setSending(false);
   };
 
   return (
-    <div style={{
-      position:'fixed',inset:0,zIndex:100,background:'rgba(0,0,0,0.92)',
-      display:'flex',flexDirection:'column',overflow:'hidden',fontFamily:mono,
-    }}>
-      {/* Header */}
-      <div style={{
-        background:'#080810',borderBottom:'1px solid rgba(255,61,0,0.15)',
-        padding:'14px 24px',display:'flex',alignItems:'center',gap:16,flexShrink:0,
-      }}>
-        <button onClick={onClose} style={{
-          background:'transparent',border:'1px solid rgba(255,255,255,0.08)',
-          color:'#666',padding:'5px 12px',borderRadius:5,cursor:'pointer',
-          fontSize:11,fontFamily:mono,
-        }}>← BACK</button>
-
-        <div style={{flex:1}}>
-          <div style={{fontSize:15,fontWeight:700,color:'#fff'}}>
-            {u.display_name||'—'} &nbsp;
-            <span style={{fontSize:12,color:'#555',fontWeight:400}}>{u.email}</span>
-          </div>
-          <div style={{fontSize:10,color:'#444',marginTop:2,letterSpacing:0.5}}>
-            JOINED {fmtDate(u.created_at)} &nbsp;·&nbsp;
-            LAST ACTIVE {timeSince(u.lastActive)} &nbsp;·&nbsp;
-            {u.tos_agreed_at?'ToS AGREED':'ToS NOT AGREED'}
-          </div>
+    <div style={{display:'grid',gridTemplateColumns:'1fr 360px',gap:16}}>
+      <div style={{...card,padding:24}}>
+        <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:20,fontWeight:700}}>COMPOSE BROADCAST</div>
+        <div style={{fontSize:9,color:'#440000',letterSpacing:2,marginBottom:5}}>TITLE</div>
+        <input style={{...iS,marginBottom:14}} value={title} onChange={e=>setTitle(e.target.value)} placeholder="e.g. Important update"/>
+        <div style={{fontSize:9,color:'#440000',letterSpacing:2,marginBottom:5}}>MESSAGE</div>
+        <textarea style={{...iS,marginBottom:14,height:120,resize:'vertical'}} value={body} onChange={e=>setBody(e.target.value)} placeholder="Message to all users..."/>
+        <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:10}}>
+          <button onClick={send} disabled={sending} style={{...btn('#FF3D00',true),padding:'10px 24px'}}>
+            {sending?'SENDING...':sent?'SENT ✓':'BROADCAST TO ALL USERS'}
+          </button>
+          <span style={{fontSize:10,color:'#444'}}>{users.length} recipient{users.length!==1?'s':''}</span>
         </div>
-
-        {/* Profile tabs */}
-        <div style={{display:'flex',gap:4}}>
-          {['me','friend'].map(p=>(
-            <button key={p} onClick={()=>setTab(p)} style={{
-              background:tab===p?'rgba(255,61,0,0.12)':'transparent',
-              border:`1px solid ${tab===p?'rgba(255,61,0,0.35)':'rgba(255,255,255,0.07)'}`,
-              color:tab===p?'#FF3D00':'#555',
-              padding:'5px 12px',borderRadius:5,cursor:'pointer',
-              fontSize:11,fontWeight:700,fontFamily:mono,
-            }}>
-              {p==='me'?'THEIR PLAN':'FRIEND PLAN'}
-            </button>
-          ))}
-        </div>
-
-        {/* Admin toggle */}
-        <button onClick={handleToggle} disabled={toggling} style={{
-          background:u.is_admin?'rgba(255,61,0,0.15)':'rgba(255,255,255,0.04)',
-          border:`1px solid ${u.is_admin?'rgba(255,61,0,0.5)':'rgba(255,255,255,0.1)'}`,
-          color:u.is_admin?'#FF3D00':'#555',
-          padding:'5px 12px',borderRadius:5,cursor:'pointer',
-          fontSize:11,fontWeight:800,fontFamily:mono,letterSpacing:1,
-        }}>
-          {toggling?'...':(u.is_admin?'REVOKE ADMIN':'GRANT ADMIN')}
-        </button>
+        {err&&<div style={{fontSize:11,color:'#FF9100'}}>{err}</div>}
+        <div style={{fontSize:10,color:'#333',marginTop:12,borderTop:'1px solid rgba(255,255,255,0.04)',paddingTop:10}}>Broadcasts are stored in the <code style={{color:'#666'}}>broadcasts</code> table. The main app reads them on login and shows as notifications. Requires <code style={{color:'#666'}}>broadcasts</code> table to exist in Supabase.</div>
       </div>
-
-      {/* Scrollable body */}
-      <div style={{overflowY:'auto',flex:1,padding:'24px',maxWidth:1000,width:'100%',margin:'0 auto'}}>
-
-        {/* Readiness + quick stats */}
-        <div style={{
-          display:'grid',gridTemplateColumns:'180px 1fr',gap:12,marginBottom:16,
-        }}>
-          <div style={{
-            background:'rgba(255,255,255,0.03)',border:`1px solid ${brColor}22`,
-            borderRadius:8,padding:'16px 20px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
-          }}>
-            <div style={{fontSize:44,fontWeight:900,color:brColor,lineHeight:1}}>{br.t}</div>
-            <div style={{fontSize:9,color:'#444',letterSpacing:2,marginTop:4}}>READINESS</div>
-            <div style={{fontSize:11,color:brColor,fontWeight:700,marginTop:6}}>{br.label}</div>
+      <div style={{...card,padding:20}}>
+        <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:14,fontWeight:700}}>RECENT BROADCASTS</div>
+        {history.length===0?<div style={{color:'#333',fontSize:12}}>No broadcasts yet.</div>:history.map((b,i)=>(
+          <div key={b.id||i} style={{...card,padding:'10px 14px',marginBottom:8}}>
+            <div style={{fontSize:12,fontWeight:700,color:'#ddd',marginBottom:4}}>{b.title}</div>
+            <div style={{fontSize:11,color:'#555',marginBottom:6,lineHeight:1.5}}>{b.body}</div>
+            <div style={{fontSize:9,color:'#333'}}>{fmtDate(b.created_at)} · {b.recipient_count||0} recipients</div>
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8}}>
-            {[
-              {v:scores.length,l:'PAPERS DONE',c:'#fff'},
-              {v:errors.length,l:'ERRORS',c:errors.length>10?'#FF9100':'#fff'},
-              {v:Object.keys(checks).length,l:'TOPICS TICKED',c:'#fff'},
-              {v:scores.length?Math.round(scores.reduce((a,s)=>a+s.pct,0)/scores.length)+'%':'—',l:'AVG SCORE',c:'#fff'},
-            ].map(({v,l,c})=>(
-              <div key={l} style={{
-                background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',
-                borderRadius:8,padding:'14px',display:'flex',flexDirection:'column',justifyContent:'center',
-              }}>
-                <div style={{fontSize:28,fontWeight:800,color:c}}>{v}</div>
-                <div style={{fontSize:9,color:'#444',letterSpacing:1.5,marginTop:3}}>{l}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Readiness bar */}
-        <div style={{
-          background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',
-          borderRadius:8,padding:'14px 20px',marginBottom:16,
-        }}>
-          <div style={{height:6,background:'rgba(255,255,255,0.06)',borderRadius:3,overflow:'hidden',marginBottom:8}}>
-            <div style={{height:'100%',width:`${br.t}%`,background:brColor,borderRadius:3,transition:'width 0.8s'}}/>
-          </div>
-          <div style={{display:'flex',justifyContent:'space-between',fontSize:10,color:'#444'}}>
-            <span>Score component: {Math.round((scores.length?scores.reduce((a,s)=>a+s.pct,0)/scores.length:0)/100*40)}/40</span>
-            <span>Papers: {Math.min(20,Math.round((scores.length/12)*20))}/20</span>
-            <span>Errors: {Math.max(0,20-errors.filter(e=>Date.now()-e.id<7*86400000).length*2)}/20</span>
-            <span>Topics: {Math.min(20,Math.round((Object.keys(checks).length/40)*20))}/20</span>
-          </div>
-        </div>
-
-        {/* Subject breakdown */}
-        {bySubject.length>0&&(
-          <div style={{
-            background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',
-            borderRadius:8,padding:'16px 20px',marginBottom:16,
-          }}>
-            <div style={{fontSize:9,letterSpacing:3,color:'#444',marginBottom:12}}>SUBJECT BREAKDOWN</div>
-            <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
-              {bySubject.map(({s,avg,g,n,target})=>(
-                <div key={s} style={{
-                  background:'rgba(255,255,255,0.03)',
-                  border:`1px solid ${SUB_COLORS[s]||'#888'}33`,
-                  borderRadius:8,padding:'12px 16px',minWidth:150,flex:'1 1 150px',
-                }}>
-                  <div style={{fontSize:9,letterSpacing:2,color:'#555',marginBottom:6}}>
-                    {s.toUpperCase()}
-                  </div>
-                  <div style={{fontSize:32,fontWeight:900,color:GRADE_COLORS[g]||'#555'}}>{g}</div>
-                  <div style={{fontSize:12,color:'#888',marginTop:2}}>{avg}% avg · {n} paper{n!==1?'s':''}</div>
-                  {target&&<div style={{fontSize:10,color:'#555',marginTop:4}}>Target: {target}</div>}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Error pattern */}
-        {topErr&&errors.length>=3&&(
-          <div style={{
-            background:'rgba(255,140,0,0.06)',border:'1px solid rgba(255,140,0,0.15)',
-            borderRadius:8,padding:'12px 20px',marginBottom:16,fontSize:12,color:'#FF9100',
-          }}>
-            Recurring pattern: <strong>"{topErr[0]}"</strong> — {topErr[1]} times logged
-          </div>
-        )}
-
-        {/* Papers table */}
-        <div style={{
-          background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',
-          borderRadius:8,padding:'16px 20px',marginBottom:16,
-        }}>
-          <div style={{fontSize:9,letterSpacing:3,color:'#444',marginBottom:12}}>
-            PAPERS ({scores.length})
-          </div>
-          {scores.length===0
-            ? <div style={{color:'#333',fontSize:13}}>No papers logged.</div>
-            : scores.slice(0,40).map((sc,i)=>(
-              <div key={i} style={{
-                display:'flex',justifyContent:'space-between',alignItems:'center',
-                padding:'7px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12,
-              }}>
-                <div style={{display:'flex',alignItems:'center',gap:8,flex:1,minWidth:0}}>
-                  <span style={pill(SUB_COLORS[sc.subject]||'#888')}>{sc.subject}</span>
-                  <span style={{color:'#bbb',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-                    {sc.paper}
-                  </span>
-                </div>
-                <div style={{display:'flex',gap:14,alignItems:'center',flexShrink:0}}>
-                  <span style={{color:'#444',fontSize:10}}>{sc.date}</span>
-                  <span style={{color:'#666'}}>{sc.got}/{sc.max}</span>
-                  <span style={{
-                    fontWeight:800,color:GRADE_COLORS[grade(sc.pct,sc.subject)]||'#555',
-                    minWidth:60,textAlign:'right',
-                  }}>
-                    {sc.pct}% · {grade(sc.pct,sc.subject)}
-                  </span>
-                </div>
-              </div>
-            ))}
-          {scores.length>40&&(
-            <div style={{fontSize:11,color:'#444',marginTop:8}}>
-              + {scores.length-40} more
-            </div>
-          )}
-        </div>
-
-        {/* Error log */}
-        <div style={{
-          background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',
-          borderRadius:8,padding:'16px 20px',marginBottom:16,
-        }}>
-          <div style={{fontSize:9,letterSpacing:3,color:'#444',marginBottom:12}}>
-            ERROR LOG ({errors.length})
-          </div>
-          {errors.length===0
-            ? <div style={{color:'#333',fontSize:13}}>No errors logged.</div>
-            : errors.slice(0,25).map((e,i)=>(
-              <div key={i} style={{
-                display:'flex',justifyContent:'space-between',alignItems:'center',
-                padding:'6px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12,
-              }}>
-                <div style={{display:'flex',alignItems:'center',gap:8}}>
-                  <span style={pill(SUB_COLORS[e.subject]||'#888')}>{e.subject}</span>
-                  <span style={{color:'#ccc'}}>{e.topic}</span>
-                  {e.note&&<span style={{color:'#444',fontSize:11}}>— {e.note}</span>}
-                </div>
-                <div style={{display:'flex',gap:8,alignItems:'center'}}>
-                  <span style={{color:'#444',fontSize:10}}>{e.date}</span>
-                  <span style={pill('#FF9100',true)}>{e.type}</span>
-                </div>
-              </div>
-            ))}
-        </div>
-
-        {/* Checked topics */}
-        {Object.keys(checks).length>0&&(
-          <div style={{
-            background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',
-            borderRadius:8,padding:'16px 20px',
-          }}>
-            <div style={{fontSize:9,letterSpacing:3,color:'#444',marginBottom:12}}>
-              CHECKED TOPICS ({Object.keys(checks).length})
-            </div>
-            <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
-              {Object.keys(checks).slice(0,80).map(k=>(
-                <span key={k} style={pill('#00E676',true)}>{k}</span>
-              ))}
-              {Object.keys(checks).length>80&&(
-                <span style={{color:'#333',fontSize:10}}>+{Object.keys(checks).length-80} more</span>
-              )}
-            </div>
-          </div>
-        )}
+        ))}
       </div>
     </div>
   );
 }
 
-// ── Main dashboard ─────────────────────────────────────────────────────────
+// ── Dashboard ──────────────────────────────────────────────────────────────
+function Dashboard({adminUser,adminProfile,onLogout}) {
+  const [users,setUsers]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [search,setSearch]=useState('');
+  const [sort,setSort]=useState({col:'created_at',dir:-1});
+  const [selected,setSelected]=useState(null);
+  const [hover,setHover]=useState(null);
+  const [tab,setTab]=useState('overview');
+  const [lastRefresh,setLastRefresh]=useState(null);
+  const [filterAdmin,setFilterAdmin]=useState(false);
+  const [filterActive,setFilterActive]=useState(false);
 
-function Dashboard({ adminUser, adminProfile, onLogout }) {
-  const [users, setUsers]     = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch]   = useState('');
-  const [sort, setSort]       = useState({col:'created_at',dir:-1});
-  const [selected, setSelected] = useState(null);
-  const [hover, setHover]     = useState(null);
-  const [lastRefresh, setLastRefresh] = useState(null);
-  const [tab, setTab]         = useState('users'); // users | analytics
-
-  const loadData = async () => {
+  const loadData=useCallback(async()=>{
     setLoading(true);
-    const { data: profiles } = await supabase.from('user_profiles').select('*').order('created_at',{ascending:false});
-    const { data: userData }  = await supabase.from('user_data').select('*');
+    const [{data:profiles},{data:userData}]=await Promise.all([
+      supabase.from('user_profiles').select('*').order('created_at',{ascending:false}),
+      supabase.from('user_data').select('*'),
+    ]);
     if (!profiles) { setLoading(false); return; }
-
-    const merged = profiles.map(p => {
-      const rows = (userData||[]).filter(d=>d.user_id===p.id);
-      const scores={}, errors={}, checks={}, targets={};
-      rows.forEach(r=>{
-        scores[r.profile]  = r.scores  ||[];
-        errors[r.profile]  = r.errors  ||[];
-        checks[r.profile]  = r.checks  ||{};
-        targets[r.profile] = r.targets ||{};
-      });
-      const allS = Object.values(scores).flat();
-      const allE = Object.values(errors).flat();
-      const lastA = rows.length
-        ? rows.sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at))[0].updated_at
-        : p.created_at;
-      const br = readiness(allS, allE, Object.values(checks).reduce((a,c)=>({...a,...c}),{}));
-      let subjectList = [];
-      if (p.subjects) { try { const ps = JSON.parse(p.subjects); if (Array.isArray(ps)) subjectList = ps.map(s=>s.subjectId||s.subject||''); } catch(_) {} }
-      return {
-        ...p, scores, errors, checks, targets, subjectList,
-        totalScores:allS.length, totalErrors:allE.length,
-        lastActive:lastA, readiness:br.t, readinessLabel:br.label,
-      };
+    const merged=profiles.map(p=>{
+      const rows=(userData||[]).filter(d=>d.user_id===p.id);
+      const scores={},errors={},checks={},targets={};
+      rows.forEach(r=>{ scores[r.profile]=r.scores||[]; errors[r.profile]=r.errors||[]; checks[r.profile]=r.checks||{}; targets[r.profile]=r.targets||{}; });
+      const allS=Object.values(scores).flat();
+      const allE=Object.values(errors).flat();
+      const lastA=rows.length?rows.sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at))[0].updated_at:p.created_at;
+      const br=calcReadiness(allS,allE);
+      let subjectList=[];
+      try { if (p.subjects) { const ps=JSON.parse(p.subjects); if (Array.isArray(ps)) subjectList=ps.map(s=>s.subjectId||s.subject||'').filter(Boolean); } } catch(_) {}
+      return {...p,scores,errors,checks,targets,subjectList,allScores:allS,totalScores:allS.length,totalErrors:allE.length,lastActive:lastA,readiness:br.t,avgScore:br.avg};
     });
-
     setUsers(merged);
     setLastRefresh(new Date());
     setLoading(false);
-    if (selected) setSelected(merged.find(u=>u.id===selected.id)||null);
-  };
+    setSelected(prev=>prev?merged.find(u=>u.id===prev.id)||null:null);
+  },[]);
 
-  useEffect(()=>{ loadData(); },[]);
+  useEffect(()=>{ loadData(); },[loadData]);
 
-  const toggleAdmin = async (u) => {
-    const next = !u.is_admin;
+  const toggleAdmin=async(u)=>{
+    const next=!u.is_admin;
     await supabase.from('user_profiles').update({is_admin:next}).eq('id',u.id);
     setUsers(prev=>prev.map(x=>x.id===u.id?{...x,is_admin:next}:x));
-    if (selected?.id===u.id) setSelected(prev=>({...prev,is_admin:next}));
+    setSelected(prev=>prev?.id===u.id?{...prev,is_admin:next}:prev);
   };
 
-  const sortedFiltered = [...users]
-    .filter(u=>!search||u.email?.toLowerCase().includes(search.toLowerCase())||
-      u.display_name?.toLowerCase().includes(search.toLowerCase()))
+  const deleteUser=async(u)=>{
+    await supabase.from('user_data').delete().eq('user_id',u.id);
+    await supabase.from('user_profiles').delete().eq('id',u.id);
+    setUsers(prev=>prev.filter(x=>x.id!==u.id));
+  };
+
+  const exportCSV=()=>{
+    const h=['Email','Name','Joined','Last Active','Subjects','Papers','Avg Score','Readiness','Errors','ToS','Admin'];
+    const rows=users.map(u=>[u.email||'',u.display_name||'',fmtDate(u.created_at),fmtDate(u.lastActive),u.subjectList.join(';'),u.totalScores,u.avgScore,u.readiness,u.totalErrors,u.tos_agreed_at?'yes':'no',u.is_admin?'yes':'no'].map(v=>JSON.stringify(v??'')).join(','));
+    const blob=new Blob([[h.join(','),...rows].join('\n')],{type:'text/csv'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`godmode-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+  };
+
+  const now=Date.now(); const week=7*24*60*60*1000;
+  const stats={
+    total:users.length,
+    activeWeek:users.filter(u=>now-new Date(u.lastActive)<week).length,
+    newWeek:users.filter(u=>now-new Date(u.created_at)<week).length,
+    activated:users.filter(u=>u.totalScores>0).length,
+    totalPapers:users.reduce((a,u)=>a+u.totalScores,0),
+    totalErrors:users.reduce((a,u)=>a+u.totalErrors,0),
+    avgReadiness:users.length?Math.round(users.reduce((a,u)=>a+u.readiness,0)/users.length):0,
+    admins:users.filter(u=>u.is_admin).length,
+  };
+
+  const subjectCounts={};
+  users.forEach(u=>(u.subjectList||[]).forEach(s=>{ subjectCounts[s]=(subjectCounts[s]||0)+1; }));
+  const topSubjects=Object.entries(subjectCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const maxSub=topSubjects[0]?.[1]||1;
+
+  const rdist=[{l:'Battle Ready',min:80,c:'#00E676'},{l:'On Track',min:60,c:'#FFD600'},{l:'Building',min:40,c:'#FF9100'},{l:'Just Started',min:0,c:'FF3D00'}];
+
+  const cycleSort=col=>setSort(s=>s.col===col?{col,dir:-s.dir}:{col,dir:-1});
+  const sa=col=>sort.col===col?(sort.dir===-1?'↓':'↑'):'⇅';
+
+  const filtered=[...users]
+    .filter(u=>{
+      if (filterAdmin&&!u.is_admin) return false;
+      if (filterActive&&now-new Date(u.lastActive)>week) return false;
+      if (!search) return true;
+      const q=search.toLowerCase();
+      return u.email?.toLowerCase().includes(q)||u.display_name?.toLowerCase().includes(q)||(u.subjectList||[]).some(s=>s.includes(q));
+    })
     .sort((a,b)=>{
       const av=a[sort.col]??(sort.col==='readiness'?0:'');
       const bv=b[sort.col]??(sort.col==='readiness'?0:'');
       return sort.dir*(av<bv?-1:av>bv?1:0);
     });
 
-  const cycleSort = (col) => setSort(s=>s.col===col?{col,dir:-s.dir}:{col,dir:-1});
-  const sortArrow = (col) => sort.col===col?(sort.dir===-1?'↓':'↑'):'↕';
+  const topByReadiness=[...users].sort((a,b)=>b.readiness-a.readiness).slice(0,5);
+  const recentSignups=[...users].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5);
 
-  const now = Date.now();
-  const week = 7*24*60*60*1000;
-  const totalPapers   = users.reduce((a,u)=>a+u.totalScores,0);
-  const totalErrors   = users.reduce((a,u)=>a+u.totalErrors,0);
-  const activeWeek    = users.filter(u=>now-new Date(u.lastActive)<week).length;
-  const newThisWeek   = users.filter(u=>now-new Date(u.created_at)<week).length;
-  const avgReadiness  = users.length?Math.round(users.reduce((a,u)=>a+u.readiness,0)/users.length):0;
-  const activatedUsers = users.filter(u=>u.totalScores>0).length;
-  const rColor = r => r>=80?'#00E676':r>=60?'#FFD600':r>=40?'#FF9100':'#FF3D00';
-
-  // Subject popularity
-  const subjectCounts = {};
-  users.forEach(u=>(u.subjectList||[]).forEach(s=>{ if(s) subjectCounts[s]=(subjectCounts[s]||0)+1; }));
-  const topSubjects = Object.entries(subjectCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  const maxSubCount = topSubjects[0]?.[1]||1;
-
-  // Readiness distribution
-  const rdist = [
-    {l:'Battle Ready',min:80,c:'#00E676'},
-    {l:'On Track',min:60,c:'#FFD600'},
-    {l:'Building',min:40,c:'#FF9100'},
-    {l:'Just Started',min:0,c:'#FF3D00'},
-  ];
-
-  // CSV export
-  const exportCSV = () => {
-    const header = ['Email','Name','Joined','Last Active','Papers','Avg Score','Readiness','Errors','ToS','Admin'];
-    const rows = users.map(u=>{
-      const allS = Object.values(u.scores||{}).flat();
-      const avg = allS.length ? Math.round(allS.reduce((a,s)=>a+s.pct,0)/allS.length) : '';
-      return [
-        u.email||'', u.display_name||'',
-        new Date(u.created_at).toLocaleDateString('en-GB'),
-        new Date(u.lastActive).toLocaleDateString('en-GB'),
-        u.totalScores, avg, u.readiness, u.totalErrors,
-        u.tos_agreed_at?'yes':'no', u.is_admin?'yes':'no',
-      ].map(v=>JSON.stringify(v??'')).join(',');
-    });
-    const blob = new Blob([[header.join(','),...rows].join('\n')],{type:'text/csv'});
-    const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
-    a.download=`battleplan-users-${new Date().toISOString().slice(0,10)}.csv`; a.click();
-  };
-
-  const STAT_CARDS = [
-    {v:users.length,      l:'TOTAL USERS',      c:'#FF3D00'},
-    {v:activeWeek,        l:'ACTIVE THIS WEEK',  c:activeWeek>0?'#00E676':'#555'},
-    {v:newThisWeek,       l:'NEW THIS WEEK',     c:newThisWeek>0?'#FFD600':'#555'},
-    {v:activatedUsers,    l:'ACTIVATED',         c:'#40C4FF'},
-    {v:totalPapers,       l:'PAPERS LOGGED',     c:'#fff'},
-    {v:totalErrors,       l:'ERRORS LOGGED',     c:'#FF9100'},
-    {v:`${avgReadiness}`, l:'AVG READINESS',     c:rColor(avgReadiness)},
-    {v:users.filter(u=>u.is_admin).length, l:'ADMINS', c:'#FF3D00'},
-  ];
+  const TABS=['overview','users','analytics','broadcast','system'];
 
   return (
     <>
-      {selected&&(
-        <UserDetail
-          u={selected}
-          onClose={()=>setSelected(null)}
-          onToggleAdmin={toggleAdmin}
-          onRefresh={loadData}
-        />
-      )}
-
-      <div style={{minHeight:'100vh',background:'#000',color:'#E0E0E5',fontFamily:mono}}>
+      {selected&&<UserDetail u={selected} onClose={()=>setSelected(null)} onToggleAdmin={toggleAdmin} onDeleteUser={deleteUser}/>}
+      <div style={{minHeight:'100vh',background:'#050508',color:'#d0ccc8',fontFamily:mono}}>
         {/* Top bar */}
-        <div style={{
-          position:'sticky',top:0,zIndex:50,
-          background:'rgba(0,0,0,0.97)',backdropFilter:'blur(16px)',
-          borderBottom:'1px solid rgba(255,61,0,0.12)',
-          display:'flex',alignItems:'center',justifyContent:'space-between',
-          padding:'0 24px',height:52,
-        }}>
-          <div style={{display:'flex',alignItems:'center',gap:12}}>
-            <span style={{fontSize:15,fontWeight:900,color:'#FF3D00',letterSpacing:4}}>GOD MODE</span>
-            <span style={{background:'rgba(255,61,0,0.1)',border:'1px solid rgba(255,61,0,0.3)',color:'#FF3D00',fontSize:9,fontWeight:800,letterSpacing:2,padding:'2px 8px',borderRadius:3}}>BETA</span>
-            <div style={{display:'flex',gap:2,marginLeft:8}}>
-              {['users','analytics'].map(t=>(
-                <button key={t} onClick={()=>setTab(t)} style={{
-                  background:tab===t?'rgba(255,61,0,0.12)':'transparent',
-                  border:`1px solid ${tab===t?'rgba(255,61,0,0.3)':'transparent'}`,
-                  color:tab===t?'#FF3D00':'#444',padding:'4px 10px',borderRadius:4,
-                  cursor:'pointer',fontSize:10,fontFamily:mono,letterSpacing:1,fontWeight:700,
-                }}>{t.toUpperCase()}</button>
+        <div style={{position:'sticky',top:0,zIndex:50,background:'rgba(5,5,8,0.98)',backdropFilter:'blur(20px)',borderBottom:'1px solid rgba(255,61,0,0.1)',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 24px',height:50}}>
+          <div style={{display:'flex',alignItems:'center',gap:14}}>
+            <span style={{fontSize:14,fontWeight:900,color:'#FF3D00',letterSpacing:5}}>GOD MODE</span>
+            <span style={{background:'rgba(255,61,0,0.1)',border:'1px solid rgba(255,61,0,0.25)',color:'#FF3D00',fontSize:8,fontWeight:900,letterSpacing:2,padding:'2px 7px',borderRadius:3}}>ADMIN</span>
+            <div style={{display:'flex',gap:1,marginLeft:6}}>
+              {TABS.map(t=>(
+                <button key={t} onClick={()=>setTab(t)} style={{background:tab===t?'rgba(255,61,0,0.1)':'transparent',border:'none',borderBottom:`2px solid ${tab===t?'#FF3D00':'transparent'}`,color:tab===t?'#FF3D00':'#444',padding:'0 12px',height:50,cursor:'pointer',fontSize:10,fontFamily:mono,letterSpacing:1,fontWeight:700,transition:'all 0.15s'}}>
+                  {t.toUpperCase()}
+                </button>
               ))}
             </div>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:10}}>
-            {lastRefresh&&<span style={{fontSize:10,color:'#333'}}>↺ {timeSince(lastRefresh)}</span>}
-            <button onClick={loadData} disabled={loading} style={{background:'transparent',border:'1px solid rgba(255,255,255,0.07)',color:'#444',padding:'4px 10px',borderRadius:4,cursor:'pointer',fontSize:10,fontFamily:mono}}>
-              {loading?'…':'REFRESH'}
-            </button>
-            <button onClick={exportCSV} style={{background:'rgba(0,230,118,0.07)',border:'1px solid rgba(0,230,118,0.2)',color:'#00E676',padding:'4px 10px',borderRadius:4,cursor:'pointer',fontSize:10,fontFamily:mono,letterSpacing:1}}>
-              ↓ CSV
-            </button>
-            <span style={{fontSize:10,color:'#333'}}>{adminProfile?.email||adminUser?.email||'admin'}</span>
-            <button onClick={onLogout} style={{background:'rgba(255,0,0,0.07)',border:'1px solid rgba(255,0,0,0.18)',color:'#550000',padding:'4px 10px',borderRadius:4,cursor:'pointer',fontSize:10,fontFamily:mono}}>
-              LOGOUT
-            </button>
+            {lastRefresh&&<span style={{fontSize:9,color:'#2a0000'}}>↺ {timeSince(lastRefresh)}</span>}
+            <button onClick={loadData} disabled={loading} style={btn()}>REFRESH</button>
+            <button onClick={exportCSV} style={btn('#00E676')}>↓ CSV</button>
+            <span style={{fontSize:10,color:'#333',maxWidth:160,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{adminProfile?.email||adminUser?.email}</span>
+            <button onClick={onLogout} style={btn('#FF3D00')}>LOGOUT</button>
           </div>
         </div>
 
-        <div style={{maxWidth:1240,margin:'0 auto',padding:'24px 24px 60px'}}>
-
-          {/* Stat cards */}
-          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,marginBottom:20}}>
-            {STAT_CARDS.map(({v,l,c})=>(
-              <div key={l} style={{background:'rgba(255,255,255,0.025)',border:'1px solid rgba(255,255,255,0.05)',borderRadius:8,padding:'14px 18px'}}>
-                <div style={{fontSize:28,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
-                <div style={{fontSize:9,color:'#444',letterSpacing:2,marginTop:5}}>{l}</div>
+        <div style={{maxWidth:1280,margin:'0 auto',padding:'24px 24px 80px'}}>
+          {/* Stat cards — always visible */}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(8,1fr)',gap:8,marginBottom:20}}>
+            {[
+              {v:stats.total,l:'USERS',c:'#FF3D00'},
+              {v:stats.activeWeek,l:'ACTIVE / WEEK',c:stats.activeWeek>0?'#00E676':'#555'},
+              {v:stats.newWeek,l:'NEW / WEEK',c:stats.newWeek>0?'#FFD600':'#555'},
+              {v:stats.activated,l:'ACTIVATED',c:'#40C4FF'},
+              {v:stats.totalPapers,l:'PAPERS',c:'#fff'},
+              {v:stats.totalErrors,l:'ERRORS',c:'#FF9100'},
+              {v:stats.avgReadiness,l:'AVG READY',c:R(stats.avgReadiness)},
+              {v:stats.admins,l:'ADMINS',c:'#FF3D00'},
+            ].map(({v,l,c})=>(
+              <div key={l} style={{...card,padding:'12px 14px'}}>
+                <div style={{fontSize:24,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
+                <div style={{fontSize:8,color:'#440000',letterSpacing:1.5,marginTop:4}}>{l}</div>
               </div>
             ))}
           </div>
 
-          {tab==='analytics'&&(
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:20}}>
-              {/* Subject popularity */}
-              <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:8,padding:'18px 20px'}}>
-                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:14}}>SUBJECT POPULARITY</div>
-                {topSubjects.length===0
-                  ? <div style={{color:'#333',fontSize:12}}>No subject data yet.</div>
-                  : topSubjects.map(([s,n])=>(
-                    <div key={s} style={{marginBottom:8}}>
-                      <div style={{display:'flex',justifyContent:'space-between',fontSize:10,color:'#888',marginBottom:3}}>
-                        <span style={{textTransform:'capitalize'}}>{s.replace(/-/g,' ')}</span>
-                        <span style={{color:'#FF3D00'}}>{n} user{n!==1?'s':''}</span>
-                      </div>
-                      <div style={{height:4,background:'rgba(255,255,255,0.05)',borderRadius:2,overflow:'hidden'}}>
-                        <div style={{height:'100%',width:`${(n/maxSubCount)*100}%`,background:'#FF3D00',borderRadius:2,opacity:0.7}}/>
-                      </div>
+          {/* OVERVIEW */}
+          {tab==='overview'&&(
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+              <div style={{...card,padding:20}}>
+                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:16,fontWeight:700}}>TOP BY READINESS</div>
+                {topByReadiness.map((u,i)=>(
+                  <div key={u.id} onClick={()=>setSelected(u)} style={{display:'flex',alignItems:'center',gap:12,padding:'9px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',cursor:'pointer'}}>
+                    <span style={{fontSize:11,color:'#333',width:16,textAlign:'right'}}>{i+1}</span>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:12,color:'#ccc',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{u.display_name||u.email}</div>
+                      <div style={{fontSize:9,color:'#444',marginTop:1}}>{u.totalScores} papers · {u.avgScore}% avg</div>
                     </div>
-                  ))}
+                    <div style={{display:'flex',alignItems:'center',gap:8}}>
+                      <div style={{width:40,height:3,background:'rgba(255,255,255,0.05)',borderRadius:2,overflow:'hidden'}}><div style={{width:`${u.readiness}%`,height:'100%',background:R(u.readiness)}}/></div>
+                      <span style={{fontSize:12,fontWeight:800,color:R(u.readiness),minWidth:24,textAlign:'right'}}>{u.readiness}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
-
-              {/* Readiness distribution */}
-              <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:8,padding:'18px 20px'}}>
-                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:14}}>READINESS DISTRIBUTION</div>
-                {rdist.map(({l,min,c},i)=>{
-                  const next = rdist[i-1]?.min??101;
-                  const count = users.filter(u=>u.readiness>=min&&u.readiness<next).length;
-                  const pct = users.length?Math.round((count/users.length)*100):0;
-                  return (
-                    <div key={l} style={{marginBottom:10}}>
-                      <div style={{display:'flex',justifyContent:'space-between',fontSize:10,color:'#666',marginBottom:3}}>
-                        <span style={{color:c,fontWeight:700}}>{l}</span>
-                        <span>{count} ({pct}%)</span>
-                      </div>
-                      <div style={{height:4,background:'rgba(255,255,255,0.05)',borderRadius:2,overflow:'hidden'}}>
-                        <div style={{height:'100%',width:`${pct}%`,background:c,borderRadius:2}}/>
+              <div style={{...card,padding:20}}>
+                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:16,fontWeight:700}}>RECENT SIGN-UPS</div>
+                {recentSignups.map(u=>(
+                  <div key={u.id} onClick={()=>setSelected(u)} style={{display:'flex',alignItems:'center',gap:12,padding:'9px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',cursor:'pointer'}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:12,color:'#ccc',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{u.display_name||u.email}</div>
+                      <div style={{display:'flex',gap:4,marginTop:4,flexWrap:'wrap'}}>
+                        {(u.subjectList||[]).slice(0,3).map(s=><span key={s} style={{fontSize:8,color:'#FF3D00',background:'rgba(255,61,0,0.08)',border:'1px solid rgba(255,61,0,0.2)',padding:'1px 5px',borderRadius:3,textTransform:'capitalize'}}>{s.replace(/-/g,' ')}</span>)}
                       </div>
                     </div>
-                  );
-                })}
-                <div style={{marginTop:16,paddingTop:12,borderTop:'1px solid rgba(255,255,255,0.05)',fontSize:10,color:'#333'}}>
-                  Activation rate: <span style={{color:'#fff',fontWeight:700}}>{users.length?Math.round((activatedUsers/users.length)*100):0}%</span>
-                  &nbsp;· Avg papers/user: <span style={{color:'#fff',fontWeight:700}}>{users.length?Math.round(totalPapers/users.length):0}</span>
-                </div>
+                    <span style={{fontSize:10,color:'#444',flexShrink:0}}>{timeSince(u.created_at)}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{...card,padding:20}}>
+                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:16,fontWeight:700}}>ENGAGEMENT METRICS</div>
+                {[
+                  {l:'Activation rate',v:`${users.length?Math.round((stats.activated/users.length)*100):0}%`,c:'#40C4FF'},
+                  {l:'Avg papers / activated user',v:stats.activated?Math.round(stats.totalPapers/stats.activated):0,c:'#fff'},
+                  {l:'Avg errors / activated user',v:stats.activated?Math.round(stats.totalErrors/stats.activated):0,c:'#FF9100'},
+                  {l:'ToS agreed',v:users.filter(u=>u.tos_agreed_at).length,c:'#00E676'},
+                  {l:'Users with no papers',v:users.filter(u=>u.totalScores===0).length,c:'#555'},
+                ].map(({l,v,c})=>(
+                  <div key={l} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+                    <span style={{fontSize:11,color:'#555'}}>{l}</span>
+                    <span style={{fontSize:14,fontWeight:800,color:c}}>{v}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{...card,padding:20}}>
+                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:16,fontWeight:700}}>SUBJECT POPULARITY</div>
+                {topSubjects.slice(0,6).map(([s,n])=>(
+                  <div key={s} style={{marginBottom:10}}>
+                    <div style={{display:'flex',justifyContent:'space-between',fontSize:10,color:'#666',marginBottom:3}}>
+                      <span style={{textTransform:'capitalize',color:SC[s]||'#888'}}>{s.replace(/-/g,' ')}</span>
+                      <span style={{color:'#FF3D00'}}>{n}</span>
+                    </div>
+                    <div style={{height:3,background:'rgba(255,255,255,0.04)',borderRadius:2,overflow:'hidden'}}>
+                      <div style={{height:'100%',width:`${(n/maxSub)*100}%`,background:SC[s]||'#FF3D00',borderRadius:2,opacity:0.8}}/>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
+          {/* USERS */}
           {tab==='users'&&(
             <>
-              {/* Search */}
-              <input
-                style={{...inputStyle,marginBottom:10,borderColor:'rgba(255,61,0,0.15)',background:'rgba(255,61,0,0.03)'}}
-                placeholder="// search by email or name..."
-                value={search}
-                onChange={e=>setSearch(e.target.value)}
-              />
-
-              {loading?(
-                <div style={{color:'#330000',fontSize:13,padding:32,textAlign:'center',letterSpacing:2}}>
-                  // LOADING USER DATA...
-                </div>
-              ):(
-                <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:8,overflow:'hidden'}}>
+              <div style={{display:'flex',gap:8,marginBottom:10,alignItems:'center'}}>
+                <input style={{...iS,flex:1}} placeholder="// search by email, name, or subject..." value={search} onChange={e=>setSearch(e.target.value)}/>
+                <button onClick={()=>setFilterAdmin(p=>!p)} style={{...btn('#FF3D00'),background:filterAdmin?'rgba(255,61,0,0.12)':'transparent',whiteSpace:'nowrap'}}>ADMINS ONLY</button>
+                <button onClick={()=>setFilterActive(p=>!p)} style={{...btn('#00E676'),background:filterActive?'rgba(0,230,118,0.1)':'transparent',whiteSpace:'nowrap'}}>ACTIVE WEEK</button>
+                <span style={{fontSize:10,color:'#333',whiteSpace:'nowrap'}}>{filtered.length} / {users.length}</span>
+              </div>
+              {loading?<div style={{color:'#330000',fontSize:12,padding:40,textAlign:'center',letterSpacing:2}}>// LOADING USER DATA...</div>:(
+                <div style={{...card,overflow:'hidden'}}>
                   <table style={{width:'100%',borderCollapse:'collapse'}}>
                     <thead>
                       <tr style={{borderBottom:'1px solid rgba(255,61,0,0.1)'}}>
-                        {[
-                          {k:'email',l:'USER'},
-                          {k:'created_at',l:'JOINED'},
-                          {k:'lastActive',l:'LAST ACTIVE'},
-                          {k:'totalScores',l:'PAPERS'},
-                          {k:'readiness',l:'READINESS'},
-                          {k:'tos_agreed_at',l:'ToS'},
-                          {k:'is_admin',l:'ROLE'},
-                        ].map(({k,l})=>(
-                          <th key={k} onClick={()=>cycleSort(k)} style={{textAlign:'left',padding:'10px 16px',fontSize:9,color:'#440000',letterSpacing:2,fontWeight:700,cursor:'pointer',userSelect:'none'}}>
-                            {l} <span style={{opacity:0.5}}>{sortArrow(k)}</span>
+                        {[{k:'email',l:'USER'},{k:'created_at',l:'JOINED'},{k:'lastActive',l:'LAST ACTIVE'},{k:'totalScores',l:'PAPERS'},{k:'avgScore',l:'AVG'},{k:'readiness',l:'READINESS'},{k:'totalErrors',l:'ERRORS'},{k:'tos_agreed_at',l:'ToS'},{k:'is_admin',l:'ROLE'}].map(({k,l})=>(
+                          <th key={k} onClick={()=>cycleSort(k)} style={{textAlign:'left',padding:'10px 14px',fontSize:8,color:'#440000',letterSpacing:2,fontWeight:700,cursor:'pointer',userSelect:'none',whiteSpace:'nowrap'}}>
+                            {l} <span style={{opacity:0.5,fontSize:9}}>{sa(k)}</span>
                           </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {sortedFiltered.length===0&&(
-                        <tr><td colSpan={7} style={{padding:'24px 16px',color:'#333',fontSize:12,textAlign:'center'}}>No users found.</td></tr>
-                      )}
-                      {sortedFiltered.map(u=>(
-                        <tr key={u.id}
-                          onClick={()=>setSelected(u)}
-                          onMouseEnter={()=>setHover(u.id)}
-                          onMouseLeave={()=>setHover(null)}
-                          style={{background:hover===u.id?'rgba(255,61,0,0.04)':'transparent',cursor:'pointer',borderBottom:'1px solid rgba(255,255,255,0.03)',transition:'background 0.1s'}}
-                        >
-                          <td style={{padding:'11px 16px'}}>
-                            <div style={{fontSize:13,fontWeight:600,color:'#ddd'}}>{u.display_name||<span style={{color:'#444'}}>—</span>}</div>
-                            <div style={{fontSize:10,color:'#444',marginTop:1}}>{u.email}</div>
-                            {u.subjectList?.length>0&&(
-                              <div style={{display:'flex',gap:3,flexWrap:'wrap',marginTop:4}}>
-                                {u.subjectList.slice(0,4).map(s=>(
-                                  <span key={s} style={{fontSize:8,color:'#FF3D00',background:'rgba(255,61,0,0.08)',border:'1px solid rgba(255,61,0,0.2)',padding:'1px 5px',borderRadius:3,textTransform:'capitalize'}}>{s.replace(/-/g,' ')}</span>
-                                ))}
-                              </div>
-                            )}
+                      {filtered.length===0&&<tr><td colSpan={9} style={{padding:'32px 14px',color:'#333',fontSize:12,textAlign:'center'}}>No users found.</td></tr>}
+                      {filtered.map(u=>(
+                        <tr key={u.id} onClick={()=>setSelected(u)} onMouseEnter={()=>setHover(u.id)} onMouseLeave={()=>setHover(null)}
+                          style={{background:hover===u.id?'rgba(255,61,0,0.04)':'transparent',cursor:'pointer',borderBottom:'1px solid rgba(255,255,255,0.025)',transition:'background 0.1s'}}>
+                          <td style={{padding:'10px 14px'}}>
+                            <div style={{fontSize:12,fontWeight:600,color:'#ddd'}}>{u.display_name||<span style={{color:'#444'}}>—</span>}</div>
+                            <div style={{fontSize:9,color:'#333',marginTop:1}}>{u.email}</div>
+                            <div style={{display:'flex',gap:3,flexWrap:'wrap',marginTop:3}}>{(u.subjectList||[]).slice(0,3).map(s=><span key={s} style={{fontSize:7,color:'#FF3D00',background:'rgba(255,61,0,0.08)',border:'1px solid rgba(255,61,0,0.18)',padding:'1px 4px',borderRadius:2,textTransform:'capitalize'}}>{s.replace(/-/g,' ')}</span>)}</div>
                           </td>
-                          <td style={{padding:'11px 16px',fontSize:11,color:'#444'}}>{fmtDate(u.created_at)}</td>
-                          <td style={{padding:'11px 16px',fontSize:11,color:'#444'}}>{timeSince(u.lastActive)}</td>
-                          <td style={{padding:'11px 16px',fontSize:14,fontWeight:800,color:'#fff'}}>{u.totalScores}</td>
-                          <td style={{padding:'11px 16px'}}>
-                            <div style={{display:'flex',alignItems:'center',gap:8}}>
-                              <div style={{width:48,height:4,background:'rgba(255,255,255,0.06)',borderRadius:2,overflow:'hidden'}}>
-                                <div style={{width:`${u.readiness}%`,height:'100%',background:rColor(u.readiness),borderRadius:2}}/>
-                              </div>
-                              <span style={{fontSize:11,color:rColor(u.readiness),fontWeight:700}}>{u.readiness}</span>
+                          <td style={{padding:'10px 14px',fontSize:10,color:'#444',whiteSpace:'nowrap'}}>{fmtDate(u.created_at)}</td>
+                          <td style={{padding:'10px 14px',fontSize:10,color:'#444',whiteSpace:'nowrap'}}>{timeSince(u.lastActive)}</td>
+                          <td style={{padding:'10px 14px',fontSize:14,fontWeight:800,color:'#fff'}}>{u.totalScores}</td>
+                          <td style={{padding:'10px 14px',fontSize:12,fontWeight:700,color:u.avgScore>=70?'#00E676':u.avgScore>=50?'#FFD600':'#FF3D00'}}>{u.avgScore?`${u.avgScore}%`:'—'}</td>
+                          <td style={{padding:'10px 14px'}}>
+                            <div style={{display:'flex',alignItems:'center',gap:7}}>
+                              <div style={{width:36,height:3,background:'rgba(255,255,255,0.05)',borderRadius:2,overflow:'hidden'}}><div style={{width:`${u.readiness}%`,height:'100%',background:R(u.readiness)}}/></div>
+                              <span style={{fontSize:11,fontWeight:700,color:R(u.readiness)}}>{u.readiness}</span>
                             </div>
                           </td>
-                          <td style={{padding:'11px 16px'}}>
-                            {u.tos_agreed_at?<span style={pill('#00E676',true)}>AGREED</span>:<span style={pill('#FF3D00',true)}>PENDING</span>}
-                          </td>
-                          <td style={{padding:'11px 16px'}}>
-                            {u.is_admin?<span style={pill('#FF3D00')}>ADMIN</span>:<span style={pill('#444',true)}>USER</span>}
-                          </td>
+                          <td style={{padding:'10px 14px',fontSize:12,color:u.totalErrors>10?'#FF9100':'#666'}}>{u.totalErrors}</td>
+                          <td style={{padding:'10px 14px'}}>{u.tos_agreed_at?<span style={pill('#00E676',true)}>✓</span>:<span style={pill('#555',true)}>—</span>}</td>
+                          <td style={{padding:'10px 14px'}}>{u.is_admin?<span style={pill('#FF3D00')}>ADMIN</span>:<span style={pill('#444',true)}>USER</span>}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -886,8 +565,140 @@ function Dashboard({ adminUser, adminProfile, onLogout }) {
             </>
           )}
 
-          <div style={{fontSize:10,color:'#150000',marginTop:20,textAlign:'center',letterSpacing:1.5}}>
-            // A* BATTLE PLAN ADMIN — RESTRICTED ACCESS — ALL ACTIONS MONITORED //
+          {/* ANALYTICS */}
+          {tab==='analytics'&&(
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+              <div style={{...card,padding:20}}>
+                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:16,fontWeight:700}}>SUBJECT POPULARITY</div>
+                {topSubjects.map(([s,n])=>(
+                  <div key={s} style={{marginBottom:12}}>
+                    <div style={{display:'flex',justifyContent:'space-between',fontSize:10,marginBottom:3}}>
+                      <span style={{textTransform:'capitalize',color:SC[s]||'#888'}}>{s.replace(/-/g,' ')}</span>
+                      <span style={{color:'#FF3D00'}}>{n} user{n!==1?'s':''} &nbsp;<span style={{color:'#333'}}>({users.length?Math.round((n/users.length)*100):0}%)</span></span>
+                    </div>
+                    <div style={{height:5,background:'rgba(255,255,255,0.04)',borderRadius:3,overflow:'hidden'}}>
+                      <div style={{height:'100%',width:`${(n/maxSub)*100}%`,background:SC[s]||'#FF3D00',borderRadius:3}}/>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{...card,padding:20}}>
+                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:16,fontWeight:700}}>READINESS DISTRIBUTION</div>
+                {[{l:'Battle Ready (80+)',min:80,max:101,c:'#00E676'},{l:'On Track (60–79)',min:60,max:80,c:'#FFD600'},{l:'Building (40–59)',min:40,max:60,c:'#FF9100'},{l:'Just Started (<40)',min:0,max:40,c:'#FF3D00'}].map(({l,min,max,c})=>{
+                  const count=users.filter(u=>u.readiness>=min&&u.readiness<max).length;
+                  const pct=users.length?Math.round((count/users.length)*100):0;
+                  return (
+                    <div key={l} style={{marginBottom:12}}>
+                      <div style={{display:'flex',justifyContent:'space-between',fontSize:10,marginBottom:3}}>
+                        <span style={{color:c,fontWeight:700}}>{l}</span>
+                        <span style={{color:'#555'}}>{count} ({pct}%)</span>
+                      </div>
+                      <div style={{height:5,background:'rgba(255,255,255,0.04)',borderRadius:3,overflow:'hidden'}}>
+                        <div style={{height:'100%',width:`${pct}%`,background:c,borderRadius:3}}/>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div style={{marginTop:16,paddingTop:14,borderTop:'1px solid rgba(255,255,255,0.05)',display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+                  {[{l:'Activation rate',v:`${users.length?Math.round((stats.activated/users.length)*100):0}%`},{l:'Avg papers/user',v:users.length?Math.round(stats.totalPapers/users.length):0},{l:'Avg readiness',v:stats.avgReadiness},{l:'Total papers',v:stats.totalPapers}].map(({l,v})=>(
+                    <div key={l}><div style={{fontSize:9,color:'#333'}}>{l}</div><div style={{fontSize:16,fontWeight:700,color:'#ccc'}}>{v}</div></div>
+                  ))}
+                </div>
+              </div>
+              <div style={{...card,padding:20}}>
+                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:16,fontWeight:700}}>SCORE DISTRIBUTION BY GRADE</div>
+                {['A*','A','B','C','D','E','U'].map(g=>{
+                  const count=users.reduce((a,u)=>a+u.allScores.filter(s=>gradeFromPct(s.pct,s.subject)===g).length,0);
+                  const total=stats.totalPapers||1;
+                  return (
+                    <div key={g} style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
+                      <span style={{...pill(GC[g]),minWidth:26,textAlign:'center'}}>{g}</span>
+                      <div style={{flex:1,height:4,background:'rgba(255,255,255,0.04)',borderRadius:2,overflow:'hidden'}}>
+                        <div style={{height:'100%',width:`${(count/total)*100}%`,background:GC[g],borderRadius:2}}/>
+                      </div>
+                      <span style={{fontSize:10,color:'#555',minWidth:40,textAlign:'right'}}>{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{...card,padding:20}}>
+                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:16,fontWeight:700}}>ERROR PATTERN ACROSS ALL USERS</div>
+                {(()=>{
+                  const et={};
+                  users.forEach(u=>Object.values(u.errors||{}).flat().forEach(e=>{et[e.type]=(et[e.type]||0)+1;}));
+                  const top=Object.entries(et).sort((a,b)=>b[1]-a[1]).slice(0,8);
+                  const mx=top[0]?.[1]||1;
+                  return top.map(([t,n])=>(
+                    <div key={t} style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
+                      <span style={{fontSize:10,color:'#FF9100',minWidth:100,textTransform:'capitalize'}}>{t}</span>
+                      <div style={{flex:1,height:4,background:'rgba(255,255,255,0.04)',borderRadius:2,overflow:'hidden'}}>
+                        <div style={{height:'100%',width:`${(n/mx)*100}%`,background:'#FF9100',borderRadius:2,opacity:0.7}}/>
+                      </div>
+                      <span style={{fontSize:10,color:'#555',minWidth:30,textAlign:'right'}}>{n}</span>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
+          )}
+
+          {/* BROADCAST */}
+          {tab==='broadcast'&&<BroadcastPanel users={users}/>}
+
+          {/* SYSTEM */}
+          {tab==='system'&&(
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+              <div style={{...card,padding:20}}>
+                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:16,fontWeight:700}}>SYSTEM STATUS</div>
+                {[
+                  {l:'Supabase URL',v:import.meta.env.VITE_SUPABASE_URL?'Configured':'Missing',ok:!!import.meta.env.VITE_SUPABASE_URL},
+                  {l:'Supabase Key',v:import.meta.env.VITE_SUPABASE_ANON_KEY?'Configured':'Missing',ok:!!import.meta.env.VITE_SUPABASE_ANON_KEY},
+                  {l:'Total users in DB',v:stats.total,ok:true},
+                  {l:'Users with data rows',v:stats.activated,ok:true},
+                  {l:'Admin accounts',v:stats.admins,ok:stats.admins>0},
+                ].map(({l,v,ok})=>(
+                  <div key={l} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'9px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+                    <span style={{fontSize:11,color:'#555'}}>{l}</span>
+                    <span style={{fontSize:12,fontWeight:700,color:ok?'#00E676':'#FF3D00'}}>{typeof v==='boolean'?(v?'Yes':'No'):v}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{...card,padding:20}}>
+                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:16,fontWeight:700}}>ADMIN ACCOUNTS</div>
+                {users.filter(u=>u.is_admin).map(u=>(
+                  <div key={u.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'9px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+                    <div>
+                      <div style={{fontSize:12,color:'#ddd'}}>{u.display_name||u.email}</div>
+                      <div style={{fontSize:9,color:'#333',marginTop:1}}>{u.email}</div>
+                    </div>
+                    {u.id!==adminUser?.id&&(
+                      <button onClick={()=>toggleAdmin(u)} style={btn('#FF3D00')}>REVOKE</button>
+                    )}
+                  </div>
+                ))}
+                <div style={{marginTop:16,paddingTop:12,borderTop:'1px solid rgba(255,255,255,0.05)',fontSize:10,color:'#333',lineHeight:1.7}}>
+                  Hardcoded admin fallback emails:<br/>
+                  {ADMIN_EMAILS.map(e=><span key={e} style={{color:'#FF3D00'}}>{e}</span>)}
+                </div>
+              </div>
+              <div style={{...card,padding:20}}>
+                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:14,fontWeight:700}}>DANGER ZONE</div>
+                <div style={{fontSize:11,color:'#555',marginBottom:14,lineHeight:1.7}}>Destructive actions. These cannot be undone.</div>
+                <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                  <button onClick={exportCSV} style={{...btn('#00E676'),padding:'10px 16px',textAlign:'left'}}>↓ EXPORT ALL USER DATA (CSV)</button>
+                </div>
+              </div>
+              <div style={{...card,padding:20}}>
+                <div style={{fontSize:9,letterSpacing:3,color:'#440000',marginBottom:14,fontWeight:700}}>LOGGED IN AS</div>
+                <div style={{fontSize:13,color:'#ddd',marginBottom:4}}>{adminProfile?.display_name||'Admin'}</div>
+                <div style={{fontSize:11,color:'#555',marginBottom:16}}>{adminUser?.email}</div>
+                <button onClick={onLogout} style={{...btn('#FF3D00',true),padding:'10px 20px'}}>LOGOUT → SIGN OUT</button>
+              </div>
+            </div>
+          )}
+
+          <div style={{fontSize:9,color:'#100000',marginTop:24,textAlign:'center',letterSpacing:2}}>
+            // A* BATTLE PLAN · GOD MODE · ALL ACTIONS LOGGED //
           </div>
         </div>
       </div>
@@ -896,70 +707,45 @@ function Dashboard({ adminUser, adminProfile, onLogout }) {
 }
 
 // ── Root ───────────────────────────────────────────────────────────────────
-
 export default function AdminApp() {
-  const [phase, setPhase] = useState('init'); // init | login | authed
-  const [adminUser, setAdminUser] = useState(null);
-  const [adminProfile, setAdminProfile] = useState(null);
+  const [phase,setPhase]=useState('init');
+  const [adminUser,setAdminUser]=useState(null);
+  const [adminProfile,setAdminProfile]=useState(null);
 
   useEffect(()=>{
-    let alive = true;
-
+    let alive=true;
     async function checkAdmin(session) {
       if (!session?.user) { if (alive) setPhase('login'); return; }
-      const { data: prof } = await supabase.from('user_profiles').select('*').eq('id', session.user.id).single();
+      const email=session.user.email;
+      const {data:prof}=await supabase.from('user_profiles').select('*').eq('id',session.user.id).single();
       if (!alive) return;
-      if (prof?.is_admin) {
+      const isAdmin=prof?.is_admin||ADMIN_EMAILS.includes(email);
+      if (isAdmin) {
+        if (!prof?.is_admin) await supabase.from('user_profiles').update({is_admin:true}).eq('id',session.user.id);
         setAdminUser(session.user);
-        setAdminProfile(prof);
+        setAdminProfile({...prof,is_admin:true});
         setPhase('authed');
       } else {
         await supabase.auth.signOut();
-        setPhase('login');
+        if (alive) setPhase('login');
       }
     }
-
-    supabase.auth.getSession().then(({data:{session}}) => checkAdmin(session));
-
-    const { data:{ subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN') checkAdmin(session);
-      else if (event === 'SIGNED_OUT') {
-        if (alive) { setAdminUser(null); setAdminProfile(null); setPhase('login'); }
-      }
+    supabase.auth.getSession().then(({data:{session}})=>checkAdmin(session));
+    const {data:{subscription}}=supabase.auth.onAuthStateChange((event,session)=>{
+      if (event==='SIGNED_IN') checkAdmin(session);
+      else if (event==='SIGNED_OUT'&&alive) { setAdminUser(null); setAdminProfile(null); setPhase('login'); }
     });
-
-    return () => { alive = false; subscription.unsubscribe(); };
+    return ()=>{ alive=false; subscription.unsubscribe(); };
   },[]);
 
-  const handleAuth = (user, prof) => {
-    setAdminUser(user);
-    setAdminProfile(prof);
-    setPhase('authed');
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setAdminUser(null);
-    setAdminProfile(null);
-    setPhase('login');
-  };
+  const handleAuth=(user,prof)=>{ setAdminUser(user); setAdminProfile(prof); setPhase('authed'); };
+  const handleLogout=async()=>{ await supabase.auth.signOut(); setAdminUser(null); setAdminProfile(null); setPhase('login'); };
 
   if (phase==='init') return (
-    <div style={{
-      minHeight:'100vh',background:'#000',display:'flex',alignItems:'center',
-      justifyContent:'center',fontFamily:mono,color:'#330000',fontSize:12,letterSpacing:2,
-    }}>
-      // INITIALISING...
+    <div style={{minHeight:'100vh',background:'#050508',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:mono,color:'#330000',fontSize:11,letterSpacing:3}}>
+      // INITIALISING SYSTEM...
     </div>
   );
-
   if (phase==='login') return <LoginScreen onAuth={handleAuth}/>;
-
-  return (
-    <Dashboard
-      adminUser={adminUser}
-      adminProfile={adminProfile}
-      onLogout={handleLogout}
-    />
-  );
+  return <Dashboard adminUser={adminUser} adminProfile={adminProfile} onLogout={handleLogout}/>;
 }
