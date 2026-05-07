@@ -1198,18 +1198,6 @@ export default function App() {
     return ()=>{ alive=false; subscription.unsubscribe(); };
   },[]);
 
-  useEffect(()=>{
-    if (phase!=='app') return;
-    supabase.from('app_config').select('value').eq('key','exam_schedule').single()
-      .then(({data})=>{
-        if (data?.value) {
-          try {
-            const db=typeof data.value==='string'?JSON.parse(data.value):data.value;
-            setExamSched(prev=>({...prev,...db}));
-          } catch(_) {}
-        }
-      });
-  },[phase]);
 
   function handleSubjectsDone(sel) { setSelection(sel); setPhase('app'); }
 
