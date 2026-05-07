@@ -28,18 +28,32 @@ class ErrorBoundary extends React.Component {
 // ── Theme ──────────────────────────────────────────────────────────────────
 const T = {
   light: {
-    bg:'#e8e4dd', surface:'#f0ece5', nav:'rgba(232,228,221,0.95)',
-    border:'rgba(0,0,0,0.09)', card:'#f5f2ed', card2:'rgba(0,0,0,0.04)',
-    text:'#2b2b2b', muted:'#7a7268', subtle:'#9a9490',
-    accent:'#b5735a', accentSoft:'rgba(181,115,90,0.1)',
-    success:'#16a34a', warn:'#d97706', danger:'#dc2626',
+    bg:      '#bfbab2',
+    surface: '#d6d1ca',
+    nav:     'rgba(191,186,178,0.97)',
+    border:  'rgba(0,0,0,0.14)',
+    card:    '#dedad3',
+    card2:   'rgba(0,0,0,0.07)',
+    text:    '#18170f',
+    muted:   '#574f48',
+    subtle:  '#7e7870',
+    accent:  '#b5735a',
+    accentSoft: 'rgba(181,115,90,0.13)',
+    success: '#15803d', warn: '#b45309', danger: '#b91c1c',
   },
   dark: {
-    bg:'#0d0f14', surface:'#13161e', nav:'rgba(13,15,20,0.95)',
-    border:'rgba(255,255,255,0.07)', card:'#181c26', card2:'rgba(255,255,255,0.04)',
-    text:'#e2ddd6', muted:'#7a7870', subtle:'#4a4845',
-    accent:'#c27c60', accentSoft:'rgba(194,124,96,0.12)',
-    success:'#4ade80', warn:'#fbbf24', danger:'#f87171',
+    bg:      '#0c0e13',
+    surface: '#141720',
+    nav:     'rgba(12,14,19,0.97)',
+    border:  'rgba(255,255,255,0.09)',
+    card:    '#171b26',
+    card2:   'rgba(255,255,255,0.05)',
+    text:    '#e4dfd8',
+    muted:   '#857f79',
+    subtle:  '#4e4a47',
+    accent:  '#c27c60',
+    accentSoft: 'rgba(194,124,96,0.13)',
+    success: '#4ade80', warn: '#fbbf24', danger: '#f87171',
   },
 };
 
@@ -961,7 +975,7 @@ function Account({user,subjects,dark,setDark,onSignOut,onResetSubjects,C,font}) 
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
         <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Appearance</div>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <span style={{fontSize:13,color:C.text}}>Appearance</span>
+          <span style={{fontSize:13,color:C.text}}>Theme</span>
           <div style={{display:'flex',gap:6}}>
             {['Light','Dark'].map(mode=>(
               <button key={mode} onClick={()=>{const n=mode==='Dark';setDark(n);ls.set('rbp_dark',n);}}
@@ -1048,16 +1062,20 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects}) {
           )}
           <div style={{display:'flex',alignItems:'center',gap:8}}>
             <button onClick={()=>{const n=!dark;setDark(n);ls.set('rbp_dark',n);}}
-              style={{width:32,height:32,borderRadius:6,background:C.card2,border:`1px solid ${C.border}`,
-                cursor:'pointer',fontSize:11,fontWeight:600,color:C.muted,fontFamily:font,
-                display:'flex',alignItems:'center',justifyContent:'center',letterSpacing:0.2}}>
+              style={{padding:'5px 11px',borderRadius:6,background:'transparent',
+                border:`1px solid ${C.border}`,cursor:'pointer',
+                fontSize:11,fontWeight:600,color:C.muted,fontFamily:font,
+                letterSpacing:0.4,textTransform:'uppercase',transition:'color 0.15s,border-color 0.15s'}}>
               {dark?'Light':'Dark'}
             </button>
             {isMobile&&(
               <button onClick={()=>setView('account')}
-                style={{width:32,height:32,borderRadius:6,background:C.card2,border:`1px solid ${C.border}`,
-                  cursor:'pointer',fontSize:11,fontWeight:600,color:C.muted,fontFamily:font,
-                  display:'flex',alignItems:'center',justifyContent:'center'}}>Acct</button>
+                style={{padding:'5px 11px',borderRadius:6,background:'transparent',
+                  border:`1px solid ${C.border}`,cursor:'pointer',
+                  fontSize:11,fontWeight:600,color:view==='account'?C.accent:C.muted,
+                  fontFamily:font,letterSpacing:0.4,textTransform:'uppercase'}}>
+                Account
+              </button>
             )}
           </div>
         </div>
@@ -1076,14 +1094,15 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects}) {
       {isMobile&&(
         <nav style={{position:'fixed',bottom:0,left:0,right:0,zIndex:100,
           background:C.nav,backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
-          borderTop:`1px solid ${C.border}`,display:'grid',gridTemplateColumns:'1fr 1fr 1fr',height:52}}>
+          borderTop:`1px solid ${C.border}`,display:'grid',gridTemplateColumns:'1fr 1fr 1fr',height:56}}>
           {[{id:'analytics',label:'Analytics'},{id:'tracker',label:'Tracker'},{id:'exams',label:'Exams'}]
             .map(n=>(
             <button key={n.id} onClick={()=>setView(n.id)}
               style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
                 gap:0,background:'transparent',border:'none',cursor:'pointer',
                 color:view===n.id?C.accent:C.muted,fontSize:11,fontFamily:font,
-                fontWeight:view===n.id?700:400,position:'relative',transition:'color 0.15s',padding:'0 8px',
+                fontWeight:view===n.id?700:500,position:'relative',transition:'color 0.15s',padding:'0 8px',
+                letterSpacing:0.2,
                 borderTop:`2px solid ${view===n.id?C.accent:'transparent'}`}}>
               {n.label}
             </button>
