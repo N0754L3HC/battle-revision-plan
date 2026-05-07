@@ -1083,57 +1083,6 @@ function Tips({subjects,C,font}) {
   );
 }
 
-// ── University ad card ─────────────────────────────────────────────────────
-const MOCK_ADS = [
-  {
-    university: 'University of Manchester',
-    course: 'BSc Mathematics',
-    headline: 'Strong in Maths? Explore our top-5 ranked Mathematics programme.',
-    body: 'AAB entry · Russell Group · Industry placement year available',
-    url: 'https://www.manchester.ac.uk/study/undergraduate/courses/2026/00560/bsc-mathematics/',
-    subjects: ['Mathematics','Further Mathematics'],
-  },
-  {
-    university: 'University of Edinburgh',
-    course: 'BSc Computer Science',
-    headline: "Interested in Computer Science? We're ranked #3 in the UK.",
-    body: 'ABB entry · Russell Group · Strong industry links',
-    url: 'https://www.ed.ac.uk/studying/undergraduate/degrees/index.php?action=programme&code=G400',
-    subjects: ['Computer Science','Mathematics'],
-  },
-  {
-    university: 'University of Bristol',
-    course: 'MEng Chemistry',
-    headline: 'Passionate about Chemistry? Join one of the UK's top programmes.',
-    body: 'AAA entry · Russell Group · World-leading research facilities',
-    url: 'https://www.bristol.ac.uk/study/undergraduate/2026/chemistry/',
-    subjects: ['Chemistry','Biology'],
-  },
-];
-
-function UniversityAdCard({ subjects, uid, C, font }) {
-  const consented = ls.get(`rbp_analytics_${uid}`, true);
-  if (!consented) return null;
-
-  const subjectNames = subjects.map(s => s.name);
-  const ad = MOCK_ADS.find(a => a.subjects.some(s => subjectNames.includes(s))) ?? MOCK_ADS[0];
-
-  return (
-    <div style={{background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:'14px 18px'}}>
-      <div style={{fontSize:9, fontWeight:700, color:C.muted, textTransform:'uppercase',
-        letterSpacing:0.5, marginBottom:8}}>Sponsored · {ad.university}</div>
-      <div style={{fontSize:14, fontWeight:700, color:C.text, marginBottom:4}}>{ad.headline}</div>
-      <div style={{fontSize:12, color:C.muted, lineHeight:1.5, marginBottom:12}}>{ad.body}</div>
-      <a href={ad.url} target="_blank" rel="noopener noreferrer"
-        style={{fontSize:12, color:C.accent, fontWeight:600, textDecoration:'none',
-          border:`1px solid ${C.accent}40`, borderRadius:6, padding:'5px 12px',
-          display:'inline-block'}}>
-        Find out more →
-      </a>
-    </div>
-  );
-}
-
 // ── Resources ──────────────────────────────────────────────────────────────
 function Resources({subjects,uid,C,font}) {
   return (
@@ -1159,7 +1108,6 @@ function Resources({subjects,uid,C,font}) {
           </div>
         </div>
       ))}
-      <UniversityAdCard subjects={subjects} uid={uid} C={C} font={font}/>
     </div>
   );
 }
