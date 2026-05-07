@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d0f14"/>
+      <stop offset="100%" style="stop-color:#111520"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#b5735a;stop-opacity:0.15"/>
+      <stop offset="100%" style="stop-color:#b5735a;stop-opacity:0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="500" height="500" x="-100" y="-100" fill="url(#glow)" rx="300"/>
+
+  <!-- Left border accent -->
+  <rect x="0" y="0" width="4" height="630" fill="#b5735a" opacity="0.6"/>
+
+  <!-- Logo badge -->
+  <rect x="60" y="60" width="52" height="52" rx="13" fill="#b5735a"/>
+  <text x="86" y="93" font-family="'JetBrains Mono', monospace" font-size="17" font-weight="900" fill="white" text-anchor="middle">A*</text>
+
+  <!-- App name -->
+  <text x="125" y="87" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#e8eaf0">Battle Plan</text>
+  <text x="125" y="106" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" fill="#6b7280" letter-spacing="0.5">FREE · A-LEVEL REVISION TRACKER</text>
+
+  <!-- Main headline -->
+  <text x="60" y="210" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="58" font-weight="800" fill="#e8eaf0">Know exactly where</text>
+  <text x="60" y="278" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="58" font-weight="800" fill="#e8eaf0">you're losing marks.</text>
+
+  <!-- Subheadline -->
+  <text x="60" y="340" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="24" fill="#9ca3af">Track past papers. Spot weak topics. Win on results day.</text>
+
+  <!-- Divider -->
+  <line x1="60" y1="382" x2="700" y2="382" stroke="#1f2535" stroke-width="1"/>
+
+  <!-- Feature 1 -->
+  <circle cx="76" cy="425" r="5" fill="#b5735a"/>
+  <text x="100" y="421" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" font-weight="700" fill="#e8eaf0">Past paper tracker</text>
+  <text x="100" y="441" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#6b7280">Real grade boundaries, not rough percentages</text>
+
+  <!-- Feature 2 -->
+  <circle cx="76" cy="482" r="5" fill="#b5735a"/>
+  <text x="100" y="478" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" font-weight="700" fill="#e8eaf0">Error pattern analysis</text>
+  <text x="100" y="498" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#6b7280">Tag every mistake and see what's recurring</text>
+
+  <!-- Feature 3 -->
+  <circle cx="76" cy="539" r="5" fill="#b5735a"/>
+  <text x="100" y="535" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" font-weight="700" fill="#e8eaf0">Exam countdown</text>
+  <text x="100" y="555" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#6b7280">Every paper, every subject, every deadline</text>
+
+  <!-- Right panel — score mockup -->
+  <rect x="820" y="60" width="320" height="510" rx="16" fill="#13161e" stroke="#1f2535" stroke-width="1"/>
+
+  <!-- Score card header -->
+  <text x="856" y="108" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11" font-weight="700" fill="#6b7280" letter-spacing="0.5">BATTLE READINESS</text>
+
+  <!-- Big score number -->
+  <text x="980" y="200" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="76" font-weight="900" fill="#e8eaf0" text-anchor="middle">74</text>
+  <text x="980" y="226" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" font-weight="700" fill="#FFD600" text-anchor="middle" letter-spacing="0.5">ON TRACK</text>
+
+  <!-- Mini bars -->
+  <text x="856" y="272" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12" fill="#6b7280">Papers</text>
+  <rect x="856" y="280" width="228" height="4" rx="2" fill="#1f2535"/>
+  <rect x="856" y="280" width="140" height="4" rx="2" fill="#3b82f6"/>
+
+  <text x="856" y="310" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12" fill="#6b7280">Avg score</text>
+  <rect x="856" y="318" width="228" height="4" rx="2" fill="#1f2535"/>
+  <rect x="856" y="318" width="178" height="4" rx="2" fill="#8b5cf6"/>
+
+  <text x="856" y="348" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12" fill="#6b7280">Error control</text>
+  <rect x="856" y="356" width="228" height="4" rx="2" fill="#1f2535"/>
+  <rect x="856" y="356" width="110" height="4" rx="2" fill="#f97316"/>
+
+  <!-- Divider -->
+  <line x1="856" y1="390" x2="1104" y2="390" stroke="#1f2535" stroke-width="1"/>
+
+  <!-- Subject grades -->
+  <text x="856" y="420" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="11" font-weight="700" fill="#6b7280" letter-spacing="0.5">SUBJECTS</text>
+
+  <text x="856" y="452" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" fill="#9ca3af">Mathematics</text>
+  <text x="1098" y="452" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="800" fill="#4ade80" text-anchor="end">A*</text>
+
+  <text x="856" y="484" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" fill="#9ca3af">Chemistry</text>
+  <text x="1098" y="484" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="800" fill="#fbbf24" text-anchor="end">B</text>
+
+  <text x="856" y="516" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" fill="#9ca3af">Computer Science</text>
+  <text x="1098" y="516" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="800" fill="#4ade80" text-anchor="end">A</text>
+
+  <!-- Free badge on right card -->
+  <rect x="856" y="536" width="228" height="28" rx="7" fill="rgba(181,115,90,0.1)" stroke="rgba(181,115,90,0.25)" stroke-width="1"/>
+  <text x="970" y="554" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12" font-weight="600" fill="#b5735a" text-anchor="middle">Free during beta — no credit card</text>
+
+  <!-- Bottom URL -->
+  <text x="60" y="608" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" fill="#374151">battle-revision-plan.vercel.app</text>
+</svg>

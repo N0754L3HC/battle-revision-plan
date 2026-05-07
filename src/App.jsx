@@ -1030,6 +1030,157 @@ function Account({user,subjects,dark,setDark,onSignOut,onResetSubjects,C,font}) 
   );
 }
 
+// ── Landing page ───────────────────────────────────────────────────────────
+function LandingPage({ onGetStarted }) {
+  const font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+  const mono = "'JetBrains Mono','SF Mono',monospace";
+  const C = T.dark;
+
+  const FEATURES = [
+    {
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+      ),
+      title: 'Past paper tracker',
+      desc: 'Log every paper you do. See your actual grade using official mark-scheme boundaries — not rough percentages.',
+    },
+    {
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      ),
+      title: 'Error pattern analysis',
+      desc: 'Tag every mistake by type. See which topics keep coming up. Fix the patterns before the exam — not after.',
+    },
+    {
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+      ),
+      title: 'Exam countdown',
+      desc: 'See exactly how many days until each paper, across every subject and board — all in one place.',
+    },
+    {
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        </svg>
+      ),
+      title: 'Battle Readiness score',
+      desc: 'A single number that tells you how prepared you actually are. Updated every time you log a paper.',
+    },
+  ];
+
+  const TRUST = ['Free — no credit card', 'Works on mobile', 'No ads', 'Made by an A-level student'];
+
+  return (
+    <div style={{minHeight:'100vh', background:C.bg, fontFamily:font, color:C.text}}>
+
+      {/* Nav */}
+      <nav style={{position:'fixed', top:0, left:0, right:0, zIndex:100,
+        background:'rgba(13,15,20,0.92)', backdropFilter:'blur(20px)',
+        WebkitBackdropFilter:'blur(20px)', borderBottom:`1px solid ${C.border}`,
+        height:54, display:'flex', alignItems:'center', padding:'0 20px',
+        justifyContent:'space-between'}}>
+        <div style={{display:'flex', alignItems:'center', gap:8}}>
+          <div style={{width:28, height:28, borderRadius:7, background:C.accent,
+            display:'flex', alignItems:'center', justifyContent:'center',
+            fontFamily:mono, fontWeight:900, fontSize:12, color:'#fff'}}>A*</div>
+          <span style={{fontSize:15, fontWeight:700, color:C.text, letterSpacing:0.2}}>Battle Plan</span>
+        </div>
+        <button onClick={onGetStarted}
+          style={{padding:'7px 16px', background:'transparent', border:`1px solid ${C.border}`,
+            borderRadius:7, color:C.muted, fontSize:13, fontWeight:600,
+            fontFamily:font, cursor:'pointer', letterSpacing:0.2}}>
+          Sign in
+        </button>
+      </nav>
+
+      {/* Hero */}
+      <section style={{maxWidth:680, margin:'0 auto', padding:'120px 24px 64px',
+        textAlign:'center'}}>
+        <div style={{display:'inline-flex', alignItems:'center', gap:6, padding:'5px 12px',
+          borderRadius:20, background:'rgba(181,115,90,0.1)', border:`1px solid rgba(181,115,90,0.25)`,
+          fontSize:12, fontWeight:600, color:C.accent, marginBottom:28, letterSpacing:0.3}}>
+          Free during beta
+        </div>
+        <h1 style={{fontSize:'clamp(36px, 7vw, 60px)', fontWeight:800, lineHeight:1.1,
+          color:C.text, margin:'0 0 20px', letterSpacing:'-0.02em'}}>
+          Know exactly where<br/>
+          <span style={{color:C.accent}}>you're losing marks.</span>
+        </h1>
+        <p style={{fontSize:'clamp(15px, 2.5vw, 19px)', color:C.muted, lineHeight:1.7,
+          margin:'0 auto 36px', maxWidth:520}}>
+          Free A-level revision tracker. Log past papers, track your grade trajectory,
+          and fix weak topics before exam day.
+        </p>
+        <button onClick={onGetStarted}
+          style={{display:'inline-flex', alignItems:'center', gap:8, padding:'15px 32px',
+            background:C.accent, border:'none', borderRadius:10, color:'#fff',
+            fontSize:16, fontWeight:700, fontFamily:font, cursor:'pointer',
+            letterSpacing:0.2, boxShadow:`0 0 40px rgba(181,115,90,0.3)`}}>
+          Get started — it's free
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+        <div style={{display:'flex', gap:20, justifyContent:'center', flexWrap:'wrap',
+          marginTop:20}}>
+          {TRUST.map(t => (
+            <span key={t} style={{fontSize:12, color:C.subtle, display:'flex',
+              alignItems:'center', gap:5}}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              {t}
+            </span>
+          ))}
+        </div>
+      </section>
+
+      {/* Features */}
+      <section style={{maxWidth:800, margin:'0 auto', padding:'0 24px 80px'}}>
+        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(340px, 1fr))',
+          gap:12}}>
+          {FEATURES.map(f => (
+            <div key={f.title} style={{background:C.surface, border:`1px solid ${C.border}`,
+              borderRadius:12, padding:'20px 22px', display:'flex', gap:14,
+              alignItems:'flex-start'}}>
+              <div style={{width:36, height:36, borderRadius:8, background:'rgba(181,115,90,0.1)',
+                border:`1px solid rgba(181,115,90,0.2)`, display:'flex', alignItems:'center',
+                justifyContent:'center', color:C.accent, flexShrink:0}}>
+                {f.icon}
+              </div>
+              <div>
+                <div style={{fontSize:14, fontWeight:700, color:C.text, marginBottom:5}}>{f.title}</div>
+                <div style={{fontSize:13, color:C.muted, lineHeight:1.6}}>{f.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Bottom CTA strip */}
+      <section style={{borderTop:`1px solid ${C.border}`, padding:'40px 24px',
+        textAlign:'center', background:'rgba(255,255,255,0.015)'}}>
+        <div style={{fontSize:11, fontWeight:700, color:C.muted, letterSpacing:0.5,
+          textTransform:'uppercase', marginBottom:12}}>Exams are in weeks. Start now.</div>
+        <button onClick={onGetStarted}
+          style={{display:'inline-flex', alignItems:'center', gap:8, padding:'13px 28px',
+            background:'transparent', border:`1px solid ${C.accent}`,
+            borderRadius:8, color:C.accent, fontSize:15, fontWeight:600,
+            fontFamily:font, cursor:'pointer'}}>
+          Set up your account — 2 minutes
+        </button>
+        <div style={{marginTop:20, fontSize:12, color:C.subtle}}>
+          Supports AQA · Edexcel · OCR · WJEC · All major A-level subjects
+        </div>
+      </section>
+
+    </div>
+  );
+}
+
 // ── Main shell ─────────────────────────────────────────────────────────────
 function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_SCHEDULE}) {
   const [dark,setDark]     = useState(()=>ls.get('rbp_dark',false));
@@ -1155,11 +1306,11 @@ export default function App() {
   const font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
 
   useEffect(()=>{
-    if (!isSupabaseConfigured()) { setPhase('anon'); return; }
+    if (!isSupabaseConfigured()) { setPhase('landing'); return; }
     let alive=true;
 
     async function boot(session) {
-      if (!session?.user) { if (alive) { setUser(null); setPhase('anon'); } return; }
+      if (!session?.user) { if (alive) { setUser(null); setPhase('landing'); } return; }
       if (sessionStorage.getItem('rbp_goto_admin')) {
         sessionStorage.removeItem('rbp_goto_admin');
         window.location.href = '/admin';
@@ -1192,7 +1343,7 @@ export default function App() {
 
     supabase.auth.getSession().then(({data:{session}})=>boot(session));
     const {data:{subscription}}=supabase.auth.onAuthStateChange((event,session)=>{
-      if (event==='SIGNED_OUT') { if (alive) { setUser(null); setSelection([]); setPhase('anon'); } }
+      if (event==='SIGNED_OUT') { if (alive) { setUser(null); setSelection([]); setPhase('landing'); } }
       else if (event==='SIGNED_IN') boot(session);
     });
     return ()=>{ alive=false; subscription.unsubscribe(); };
@@ -1226,6 +1377,7 @@ export default function App() {
   );
 
   if (phase==='loading')    return <ErrorBoundary>{loading}</ErrorBoundary>;
+  if (phase==='landing')    return <ErrorBoundary><LandingPage onGetStarted={()=>setPhase('anon')}/></ErrorBoundary>;
   if (phase==='anon')       return <ErrorBoundary><AuthGate onAuth={()=>{}}/></ErrorBoundary>;
   if (phase==='onboarding') return <ErrorBoundary><SubjectPicker user={user} onComplete={handleSubjectsDone}/></ErrorBoundary>;
   return (
