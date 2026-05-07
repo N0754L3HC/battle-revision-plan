@@ -28,17 +28,17 @@ class ErrorBoundary extends React.Component {
 // ── Theme ──────────────────────────────────────────────────────────────────
 const T = {
   light: {
-    bg:'#f0ede8', surface:'#faf8f5', nav:'rgba(240,237,232,0.94)',
-    border:'rgba(0,0,0,0.08)', card:'#ffffff', card2:'rgba(0,0,0,0.03)',
-    text:'#1a1a1a', muted:'#6b6560', subtle:'#9b958f',
-    accent:'#c2714f', accentSoft:'rgba(194,113,79,0.1)',
+    bg:'#e8e4dd', surface:'#f0ece5', nav:'rgba(232,228,221,0.95)',
+    border:'rgba(0,0,0,0.09)', card:'#f5f2ed', card2:'rgba(0,0,0,0.04)',
+    text:'#2b2b2b', muted:'#7a7268', subtle:'#9a9490',
+    accent:'#b5735a', accentSoft:'rgba(181,115,90,0.1)',
     success:'#16a34a', warn:'#d97706', danger:'#dc2626',
   },
   dark: {
-    bg:'#0c0e13', surface:'#131720', nav:'rgba(12,14,19,0.94)',
-    border:'rgba(255,255,255,0.08)', card:'#1a1f2e', card2:'rgba(255,255,255,0.04)',
-    text:'#e8e4dd', muted:'#8a8480', subtle:'#4a4640',
-    accent:'#d4825f', accentSoft:'rgba(212,130,95,0.12)',
+    bg:'#0d0f14', surface:'#13161e', nav:'rgba(13,15,20,0.95)',
+    border:'rgba(255,255,255,0.07)', card:'#181c26', card2:'rgba(255,255,255,0.04)',
+    text:'#e2ddd6', muted:'#7a7870', subtle:'#4a4845',
+    accent:'#c27c60', accentSoft:'rgba(194,124,96,0.12)',
     success:'#4ade80', warn:'#fbbf24', danger:'#f87171',
   },
 };
@@ -293,7 +293,7 @@ function Analytics({subjects,scores,errors,C,font}) {
     <div style={{display:'flex',flexDirection:'column',gap:18}}>
 
       {/* Readiness */}
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:'20px 22px'}}>
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'20px 22px'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:14}}>
           <div>
             <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>
@@ -351,7 +351,7 @@ function Analytics({subjects,scores,errors,C,font}) {
 
       {/* Per-subject trend */}
       {subjects.length>0&&(
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,overflow:'hidden'}}>
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,overflow:'hidden'}}>
           <div style={{display:'flex',borderBottom:`1px solid ${C.border}`,overflowX:'auto'}}>
             {subjects.map(s=>(
               <button key={s.name} onClick={()=>setActiveSubj(s.name)}
@@ -400,7 +400,7 @@ function Analytics({subjects,scores,errors,C,font}) {
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
         {[{icon:'📈',title:'Grade Predictor',desc:'Estimate your final grade from paper trends'},
           {icon:'🤖',title:'AI Error Analysis',desc:'Auto-detect patterns in your mistakes'}].map(item=>(
-          <div key={item.title} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,
+          <div key={item.title} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:8,
             padding:'16px 16px 14px',position:'relative',opacity:0.7}}>
             <div style={{position:'absolute',top:10,right:10,padding:'2px 7px',borderRadius:4,
               background:C.accentSoft,fontSize:9,fontWeight:700,color:C.accent,letterSpacing:0.3}}>PRO</div>
@@ -454,14 +454,14 @@ function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font}) {
           </p>
         </div>
         <button onClick={()=>setShowForm(!showForm)}
-          style={{padding:'9px 16px',background:C.accent,border:'none',borderRadius:9,
+          style={{padding:'9px 16px',background:C.accent,border:'none',borderRadius:7,
             color:'#fff',fontSize:13,fontWeight:700,fontFamily:font,cursor:'pointer'}}>
           + Log paper
         </button>
       </div>
 
       {showForm&&(
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:'20px 20px 18px'}}>
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'20px 20px 18px'}}>
           <h3 style={{fontSize:14,fontWeight:700,color:C.text,margin:'0 0 16px'}}>Log a past paper</h3>
           <div style={{display:'flex',flexDirection:'column',gap:12}}>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
@@ -580,7 +580,7 @@ function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font}) {
             const subj=subjects.find(x=>x.name===s.subject);
             const {grade,exact}=getGrade(s.got,s.maxMark,s.paper,subj?.gradeBoundaries);
             return (
-              <div key={s.id} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,
+              <div key={s.id} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:8,
                 padding:'14px 16px',display:'flex',alignItems:'center',gap:12}}>
                 <div style={{width:3,height:38,borderRadius:2,background:subj?.color||C.accent,flexShrink:0}}/>
                 <div style={{flex:1,minWidth:0}}>
@@ -603,7 +603,7 @@ function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font}) {
         errors.forEach(e=>{counts[e.type]=(counts[e.type]||0)+1;});
         const top=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,3);
         return (
-          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:'16px 18px'}}>
+          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'16px 18px'}}>
             <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:10}}>
               Your error patterns
             </div>
@@ -648,7 +648,7 @@ function Exams({subjects,C,font}) {
     const done=days<0;
     const urgent=days>=0&&days<=14;
     return (
-      <div style={{background:C.card,border:`1px solid ${urgent?e.color+'40':C.border}`,borderRadius:12,
+      <div style={{background:C.card,border:`1px solid ${urgent?e.color+'40':C.border}`,borderRadius:8,
         padding:'14px 16px',display:'flex',gap:14,alignItems:'center'}}>
         <div style={{textAlign:'center',minWidth:52,flexShrink:0}}>
           {done?(
@@ -713,7 +713,7 @@ function Tips({subjects,C,font}) {
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,overflow:'hidden'}}>
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,overflow:'hidden'}}>
         <div style={{display:'flex',borderBottom:`1px solid ${C.border}`,overflowX:'auto'}}>
           {tabs.map(t=>(
             <button key={t.id} onClick={()=>setTab(t.id)}
@@ -755,7 +755,7 @@ function Tips({subjects,C,font}) {
       </div>
 
       {/* Daily routine */}
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,overflow:'hidden'}}>
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,overflow:'hidden'}}>
         <div style={{padding:'14px 18px',borderBottom:`1px solid ${C.border}`}}>
           <div style={{fontSize:13,fontWeight:700,color:C.text}}>Ideal revision day</div>
           <div style={{fontSize:11,color:C.muted,marginTop:2}}>A structure that works. Adapt to your timetable.</div>
@@ -776,7 +776,7 @@ function Tips({subjects,C,font}) {
       </div>
 
       {/* Locked: personalised plan */}
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:'18px 20px',opacity:0.75,position:'relative'}}>
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px',opacity:0.75,position:'relative'}}>
         <div style={{position:'absolute',top:14,right:14,padding:'2px 8px',borderRadius:4,
           background:C.accentSoft,fontSize:9,fontWeight:700,color:C.accent,letterSpacing:0.3}}>PRO</div>
         <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:6}}>📅 Personalised week-by-week plan</div>
@@ -793,7 +793,7 @@ function Resources({subjects,C,font}) {
   return (
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
       {subjects.map(s=>(
-        <div key={s.name} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,overflow:'hidden'}}>
+        <div key={s.name} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,overflow:'hidden'}}>
           <div style={{padding:'14px 18px',borderBottom:`1px solid ${C.border}`,
             display:'flex',alignItems:'center',gap:10}}>
             <div style={{width:10,height:10,borderRadius:'50%',background:s.color}}/>
@@ -821,13 +821,13 @@ function Resources({subjects,C,font}) {
 function Account({user,subjects,dark,setDark,onSignOut,onResetSubjects,C,font}) {
   return (
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:'18px 20px'}}>
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
         <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Account</div>
         <div style={{fontSize:14,color:C.text,fontWeight:600,marginBottom:4}}>{user?.email??'Signed in'}</div>
         <div style={{fontSize:12,color:C.subtle}}>{subjects.map(s=>s.name).join(' · ')}</div>
       </div>
 
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:'18px 20px'}}>
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
         <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Subjects & boards</div>
         <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:14}}>
           {subjects.map(s=>(
@@ -845,16 +845,21 @@ function Account({user,subjects,dark,setDark,onSignOut,onResetSubjects,C,font}) 
         </button>
       </div>
 
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:'18px 20px'}}>
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
         <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Appearance</div>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <span style={{fontSize:13,color:C.text}}>Dark mode</span>
-          <button onClick={()=>{const n=!dark;setDark(n);ls.set('rbp_dark',n);}}
-            style={{width:44,height:24,borderRadius:12,background:dark?C.accent:C.border,
-              border:'none',cursor:'pointer',position:'relative',transition:'background 0.2s'}}>
-            <div style={{position:'absolute',top:3,left:dark?22:3,width:18,height:18,
-              borderRadius:'50%',background:'#fff',transition:'left 0.2s',boxShadow:'0 1px 3px rgba(0,0,0,0.2)'}}/>
-          </button>
+          <span style={{fontSize:13,color:C.text}}>Appearance</span>
+          <div style={{display:'flex',gap:6}}>
+            {['Light','Dark'].map(mode=>(
+              <button key={mode} onClick={()=>{const n=mode==='Dark';setDark(n);ls.set('rbp_dark',n);}}
+                style={{padding:'5px 12px',borderRadius:6,border:`1px solid ${(mode==='Dark')===dark?C.accent:C.border}`,
+                  background:(mode==='Dark')===dark?C.accentSoft:'transparent',
+                  color:(mode==='Dark')===dark?C.accent:C.muted,
+                  fontSize:12,fontWeight:(mode==='Dark')===dark?600:400,fontFamily:font,cursor:'pointer'}}>
+                {mode}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -930,14 +935,16 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects}) {
           )}
           <div style={{display:'flex',alignItems:'center',gap:8}}>
             <button onClick={()=>{const n=!dark;setDark(n);ls.set('rbp_dark',n);}}
-              style={{width:32,height:32,borderRadius:8,background:C.card2,border:`1px solid ${C.border}`,
-                cursor:'pointer',fontSize:14,display:'flex',alignItems:'center',justifyContent:'center'}}>
-              {dark?'☀️':'🌙'}
+              style={{width:32,height:32,borderRadius:6,background:C.card2,border:`1px solid ${C.border}`,
+                cursor:'pointer',fontSize:11,fontWeight:600,color:C.muted,fontFamily:font,
+                display:'flex',alignItems:'center',justifyContent:'center',letterSpacing:0.2}}>
+              {dark?'Light':'Dark'}
             </button>
             {isMobile&&(
               <button onClick={()=>setView('account')}
-                style={{width:32,height:32,borderRadius:8,background:C.card2,border:`1px solid ${C.border}`,
-                  cursor:'pointer',fontSize:14,display:'flex',alignItems:'center',justifyContent:'center'}}>👤</button>
+                style={{width:32,height:32,borderRadius:6,background:C.card2,border:`1px solid ${C.border}`,
+                  cursor:'pointer',fontSize:11,fontWeight:600,color:C.muted,fontFamily:font,
+                  display:'flex',alignItems:'center',justifyContent:'center'}}>Acct</button>
             )}
           </div>
         </div>
@@ -956,16 +963,15 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects}) {
       {isMobile&&(
         <nav style={{position:'fixed',bottom:0,left:0,right:0,zIndex:100,
           background:C.nav,backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
-          borderTop:`1px solid ${C.border}`,display:'grid',gridTemplateColumns:'1fr 1fr 1fr',height:60}}>
-          {[{id:'analytics',label:'Analytics',icon:'📊'},{id:'tracker',label:'Tracker',icon:'📝'},{id:'exams',label:'Exams',icon:'📅'}]
+          borderTop:`1px solid ${C.border}`,display:'grid',gridTemplateColumns:'1fr 1fr 1fr',height:52}}>
+          {[{id:'analytics',label:'Analytics'},{id:'tracker',label:'Tracker'},{id:'exams',label:'Exams'}]
             .map(n=>(
             <button key={n.id} onClick={()=>setView(n.id)}
               style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
-                gap:3,background:'transparent',border:'none',cursor:'pointer',
-                color:view===n.id?C.accent:C.muted,fontSize:10,fontFamily:font,
-                fontWeight:view===n.id?700:400,position:'relative',transition:'color 0.15s',padding:'8px 0'}}>
-              {view===n.id&&<div style={{position:'absolute',top:0,left:'20%',right:'20%',height:2,borderRadius:1,background:C.accent}}/>}
-              <span style={{fontSize:20,lineHeight:1}}>{n.icon}</span>
+                gap:0,background:'transparent',border:'none',cursor:'pointer',
+                color:view===n.id?C.accent:C.muted,fontSize:11,fontFamily:font,
+                fontWeight:view===n.id?700:400,position:'relative',transition:'color 0.15s',padding:'0 8px',
+                borderTop:`2px solid ${view===n.id?C.accent:'transparent'}`}}>
               {n.label}
             </button>
           ))}

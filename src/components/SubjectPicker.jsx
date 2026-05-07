@@ -252,10 +252,10 @@ export default function SubjectPicker({ user, onComplete }) {
     if (step < 3) { setStep(step + 1); return; }
     setSaving(true);
     const subjectsJson = JSON.stringify(selection);
-    // Cache locally for instant restore on reload (keyed by user ID to prevent cross-user contamination)
-    if(user?.id){ try { localStorage.setItem(`rbp_subjects_cache_${user.id}`, subjectsJson); } catch(_) {} }
+    if (user?.id) {
+      try { localStorage.setItem(`rbp_sel_${user.id}`, subjectsJson); } catch(_) {}
+    }
     if (user) {
-      // Use SECURITY DEFINER RPC — bypasses all RLS ambiguity, always writes correctly
       await supabase.rpc('save_subjects', { p_subjects: subjectsJson });
     }
     setSaving(false);
