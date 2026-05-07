@@ -3,6 +3,7 @@ import { supabase, isSupabaseConfigured } from './lib/supabase';
 import AuthGate from './components/AuthGate';
 import SubjectPicker from './components/SubjectPicker';
 import { subjectsFromSelection } from './data/subjects';
+import heroImg from './assets/hero.png';
 
 // ── Error boundary ─────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
@@ -1083,57 +1084,6 @@ function Tips({subjects,C,font}) {
   );
 }
 
-// ── University ad card ─────────────────────────────────────────────────────
-const MOCK_ADS = [
-  {
-    university: 'University of Manchester',
-    course: 'BSc Mathematics',
-    headline: 'Strong in Maths? Explore our top-5 ranked Mathematics programme.',
-    body: 'AAB entry · Russell Group · Industry placement year available',
-    url: 'https://www.manchester.ac.uk/study/undergraduate/courses/2026/00560/bsc-mathematics/',
-    subjects: ['Mathematics','Further Mathematics'],
-  },
-  {
-    university: 'University of Edinburgh',
-    course: 'BSc Computer Science',
-    headline: "Interested in Computer Science? We're ranked #3 in the UK.",
-    body: 'ABB entry · Russell Group · Strong industry links',
-    url: 'https://www.ed.ac.uk/studying/undergraduate/degrees/index.php?action=programme&code=G400',
-    subjects: ['Computer Science','Mathematics'],
-  },
-  {
-    university: 'University of Bristol',
-    course: 'MEng Chemistry',
-    headline: 'Passionate about Chemistry? Join one of the UK's top programmes.',
-    body: 'AAA entry · Russell Group · World-leading research facilities',
-    url: 'https://www.bristol.ac.uk/study/undergraduate/2026/chemistry/',
-    subjects: ['Chemistry','Biology'],
-  },
-];
-
-function UniversityAdCard({ subjects, uid, C, font }) {
-  const consented = ls.get(`rbp_analytics_${uid}`, true);
-  if (!consented) return null;
-
-  const subjectNames = subjects.map(s => s.name);
-  const ad = MOCK_ADS.find(a => a.subjects.some(s => subjectNames.includes(s))) ?? MOCK_ADS[0];
-
-  return (
-    <div style={{background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:'14px 18px'}}>
-      <div style={{fontSize:9, fontWeight:700, color:C.muted, textTransform:'uppercase',
-        letterSpacing:0.5, marginBottom:8}}>Sponsored · {ad.university}</div>
-      <div style={{fontSize:14, fontWeight:700, color:C.text, marginBottom:4}}>{ad.headline}</div>
-      <div style={{fontSize:12, color:C.muted, lineHeight:1.5, marginBottom:12}}>{ad.body}</div>
-      <a href={ad.url} target="_blank" rel="noopener noreferrer"
-        style={{fontSize:12, color:C.accent, fontWeight:600, textDecoration:'none',
-          border:`1px solid ${C.accent}40`, borderRadius:6, padding:'5px 12px',
-          display:'inline-block'}}>
-        Find out more →
-      </a>
-    </div>
-  );
-}
-
 // ── Resources ──────────────────────────────────────────────────────────────
 function Resources({subjects,uid,C,font}) {
   return (
@@ -1159,25 +1109,12 @@ function Resources({subjects,uid,C,font}) {
           </div>
         </div>
       ))}
-      <UniversityAdCard subjects={subjects} uid={uid} C={C} font={font}/>
     </div>
   );
 }
 
 // ── Account ────────────────────────────────────────────────────────────────
 function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,font}) {
-  const [analyticsConsent, setAnalyticsConsent] = useState(()=>ls.get(`rbp_analytics_${uid}`,true));
-
-  const toggleConsent = async (v) => {
-    setAnalyticsConsent(v);
-    ls.set(`rbp_analytics_${uid}`, v);
-    if (isSupabaseConfigured()) {
-      await supabase.from('analytics_consent')
-        .upsert({user_id:uid, opted_in:v, updated_at:new Date().toISOString()},
-          {onConflict:'user_id'});
-    }
-  };
-
   return (
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
@@ -1222,26 +1159,6 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
         </div>
       </div>
 
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Research contribution</div>
-        <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:16}}>
-          <div style={{flex:1}}>
-            <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:4}}>Share anonymised data with universities</div>
-            <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>
-              Your scores are aggregated and anonymised — never individual — to help universities understand how students revise. You can opt out at any time.
-            </div>
-          </div>
-          <button onClick={()=>toggleConsent(!analyticsConsent)}
-            style={{flexShrink:0,width:44,height:24,borderRadius:12,padding:0,
-              background:analyticsConsent?C.accent:C.border,border:'none',cursor:'pointer',
-              position:'relative',transition:'background 0.2s'}}>
-            <div style={{position:'absolute',top:3,width:18,height:18,borderRadius:'50%',
-              background:'#fff',transition:'left 0.2s',
-              left:analyticsConsent?23:3}}/>
-          </button>
-        </div>
-      </div>
-
       <button onClick={onSignOut}
         style={{width:'100%',padding:'12px',background:'transparent',
           border:`1px solid ${C.danger}40`,borderRadius:10,color:C.danger,
@@ -1257,6 +1174,14 @@ function LandingPage({ onGetStarted }) {
   const font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
   const mono = "'JetBrains Mono','SF Mono',monospace";
   const C = T.dark;
+
+  const [userCount, setUserCount] = useState(null);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+    supabase.from('user_profiles').select('id', { count: 'exact', head: true })
+      .then(({ count }) => { if (count != null) setUserCount(count); });
+  }, []);
 
   const FEATURES = [
     {
@@ -1328,7 +1253,9 @@ function LandingPage({ onGetStarted }) {
         <div style={{display:'inline-flex', alignItems:'center', gap:6, padding:'5px 12px',
           borderRadius:20, background:'rgba(181,115,90,0.1)', border:`1px solid rgba(181,115,90,0.25)`,
           fontSize:12, fontWeight:600, color:C.accent, marginBottom:28, letterSpacing:0.3}}>
-          Free during beta
+          {userCount != null
+            ? `Join ${userCount.toLocaleString()} students tracking their revision`
+            : 'Free during beta'}
         </div>
         <h1 style={{fontSize:'clamp(36px, 7vw, 60px)', fontWeight:800, lineHeight:1.1,
           color:C.text, margin:'0 0 20px', letterSpacing:'-0.02em'}}>
@@ -1379,6 +1306,19 @@ function LandingPage({ onGetStarted }) {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Screenshot */}
+      <section style={{maxWidth:860, margin:'0 auto', padding:'0 24px 80px'}}>
+        <div style={{fontSize:11, fontWeight:700, color:C.muted, textTransform:'uppercase',
+          letterSpacing:0.5, textAlign:'center', marginBottom:20}}>
+          What it looks like
+        </div>
+        <div style={{borderRadius:14, overflow:'hidden', border:`1px solid ${C.border}`,
+          boxShadow:'0 24px 80px rgba(0,0,0,0.5)'}}>
+          <img src={heroImg} alt="Battle Plan app screenshot — Analytics view"
+            style={{width:'100%', display:'block'}}/>
         </div>
       </section>
 
