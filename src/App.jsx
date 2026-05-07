@@ -58,26 +58,29 @@ const T = {
 };
 
 // ── Exam schedule (subjectId → exams) ──────────────────────────────────────
+// Dates confirmed from official AQA timetable (May/June 2026 v1.1) and
+// Edexcel/OCR dates confirmed from ASFC school timetable (Nov 2025 release).
 const EXAM_SCHEDULE = {
   maths: [
-    { date:'2026-06-02', paper:'Paper 1: Pure Mathematics 1',   code:'9MA0/01', board:'Edexcel', time:'PM', duration:'2h',     maxMark:100 },
-    { date:'2026-06-12', paper:'Paper 2: Pure Mathematics 2',   code:'9MA0/02', board:'Edexcel', time:'PM', duration:'2h',     maxMark:100 },
-    { date:'2026-06-18', paper:'Paper 3: Statistics & Mechanics',code:'9MA0/03', board:'Edexcel', time:'PM', duration:'2h',     maxMark:100 },
+    { date:'2026-06-03', paper:'Paper 1: Pure Mathematics 1',    code:'9MA0/01', board:'Edexcel', time:'PM', duration:'2h',     maxMark:100 },
+    { date:'2026-06-11', paper:'Paper 2: Pure Mathematics 2',    code:'9MA0/02', board:'Edexcel', time:'PM', duration:'2h',     maxMark:100 },
+    { date:'2026-06-18', paper:'Paper 3: Statistics & Mechanics', code:'9MA0/03', board:'Edexcel', time:'PM', duration:'2h',     maxMark:100 },
   ],
   'further-maths': [
-    { date:'2026-05-14', paper:'Core Pure Mathematics 1',        code:'9FM0/01', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75  },
-    { date:'2026-05-21', paper:'Core Pure Mathematics 2',        code:'9FM0/02', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75  },
-    { date:'2026-06-16', paper:'Decision Mathematics 1',         code:'9FM0/3D', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75  },
-    { date:'2026-06-19', paper:'Further Pure Mathematics 1',     code:'9FM0/3A', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75  },
+    { date:'2026-05-14', paper:'Core Pure Mathematics 1',  code:'9FM0/01', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
+    { date:'2026-05-21', paper:'Core Pure Mathematics 2',  code:'9FM0/02', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
+    { date:'2026-06-05', paper:'Option: Further Mechanics 1', code:'9FM0/3C', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
+    { date:'2026-06-12', paper:'Option: Further Statistics 1', code:'9FM0/3B', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
+    { date:'2026-06-16', paper:'Option: Decision Mathematics 1', code:'9FM0/3D', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
   ],
   cs: [
     { date:'2026-06-10', paper:'Paper 1: Computer Systems',         code:'H446/01', board:'OCR', time:'PM', duration:'2h 30m', maxMark:140 },
     { date:'2026-06-17', paper:'Paper 2: Algorithms & Programming', code:'H446/02', board:'OCR', time:'AM', duration:'2h 30m', maxMark:140 },
   ],
   chemistry: [
-    { date:'2026-05-12', paper:'Paper 1: Inorganic & Physical Chemistry', code:'7405/1', board:'AQA', time:'PM', duration:'2h', maxMark:105 },
-    { date:'2026-06-04', paper:'Paper 2: Organic & Physical Chemistry',   code:'7405/2', board:'AQA', time:'PM', duration:'2h', maxMark:105 },
-    { date:'2026-06-18', paper:'Paper 3: Practical Skills',               code:'7405/3', board:'AQA', time:'PM', duration:'2h', maxMark:90  },
+    { date:'2026-06-02', paper:'Paper 1: Inorganic & Physical Chemistry', code:'7405/1', board:'AQA', time:'AM', duration:'2h', maxMark:105 },
+    { date:'2026-06-09', paper:'Paper 2: Organic & Physical Chemistry',   code:'7405/2', board:'AQA', time:'AM', duration:'2h', maxMark:105 },
+    { date:'2026-06-15', paper:'Paper 3: Practical Skills',               code:'7405/3', board:'AQA', time:'AM', duration:'2h', maxMark:90  },
   ],
   physics: [
     { date:'2026-05-20', paper:'Component 1: Modelling Physics', code:'H557/01', board:'OCR A', time:'PM', duration:'2h 15m', maxMark:100 },
@@ -85,14 +88,41 @@ const EXAM_SCHEDULE = {
     { date:'2026-06-08', paper:'Component 3: Unified Physics',   code:'H557/03', board:'OCR A', time:'AM', duration:'1h 30m', maxMark:70  },
   ],
   economics: [
-    { date:'2026-05-11', paper:'Paper 1: Markets & Market Failure',          code:'7136/1', board:'AQA', time:'AM', duration:'2h', maxMark:80 },
-    { date:'2026-05-18', paper:'Paper 2: National & International Economy',  code:'7136/2', board:'AQA', time:'PM', duration:'2h', maxMark:80 },
-    { date:'2026-06-04', paper:'Paper 3: Economic Principles & Issues',      code:'7136/3', board:'AQA', time:'AM', duration:'2h', maxMark:80 },
+    { date:'2026-05-11', paper:'Paper 1: Markets & Market Failure',         code:'7136/1', board:'AQA', time:'AM', duration:'2h', maxMark:80 },
+    { date:'2026-05-18', paper:'Paper 2: National & International Economy', code:'7136/2', board:'AQA', time:'PM', duration:'2h', maxMark:80 },
+    { date:'2026-06-04', paper:'Paper 3: Economic Principles & Issues',     code:'7136/3', board:'AQA', time:'AM', duration:'2h', maxMark:80 },
   ],
   biology: [
-    { date:'2026-05-15', paper:'Paper 1: Biological Processes',   code:'7402/1', board:'AQA', time:'PM', duration:'2h', maxMark:91 },
-    { date:'2026-06-05', paper:'Paper 2: Biological Diversity',   code:'7402/2', board:'AQA', time:'AM', duration:'2h', maxMark:91 },
-    { date:'2026-06-19', paper:'Paper 3: Essay & Data Analysis',  code:'7402/3', board:'AQA', time:'PM', duration:'2h', maxMark:78 },
+    { date:'2026-06-04', paper:'Paper 1: Biological Processes',  code:'7402/1', board:'AQA', time:'PM', duration:'2h', maxMark:91 },
+    { date:'2026-06-12', paper:'Paper 2: Biological Diversity',  code:'7402/2', board:'AQA', time:'AM', duration:'2h', maxMark:91 },
+    { date:'2026-06-15', paper:'Paper 3: Essay & Data Analysis', code:'7402/3', board:'AQA', time:'PM', duration:'2h', maxMark:78 },
+  ],
+  psychology: [
+    { date:'2026-05-15', paper:'Paper 1: Social Influence, Memory, Attachment & Psychopathology', code:'7182/1', board:'AQA', time:'AM', duration:'2h', maxMark:96 },
+    { date:'2026-05-20', paper:'Paper 2: Biopsychology, Approaches & Research Methods',            code:'7182/2', board:'AQA', time:'AM', duration:'2h', maxMark:96 },
+    { date:'2026-06-05', paper:'Paper 3: Issues, Debates & Options',                               code:'7182/3', board:'AQA', time:'AM', duration:'2h', maxMark:96 },
+  ],
+  sociology: [
+    { date:'2026-05-18', paper:'Paper 1: Education with Theory & Methods', code:'7192/1', board:'AQA', time:'AM', duration:'2h', maxMark:80 },
+    { date:'2026-06-03', paper:'Paper 2: Topics in Sociology',             code:'7192/2', board:'AQA', time:'AM', duration:'2h', maxMark:80 },
+    { date:'2026-06-12', paper:'Paper 3: Crime & Deviance with Theory & Methods', code:'7192/3', board:'AQA', time:'PM', duration:'2h', maxMark:80 },
+  ],
+  history: [
+    { date:'2026-05-19', paper:'Paper 1: Breadth Study', code:'7042/1', board:'AQA', time:'PM', duration:'2h 30m', maxMark:75 },
+    { date:'2026-06-02', paper:'Paper 2: Depth Study',   code:'7042/2', board:'AQA', time:'PM', duration:'2h 30m', maxMark:75 },
+  ],
+  geography: [
+    { date:'2026-05-12', paper:'Paper 1: Physical Geography', code:'7037/1', board:'AQA', time:'AM', duration:'2h 30m', maxMark:80 },
+    { date:'2026-05-21', paper:'Paper 2: Human Geography',    code:'7037/2', board:'AQA', time:'PM', duration:'2h 30m', maxMark:80 },
+  ],
+  'english-lit': [
+    { date:'2026-05-13', paper:'Paper 1: Love Through the Ages',       code:'7712/1',  board:'AQA', time:'AM', duration:'3h',     maxMark:75 },
+    { date:'2026-06-01', paper:'Paper 2: Texts in Shared Contexts',    code:'7712/2',  board:'AQA', time:'AM', duration:'2h 30m', maxMark:50 },
+  ],
+  business: [
+    { date:'2026-05-13', paper:'Paper 1: Business 1',              code:'7132/1', board:'AQA', time:'PM', duration:'2h', maxMark:100 },
+    { date:'2026-05-19', paper:'Paper 2: Business 2',              code:'7132/2', board:'AQA', time:'AM', duration:'2h', maxMark:100 },
+    { date:'2026-06-10', paper:'Paper 3: Business 3 (Case Study)', code:'7132/3', board:'AQA', time:'AM', duration:'2h', maxMark:100 },
   ],
 };
 
@@ -1001,7 +1031,7 @@ function Account({user,subjects,dark,setDark,onSignOut,onResetSubjects,C,font}) 
 }
 
 // ── Main shell ─────────────────────────────────────────────────────────────
-function RevisionPlan({user,selection,onSignOut,onResetSubjects}) {
+function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_SCHEDULE}) {
   const [dark,setDark]     = useState(()=>ls.get('rbp_dark',false));
   const [view,setView]     = useState('analytics');
   const [isMobile,setIsMobile] = useState(()=>window.innerWidth<768);
@@ -1212,7 +1242,7 @@ export default function App() {
   if (phase==='onboarding') return <ErrorBoundary><SubjectPicker user={user} onComplete={handleSubjectsDone}/></ErrorBoundary>;
   return (
     <ErrorBoundary>
-      <RevisionPlan user={user} selection={selection} onSignOut={handleSignOut} onResetSubjects={handleResetSubjects}/>
+      <RevisionPlan user={user} selection={selection} onSignOut={handleSignOut} onResetSubjects={handleResetSubjects} examSched={examSched}/>
     </ErrorBoundary>
   );
 }
