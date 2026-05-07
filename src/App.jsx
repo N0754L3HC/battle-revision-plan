@@ -168,6 +168,12 @@ function gradeColor(g) {
   return {'A*':'#22c55e',A:'#4ade80',B:'#fbbf24',C:'#fb923c',D:'#f87171',E:'#ef4444',U:'#71717a'}[g]??'#71717a';
 }
 
+function getSubjectGrade(avg, subjectName, gradeBoundaries) {
+  const b = (gradeBoundaries||{})[subjectName]||{};
+  for (const g of ['A*','A','B','C','D','E']) if (avg>=(b[g]??0)) return g;
+  return 'U';
+}
+
 function getGrade(got, maxMark, paperKey, boundaries) {
   const rb = RAW_BOUNDARIES[paperKey];
   if (rb) {
@@ -192,17 +198,16 @@ function getGradeForPaper(got, max, paper, subject, gradeBoundaries) {
   return {grade:'U',exact:false};
 }
 
-function calcReadiness(scores, errors) {
-  if (!scores.length) return {total:0,label:'No data yet',color:'#71717a',avg:0,scoreComp:0,paperComp:0,errorComp:0};
-  const avg     = scores.reduce((a,s)=>a+s.pct,0)/scores.length;
-  const scoreComp  = Math.round((avg/100)*45);
-  const paperComp  = Math.min(35,Math.round((scores.length/20)*35));
-  const recentErrs = errors.filter(e=>Date.now()-e.ts<7*86400000).length;
-  const errorComp  = Math.max(0,20-recentErrs*2);
+function calcBattleReadiness(scores, errors) {
+  const avgScore  = scores.length ? scores.reduce((a,s)=>a+s.pct,0)/scores.length : 0;
+  const scoreComp = Math.round((avgScore/100)*40);
+  const paperComp = Math.min(20, Math.round((scores.length/12)*20));
+  const recentErrs = errors.filter(e=>Date.now()-(e.ts||e.id)<7*86400000).length;
+  const errorComp  = Math.max(0, 20-recentErrs*2);
   const total      = scoreComp+paperComp+errorComp;
-  const label      = total>=80?'Battle Ready':total>=55?'On Track':total>=30?'Building':'Just Started';
-  const color      = total>=80?'#22c55e':total>=55?'#f59e0b':total>=30?'#f97316':'#ef4444';
-  return {total,label,color,avg:Math.round(avg),scoreComp,paperComp,errorComp};
+  const label      = total>=80?'BATTLE READY':total>=60?'ON TRACK':total>=40?'BUILDING':'JUST STARTED';
+  const labelColor = total>=80?'#00E676':total>=60?'#FFD600':total>=40?'#FF9100':'#FF3D00';
+  return {total, scoreComp, paperComp, errorComp, label, labelColor, avg:Math.round(avgScore)};
 }
 
 function getPaperSuggestions(subject) {
@@ -211,28 +216,26 @@ function getPaperSuggestions(subject) {
 }
 
 function getNotifications(scores, errors, subjects) {
+  const now=new Date(); now.setHours(0,0,0,0);
   const notes=[];
-  const allExams = subjects.flatMap(s=>(EXAM_SCHEDULE[s.id]??[]).map(e=>({...e,subjectName:s.name,color:s.color})))
-    .sort((a,b)=>new Date(a.date)-new Date(b.date));
-  const upcoming=allExams.filter(e=>daysUntil(e.date)>=0);
-  if (upcoming.length&&daysUntil(upcoming[0].date)<=14) {
+  const allExams=subjects.flatMap(s=>(EXAM_SCHEDULE[s.id]??[]).map(e=>({...e,subject:s.name,color:s.color})));
+  const upcoming=allExams.map(e=>({...e,d:Math.ceil((new Date(e.date)-now)/86400000)}))
+    .filter(e=>e.d>0).sort((a,b)=>a.d-b.d);
+  if (upcoming.length&&upcoming[0].d<=14) {
     const n=upcoming[0];
-    const d=daysUntil(n.date);
-    notes.push({id:`exam_${n.code}`,type:'urgent',title:`${n.subjectName} exam in ${d} day${d!==1?'s':''}`,body:`${n.paper} · ${n.time} · ${n.duration}`});
+    notes.push({id:`exam_${n.code}`,type:'urgent',title:`${n.subject} exam in ${n.d} days`,body:`${n.paper} · ${n.time} · ${n.duration}`});
   }
   subjects.forEach(s=>{
     const done=scores.filter(sc=>sc.subject===s.name).map(sc=>sc.paper);
-    const suggestions=getPaperSuggestions(s);
-    const next=suggestions.find(p=>!done.includes(p));
+    const next=getPaperSuggestions(s).find(p=>!done.includes(p));
     if (next) {
-      const examDays=upcoming.find(e=>e.subjectName===s.name);
-      const d=examDays?daysUntil(examDays.date):999;
-      notes.push({id:`suggest_${s.name}`,type:d<=21?'urgent':d<=42?'warn':'info',title:`Next up: ${s.name}`,body:next});
+      const d=upcoming.find(e=>e.subject===s.name)?.d??999;
+      notes.push({id:`paper_${s.name}`,type:d<=21?'urgent':d<=42?'warn':'info',title:`Suggested next: ${s.name}`,body:next});
     }
     const ss=scores.filter(sc=>sc.subject===s.name);
     if (ss.length) {
-      const daysSince=Math.floor((Date.now()-Math.max(...ss.map(x=>x.ts)))/86400000);
-      if (daysSince>=7) notes.push({id:`overdue_${s.name}`,type:'warn',title:`${s.name}: no paper in ${daysSince} days`,body:`Last logged ${daysSince} days ago`});
+      const daysSince=Math.floor((Date.now()-Math.max(...ss.map(x=>x.ts||x.id)))/86400000);
+      if (daysSince>=7) notes.push({id:`overdue_${s.name}`,type:'warn',title:`${s.name}: no paper in ${daysSince} days`,body:`Last: ${ss[0].paper}`});
     }
   });
   if (errors.length>=5) {
@@ -240,53 +243,53 @@ function getNotifications(scores, errors, subjects) {
     errors.forEach(e=>{counts[e.type]=(counts[e.type]||0)+1;});
     const [topId,topCount]=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
     const et=ERROR_TYPES.find(t=>t.id===topId);
-    if (et&&topCount>=3) notes.push({id:`errpat_${topId}`,type:'warn',title:`Recurring: "${et.label}" ×${topCount}`,body:'Dedicate a full session to fixing this pattern.'});
+    if (et&&topCount>=3) notes.push({id:`errpat_${topId}`,type:'warn',title:`Recurring pattern: "${et.label}" (×${topCount})`,body:'Dedicate a full session to fixing this.'});
   }
-  const todayStr=new Date().toDateString();
-  const todayPaper=scores.find(s=>new Date(s.ts).toDateString()===todayStr);
-  if (todayPaper) notes.push({id:`today`,type:'success',title:'Paper logged today',body:`${todayPaper.subject} · ${todayPaper.pct}%`});
-  return notes.slice(0,5);
+  const today=new Date().toDateString();
+  const ts=scores.find(s=>new Date(s.ts||s.id).toDateString()===today);
+  if (ts) notes.push({id:`today_${today}`,type:'success',title:'Paper logged today',body:`${ts.subject} · ${ts.paper} · ${ts.pct}%`});
+  return notes;
 }
 
 const NOTIF_COLOR={urgent:'#ef4444',warn:'#f97316',info:'#3b82f6',success:'#22c55e'};
 
 // ── Trend chart ────────────────────────────────────────────────────────────
-function TrendChart({scores,subject,color,boundaries,C}) {
+function TrendChart({scores, subject, subjectColors={}, gradeBoundaries={}, bgColor='#e8e4dd', textColor='#7a7268'}) {
   const data=[...scores].filter(s=>s.subject===subject).reverse();
   if (data.length<2) return (
-    <div style={{height:90,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,color:C.subtle}}>
-      Log 2+ papers to see your trend
+    <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:120,fontSize:14,color:textColor}}>
+      Need 2+ papers to show trend
     </div>
   );
-  const W=460,H=90,P={t:8,r:14,b:22,l:32};
+  const W=480,H=110,PAD={t:10,r:16,b:28,l:36};
   const pcts=data.map(d=>d.pct);
-  const lo=Math.max(0,Math.min(...pcts)-10),hi=Math.min(100,Math.max(...pcts)+10);
-  const x=i=>P.l+(i/(data.length-1))*(W-P.l-P.r);
-  const y=v=>P.t+(1-(v-lo)/(hi-lo))*(H-P.t-P.b);
-  const pts=data.map((d,i)=>[x(i),y(d.pct)]);
-  const line=pts.map(p=>p.join(',')).join(' ');
-  const area=`M ${pts[0][0]},${y(lo)} L ${pts.map(p=>p.join(',')).join(' L ')} L ${pts[pts.length-1][0]},${y(lo)} Z`;
-  const astarY=boundaries?.['A*']?y(boundaries['A*']):null;
-  const aY=boundaries?.['A']?y(boundaries['A']):null;
+  const minY=Math.max(0,Math.min(...pcts)-10);
+  const maxY=Math.min(100,Math.max(...pcts)+10);
+  const col=subjectColors[subject]||'#888';
+  const bounds=gradeBoundaries[subject]||{};
+  const xScale=i=>PAD.l+(i/(data.length-1))*(W-PAD.l-PAD.r);
+  const yScale=v=>PAD.t+(1-(v-minY)/(maxY-minY))*(H-PAD.t-PAD.b);
+  const pts=data.map((d,i)=>([xScale(i),yScale(d.pct)]));
+  const polyline=pts.map(p=>p.join(',')).join(' ');
+  const areaPath=`M ${pts[0][0]},${yScale(minY)} L ${pts.map(p=>p.join(',')).join(' L ')} L ${pts[pts.length-1][0]},${yScale(minY)} Z`;
+  const gradeLines=['A*','A','B'].map(g=>({g,y:yScale(bounds[g]||0),pct:bounds[g]||0})).filter(gl=>gl.pct>minY&&gl.pct<maxY);
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{width:'100%',height:H,display:'block'}}>
-      {astarY&&astarY>P.t&&astarY<H-P.b&&(
-        <g><line x1={P.l} y1={astarY} x2={W-P.r} y2={astarY} stroke="#22c55e" strokeWidth="1" strokeDasharray="4 3" opacity="0.4"/>
-          <text x={W-P.r+2} y={astarY+4} fill="#22c55e" fontSize="7" opacity="0.7">A*</text></g>
-      )}
-      {aY&&aY>P.t&&aY<H-P.b&&(
-        <g><line x1={P.l} y1={aY} x2={W-P.r} y2={aY} stroke="#4ade80" strokeWidth="1" strokeDasharray="4 3" opacity="0.3"/>
-          <text x={W-P.r+2} y={aY+4} fill="#4ade80" fontSize="7" opacity="0.6">A</text></g>
-      )}
-      {[lo,hi].map(v=>(
-        <text key={v} x={P.l-4} y={y(v)+4} fill={C.subtle} fontSize="7" textAnchor="end">{Math.round(v)}%</text>
+      {gradeLines.map(gl=>(
+        <g key={gl.g}>
+          <line x1={PAD.l} y1={gl.y} x2={W-PAD.r} y2={gl.y} stroke={gradeColor(gl.g)} strokeWidth="1" strokeDasharray="4 3" opacity="0.3"/>
+          <text x={W-PAD.r+2} y={gl.y+4} fill={gradeColor(gl.g)} fontSize="8" opacity="0.6">{gl.g}</text>
+        </g>
       ))}
-      <path d={area} fill={color} opacity="0.07"/>
-      <polyline points={line} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
+      {[minY,Math.round((minY+maxY)/2),maxY].map(v=>(
+        <text key={v} x={PAD.l-4} y={yScale(v)+4} fill={textColor} fontSize="8" textAnchor="end">{Math.round(v)}%</text>
+      ))}
+      <path d={areaPath} fill={col} opacity="0.06"/>
+      <polyline points={polyline} fill="none" stroke={col} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
       {pts.map((p,i)=>(
         <g key={i}>
-          <circle cx={p[0]} cy={p[1]} r="3.5" fill={color} stroke={C.card} strokeWidth="1.5"/>
-          <text x={p[0]} y={H-P.b+10} fill={C.subtle} fontSize="6.5" textAnchor="middle">
+          <circle cx={p[0]} cy={p[1]} r="4" fill={col} stroke={bgColor} strokeWidth="1.5"/>
+          <text x={p[0]} y={H-PAD.b+10} fill={textColor} fontSize="7" textAnchor="middle">
             {data[i].date?.split(' ').slice(0,2).join(' ')||`P${i+1}`}
           </text>
         </g>
@@ -295,132 +298,191 @@ function TrendChart({scores,subject,color,boundaries,C}) {
   );
 }
 
+// ── Battle gauge ───────────────────────────────────────────────────────────
+function BattleGauge({score, label, labelColor, textColor='#2b2b2b', mutedColor='#7a7268'}) {
+  const R=54, CX=70, CY=70;
+  const circumference=Math.PI*R;
+  const strokeDash=circumference*(score/100);
+  return (
+    <svg viewBox="0 0 140 80" style={{width:'100%',maxWidth:200,display:'block',margin:'0 auto'}}>
+      <path d={`M ${CX-R},${CY} A ${R},${R} 0 0 1 ${CX+R},${CY}`} fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="10" strokeLinecap="round"/>
+      <path d={`M ${CX-R},${CY} A ${R},${R} 0 0 1 ${CX+R},${CY}`} fill="none" stroke={labelColor} strokeWidth="10" strokeLinecap="round"
+        strokeDasharray={`${strokeDash} ${circumference}`} style={{transition:'stroke-dasharray 1s ease'}}/>
+      <text x={CX} y={CY-8} textAnchor="middle" fill={textColor} fontSize="22" fontWeight="700" fontFamily="inherit">{score}</text>
+      <text x={CX} y={CY+8} textAnchor="middle" fill={labelColor} fontSize="7" fontWeight="600" letterSpacing="0.5">{label}</text>
+      <text x={CX-R} y={CY+14} fill={mutedColor} fontSize="7" textAnchor="middle">0</text>
+      <text x={CX+R} y={CY+14} fill={mutedColor} fontSize="7" textAnchor="middle">100</text>
+    </svg>
+  );
+}
+
 // ── Analytics ──────────────────────────────────────────────────────────────
-function Analytics({subjects,scores,errors,C,font}) {
-  const r=calcReadiness(scores,errors);
-  const [activeSubj,setActiveSubj]=useState(subjects[0]?.name??'');
-  const notifs=getNotifications(scores,errors,subjects);
+function Analytics({subjects, scores, errors, uid, C, font}) {
+  const SUBJ_COLORS  = Object.fromEntries(subjects.map(s=>[s.name,s.color]));
+  const GRADE_BOUNDS = Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
+
+  const defaultTargets = Object.fromEntries(subjects.map(s=>[s.name,'A*']));
+  const [targets,     setTargets]     = useState(()=>ls.get(`rbp_targets_${uid}`, defaultTargets));
+  const [dismissed,   setDismissed]   = useState(()=>ls.get(`rbp_notifs_${uid}`, []));
+  const [chartSubject,setChartSubject] = useState(subjects[0]?.name??'');
+
+  useEffect(()=>ls.set(`rbp_targets_${uid}`, targets),  [targets]);
+  useEffect(()=>ls.set(`rbp_notifs_${uid}`, dismissed),  [dismissed]);
+
+  const br = calcBattleReadiness(scores, errors);
+  const notifications = getNotifications(scores, errors, subjects).filter(n=>!dismissed.includes(n.id));
+
+  const subjectAvg = name => {
+    const ss=scores.filter(x=>x.subject===name);
+    return ss.length ? Math.round(ss.reduce((a,x)=>a+x.pct,0)/ss.length) : null;
+  };
 
   return (
-    <div style={{display:'flex',flexDirection:'column',gap:18}}>
-
-      {/* Readiness */}
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'20px 22px'}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:14}}>
-          <div>
-            <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>
-              Battle Readiness
-            </div>
-            <div style={{fontSize:30,fontWeight:800,color:r.color,lineHeight:1.1}}>
-              {r.total}<span style={{fontSize:15,fontWeight:500,color:C.muted}}>/100</span>
-            </div>
-          </div>
-          <div style={{textAlign:'right'}}>
-            <div style={{fontSize:13,fontWeight:700,color:r.color,marginBottom:4}}>{r.label}</div>
-            {r.avg>0&&<div style={{fontSize:12,color:C.muted}}>Avg {r.avg}% across {scores.length} paper{scores.length!==1?'s':''}</div>}
-          </div>
-        </div>
-        <div style={{height:6,borderRadius:3,background:C.card2,overflow:'hidden',marginBottom:14}}>
-          <div style={{height:'100%',width:`${r.total}%`,background:r.color,borderRadius:3,transition:'width 0.8s ease'}}/>
-        </div>
-        {r.total>0&&(
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
-            {[
-              {label:'Score avg',val:r.scoreComp,max:45},
-              {label:'Papers done',val:r.paperComp,max:35},
-              {label:'Error control',val:r.errorComp,max:20},
-            ].map(c=>(
-              <div key={c.label} style={{background:C.card2,borderRadius:8,padding:'8px 10px'}}>
-                <div style={{fontSize:11,color:C.muted,marginBottom:4}}>{c.label}</div>
-                <div style={{fontSize:14,fontWeight:700,color:C.text}}>{c.val}<span style={{fontSize:10,color:C.subtle}}>/{c.max}</span></div>
+    <div>
+      {/* Dismissable notifications */}
+      {notifications.length>0&&(
+        <div style={{marginBottom:16}}>
+          {notifications.slice(0,3).map(n=>(
+            <div key={n.id} style={{display:'flex',alignItems:'flex-start',gap:10,padding:'10px 14px',
+              marginBottom:5,borderRadius:8,background:`${NOTIF_COLOR[n.type]}18`,
+              border:`1px solid ${NOTIF_COLOR[n.type]}40`}}>
+              <div style={{width:6,height:6,borderRadius:'50%',background:NOTIF_COLOR[n.type],flexShrink:0,marginTop:5}}/>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:600,color:NOTIF_COLOR[n.type]}}>{n.title}</div>
+                <div style={{fontSize:12,color:C.muted,marginTop:2}}>{n.body}</div>
               </div>
-            ))}
-          </div>
-        )}
-        {scores.length===0&&(
-          <p style={{fontSize:12,color:C.subtle,margin:'8px 0 0',lineHeight:1.6}}>
-            Log your first past paper in Tracker to start building your score.
-          </p>
-        )}
-      </div>
-
-      {/* Notifications */}
-      {notifs.length>0&&(
-        <div style={{display:'flex',flexDirection:'column',gap:8}}>
-          {notifs.map(n=>(
-            <div key={n.id} style={{background:C.card,border:`1px solid ${NOTIF_COLOR[n.type]}30`,
-              borderLeft:`3px solid ${NOTIF_COLOR[n.type]}`,borderRadius:10,padding:'12px 14px',
-              display:'flex',gap:10,alignItems:'flex-start'}}>
-              <div style={{width:7,height:7,borderRadius:'50%',background:NOTIF_COLOR[n.type],marginTop:4,flexShrink:0}}/>
-              <div>
-                <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:2}}>{n.title}</div>
-                <div style={{fontSize:12,color:C.muted}}>{n.body}</div>
-              </div>
+              <button onClick={()=>setDismissed(p=>[...p,n.id])}
+                style={{background:'transparent',border:'none',color:C.muted,cursor:'pointer',
+                  fontSize:18,padding:0,lineHeight:1,flexShrink:0}}>×</button>
             </div>
           ))}
         </div>
       )}
 
-      {/* Per-subject trend */}
-      {subjects.length>0&&(
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,overflow:'hidden'}}>
-          <div style={{display:'flex',borderBottom:`1px solid ${C.border}`,overflowX:'auto'}}>
-            {subjects.map(s=>(
-              <button key={s.name} onClick={()=>setActiveSubj(s.name)}
-                style={{padding:'11px 18px',background:'transparent',border:'none',
-                  borderBottom:`2px solid ${activeSubj===s.name?s.color:'transparent'}`,
-                  color:activeSubj===s.name?s.color:C.muted,
-                  fontSize:12,fontWeight:activeSubj===s.name?700:400,
-                  fontFamily:font,cursor:'pointer',whiteSpace:'nowrap',flexShrink:0,transition:'all 0.15s'}}>
-                {s.name}
-              </button>
+      <div style={{marginBottom:20}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>Analytics</div>
+        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Performance Dashboard</h1>
+        <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>Track your scores and readiness across all subjects.</p>
+      </div>
+
+      {/* Gauge + subject cards */}
+      <div style={{display:'grid',gridTemplateColumns:'200px 1fr',gap:12,marginBottom:16}}>
+        {/* Battle readiness */}
+        <div style={{background:C.surface,border:`1px solid ${br.labelColor}40`,borderRadius:10,
+          padding:'16px 12px',display:'flex',flexDirection:'column',alignItems:'center'}}>
+          <div style={{fontSize:11,fontWeight:600,color:C.muted,letterSpacing:0.5,textTransform:'uppercase',marginBottom:8}}>
+            Battle Readiness
+          </div>
+          <BattleGauge score={br.total} label={br.label} labelColor={br.labelColor} textColor={C.text} mutedColor={C.muted}/>
+          <div style={{width:'100%',marginTop:12}}>
+            {[
+              ['Papers',    br.paperComp, 20, '#3b82f6'],
+              ['Avg score', br.scoreComp, 40, '#8b5cf6'],
+              ['Error ctrl',br.errorComp, 20, '#f97316'],
+              ['Plan done', 0,            20, '#22c55e'],
+            ].map(([l,v,mx,c])=>(
+              <div key={l} style={{display:'flex',alignItems:'center',gap:6,marginBottom:5}}>
+                <div style={{fontSize:12,color:C.muted,width:58,flexShrink:0}}>{l}</div>
+                <div style={{flex:1,height:4,borderRadius:2,background:C.border,overflow:'hidden'}}>
+                  <div style={{height:'100%',width:`${(v/mx)*100}%`,background:c,borderRadius:2,transition:'width 1s ease'}}/>
+                </div>
+                <div style={{fontSize:12,color:c,width:18,textAlign:'right'}}>{v}</div>
+              </div>
             ))}
           </div>
-          {subjects.filter(s=>s.name===activeSubj).map(s=>{
-            const ss=scores.filter(sc=>sc.subject===s.name);
-            const avg=ss.length?Math.round(ss.reduce((a,x)=>a+x.pct,0)/ss.length):null;
-            const best=ss.length?Math.max(...ss.map(x=>x.pct)):null;
-            const suggestions=getPaperSuggestions(s);
-            const done=ss.map(sc=>sc.paper);
-            const next=suggestions.find(p=>!done.includes(p));
+        </div>
+
+        {/* Per-subject cards */}
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          {subjects.map(s=>{
+            const avg      = subjectAvg(s.name);
+            const grade    = avg!=null ? getSubjectGrade(avg, s.name, GRADE_BOUNDS) : null;
+            const cnt      = scores.filter(x=>x.subject===s.name).length;
+            const target   = targets[s.name]||'A*';
+            const targetPct = (s.gradeBoundaries?.[target])||80;
+            const progress  = avg!=null ? Math.min(100,Math.round((avg/targetPct)*100)) : 0;
+            const ss=[...scores].filter(x=>x.subject===s.name).reverse();
+            const trend=ss.length>=2 ? ss[ss.length-1].pct - ss[ss.length-2].pct : null;
             return (
-              <div key={s.name} style={{padding:'16px 20px'}}>
-                {avg!==null&&(
-                  <div style={{display:'flex',gap:16,marginBottom:14}}>
-                    {[{label:'Average',val:`${avg}%`},{label:'Best',val:`${best}%`},{label:'Papers',val:ss.length}].map(stat=>(
-                      <div key={stat.label}>
-                        <div style={{fontSize:11,color:C.muted,marginBottom:2}}>{stat.label}</div>
-                        <div style={{fontSize:16,fontWeight:700,color:C.text}}>{stat.val}</div>
+              <div key={s.name} style={{background:C.surface,border:`1px solid ${s.color}40`,borderRadius:10,padding:'12px 16px'}}>
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
+                  <div>
+                    <div style={{fontSize:12,color:s.color,fontWeight:600,textTransform:'uppercase',letterSpacing:0.3}}>{s.name}</div>
+                    <div style={{display:'flex',alignItems:'baseline',gap:6,marginTop:2}}>
+                      <span style={{fontSize:28,fontWeight:900,color:grade?gradeColor(grade):'#888'}}>{grade||'—'}</span>
+                      {avg!=null&&<span style={{fontSize:15,color:C.muted}}>{avg}% avg</span>}
+                      {trend!=null&&(
+                        <span style={{fontSize:14,color:trend>=0?'#00E676':'#FF3D00'}}>
+                          {trend>=0?'▲':'▼'}{Math.abs(trend)}%
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{textAlign:'right'}}>
+                    <div style={{fontSize:12,color:C.muted,marginBottom:4}}>
+                      {cnt} paper{cnt!==1?'s':''} · Target:
+                      <select value={target} onChange={e=>setTargets(p=>({...p,[s.name]:e.target.value}))}
+                        style={{background:'transparent',border:'none',color:gradeColor(target),
+                          fontSize:13,fontWeight:700,fontFamily:'inherit',cursor:'pointer',outline:'none',marginLeft:4}}>
+                        {['A*','A','B','C'].map(g=><option key={g} value={g}>{g}</option>)}
+                      </select>
+                    </div>
+                    <div style={{display:'flex',alignItems:'center',gap:6,justifyContent:'flex-end'}}>
+                      <div style={{width:80,height:4,borderRadius:2,background:C.border,overflow:'hidden'}}>
+                        <div style={{height:'100%',width:`${progress}%`,background:s.color,borderRadius:2,transition:'width 1s ease'}}/>
                       </div>
-                    ))}
+                      <span style={{fontSize:13,color:progress>=100?'#00E676':s.color}}>{progress}%</span>
+                    </div>
                   </div>
-                )}
-                <TrendChart scores={scores} subject={s.name} color={s.color} boundaries={s.gradeBoundaries} C={C}/>
-                {next&&(
-                  <div style={{marginTop:12,padding:'10px 12px',background:C.card2,borderRadius:8,
-                    fontSize:12,color:C.muted,borderLeft:`2px solid ${s.color}`}}>
-                    <span style={{fontWeight:600,color:C.text}}>Suggested next: </span>{next}
-                  </div>
-                )}
+                </div>
+                {ss.length>=2&&(()=>{
+                  const minP=Math.min(...ss.map(d=>d.pct))-5;
+                  const maxP=Math.min(100,Math.max(...ss.map(d=>d.pct))+5);
+                  const W2=200,H2=28;
+                  const x2=i=>(i/(ss.length-1))*W2;
+                  const y2=v=>H2-(((v-minP)/(maxP-minP))*H2);
+                  const poly2=ss.map((d,i)=>`${x2(i)},${y2(d.pct)}`).join(' ');
+                  return (
+                    <svg viewBox={`0 0 ${W2} ${H2}`} style={{width:'100%',height:28,display:'block',marginTop:4}}>
+                      <polyline points={poly2} fill="none" stroke={s.color} strokeWidth="1.5" strokeLinejoin="round" opacity="0.6"/>
+                      {ss.map((d,i)=><circle key={i} cx={x2(i)} cy={y2(d.pct)} r="2.5" fill={s.color} opacity="0.8"/>)}
+                    </svg>
+                  );
+                })()}
               </div>
             );
           })}
         </div>
-      )}
+      </div>
 
-      {/* Locked premium */}
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-        {[{icon:'📈',title:'Grade Predictor',desc:'Estimate your final grade from paper trends'},
-          {icon:'🤖',title:'AI Error Analysis',desc:'Auto-detect patterns in your mistakes'}].map(item=>(
-          <div key={item.title} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:8,
-            padding:'16px 16px 14px',position:'relative',opacity:0.7}}>
-            <div style={{position:'absolute',top:10,right:10,padding:'2px 7px',borderRadius:4,
-              background:C.accentSoft,fontSize:9,fontWeight:700,color:C.accent,letterSpacing:0.3}}>PRO</div>
-            <div style={{fontSize:20,marginBottom:8}}>{item.icon}</div>
-            <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:4}}>{item.title}</div>
-            <div style={{fontSize:11,color:C.muted,lineHeight:1.5}}>{item.desc}</div>
+      {/* Score trend chart */}
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:18,marginBottom:12}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5}}>Score Trend Chart</div>
+          <div style={{display:'flex',gap:4}}>
+            {subjects.map(s=>(
+              <button key={s.name} onClick={()=>setChartSubject(s.name)}
+                style={{background:chartSubject===s.name?`${s.color}14`:'transparent',
+                  border:`1px solid ${chartSubject===s.name?s.color+'44':C.border}`,
+                  color:chartSubject===s.name?s.color:C.muted,
+                  padding:'4px 10px',borderRadius:5,cursor:'pointer',fontSize:12,
+                  fontFamily:'inherit',fontWeight:chartSubject===s.name?600:400}}>
+                {s.name==='Further Mathematics'||s.name==='Further Maths'?'FM':s.name}
+              </button>
+            ))}
           </div>
-        ))}
+        </div>
+        <TrendChart scores={scores} subject={chartSubject}
+          subjectColors={SUBJ_COLORS} gradeBoundaries={GRADE_BOUNDS}
+          bgColor={C.bg} textColor={C.muted}/>
+        <div style={{display:'flex',gap:12,marginTop:8,flexWrap:'wrap'}}>
+          {Object.entries(GRADE_BOUNDS[chartSubject]||{}).filter(([g])=>['A*','A','B'].includes(g)).map(([g,v])=>(
+            <div key={g} style={{display:'flex',alignItems:'center',gap:4}}>
+              <div style={{width:16,height:2,background:gradeColor(g),opacity:0.5,borderRadius:1}}/>
+              <span style={{fontSize:12,color:gradeColor(g)}}>{g} ≥{v}%</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -945,7 +1007,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects}) {
     {id:'account',label:'Account'},
   ];
 
-  const vp={subjects,scores,errors,C,font};
+  const vp={subjects,scores,errors,uid,C,font};
 
   return (
     <div style={{minHeight:'100vh',background:C.bg,fontFamily:font,color:C.text}}>
