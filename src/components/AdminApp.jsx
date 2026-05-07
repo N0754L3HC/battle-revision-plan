@@ -182,6 +182,15 @@ function LoginScreen({ onAuth }) {
     setTimeout(()=>onAuth(data.user, prof), 600);
   };
 
+  const googleLogin = async () => {
+    setLoading(true); setError('');
+    const adminUrl = `${window.location.origin}/admin`;
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: adminUrl },
+    });
+  };
+
   return (
     <div style={{
       minHeight:'100vh', background:'#000', display:'flex', alignItems:'center',
@@ -270,6 +279,27 @@ function LoginScreen({ onAuth }) {
             }}
           >
             {phase==='checking'?'VERIFYING...':phase==='ok'?'GRANTED':'ACCESS SYSTEM'}
+          </button>
+
+          <div style={{display:'flex',alignItems:'center',gap:10,margin:'16px 0'}}>
+            <div style={{flex:1,height:1,background:'rgba(255,61,0,0.1)'}}/>
+            <div style={{fontSize:9,color:'#440000',letterSpacing:2}}>OR</div>
+            <div style={{flex:1,height:1,background:'rgba(255,61,0,0.1)'}}/>
+          </div>
+
+          <button
+            onClick={googleLogin}
+            disabled={loading||phase!=='idle'}
+            style={{
+              width:'100%', background:'rgba(255,255,255,0.03)',
+              border:'1px solid rgba(255,61,0,0.2)',
+              color:'#883322', padding:'11px 0', borderRadius:6,
+              cursor:loading?'not-allowed':'pointer',
+              fontSize:11, fontWeight:700, fontFamily:mono, letterSpacing:2,
+              transition:'all 0.2s',
+            }}
+          >
+            CONTINUE WITH GOOGLE
           </button>
         </div>
 
