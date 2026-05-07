@@ -650,6 +650,12 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
 
   const [darkMode, setDarkMode] = useState(()=>load('rbp_dark', false));
   useEffect(()=>save('rbp_dark', darkMode),[darkMode]);
+  const [isMobile, setIsMobile] = useState(()=>window.innerWidth<768);
+  useEffect(()=>{
+    const fn=()=>setIsMobile(window.innerWidth<768);
+    window.addEventListener('resize',fn,{passive:true});
+    return ()=>window.removeEventListener('resize',fn);
+  },[]);
   const C = {
     bg:      darkMode ? '#0d0f14'              : '#e8e4dd',
     surface: darkMode ? '#13161e'              : '#f0ece5',
@@ -691,6 +697,9 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
   useEffect(()=>save(sChecks,checks),[checks]);
   useEffect(()=>save(sNotifs,dismissed),[dismissed]);
   useEffect(()=>save(sTargets,targets),[targets]);
+  useEffect(()=>{
+    if(isMobile&&!['analytics','tracker','countdown','account'].includes(view)) setView('analytics');
+  },[isMobile]);
 
   // Load cloud data when received (cross-device sync)
   useEffect(()=>{
@@ -758,33 +767,32 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
 
   return (
     <div style={{minHeight:"100vh",background:C.bg,color:C.text,fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif"}}>
-      <nav style={{position:"sticky",top:0,zIndex:50,background:C.nav,backdropFilter:"blur(16px)",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 20px",height:54}}>
+      <nav style={{position:"sticky",top:0,zIndex:50,background:C.nav,backdropFilter:"blur(16px)",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-between",padding:`0 ${isMobile?14:20}px`,height:isMobile?48:54}}>
         <div style={{display:"flex",alignItems:"center",gap:7}}>
           <div style={{width:24,height:24,borderRadius:6,background:C.accent,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'JetBrains Mono',monospace",fontWeight:900,fontSize:10,color:"#fff",flexShrink:0}}>A*</div>
-          <span style={{fontWeight:700,fontSize:14,color:C.text,letterSpacing:0.2}}>Battle Plan</span>
+          {!isMobile&&<span style={{fontWeight:700,fontSize:14,color:C.text,letterSpacing:0.2}}>Battle Plan</span>}
         </div>
         <div style={{display:"flex",gap:1,alignItems:"center"}}>
-          {navItems.map(n=>(
+          {!isMobile&&navItems.map(n=>(
             <button key={n.id} onClick={()=>setView(n.id)} style={{background:view===n.id?C.card2:"transparent",border:`1px solid ${view===n.id?C.border:"transparent"}`,color:view===n.id?C.text:C.muted,padding:"7px 12px",borderRadius:6,cursor:"pointer",fontSize:13,fontWeight:view===n.id?500:400,position:"relative",transition:"color 0.15s"}}>
               {n.l}
               {n.id==="tracker"&&notifications.length>0&&<span style={{position:"absolute",top:4,right:4,width:6,height:6,borderRadius:"50%",background:"#ef4444"}}/>}
             </button>
           ))}
-          <button
-            onClick={()=>setDarkMode(d=>!d)}
-            style={{marginLeft:4,padding:"5px 10px",background:darkMode?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.05)",border:`1px solid ${C.border}`,borderRadius:6,cursor:"pointer",fontSize:12,color:C.muted,lineHeight:1,display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}
-          >{darkMode?'☀ Light':'🌙 Dark'}</button>
+          <button onClick={()=>setDarkMode(d=>!d)} style={{marginLeft:4,padding:"5px 8px",background:darkMode?"rgba(255,255,255,0.07)":"rgba(0,0,0,0.05)",border:`1px solid ${C.border}`,borderRadius:6,cursor:"pointer",fontSize:12,color:C.muted,lineHeight:1,display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
+            {darkMode?'☀':'🌙'}{!isMobile&&<span style={{marginLeft:2}}>{darkMode?'Light':'Dark'}</span>}
+          </button>
           {user?(
-            <button onClick={()=>setView("account")} style={{marginLeft:4,paddingLeft:10,borderLeft:`1px solid ${C.border}`,background:"transparent",border:"none",color:view==="account"?C.accent:C.muted,fontSize:12,cursor:"pointer",maxWidth:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-              {userProfile?.display_name||user.email}
+            <button onClick={()=>setView("account")} style={{marginLeft:4,padding:"5px 10px",background:view==="account"?C.card2:"transparent",border:`1px solid ${view==="account"?C.border:"transparent"}`,borderRadius:6,color:view==="account"?C.accent:C.muted,fontSize:12,cursor:"pointer",maxWidth:isMobile?80:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontFamily:"inherit"}}>
+              {isMobile?(userProfile?.display_name||user.email?.split('@')[0]||'Me'):(userProfile?.display_name||user.email)}
             </button>
           ):(
-            <span style={{fontSize:12,color:C.subtle,marginLeft:10}}>Local mode</span>
+            !isMobile&&<span style={{fontSize:12,color:C.subtle,marginLeft:10}}>Local mode</span>
           )}
         </div>
       </nav>
       {showTos&&<TermsOfService onClose={()=>setShowTos(false)}/>}
-      <div style={{maxWidth:1100,margin:"0 auto",padding:"24px 20px 100px",position:"relative",zIndex:1}}>
+      <div style={{maxWidth:1100,margin:"0 auto",padding:isMobile?"16px 14px 80px":"24px 20px 100px",position:"relative",zIndex:1}}>
         {notifications.length>0&&(view==="tracker"||view==="analytics")&&(
           <div style={{marginBottom:16}}>
             {notifications.slice(0,3).map(n=>(
@@ -1238,10 +1246,22 @@ function RevisionPlan({ profile: profileName, onProfileChange, user, userProfile
           </div>
         )}
       </div>
-      <div style={{textAlign:"center",padding:"24px 0 8px",borderTop:`1px solid ${C.border}`,color:C.muted,fontSize:11}}>
+      {!isMobile&&<div style={{textAlign:"center",padding:"24px 0 8px",borderTop:`1px solid ${C.border}`,color:C.muted,fontSize:11}}>
         A* Battle Plan &nbsp;·&nbsp;
         <span style={{cursor:"pointer",textDecoration:"underline"}} onClick={()=>setShowTos(true)}>Terms of Service &amp; Privacy Policy</span>
-      </div>
+      </div>}
+      {isMobile&&(
+        <nav style={{position:"fixed",bottom:0,left:0,right:0,zIndex:100,background:C.nav,backdropFilter:"blur(20px)",borderTop:`1px solid ${C.border}`,display:"grid",gridTemplateColumns:"1fr 1fr 1fr",height:56}}>
+          {[{id:"analytics",l:"Analytics"},{id:"tracker",l:"Tracker"},{id:"countdown",l:"Exams"}].map(n=>(
+            <button key={n.id} onClick={()=>setView(n.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,background:"transparent",border:"none",color:view===n.id?C.accent:C.muted,cursor:"pointer",fontSize:10,fontFamily:"inherit",fontWeight:view===n.id?700:400,padding:"8px 0",position:"relative",transition:"color 0.15s"}}>
+              {view===n.id&&<div style={{position:"absolute",top:0,left:"25%",right:"25%",height:2,borderRadius:1,background:C.accent}}/>}
+              <div style={{fontSize:18,lineHeight:1}}>{n.id==="analytics"?"📊":n.id==="tracker"?"📝":"📅"}</div>
+              {n.l}
+              {n.id==="tracker"&&notifications.length>0&&<div style={{position:"absolute",top:8,right:"28%",width:5,height:5,borderRadius:"50%",background:"#ef4444"}}/>}
+            </button>
+          ))}
+        </nav>
+      )}
     </div>
   );
 }
@@ -1261,26 +1281,49 @@ function App() {
     const applySession = async (event, session) => {
       if(event==='TOKEN_REFRESHED'||event==='USER_UPDATED') return;
       clearTimeout(timeout);
-      if(!session?.user){ setUser(null); setUserProfile(null); return; }
+      if(!session?.user){ setUser(null); setUserProfile(null); setSubjectSelection(null); return; }
       const uid = session.user.id;
-      let {data:prof} = await supabase.from('user_profiles').select('*').eq('id',uid).single();
-      if(!prof){
-        await supabase.from('user_profiles').upsert(
-          {id:uid, email:session.user.email, tos_agreed_at:new Date().toISOString()},
-          {onConflict:'id'}
-        );
-        prof = {id:uid, email:session.user.email};
-      }
-      const {data:ud} = await supabase.from('user_data').select('*').eq('user_id',uid).maybeSingle();
-      let parsed = [];
-      if (prof?.subjects) {
-        try { const p = JSON.parse(prof.subjects); if (Array.isArray(p)) parsed = p; } catch(_) {}
-      }
-      try { localStorage.removeItem('rbp_subjects'); } catch(_) {}
+      // Resolve loading screen immediately — don't wait for DB queries
       setUser(session.user);
-      setUserProfile(prof);
-      setSubjectSelection(parsed);
-      if(ud) setCloudData(ud);
+      // Restore subjects from cache so app renders instantly on reload
+      let restoredFromCache = false;
+      try {
+        const cached = localStorage.getItem('rbp_subjects_cache');
+        if(cached){ const p=JSON.parse(cached); if(Array.isArray(p)&&p.length>0){ setSubjectSelection(p); restoredFromCache=true; } }
+      } catch(_){}
+      try {
+        // Parallelize both queries
+        const [profRes, udRes] = await Promise.all([
+          supabase.from('user_profiles').select('*').eq('id',uid).single(),
+          supabase.from('user_data').select('*').eq('user_id',uid).maybeSingle(),
+        ]);
+        let prof = profRes.data;
+        // Profile always exists via trigger; update tos_agreed_at if missing
+        if(!prof){
+          await supabase.from('user_profiles').update(
+            {email:session.user.email, tos_agreed_at:new Date().toISOString()}
+          ).eq('id',uid);
+          prof = {id:uid, email:session.user.email};
+        } else if(!prof.tos_agreed_at){
+          supabase.from('user_profiles').update({tos_agreed_at:new Date().toISOString()}).eq('id',uid);
+        }
+        let parsed = [];
+        if(prof?.subjects){
+          try{ const p=JSON.parse(prof.subjects); if(Array.isArray(p)) parsed=p; }catch(_){}
+        }
+        try{ localStorage.removeItem('rbp_subjects'); }catch(_){}
+        if(parsed.length>0){
+          try{ localStorage.setItem('rbp_subjects_cache', JSON.stringify(parsed)); }catch(_){}
+          setSubjectSelection(parsed);
+        } else if(!restoredFromCache){
+          setSubjectSelection([]); // New user → SubjectPicker
+        }
+        setUserProfile(prof);
+        if(udRes.data) setCloudData(udRes.data);
+      } catch(_){
+        // DB error — keep cached subjects if available, else show SubjectPicker
+        if(!restoredFromCache) setSubjectSelection([]);
+      }
     };
     const {data:{subscription}} = supabase.auth.onAuthStateChange(applySession);
     return ()=>{ subscription.unsubscribe(); clearTimeout(timeout); };
@@ -1288,21 +1331,23 @@ function App() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    try{ localStorage.removeItem('rbp_subjects_cache'); }catch(_){}
     setUser(null); setUserProfile(null); setSubjectSelection(null); setCloudData(null);
   };
 
   const handleSubjectsDone = (sel) => setSubjectSelection(sel);
 
-  if (user === undefined) {
-    const _dark = (() => { try { return JSON.parse(localStorage.getItem('rbp_dark')||'false'); } catch { return false; } })();
-    return (
-      <div style={{minHeight:"100vh",background:_dark?"#0d0f14":"#e8e4dd",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",color:_dark?"#9a9490":"#7a7268",fontSize:13}}>
-        Loading…
-      </div>
-    );
-  }
+  const _dark = (() => { try { return JSON.parse(localStorage.getItem('rbp_dark')||'false'); } catch { return false; } })();
+  const loadingScreen = (
+    <div style={{minHeight:"100vh",background:_dark?"#0d0f14":"#e8e4dd",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",color:_dark?"#9a9490":"#7a7268",fontSize:13}}>
+      Loading…
+    </div>
+  );
 
+  if (user === undefined) return loadingScreen;
   if (user === null && isSupabaseConfigured()) return <AuthGate onAuth={()=>{}} />;
+  // Authenticated but profile not yet loaded from DB (and no local cache)
+  if (user !== null && subjectSelection === null) return loadingScreen;
 
   if (Array.isArray(subjectSelection) && subjectSelection.length === 0) {
     return <SubjectPicker user={user} onComplete={handleSubjectsDone}/>;

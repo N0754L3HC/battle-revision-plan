@@ -252,13 +252,13 @@ export default function SubjectPicker({ user, onComplete }) {
     if (step < 3) { setStep(step + 1); return; }
     setSaving(true);
     const subjectsJson = JSON.stringify(selection);
-    // Always save to localStorage as backup
-    try { localStorage.setItem('rbp_subjects', subjectsJson); } catch(_) {}
+    // Cache locally for instant restore on reload
+    try { localStorage.setItem('rbp_subjects_cache', subjectsJson); } catch(_) {}
     if (user) {
-      try {
-        await supabase.from('user_profiles')
-          .upsert({ id: user.id, subjects: subjectsJson }, { onConflict: 'id' });
-      } catch(_) {}
+      // Profile always exists via DB trigger — use UPDATE not upsert
+      await supabase.from('user_profiles')
+        .update({ subjects: subjectsJson })
+        .eq('id', user.id);
     }
     setSaving(false);
     onComplete(selection);
