@@ -1129,6 +1129,11 @@ export default function App() {
 
     async function boot(session) {
       if (!session?.user) { if (alive) { setUser(null); setPhase('anon'); } return; }
+      if (sessionStorage.getItem('rbp_goto_admin')) {
+        sessionStorage.removeItem('rbp_goto_admin');
+        window.location.href = '/admin';
+        return;
+      }
       const u=session.user; const uid=u.id;
       if (alive) setUser(u);
       try {

@@ -184,10 +184,10 @@ function LoginScreen({ onAuth }) {
 
   const googleLogin = async () => {
     setLoading(true); setError('');
-    const adminUrl = `${window.location.origin}/admin`;
+    sessionStorage.setItem('rbp_goto_admin', '1');
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: adminUrl },
+      options: { redirectTo: window.location.origin },
     });
   };
 
