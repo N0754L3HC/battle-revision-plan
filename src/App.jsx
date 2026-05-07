@@ -737,6 +737,7 @@ function Exams({subjects,C,font}) {
     .sort((a,b)=>new Date(a.date)-new Date(b.date));
   const upcoming=allExams.filter(e=>daysUntil(e.date)>=0);
   const past=allExams.filter(e=>daysUntil(e.date)<0);
+  const next=upcoming[0]??null;
 
   if (!allExams.length) return (
     <div style={{padding:'40px 0',textAlign:'center',color:C.subtle,fontSize:13}}>
@@ -744,61 +745,72 @@ function Exams({subjects,C,font}) {
     </div>
   );
 
-  const ExamCard=({e})=>{
+  const ExamRow=({e})=>{
     const days=daysUntil(e.date);
     const done=days<0;
     const urgent=days>=0&&days<=14;
     return (
-      <div style={{background:C.card,border:`1px solid ${urgent?e.color+'40':C.border}`,borderRadius:8,
-        padding:'14px 16px',display:'flex',gap:14,alignItems:'center'}}>
-        <div style={{textAlign:'center',minWidth:52,flexShrink:0}}>
-          {done?(
-            <div style={{fontSize:18,color:C.subtle}}>✓</div>
-          ):(
-            <>
-              <div style={{fontSize:22,fontWeight:800,color:urgent?e.color:C.text,lineHeight:1}}>
-                {days===0?'!':days}
-              </div>
-              <div style={{fontSize:9,color:C.muted,marginTop:2}}>{days===0?'TODAY':'days'}</div>
-            </>
-          )}
-        </div>
-        <div style={{width:1,height:40,background:C.border,flexShrink:0}}/>
+      <div style={{background:C.surface,border:`1px solid ${urgent?e.color+'22':done?'rgba(0,0,0,0.02)':C.border}`,
+        borderRadius:8,padding:'9px 12px',display:'flex',alignItems:'center',gap:10,
+        opacity:done?0.3:1}}>
+        <div style={{width:4,height:30,borderRadius:2,background:done?C.subtle:e.color,flexShrink:0}}/>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:13,fontWeight:600,color:done?C.muted:C.text,
-            textDecoration:done?'line-through':'none',marginBottom:3,
-            whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{e.paper}</div>
-          <div style={{fontSize:11,color:C.muted}}>
-            {e.subjectName} · {e.code} · {new Date(e.date).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}
+          <div style={{fontSize:14,fontWeight:600,color:done?C.muted:C.text,
+            textDecoration:done?'line-through':'none',
+            whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+            {e.subjectName}: {e.paper.split(':')[1]?.trim()||e.paper}
           </div>
-          <div style={{fontSize:11,color:C.subtle,marginTop:2}}>
-            {e.time} · {e.duration} · Max {e.maxMark} marks
+          <div style={{fontSize:12,color:C.muted,marginTop:2}}>
+            {e.code} · {e.time} · {e.duration}
           </div>
         </div>
-        <div style={{flexShrink:0,width:3,height:40,borderRadius:2,background:done?C.subtle:e.color}}/>
+        <div style={{textAlign:'right',flexShrink:0}}>
+          <div style={{fontSize:12,color:C.muted}}>
+            {new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}
+          </div>
+          <div style={{fontSize:14,fontWeight:700,color:days<=7?'#ef4444':days<=30?'#f97316':e.color}}>
+            {days>0?`${days}d`:days===0?'Today':'Done'}
+          </div>
+        </div>
       </div>
     );
   };
 
   return (
-    <div style={{display:'flex',flexDirection:'column',gap:20}}>
-      {upcoming.length>0&&(
-        <div>
-          <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.6,marginBottom:10}}>
-            Upcoming — {upcoming.length} exam{upcoming.length!==1?'s':''}
+    <div>
+      {/* Next exam hero */}
+      {next&&(
+        <div style={{textAlign:'center',marginBottom:28,padding:'28px 0'}}>
+          <div style={{fontSize:11,fontWeight:600,color:C.muted,letterSpacing:0.5,textTransform:'uppercase',marginBottom:12}}>
+            {daysUntil(next.date)===0?'Today':'First exam in'}
           </div>
-          <div style={{display:'flex',flexDirection:'column',gap:8}}>
-            {upcoming.map((e,i)=><ExamCard key={i} e={e}/>)}
+          <div style={{fontSize:68,fontWeight:700,color:C.text,lineHeight:1}}>
+            {daysUntil(next.date)===0?'!':daysUntil(next.date)}
+          </div>
+          {daysUntil(next.date)>0&&(
+            <div style={{fontSize:13,color:C.muted,marginTop:4}}>days</div>
+          )}
+          <div style={{fontSize:14,color:C.muted,marginTop:12}}>
+            {next.subjectName} · {next.paper.split(':')[1]?.trim()||next.paper}
           </div>
         </div>
       )}
-      {past.length>0&&(
-        <div>
-          <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.6,marginBottom:10}}>
-            Completed
+
+      {/* All exams list */}
+      {upcoming.length>0&&(
+        <div style={{marginBottom:20}}>
+          <div style={{fontSize:12,fontWeight:600,color:C.muted,marginBottom:10}}>All exams</div>
+          <div style={{display:'flex',flexDirection:'column',gap:4}}>
+            {allExams.map((e,i)=><ExamRow key={i} e={e}/>)}
           </div>
-          <div style={{display:'flex',flexDirection:'column',gap:8}}>
-            {past.map((e,i)=><ExamCard key={i} e={e}/>)}
+        </div>
+      )}
+
+      {upcoming.length===0&&past.length>0&&(
+        <div>
+          <div style={{fontSize:12,fontWeight:600,color:C.muted,marginBottom:10}}>Completed</div>
+          <div style={{display:'flex',flexDirection:'column',gap:4}}>
+            {past.map((e,i)=><ExamRow key={i} e={e}/>)}
           </div>
         </div>
       )}
