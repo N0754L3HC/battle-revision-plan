@@ -68,6 +68,90 @@ function Cursor() {
   return <span style={{color:'#FF3D00',opacity:on?1:0}}>█</span>;
 }
 
+// ── Gate screen (passphrase before Supabase login) ─────────────────────────
+
+const GATE_PASS = import.meta.env.VITE_ADMIN_PASSPHRASE || '';
+
+function GateScreen({ onPass }) {
+  const [val, setVal]     = useState('');
+  const [phase, setPhase] = useState('idle'); // idle | denied
+  const inputRef = useRef(null);
+
+  useEffect(()=>{ inputRef.current?.focus(); },[]);
+
+  const attempt = () => {
+    if (val.trim() === GATE_PASS) { onPass(); return; }
+    setPhase('denied');
+    setVal('');
+    setTimeout(()=>setPhase('idle'), 2000);
+  };
+
+  return (
+    <div style={{
+      minHeight:'100vh', background:'#000', display:'flex', alignItems:'center',
+      justifyContent:'center', fontFamily:mono, padding:16, position:'relative', overflow:'hidden',
+    }}>
+      <div style={{position:'fixed',top:'30%',left:'50%',transform:'translate(-50%,-50%)',
+        width:600,height:300,borderRadius:'50%',
+        background:'radial-gradient(ellipse,rgba(255,30,0,0.08) 0%,transparent 70%)',
+        pointerEvents:'none'}}/>
+
+      <div style={{width:'100%',maxWidth:360,position:'relative',zIndex:1}}>
+        <div style={{textAlign:'center',marginBottom:40}}>
+          <div style={{fontSize:9,letterSpacing:6,color:'#3a0000',marginBottom:12}}>
+            ████████████████████████████████████████████████████
+          </div>
+          <div style={{fontSize:28,fontWeight:900,color:'#FF3D00',letterSpacing:8,marginBottom:4}}>
+            GOD MODE
+          </div>
+          <div style={{fontSize:9,letterSpacing:3,color:'#4a0000',marginTop:2}}>
+            A* BATTLE PLAN // RESTRICTED SYSTEM ACCESS
+          </div>
+          <div style={{fontSize:9,letterSpacing:6,color:'#3a0000',marginTop:12}}>
+            ████████████████████████████████████████████████████
+          </div>
+        </div>
+
+        <div style={{fontSize:11,color:'#550000',marginBottom:20,letterSpacing:1}}>
+          {phase==='denied' ? '// ACCESS DENIED — WRONG PASSPHRASE' : <>// ENTER PASSPHRASE <Cursor/></>}
+        </div>
+
+        {phase==='denied' && (
+          <div style={{background:'rgba(255,0,0,0.06)',border:'1px solid rgba(255,0,0,0.2)',
+            borderRadius:6,padding:'12px 14px',marginBottom:16,fontSize:12,
+            color:'#FF3D00',letterSpacing:1}}>
+            ⛔ &nbsp;INVALID PASSPHRASE
+          </div>
+        )}
+
+        <div style={{opacity:phase==='denied'?0.3:1,transition:'opacity 0.3s'}}>
+          <div style={{fontSize:10,color:'#440000',letterSpacing:2,marginBottom:5}}>PASSPHRASE</div>
+          <input
+            ref={inputRef}
+            style={{...inputStyle,marginBottom:20,borderColor:'rgba(255,61,0,0.2)',
+              background:'rgba(255,61,0,0.04)'}}
+            type="password"
+            value={val}
+            onChange={e=>setVal(e.target.value)}
+            disabled={phase!=='idle'}
+            onKeyDown={e=>e.key==='Enter'&&attempt()}
+            autoComplete="off"
+            placeholder="················"
+          />
+          <button
+            onClick={attempt}
+            disabled={phase!=='idle'}
+            style={{width:'100%',padding:'12px',background:'rgba(255,61,0,0.1)',
+              border:'1px solid rgba(255,61,0,0.3)',borderRadius:6,color:'#FF3D00',
+              fontSize:12,fontWeight:700,fontFamily:mono,cursor:'pointer',letterSpacing:2}}>
+            AUTHENTICATE →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Login screen ───────────────────────────────────────────────────────────
 
 function LoginScreen({ onAuth }) {
@@ -784,13 +868,13 @@ function Dashboard({ adminUser, adminProfile, onLogout }) {
 // ── Root ───────────────────────────────────────────────────────────────────
 
 export default function AdminApp() {
-  const [phase, setPhase] = useState('init'); // init | login | authed | denied
+  const [phase, setPhase] = useState('init'); // init | gate | login | authed
   const [adminUser, setAdminUser] = useState(null);
   const [adminProfile, setAdminProfile] = useState(null);
 
   useEffect(()=>{
     supabase.auth.getSession().then(async({data:{session}})=>{
-      if (!session?.user) { setPhase('login'); return; }
+      if (!session?.user) { setPhase('gate'); return; }
       const { data: prof } = await supabase.from('user_profiles').select('*').eq('id',session.user.id).single();
       if (prof?.is_admin) {
         setAdminUser(session.user);
@@ -798,7 +882,7 @@ export default function AdminApp() {
         setPhase('authed');
       } else {
         await supabase.auth.signOut();
-        setPhase('login');
+        setPhase('gate');
       }
     });
   },[]);
@@ -813,7 +897,7 @@ export default function AdminApp() {
     await supabase.auth.signOut();
     setAdminUser(null);
     setAdminProfile(null);
-    setPhase('login');
+    setPhase('gate');
   };
 
   if (phase==='init') return (
@@ -825,6 +909,7 @@ export default function AdminApp() {
     </div>
   );
 
+  if (phase==='gate')  return <GateScreen  onPass={()=>setPhase('login')}/>;
   if (phase==='login') return <LoginScreen onAuth={handleAuth}/>;
 
   return (
