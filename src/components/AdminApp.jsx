@@ -868,13 +868,13 @@ function Dashboard({ adminUser, adminProfile, onLogout }) {
 // ── Root ───────────────────────────────────────────────────────────────────
 
 export default function AdminApp() {
-  const [phase, setPhase] = useState('init'); // init | gate | login | authed
+  const [phase, setPhase] = useState('init'); // init | login | authed
   const [adminUser, setAdminUser] = useState(null);
   const [adminProfile, setAdminProfile] = useState(null);
 
   useEffect(()=>{
     supabase.auth.getSession().then(async({data:{session}})=>{
-      if (!session?.user) { setPhase('gate'); return; }
+      if (!session?.user) { setPhase('login'); return; }
       const { data: prof } = await supabase.from('user_profiles').select('*').eq('id',session.user.id).single();
       if (prof?.is_admin) {
         setAdminUser(session.user);
@@ -882,7 +882,7 @@ export default function AdminApp() {
         setPhase('authed');
       } else {
         await supabase.auth.signOut();
-        setPhase('gate');
+        setPhase('login');
       }
     });
   },[]);
@@ -897,7 +897,7 @@ export default function AdminApp() {
     await supabase.auth.signOut();
     setAdminUser(null);
     setAdminProfile(null);
-    setPhase('gate');
+    setPhase('login');
   };
 
   if (phase==='init') return (
@@ -909,7 +909,6 @@ export default function AdminApp() {
     </div>
   );
 
-  if (phase==='gate')  return <GateScreen  onPass={()=>setPhase('login')}/>;
   if (phase==='login') return <LoginScreen onAuth={handleAuth}/>;
 
   return (
