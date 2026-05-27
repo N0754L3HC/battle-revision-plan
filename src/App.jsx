@@ -1375,6 +1375,40 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
     if (isMobile&&!['analytics','tracker','exams'].includes(view)) setView('analytics');
   },[isMobile]);
 
+  // Supabase sync — load on mount, push on change
+  const syncRef   = useRef(null);
+  const loadedRef = useRef(false);
+  useEffect(()=>{
+    if (!user?.id||!isSupabaseConfigured()) { loadedRef.current=true; return; }
+    supabase.from('user_data').select('scores,errors').eq('user_id',user.id).eq('profile','me').single()
+      .then(({data})=>{
+        if (data) {
+          setScores(prev=>{
+            const ids=new Set(prev.map(s=>s.id));
+            const merged=[...prev,...(data.scores||[]).filter(s=>!ids.has(s.id))];
+            ls.set(`rbp_scores_${uid}`,merged); return merged;
+          });
+          setErrors(prev=>{
+            const ids=new Set(prev.map(e=>e.id));
+            const merged=[...prev,...(data.errors||[]).filter(e=>!ids.has(e.id))];
+            ls.set(`rbp_errors_${uid}`,merged); return merged;
+          });
+        }
+        loadedRef.current=true;
+      });
+  },[user?.id]);
+  useEffect(()=>{
+    if (!user?.id||!isSupabaseConfigured()||!loadedRef.current) return;
+    clearTimeout(syncRef.current);
+    syncRef.current=setTimeout(()=>{
+      supabase.from('user_data').upsert(
+        {user_id:user.id,profile:'me',scores,errors,updated_at:new Date().toISOString()},
+        {onConflict:'user_id,profile'}
+      );
+    },2000);
+    return ()=>clearTimeout(syncRef.current);
+  },[scores,errors]);
+
   const DESKTOP_NAV=[
     {id:'analytics',label:'Analytics'},
     {id:'tracker',label:'Tracker'},
