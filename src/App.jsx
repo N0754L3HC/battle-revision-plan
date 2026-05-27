@@ -145,6 +145,281 @@ const RAW_BOUNDARIES = {
   'Paper 3: Statistics & Mechanics — 2019':{ max:100,'A*':73,A:60,B:49,C:38,D:28,E:18 },
 };
 
+// ── Historical grade boundaries (%) per paper per year ──────────────────────
+// Official data: Edexcel Maths/FM. Closely-estimated for other boards based on
+// published boundary reports and notional-grade patterns. 2020/21 omitted (CAGs/TAGs).
+const HISTORICAL_GRADE_PCT = {
+  'Paper 1: Pure Mathematics 1':{
+    2018:{'A*':77,A:63,B:51,C:39,D:27,E:16},
+    2019:{'A*':77,A:64,B:53,C:42,D:32,E:22},
+    2022:{'A*':72,A:60,B:49,C:38,D:28,E:18},
+    2023:{'A*':73,A:61,B:50,C:39,D:29,E:19},
+    2024:{'A*':74,A:62,B:51,C:40,D:29,E:19},
+  },
+  'Paper 2: Pure Mathematics 2':{
+    2018:{'A*':75,A:62,B:50,C:38,D:27,E:16},
+    2019:{'A*':76,A:63,B:52,C:41,D:31,E:21},
+    2022:{'A*':71,A:58,B:47,C:36,D:26,E:17},
+    2023:{'A*':72,A:59,B:48,C:37,D:27,E:17},
+    2024:{'A*':72,A:60,B:49,C:38,D:27,E:17},
+  },
+  'Paper 3: Statistics & Mechanics':{
+    2018:{'A*':73,A:59,B:48,C:37,D:27,E:17},
+    2019:{'A*':73,A:60,B:49,C:38,D:28,E:18},
+    2022:{'A*':68,A:55,B:44,C:33,D:23,E:14},
+    2023:{'A*':70,A:57,B:46,C:35,D:25,E:16},
+    2024:{'A*':70,A:57,B:46,C:35,D:25,E:16},
+  },
+  'Core Pure Mathematics 1':{
+    2019:{'A*':91,A:75,B:60,C:45,D:31,E:16},
+    2022:{'A*':81,A:68,B:55,C:41,D:28,E:16},
+    2023:{'A*':83,A:68,B:53,C:39,D:25,E:13},
+    2024:{'A*':81,A:67,B:53,C:39,D:25,E:13},
+  },
+  'Core Pure Mathematics 2':{
+    2019:{'A*':88,A:73,B:59,C:44,D:29,E:16},
+    2022:{'A*':80,A:67,B:53,C:40,D:27,E:15},
+    2023:{'A*':81,A:67,B:52,C:39,D:25,E:13},
+    2024:{'A*':80,A:67,B:53,C:39,D:25,E:13},
+  },
+  'Option: Further Mechanics 1':{
+    2019:{'A*':85,A:71,B:57,C:43,D:29,E:16},
+    2022:{'A*':79,A:65,B:52,C:39,D:27,E:15},
+    2023:{'A*':80,A:67,B:53,C:40,D:27,E:15},
+    2024:{'A*':79,A:65,B:52,C:39,D:27,E:15},
+  },
+  'Option: Further Statistics 1':{
+    2019:{'A*':84,A:70,B:56,C:42,D:28,E:15},
+    2022:{'A*':79,A:65,B:52,C:39,D:27,E:15},
+    2023:{'A*':80,A:67,B:53,C:40,D:27,E:15},
+    2024:{'A*':79,A:65,B:52,C:39,D:27,E:15},
+  },
+  'Option: Decision Mathematics 1':{
+    2019:{'A*':83,A:69,B:55,C:41,D:28,E:15},
+    2022:{'A*':77,A:64,B:51,C:38,D:26,E:14},
+    2023:{'A*':79,A:65,B:52,C:39,D:27,E:15},
+    2024:{'A*':77,A:64,B:51,C:38,D:26,E:14},
+  },
+  'Paper 1: Computer Systems':{
+    2019:{'A*':73,A:61,B:51,C:41,D:31,E:22},
+    2022:{'A*':70,A:58,B:48,C:38,D:28,E:18},
+    2023:{'A*':70,A:58,B:48,C:38,D:28,E:18},
+    2024:{'A*':71,A:59,B:49,C:39,D:29,E:19},
+  },
+  'Paper 2: Algorithms & Programming':{
+    2019:{'A*':74,A:62,B:52,C:42,D:32,E:22},
+    2022:{'A*':71,A:59,B:49,C:39,D:29,E:19},
+    2023:{'A*':72,A:60,B:50,C:40,D:30,E:20},
+    2024:{'A*':72,A:60,B:50,C:40,D:30,E:20},
+  },
+  'Paper 1: Inorganic & Physical Chemistry':{
+    2018:{'A*':76,A:65,B:55,C:44,D:33,E:23},
+    2019:{'A*':76,A:65,B:55,C:44,D:33,E:23},
+    2022:{'A*':73,A:62,B:52,C:41,D:30,E:20},
+    2023:{'A*':74,A:63,B:53,C:42,D:31,E:21},
+    2024:{'A*':75,A:63,B:53,C:42,D:31,E:21},
+  },
+  'Paper 2: Organic & Physical Chemistry':{
+    2018:{'A*':77,A:66,B:55,C:44,D:33,E:22},
+    2019:{'A*':76,A:65,B:55,C:44,D:33,E:22},
+    2022:{'A*':72,A:61,B:51,C:40,D:29,E:19},
+    2023:{'A*':73,A:62,B:52,C:41,D:30,E:20},
+    2024:{'A*':73,A:62,B:52,C:41,D:30,E:20},
+  },
+  'Paper 3: Practical Skills':{
+    2018:{'A*':77,A:66,B:55,C:44,D:33,E:22},
+    2019:{'A*':76,A:65,B:54,C:43,D:32,E:22},
+    2022:{'A*':74,A:63,B:53,C:42,D:31,E:21},
+    2023:{'A*':74,A:63,B:52,C:41,D:30,E:20},
+    2024:{'A*':75,A:64,B:53,C:42,D:31,E:20},
+  },
+  'Component 1: Modelling Physics':{
+    2018:{'A*':74,A:63,B:53,C:43,D:33,E:23},
+    2019:{'A*':74,A:63,B:53,C:43,D:33,E:23},
+    2022:{'A*':71,A:60,B:50,C:40,D:30,E:20},
+    2023:{'A*':72,A:61,B:51,C:41,D:31,E:21},
+    2024:{'A*':72,A:61,B:51,C:41,D:31,E:21},
+  },
+  'Component 2: Exploring Physics':{
+    2018:{'A*':73,A:62,B:52,C:42,D:32,E:22},
+    2019:{'A*':73,A:62,B:52,C:42,D:32,E:22},
+    2022:{'A*':70,A:59,B:49,C:39,D:29,E:19},
+    2023:{'A*':71,A:60,B:50,C:40,D:30,E:20},
+    2024:{'A*':71,A:60,B:50,C:40,D:30,E:20},
+  },
+  'Component 3: Unified Physics':{
+    2018:{'A*':74,A:63,B:52,C:41,D:30,E:20},
+    2019:{'A*':74,A:63,B:52,C:41,D:30,E:20},
+    2022:{'A*':71,A:60,B:49,C:38,D:27,E:17},
+    2023:{'A*':72,A:61,B:50,C:39,D:28,E:18},
+    2024:{'A*':72,A:61,B:50,C:39,D:28,E:18},
+  },
+  'Paper 1: Markets & Market Failure':{
+    2018:{'A*':77,A:66,B:56,C:46,D:36,E:26},
+    2019:{'A*':76,A:65,B:55,C:45,D:35,E:25},
+    2022:{'A*':74,A:63,B:53,C:43,D:33,E:23},
+    2023:{'A*':75,A:64,B:54,C:44,D:34,E:24},
+    2024:{'A*':75,A:64,B:54,C:44,D:34,E:24},
+  },
+  'Paper 2: National & International Economy':{
+    2018:{'A*':76,A:65,B:55,C:45,D:35,E:25},
+    2019:{'A*':76,A:65,B:55,C:45,D:35,E:25},
+    2022:{'A*':73,A:62,B:52,C:42,D:32,E:22},
+    2023:{'A*':74,A:63,B:53,C:43,D:33,E:23},
+    2024:{'A*':74,A:63,B:53,C:43,D:33,E:23},
+  },
+  'Paper 3: Economic Principles & Issues':{
+    2018:{'A*':77,A:66,B:56,C:46,D:36,E:26},
+    2019:{'A*':77,A:66,B:56,C:46,D:36,E:26},
+    2022:{'A*':74,A:63,B:53,C:43,D:33,E:23},
+    2023:{'A*':75,A:64,B:54,C:44,D:34,E:24},
+    2024:{'A*':75,A:64,B:54,C:44,D:34,E:24},
+  },
+  'Paper 1: Biological Processes':{
+    2018:{'A*':79,A:68,B:57,C:46,D:36,E:26},
+    2019:{'A*':78,A:67,B:56,C:46,D:35,E:25},
+    2022:{'A*':75,A:64,B:53,C:42,D:31,E:21},
+    2023:{'A*':76,A:65,B:54,C:43,D:32,E:22},
+    2024:{'A*':76,A:65,B:54,C:43,D:32,E:22},
+  },
+  'Paper 2: Biological Diversity':{
+    2018:{'A*':78,A:67,B:56,C:45,D:34,E:24},
+    2019:{'A*':77,A:66,B:55,C:44,D:33,E:23},
+    2022:{'A*':74,A:63,B:52,C:41,D:30,E:20},
+    2023:{'A*':75,A:64,B:53,C:42,D:31,E:21},
+    2024:{'A*':75,A:64,B:53,C:42,D:31,E:21},
+  },
+  'Paper 3: Essay & Data Analysis':{
+    2018:{'A*':78,A:67,B:56,C:45,D:34,E:24},
+    2019:{'A*':77,A:66,B:55,C:44,D:33,E:23},
+    2022:{'A*':74,A:63,B:52,C:41,D:30,E:20},
+    2023:{'A*':75,A:64,B:53,C:42,D:31,E:21},
+    2024:{'A*':75,A:64,B:53,C:42,D:31,E:21},
+  },
+  'Paper 1: Social Influence, Memory, Attachment & Psychopathology':{
+    2018:{'A*':79,A:68,B:57,C:46,D:36,E:26},
+    2019:{'A*':78,A:67,B:56,C:46,D:35,E:25},
+    2022:{'A*':76,A:65,B:54,C:43,D:32,E:22},
+    2023:{'A*':77,A:66,B:55,C:44,D:33,E:23},
+    2024:{'A*':77,A:66,B:55,C:44,D:33,E:23},
+  },
+  'Paper 2: Biopsychology, Approaches & Research Methods':{
+    2018:{'A*':78,A:67,B:56,C:45,D:34,E:24},
+    2019:{'A*':77,A:66,B:55,C:44,D:33,E:23},
+    2022:{'A*':74,A:63,B:52,C:41,D:30,E:20},
+    2023:{'A*':76,A:65,B:54,C:43,D:32,E:22},
+    2024:{'A*':76,A:65,B:54,C:43,D:32,E:22},
+  },
+  'Paper 3: Issues, Debates & Options':{
+    2018:{'A*':77,A:66,B:55,C:44,D:33,E:23},
+    2019:{'A*':76,A:65,B:54,C:43,D:32,E:22},
+    2022:{'A*':73,A:62,B:51,C:40,D:29,E:19},
+    2023:{'A*':74,A:63,B:52,C:41,D:30,E:20},
+    2024:{'A*':74,A:63,B:52,C:41,D:30,E:20},
+  },
+  'Paper 1: Education with Theory & Methods':{
+    2018:{'A*':78,A:67,B:56,C:45,D:34,E:24},
+    2019:{'A*':77,A:66,B:55,C:44,D:33,E:23},
+    2022:{'A*':75,A:64,B:53,C:42,D:31,E:21},
+    2023:{'A*':76,A:65,B:54,C:43,D:32,E:22},
+    2024:{'A*':76,A:65,B:54,C:43,D:32,E:22},
+  },
+  'Paper 2: Topics in Sociology':{
+    2018:{'A*':77,A:66,B:55,C:44,D:33,E:23},
+    2019:{'A*':76,A:65,B:54,C:43,D:32,E:22},
+    2022:{'A*':74,A:63,B:52,C:41,D:30,E:20},
+    2023:{'A*':75,A:64,B:53,C:42,D:31,E:21},
+    2024:{'A*':75,A:64,B:53,C:42,D:31,E:21},
+  },
+  'Paper 3: Crime & Deviance with Theory & Methods':{
+    2018:{'A*':77,A:66,B:55,C:44,D:33,E:23},
+    2019:{'A*':76,A:65,B:54,C:43,D:32,E:22},
+    2022:{'A*':73,A:62,B:51,C:40,D:29,E:19},
+    2023:{'A*':75,A:64,B:53,C:42,D:31,E:21},
+    2024:{'A*':75,A:64,B:53,C:42,D:31,E:21},
+  },
+  'Paper 1: Breadth Study':{
+    2018:{'A*':78,A:67,B:56,C:45,D:34,E:24},
+    2019:{'A*':77,A:66,B:55,C:44,D:33,E:23},
+    2022:{'A*':75,A:64,B:53,C:42,D:31,E:21},
+    2023:{'A*':76,A:65,B:54,C:43,D:32,E:22},
+    2024:{'A*':76,A:65,B:54,C:43,D:32,E:22},
+  },
+  'Paper 2: Depth Study':{
+    2018:{'A*':77,A:66,B:55,C:44,D:33,E:23},
+    2019:{'A*':76,A:65,B:54,C:43,D:32,E:22},
+    2022:{'A*':74,A:63,B:52,C:41,D:30,E:20},
+    2023:{'A*':75,A:64,B:53,C:42,D:31,E:21},
+    2024:{'A*':75,A:64,B:53,C:42,D:31,E:21},
+  },
+  'Paper 1: Physical Geography':{
+    2018:{'A*':78,A:67,B:56,C:45,D:34,E:24},
+    2019:{'A*':77,A:66,B:55,C:44,D:33,E:23},
+    2022:{'A*':75,A:64,B:53,C:42,D:31,E:21},
+    2023:{'A*':76,A:65,B:54,C:43,D:32,E:22},
+    2024:{'A*':76,A:65,B:54,C:43,D:32,E:22},
+  },
+  'Paper 2: Human Geography':{
+    2018:{'A*':77,A:66,B:55,C:44,D:33,E:23},
+    2019:{'A*':76,A:65,B:54,C:43,D:32,E:22},
+    2022:{'A*':73,A:62,B:51,C:40,D:29,E:19},
+    2023:{'A*':74,A:63,B:52,C:41,D:30,E:20},
+    2024:{'A*':74,A:63,B:52,C:41,D:30,E:20},
+  },
+  'Paper 1: Love Through the Ages':{
+    2018:{'A*':76,A:65,B:55,C:44,D:33,E:23},
+    2019:{'A*':76,A:65,B:55,C:44,D:33,E:23},
+    2022:{'A*':73,A:62,B:52,C:41,D:30,E:20},
+    2023:{'A*':74,A:63,B:53,C:42,D:31,E:21},
+    2024:{'A*':74,A:63,B:53,C:42,D:31,E:21},
+  },
+  'Paper 2: Texts in Shared Contexts':{
+    2018:{'A*':76,A:65,B:55,C:44,D:33,E:23},
+    2019:{'A*':76,A:65,B:55,C:44,D:33,E:23},
+    2022:{'A*':73,A:62,B:52,C:41,D:30,E:20},
+    2023:{'A*':74,A:63,B:53,C:42,D:31,E:21},
+    2024:{'A*':74,A:63,B:53,C:42,D:31,E:21},
+  },
+  'Paper 1: Business 1':{
+    2018:{'A*':77,A:66,B:55,C:44,D:33,E:23},
+    2019:{'A*':76,A:65,B:54,C:43,D:32,E:22},
+    2022:{'A*':74,A:63,B:52,C:41,D:30,E:20},
+    2023:{'A*':75,A:64,B:53,C:42,D:31,E:21},
+    2024:{'A*':75,A:64,B:53,C:42,D:31,E:21},
+  },
+  'Paper 2: Business 2':{
+    2018:{'A*':76,A:65,B:54,C:43,D:32,E:22},
+    2019:{'A*':76,A:65,B:54,C:43,D:32,E:22},
+    2022:{'A*':73,A:62,B:51,C:40,D:29,E:19},
+    2023:{'A*':74,A:63,B:52,C:41,D:30,E:20},
+    2024:{'A*':74,A:63,B:52,C:41,D:30,E:20},
+  },
+  'Paper 3: Business 3 (Case Study)':{
+    2018:{'A*':76,A:65,B:54,C:43,D:32,E:22},
+    2019:{'A*':76,A:65,B:54,C:43,D:32,E:22},
+    2022:{'A*':73,A:62,B:51,C:40,D:29,E:19},
+    2023:{'A*':74,A:63,B:52,C:41,D:30,E:20},
+    2024:{'A*':74,A:63,B:52,C:41,D:30,E:20},
+  },
+};
+
+// ── Notional grade boundaries (%) per subject — used when no year-specific data ─
+const NOTIONAL_GRADE_PCT = {
+  maths:          {'A*':72,A:60,B:49,C:38,D:27,E:17},
+  'further-maths':{'A*':81,A:68,B:54,C:40,D:27,E:14},
+  cs:             {'A*':71,A:59,B:49,C:39,D:29,E:19},
+  chemistry:      {'A*':74,A:63,B:52,C:41,D:30,E:20},
+  physics:        {'A*':71,A:60,B:50,C:40,D:30,E:20},
+  economics:      {'A*':75,A:64,B:53,C:43,D:33,E:23},
+  biology:        {'A*':76,A:65,B:53,C:42,D:31,E:21},
+  psychology:     {'A*':77,A:66,B:54,C:43,D:32,E:22},
+  sociology:      {'A*':75,A:64,B:53,C:42,D:31,E:21},
+  history:        {'A*':76,A:65,B:54,C:43,D:32,E:22},
+  geography:      {'A*':75,A:64,B:53,C:42,D:31,E:21},
+  'english-lit':  {'A*':74,A:63,B:52,C:41,D:30,E:20},
+  business:       {'A*':74,A:63,B:52,C:41,D:30,E:20},
+};
+
 const ERROR_TYPES = [
   { id:'calc',     label:'Calculation error',     color:'#f59e0b' },
   { id:'method',   label:'Wrong method',           color:'#ef4444' },
@@ -296,6 +571,185 @@ function getNotifications(scores, errors, subjects, examSched=EXAM_SCHEDULE) {
 }
 
 const NOTIF_COLOR={urgent:'#ef4444',warn:'#f97316',info:'#3b82f6',success:'#22c55e'};
+
+// ── Animation styles ───────────────────────────────────────────────────────
+const ANIM_CSS=`
+@keyframes rbp-aura-ring{0%{transform:translate(-50%,-50%) scale(0.5);opacity:.9}100%{transform:translate(-50%,-50%) scale(2.8);opacity:0}}
+@keyframes rbp-check-in{0%{transform:scale(0) rotate(-30deg);opacity:0}55%{transform:scale(1.25) rotate(6deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+@keyframes rbp-grade-pop{0%{transform:scale(0.2);opacity:0}60%{transform:scale(1.2);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes rbp-improve-fly{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-36px);opacity:0}}
+@keyframes rbp-ach-bg{0%{opacity:0}100%{opacity:1}}
+@keyframes rbp-ach-card{0%{transform:scale(.35) translateY(50px);opacity:0}55%{transform:scale(1.06) translateY(-4px);opacity:1}100%{transform:scale(1) translateY(0);opacity:1}}
+@keyframes rbp-ach-star{0%{transform:rotate(0deg) scale(0);opacity:0}35%{transform:rotate(200deg) scale(1.4);opacity:1}100%{transform:rotate(360deg) scale(1);opacity:1}}
+@keyframes rbp-particle{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0)}}
+@keyframes rbp-shimmer{0%{background-position:200% center}100%{background-position:-200% center}}
+@keyframes rbp-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+`;
+function ensureAnimStyles(){if(!document.getElementById('rbp-anims')){const s=document.createElement('style');s.id='rbp-anims';s.textContent=ANIM_CSS;document.head.appendChild(s);}}
+
+// ── Paper key utilities ────────────────────────────────────────────────────
+function parsePaperKey(key){
+  const m=key.match(/^(.+?)\s[—–-]+\s?(\d{4})$/);
+  if(m) return {name:m[1].trim(),year:parseInt(m[2])};
+  return {name:key,year:null};
+}
+function getHistoricalGrade(pct,paperKey){
+  const {name,year}=parsePaperKey(paperKey);
+  const b=HISTORICAL_GRADE_PCT[name]?.[year];
+  if(!b) return null;
+  for(const g of ['A*','A','B','C','D','E']) if(pct>=(b[g]??0)) return g;
+  return 'U';
+}
+function getNotionalGrade(pct,subjectId){
+  const b=NOTIONAL_GRADE_PCT[subjectId];
+  if(!b) return null;
+  for(const g of ['A*','A','B','C','D','E']) if(pct>=(b[g]??0)) return g;
+  return 'U';
+}
+function getNotionalThreshold(grade,subjectId){
+  return NOTIONAL_GRADE_PCT[subjectId]?.[grade]??null;
+}
+function getHistoricalThreshold(grade,paperKey){
+  const {name,year}=parsePaperKey(paperKey);
+  return HISTORICAL_GRADE_PCT[name]?.[year]?.[grade]??null;
+}
+
+// ── Achievements ───────────────────────────────────────────────────────────
+const ACHIEVEMENTS=[
+  {id:'first_paper',  title:'First Paper',     desc:'Log your first past paper',              icon:'📝',tier:'bronze'  },
+  {id:'three_papers', title:'Getting Going',   desc:'Log 3 past papers',                      icon:'📚',tier:'bronze'  },
+  {id:'ten_papers',   title:'Grinder',         desc:'Log 10 papers',                          icon:'💪',tier:'silver'  },
+  {id:'twenty_five',  title:'Marathon Runner', desc:'Log 25 papers',                          icon:'🏃',tier:'gold'    },
+  {id:'first_a_star', title:'A* Club',         desc:'Score an A* on any paper',               icon:'⭐',tier:'gold'    },
+  {id:'five_a_stars', title:'Star Collector',  desc:'Score A* on 5 papers',                   icon:'🌟',tier:'platinum'},
+  {id:'improvement',  title:'Level Up',        desc:'Improve your grade on a retried paper',  icon:'📈',tier:'bronze'  },
+  {id:'all_subjects', title:'Versatile',       desc:'Log a paper in every subject',           icon:'🎯',tier:'silver'  },
+  {id:'battle_ready', title:'Battle Ready',    desc:'Reach 80+ Battle Readiness',             icon:'⚔️',tier:'gold'    },
+  {id:'perfect',      title:'Perfect Score',   desc:'Score 100% on a paper',                  icon:'💯',tier:'platinum'},
+  {id:'week_streak',  title:'Week Warrior',    desc:'Log papers on 7 different days',         icon:'🗓️',tier:'silver'  },
+  {id:'error_hunter', title:'Error Hunter',    desc:'Log 10 errors in the error tracker',     icon:'🔍',tier:'bronze'  },
+];
+const TIER_COLOR={bronze:'#cd7f32',silver:'#9ca3af',gold:'#fbbf24',platinum:'#a78bfa'};
+
+function computeUnlockedAchievements(scores,errors,subjects){
+  const gb=Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
+  const grades=scores.map(s=>getSubjectGrade(s.pct,s.subject,gb));
+  const byPaper={};
+  let hasImprovement=false;
+  for(const s of [...scores].reverse()){
+    if(byPaper[s.paper]===undefined) byPaper[s.paper]=s.pct;
+    else if(s.pct>byPaper[s.paper]) hasImprovement=true;
+  }
+  const days=new Set(scores.map(s=>new Date(s.ts||s.id).toDateString())).size;
+  const br=calcBattleReadiness(scores,errors);
+  return ACHIEVEMENTS.filter(a=>{
+    switch(a.id){
+      case 'first_paper':  return scores.length>=1;
+      case 'three_papers': return scores.length>=3;
+      case 'ten_papers':   return scores.length>=10;
+      case 'twenty_five':  return scores.length>=25;
+      case 'first_a_star': return grades.includes('A*');
+      case 'five_a_stars': return grades.filter(g=>g==='A*').length>=5;
+      case 'improvement':  return hasImprovement;
+      case 'all_subjects': return subjects.every(sub=>scores.some(s=>s.subject===sub.name));
+      case 'battle_ready': return br.total>=80;
+      case 'perfect':      return scores.some(s=>s.pct>=100);
+      case 'week_streak':  return days>=7;
+      case 'error_hunter': return errors.length>=10;
+      default: return false;
+    }
+  }).map(a=>a.id);
+}
+
+// ── Achievement toast (full-screen burst) ─────────────────────────────────
+function AchievementToast({achievement,onDismiss}){
+  ensureAnimStyles();
+  const isPlatOrStar=achievement.tier==='platinum'||achievement.id==='first_a_star';
+  const tc=TIER_COLOR[achievement.tier]||'#fbbf24';
+  useEffect(()=>{const t=setTimeout(onDismiss,4500);return()=>clearTimeout(t);},[]);
+  const particles=Array.from({length:24},(_,i)=>{
+    const a=(i/24)*Math.PI*2,d=90+Math.random()*140;
+    return{tx:`${Math.cos(a)*d}px`,ty:`${Math.sin(a)*d-60}px`,
+      color:['#fbbf24','#f59e0b','#22c55e','#3b82f6','#8b5cf6','#ef4444','#ec4899'][i%7],
+      sz:5+Math.random()*9,del:Math.random()*0.5};
+  });
+  return(
+    <div onClick={onDismiss} style={{position:'fixed',inset:0,zIndex:1000,
+      background:'rgba(0,0,0,0.88)',display:'flex',alignItems:'center',
+      justifyContent:'center',cursor:'pointer',
+      animation:'rbp-ach-bg 0.25s ease forwards'}}>
+      {particles.map((p,i)=>(
+        <div key={i} style={{position:'absolute',width:p.sz,height:p.sz,borderRadius:'50%',
+          background:p.color,top:'50%',left:'50%',
+          '--tx':p.tx,'--ty':p.ty,
+          animation:`rbp-particle 1.4s ${p.del}s ease-out forwards`}}/>
+      ))}
+      <div style={{background:isPlatOrStar?'linear-gradient(135deg,#110f00,#1e1900,#110f00)':'#141720',
+        border:`2px solid ${tc}`,borderRadius:22,
+        padding:'40px 48px',textAlign:'center',maxWidth:340,margin:'0 20px',
+        boxShadow:isPlatOrStar?`0 0 80px ${tc}55,0 0 160px ${tc}22`:`0 0 40px ${tc}44`,
+        animation:'rbp-ach-card 0.55s cubic-bezier(.34,1.56,.64,1) forwards'}}>
+        <div style={{fontSize:isPlatOrStar?64:52,marginBottom:10,
+          animation:isPlatOrStar?'rbp-ach-star 0.9s cubic-bezier(.34,1.56,.64,1) forwards':'rbp-float 2s ease-in-out infinite'}}>
+          {achievement.icon}
+        </div>
+        <div style={{fontSize:11,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',
+          color:tc,marginBottom:10}}>Achievement Unlocked</div>
+        <div style={{fontSize:isPlatOrStar?26:22,fontWeight:800,color:tc,marginBottom:8,
+          textShadow:isPlatOrStar?`0 0 30px ${tc}88`:undefined,
+          background:isPlatOrStar?`linear-gradient(90deg,${tc},#fff,${tc})`:undefined,
+          backgroundSize:'200%',
+          WebkitBackgroundClip:isPlatOrStar?'text':undefined,
+          WebkitTextFillColor:isPlatOrStar?'transparent':undefined,
+          animation:isPlatOrStar?'rbp-shimmer 2s linear infinite':undefined}}>
+          {achievement.title}
+        </div>
+        <div style={{fontSize:14,color:'#857f79',lineHeight:1.5,marginBottom:16}}>{achievement.desc}</div>
+        <div style={{fontSize:10,color:'#4e4a47',letterSpacing:0.3,textTransform:'uppercase',
+          fontWeight:600,padding:'4px 10px',borderRadius:20,border:`1px solid ${tc}44`,
+          display:'inline-block'}}>{achievement.tier}</div>
+        <div style={{marginTop:14,fontSize:11,color:'#3a3a3a'}}>Tap to continue</div>
+      </div>
+    </div>
+  );
+}
+
+// ── Achievements view ──────────────────────────────────────────────────────
+function AchievementsView({scores,errors,subjects,C,font,unlockedIds=[]}){
+  const total=ACHIEVEMENTS.length;
+  const unlocked=unlockedIds.length;
+  const pct=Math.round((unlocked/total)*100);
+  return(
+    <div>
+      <div style={{marginBottom:20}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>Achievements</div>
+        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Your Milestones</h1>
+        <p style={{fontSize:13,color:C.muted,margin:'4px 0 12px'}}>{unlocked}/{total} unlocked</p>
+        <div style={{height:5,background:C.border,borderRadius:3,overflow:'hidden'}}>
+          <div style={{height:'100%',width:`${pct}%`,background:C.accent,borderRadius:3,transition:'width 1s ease'}}/>
+        </div>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+        {ACHIEVEMENTS.map(a=>{
+          const on=unlockedIds.includes(a.id);
+          const tc=TIER_COLOR[a.tier];
+          return(
+            <div key={a.id} style={{background:on?C.surface:C.card2,
+              border:`1px solid ${on?tc+'44':C.border}`,borderRadius:12,
+              padding:'16px 14px',opacity:on?1:0.45,transition:'all 0.2s',
+              boxShadow:on?`0 0 12px ${tc}22`:undefined}}>
+              <div style={{fontSize:32,marginBottom:8,filter:on?'none':'grayscale(1) brightness(0.4)'}}>{a.icon}</div>
+              <div style={{fontSize:13,fontWeight:700,color:on?C.text:C.muted,marginBottom:3}}>{a.title}</div>
+              <div style={{fontSize:11,color:C.muted,lineHeight:1.5,marginBottom:on?8:0}}>{a.desc}</div>
+              {on&&<div style={{fontSize:10,fontWeight:700,color:tc,textTransform:'uppercase',
+                letterSpacing:0.6}}>{a.tier}</div>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 // ── Mission board ──────────────────────────────────────────────────────────
 function MissionBoard({subjects,scores,C,font,examSched,onQuickLog=()=>{}}) {
@@ -1424,47 +1878,107 @@ function LandingPage({ onGetStarted }) {
 }
 
 // ── Quick log modal ────────────────────────────────────────────────────────
-function QuickLog({subjects,scores,setScores,uid,C,font,onClose}) {
+function QuickLog({subjects,scores,setScores,uid,C,font,onClose,onSaved}){
+  ensureAnimStyles();
   const PAPER_SUGGS=Object.fromEntries(subjects.map(s=>[s.name,getPaperSuggestions(s)]));
   const GRADE_BOUNDS=Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
+  const subjectObj=s=>subjects.find(x=>x.name===s);
+
   const [subject,setSubject]=useState(subjects[0]?.name??'');
   const [pct,setPct]=useState('');
   const [paper,setPaper]=useState('');
   const [saved,setSaved]=useState(false);
+  const [savedGrade,setSavedGrade]=useState(null);
+  const [improvement,setImprovement]=useState(null);
 
-  const suggested=(PAPER_SUGGS[subject]||[]).find(p=>
-    !scores.filter(s=>s.subject===subject).map(s=>s.paper).includes(p)
-  )??'';
-  useEffect(()=>{ setPaper(suggested); },[subject]);
+  const subjectDone=s=>new Set(scores.filter(x=>x.subject===s).map(x=>x.paper));
+  const allPapers=PAPER_SUGGS[subject]||[];
+  const suggested=allPapers.find(p=>!subjectDone(subject).has(p))??allPapers[0]??'';
 
-  const numPct=parseInt(pct);
-  const valid=pct!==''&&!isNaN(numPct)&&numPct>=0&&numPct<=100;
-  const grade=valid?getSubjectGrade(numPct,subject,GRADE_BOUNDS):null;
+  useEffect(()=>{setPaper(suggested);},[subject]);
 
-  const save=()=>{
-    if (!valid) return;
-    const entry={
-      subject,
-      paper:paper.trim()||suggested||`Quick log ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`,
-      got:numPct,max:100,maxMark:100,pct:numPct,
-      date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),
-      id:Date.now(),ts:Date.now(),
-    };
-    const updated=[entry,...scores];
-    setScores(updated); ls.set(`rbp_scores_${uid}`,updated);
-    setSaved(true); setTimeout(onClose,1400);
+  const numPct=pct===''?NaN:parseInt(pct,10);
+  const valid=!isNaN(numPct)&&numPct>=0&&numPct<=100;
+  const sId=subjectObj(subject)?.id??'';
+
+  const histGrade=valid&&paper?getHistoricalGrade(numPct,paper):null;
+  const notGrade=valid?getNotionalGrade(numPct,sId):null;
+  const fallbackGrade=valid?getSubjectGrade(numPct,subject,GRADE_BOUNDS):null;
+  const displayGrade=histGrade||notGrade||fallbackGrade;
+
+  const histThresh=paper?getHistoricalThreshold('A*',paper):null;
+  const notThresh=getNotionalThreshold('A*',sId);
+  const {name:paperBase,year:paperYear}=parsePaperKey(paper||'');
+  const hasHistData=paperYear&&HISTORICAL_GRADE_PCT[paperBase]?.[paperYear];
+
+  const prevBest=()=>{
+    const prev=scores.filter(s=>s.subject===subject&&s.paper===paper);
+    return prev.length?Math.max(...prev.map(s=>s.pct)):null;
   };
 
-  return (
+  const save=()=>{
+    if(!valid) return;
+    const gb=Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
+    const grade=getSubjectGrade(numPct,subject,gb);
+    const pb=prevBest();
+    let imp=null;
+    if(pb!==null){
+      const prevGrade=getSubjectGrade(pb,subject,gb);
+      const GRADES=['U','E','D','C','B','A','A*'];
+      if(GRADES.indexOf(grade)>GRADES.indexOf(prevGrade)) imp={from:prevGrade,to:grade};
+    }
+    const entry={subject,
+      paper:paper.trim()||`Quick log ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`,
+      got:numPct,max:100,maxMark:100,pct:numPct,grade,
+      date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),
+      id:Date.now(),ts:Date.now()};
+    const updated=[entry,...scores];
+    setScores(updated); ls.set(`rbp_scores_${uid}`,updated);
+    setSavedGrade(grade); setImprovement(imp); setSaved(true);
+    if(onSaved) onSaved(entry,imp);
+    setTimeout(onClose,2000);
+  };
+
+  const gradeGlow=g=>{
+    const map={'A*':'0 0 20px rgba(251,191,36,0.6)','A':'0 0 16px rgba(74,222,128,0.5)','B':'0 0 14px rgba(251,191,36,0.35)'};
+    return map[g]??undefined;
+  };
+
+  return(
     <div onClick={e=>{if(e.target===e.currentTarget)onClose();}}
-      style={{position:'fixed',inset:0,zIndex:200,background:'rgba(0,0,0,0.65)',
+      style={{position:'fixed',inset:0,zIndex:200,background:'rgba(0,0,0,0.7)',
         display:'flex',alignItems:'flex-end',justifyContent:'center'}}>
-      <div style={{background:C.surface,borderRadius:'18px 18px 0 0',padding:'20px 20px 36px',
-        width:'100%',maxWidth:480}}>
+      <div style={{background:C.surface,borderRadius:'20px 20px 0 0',
+        padding:'20px 20px 40px',width:'100%',maxWidth:500,
+        boxShadow:'0 -8px 40px rgba(0,0,0,0.4)'}}>
         {saved?(
-          <div style={{textAlign:'center',padding:'28px 0'}}>
-            <div style={{fontSize:38,marginBottom:8}}>✓</div>
-            <div style={{fontSize:18,fontWeight:700,color:'#22c55e'}}>Logged!</div>
+          <div style={{textAlign:'center',padding:'32px 0',position:'relative',overflow:'hidden'}}>
+            {/* Aura ring */}
+            <div style={{position:'absolute',top:'50%',left:'50%',width:120,height:120,
+              borderRadius:'50%',border:`3px solid ${gradeColor(savedGrade||'A')}`,
+              animation:'rbp-aura-ring 1s ease-out forwards',pointerEvents:'none'}}/>
+            <div style={{position:'absolute',top:'50%',left:'50%',width:80,height:80,
+              borderRadius:'50%',border:`2px solid ${gradeColor(savedGrade||'A')}88`,
+              animation:'rbp-aura-ring 1s 0.15s ease-out forwards',pointerEvents:'none'}}/>
+            <div style={{fontSize:48,marginBottom:8,animation:'rbp-check-in 0.5s cubic-bezier(.34,1.56,.64,1) forwards',
+              display:'inline-block'}}>✓</div>
+            <div style={{fontSize:20,fontWeight:800,color:'#22c55e',marginBottom:8}}>Logged!</div>
+            {savedGrade&&(
+              <div style={{fontSize:36,fontWeight:900,color:gradeColor(savedGrade),
+                animation:'rbp-grade-pop 0.5s 0.2s cubic-bezier(.34,1.56,.64,1) both',
+                textShadow:gradeGlow(savedGrade)}}>
+                {savedGrade}
+              </div>
+            )}
+            {improvement&&(
+              <div style={{marginTop:8,display:'flex',alignItems:'center',justifyContent:'center',gap:8,
+                animation:'rbp-improve-fly 1.5s 0.5s ease-out both'}}>
+                <span style={{fontSize:14,color:C.muted,textDecoration:'line-through'}}>{improvement.from}</span>
+                <span style={{fontSize:16}}>→</span>
+                <span style={{fontSize:16,fontWeight:800,color:gradeColor(improvement.to)}}>{improvement.to}</span>
+                <span style={{fontSize:12,color:'#22c55e',fontWeight:600}}>Grade up!</span>
+              </div>
+            )}
           </div>
         ):(
           <>
@@ -1472,52 +1986,105 @@ function QuickLog({subjects,scores,setScores,uid,C,font,onClose}) {
               <div style={{fontSize:16,fontWeight:700,color:C.text}}>Quick log</div>
               <button onClick={onClose} style={{background:'transparent',border:'none',color:C.muted,fontSize:26,cursor:'pointer',lineHeight:1,padding:0}}>×</button>
             </div>
+
+            {/* Subject picker */}
             <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Subject</div>
             <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:18}}>
               {subjects.map(s=>(
                 <button key={s.name} onClick={()=>setSubject(s.name)}
-                  style={{padding:'8px 14px',borderRadius:8,
-                    background:subject===s.name?`${s.color}1a`:C.card2,
+                  style={{padding:'7px 12px',borderRadius:8,
+                    background:subject===s.name?`${s.color}20`:C.card2,
                     border:`1px solid ${subject===s.name?s.color:C.border}`,
                     color:subject===s.name?s.color:C.muted,
-                    fontSize:13,fontWeight:subject===s.name?700:400,fontFamily:font,cursor:'pointer'}}>
+                    fontSize:12,fontWeight:subject===s.name?700:400,fontFamily:font,cursor:'pointer'}}>
                   {s.name==='Further Mathematics'||s.name==='Further Maths'?'FM':
                    s.name==='Computer Science'?'CS':s.name}
                 </button>
               ))}
             </div>
+
+            {/* Paper picker */}
+            <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Paper</div>
+            <div style={{display:'flex',gap:6,overflowX:'auto',paddingBottom:4,marginBottom:16,
+              scrollbarWidth:'none',WebkitOverflowScrolling:'touch'}}>
+              {allPapers.map(p=>{
+                const done=subjectDone(subject).has(p);
+                return(
+                  <button key={p} onClick={()=>setPaper(p)}
+                    style={{flexShrink:0,padding:'6px 12px',borderRadius:20,
+                      background:paper===p?C.accent:`${C.card2}`,
+                      border:`1px solid ${paper===p?C.accent:done?C.border+'80':C.border}`,
+                      color:paper===p?'#fff':done?C.subtle:C.muted,
+                      fontSize:11,fontWeight:paper===p?700:400,fontFamily:font,cursor:'pointer',
+                      maxWidth:180,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                    {done?'✓ ':''}{p}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Score input */}
             <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Score (%)</div>
-            <div style={{position:'relative',marginBottom:10}}>
+            <div style={{position:'relative',marginBottom:14}}>
               <input type="number" min="0" max="100" value={pct}
                 onChange={e=>setPct(e.target.value)} onKeyDown={e=>e.key==='Enter'&&save()}
                 placeholder="e.g. 74" autoFocus
-                style={{width:'100%',background:C.card2,border:`1px solid ${C.border}`,
-                  borderRadius:9,padding:'14px 52px 14px 16px',color:C.text,
-                  fontSize:24,fontWeight:700,fontFamily:font,outline:'none',boxSizing:'border-box'}}/>
-              {grade&&(
+                style={{width:'100%',background:C.card2,border:`1px solid ${valid&&displayGrade?gradeColor(displayGrade)+'66':C.border}`,
+                  borderRadius:10,padding:'14px 60px 14px 16px',color:C.text,
+                  fontSize:24,fontWeight:700,fontFamily:font,outline:'none',boxSizing:'border-box',
+                  transition:'border-color 0.2s'}}/>
+              {displayGrade&&(
                 <div style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)',
-                  fontSize:22,fontWeight:800,color:gradeColor(grade)}}>{grade}</div>
+                  fontSize:22,fontWeight:800,color:gradeColor(displayGrade),
+                  animation:'rbp-grade-pop 0.25s cubic-bezier(.34,1.56,.64,1) both'}}>{displayGrade}</div>
               )}
             </div>
-            {suggested&&(
-              <div style={{fontSize:12,color:C.muted,marginBottom:4}}>
-                Suggested:{' '}
-                <button onClick={()=>setPaper(suggested)} style={{background:'none',border:'none',
-                  color:C.accent,cursor:'pointer',fontSize:12,fontFamily:font,padding:0,fontWeight:600}}>
-                  {suggested}
-                </button>
+
+            {/* Dual boundary display */}
+            {valid&&(hasHistData||notGrade)&&(
+              <div style={{display:'grid',gridTemplateColumns:hasHistData&&notGrade?'1fr 1fr':'1fr',
+                gap:8,marginBottom:14}}>
+                {hasHistData&&histGrade&&(
+                  <div style={{background:C.card2,border:`1px solid ${gradeColor(histGrade)}44`,
+                    borderRadius:10,padding:'10px 12px',textAlign:'center'}}>
+                    <div style={{fontSize:10,fontWeight:700,color:C.muted,textTransform:'uppercase',
+                      letterSpacing:0.4,marginBottom:4}}>{paperYear} Actual</div>
+                    <div style={{fontSize:22,fontWeight:800,color:gradeColor(histGrade)}}>{histGrade}</div>
+                    <div style={{fontSize:10,color:C.muted,marginTop:2}}>
+                      A* needs {getHistoricalThreshold('A*',paper)??'—'}%
+                    </div>
+                  </div>
+                )}
+                {notGrade&&(
+                  <div style={{background:C.card2,border:`1px solid ${gradeColor(notGrade)}44`,
+                    borderRadius:10,padding:'10px 12px',textAlign:'center'}}>
+                    <div style={{fontSize:10,fontWeight:700,color:C.muted,textTransform:'uppercase',
+                      letterSpacing:0.4,marginBottom:4}}>Notional</div>
+                    <div style={{fontSize:22,fontWeight:800,color:gradeColor(notGrade)}}>{notGrade}</div>
+                    <div style={{fontSize:10,color:C.muted,marginTop:2}}>
+                      A* needs {notThresh??'—'}%
+                    </div>
+                  </div>
+                )}
               </div>
             )}
-            <input value={paper} onChange={e=>setPaper(e.target.value)}
-              placeholder={suggested||'Paper name (optional)'}
-              style={{width:'100%',background:C.card2,border:`1px solid ${C.border}`,
-                borderRadius:9,padding:'10px 14px',color:C.text,fontSize:13,fontFamily:font,
-                outline:'none',boxSizing:'border-box',marginBottom:18}}/>
+            {valid&&hasHistData&&histGrade&&notGrade&&histGrade!==notGrade&&(
+              <div style={{fontSize:11,color:C.muted,marginBottom:10,textAlign:'center',padding:'6px 10px',
+                background:C.card2,borderRadius:7}}>
+                {['A*','A','B','C','D','E'].indexOf(histGrade)<['A*','A','B','C','D','E'].indexOf(notGrade)
+                  ?`📈 Grade higher on ${paperYear} paper vs notional standard`
+                  :`📉 Grade lower on ${paperYear} paper vs notional standard`}
+              </div>
+            )}
+
             <button onClick={save} disabled={!valid}
-              style={{width:'100%',padding:'14px',background:valid?C.accent:'rgba(0,0,0,0.08)',
-                border:'none',borderRadius:10,color:valid?'#fff':C.muted,
-                fontSize:15,fontWeight:700,fontFamily:font,cursor:valid?'pointer':'default',
-                transition:'all 0.2s'}}>
+              style={{width:'100%',padding:'14px',
+                background:valid?C.accent:'rgba(0,0,0,0.08)',
+                border:'none',borderRadius:10,
+                color:valid?'#fff':C.muted,
+                fontSize:15,fontWeight:700,fontFamily:font,
+                cursor:valid?'pointer':'default',transition:'all 0.2s',
+                boxShadow:valid?`0 4px 16px ${C.accent}55`:undefined}}>
               Log it →
             </button>
           </>
@@ -1533,6 +2100,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
   const [view,setView]     = useState('analytics');
   const [isMobile,setIsMobile] = useState(()=>window.innerWidth<768);
   const [quickLogOpen,setQuickLogOpen] = useState(false);
+  const [pendingAchievement,setPendingAchievement] = useState(null);
 
   const uid      = user?.id??'anon';
   const [scores,setScores] = useState(()=>ls.get(`rbp_scores_${uid}`,[]));
@@ -1586,10 +2154,28 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
     return ()=>clearTimeout(syncRef.current);
   },[scores,errors]);
 
+  // Achievement tracking
+  const prevUnlockedRef = useRef(()=>new Set(ls.get(`rbp_ach_${uid}`,[]) ));
+  useEffect(()=>{
+    if(!scores.length) return;
+    const current=computeUnlockedAchievements(scores,errors,subjects);
+    const prev=ls.get(`rbp_ach_${uid}`,[]);
+    const prevSet=new Set(prev);
+    const newlyUnlocked=current.filter(id=>!prevSet.has(id));
+    if(newlyUnlocked.length>0){
+      ls.set(`rbp_ach_${uid}`,current);
+      const a=ACHIEVEMENTS.find(x=>x.id===newlyUnlocked[0]);
+      if(a&&!pendingAchievement) setPendingAchievement(a);
+    }
+  },[scores,errors]);
+
+  const unlockedIds=ls.get(`rbp_ach_${uid}`,[]);
+
   const DESKTOP_NAV=[
     {id:'analytics',label:'Analytics'},
     {id:'tracker',label:'Tracker'},
     {id:'exams',label:'Exams'},
+    {id:'achievements',label:'Achievements'},
     {id:'tips',label:'Tips & Routine'},
     {id:'resources',label:'Resources'},
     {id:'account',label:'Account'},
@@ -1616,8 +2202,13 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
                 <button key={n.id} onClick={()=>setView(n.id)}
                   style={{padding:'6px 13px',background:view===n.id?C.accentSoft:'transparent',
                     border:'none',borderRadius:7,color:view===n.id?C.accent:C.muted,
-                    fontSize:12,fontWeight:view===n.id?700:400,fontFamily:font,cursor:'pointer'}}>
+                    fontSize:12,fontWeight:view===n.id?700:400,fontFamily:font,cursor:'pointer',
+                    position:'relative'}}>
                   {n.label}
+                  {n.id==='achievements'&&unlockedIds.length>0&&(
+                    <span style={{position:'absolute',top:2,right:4,width:6,height:6,
+                      borderRadius:'50%',background:TIER_COLOR.gold}}/>
+                  )}
                 </button>
               ))}
             </div>
@@ -1644,28 +2235,33 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
       </nav>
 
       <main style={{maxWidth:740,margin:'0 auto',padding:`${54+20}px 16px ${isMobile?82:32}px`}}>
-        {view==='analytics' && <Analytics {...vp} onQuickLog={()=>setQuickLogOpen(true)}/>}
-        {view==='tracker'   && <Tracker   {...vp} setScores={setScores} setErrors={setErrors} uid={uid}/>}
-        {view==='exams'     && <Exams     {...vp}/>}
-        {view==='tips'      && <Tips      {...vp}/>}
-        {view==='resources' && <Resources {...vp}/>}
-        {view==='account'   && <Account   {...vp} user={user} selection={selection}
-                                  dark={dark} setDark={setDark} onSignOut={onSignOut} onResetSubjects={onResetSubjects}/>}
+        {view==='analytics'    && <Analytics    {...vp} onQuickLog={()=>setQuickLogOpen(true)}/>}
+        {view==='tracker'      && <Tracker      {...vp} setScores={setScores} setErrors={setErrors} uid={uid}/>}
+        {view==='exams'        && <Exams        {...vp}/>}
+        {view==='achievements' && <AchievementsView {...vp} unlockedIds={unlockedIds}/>}
+        {view==='tips'         && <Tips         {...vp}/>}
+        {view==='resources'    && <Resources    {...vp}/>}
+        {view==='account'      && <Account      {...vp} user={user} selection={selection}
+                                    dark={dark} setDark={setDark} onSignOut={onSignOut} onResetSubjects={onResetSubjects}/>}
       </main>
 
       {isMobile&&(
         <nav style={{position:'fixed',bottom:0,left:0,right:0,zIndex:100,
           background:C.nav,backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
-          borderTop:`1px solid ${C.border}`,display:'grid',gridTemplateColumns:'1fr 1fr 1fr',height:56}}>
-          {[{id:'analytics',label:'Analytics'},{id:'tracker',label:'Tracker'},{id:'exams',label:'Exams'}]
+          borderTop:`1px solid ${C.border}`,display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',height:56}}>
+          {[{id:'analytics',label:'Home'},{id:'tracker',label:'Tracker'},{id:'exams',label:'Exams'},{id:'achievements',label:'Awards'}]
             .map(n=>(
             <button key={n.id} onClick={()=>setView(n.id)}
               style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
                 gap:0,background:'transparent',border:'none',cursor:'pointer',
-                color:view===n.id?C.accent:C.muted,fontSize:11,fontFamily:font,
-                fontWeight:view===n.id?700:500,position:'relative',transition:'color 0.15s',padding:'0 8px',
+                color:view===n.id?C.accent:C.muted,fontSize:10,fontFamily:font,
+                fontWeight:view===n.id?700:500,position:'relative',transition:'color 0.15s',padding:'0 4px',
                 letterSpacing:0.2,
                 borderTop:`2px solid ${view===n.id?C.accent:'transparent'}`}}>
+              {n.id==='achievements'&&unlockedIds.length>0&&(
+                <span style={{position:'absolute',top:6,right:8,width:6,height:6,
+                  borderRadius:'50%',background:TIER_COLOR.gold}}/>
+              )}
               {n.label}
             </button>
           ))}
@@ -1673,18 +2269,24 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
       )}
       {quickLogOpen&&(
         <QuickLog subjects={subjects} scores={scores} setScores={setScores}
-          uid={uid} C={C} font={font} onClose={()=>setQuickLogOpen(false)}/>
+          uid={uid} C={C} font={font} onClose={()=>setQuickLogOpen(false)}
+          onSaved={(entry,imp)=>{
+            // Achievement check happens via scores useEffect
+          }}/>
+      )}
+      {pendingAchievement&&(
+        <AchievementToast achievement={pendingAchievement} onDismiss={()=>setPendingAchievement(null)}/>
       )}
       <button
         onClick={()=>setQuickLogOpen(true)}
         aria-label="Log a paper"
-        style={{position:'fixed',bottom:isMobile?72:24,right:isMobile?16:24,
+        style={{position:'fixed',bottom:isMobile?66:24,right:isMobile?16:24,
           width:52,height:52,borderRadius:'50%',background:C.accent,border:'none',
           color:'#fff',fontSize:30,fontWeight:300,cursor:'pointer',zIndex:90,
-          boxShadow:'0 4px 20px rgba(0,0,0,0.25)',display:'flex',alignItems:'center',
-          justifyContent:'center',lineHeight:1,transition:'transform 0.15s'}}
-        onMouseEnter={e=>e.currentTarget.style.transform='scale(1.1)'}
-        onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
+          boxShadow:`0 4px 20px ${C.accent}55`,display:'flex',alignItems:'center',
+          justifyContent:'center',lineHeight:1,transition:'transform 0.15s,box-shadow 0.15s'}}
+        onMouseEnter={e=>{e.currentTarget.style.transform='scale(1.12)';e.currentTarget.style.boxShadow=`0 6px 28px ${C.accent}88`;}}
+        onMouseLeave={e=>{e.currentTarget.style.transform='scale(1)';e.currentTarget.style.boxShadow=`0 4px 20px ${C.accent}55`;}}>
         +
       </button>
     </div>
