@@ -297,6 +297,77 @@ function getNotifications(scores, errors, subjects, examSched=EXAM_SCHEDULE) {
 
 const NOTIF_COLOR={urgent:'#ef4444',warn:'#f97316',info:'#3b82f6',success:'#22c55e'};
 
+// ── Mission board ──────────────────────────────────────────────────────────
+function MissionBoard({subjects,scores,C,font,examSched,onQuickLog=()=>{}}) {
+  const PAPER_SUGGS=Object.fromEntries(subjects.map(s=>[s.name,getPaperSuggestions(s)]));
+  const allExams=subjects
+    .flatMap(s=>(examSched[s.id]||[]).map(e=>({...e,subjectName:s.name,color:s.color})))
+    .filter(e=>daysUntil(e.date)>0)
+    .sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const soonest=allExams[0]??null;
+  const suggestions=subjects.map(s=>{
+    const done=new Set(scores.filter(sc=>sc.subject===s.name).map(sc=>sc.paper));
+    const next=(PAPER_SUGGS[s.name]||[]).find(p=>!done.has(p));
+    const examIn=allExams.find(e=>e.subjectName===s.name);
+    return next?{name:s.name,color:s.color,paper:next,days:examIn?daysUntil(examIn.date):null}:null;
+  }).filter(Boolean);
+  const abbr=n=>n==='Further Mathematics'||n==='Further Maths'?'FM':n==='Computer Science'?'CS':n;
+  return (
+    <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,overflow:'hidden',marginBottom:16}}>
+      {soonest&&(
+        <div style={{padding:'12px 18px',borderBottom:`1px solid ${C.border}`,
+          display:'flex',alignItems:'center',justifyContent:'space-between',
+          background:`${soonest.color}08`}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5}}>Next exam</div>
+            <div style={{fontSize:13,fontWeight:700,color:C.text,marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+              {soonest.subjectName} — {soonest.paper.split(':')[1]?.trim()||soonest.paper}
+            </div>
+            <div style={{fontSize:11,color:C.muted,marginTop:1}}>
+              {new Date(soonest.date).toLocaleDateString('en-GB',{day:'numeric',month:'long'})} · {soonest.time}
+            </div>
+          </div>
+          <div style={{textAlign:'center',flexShrink:0,marginLeft:16}}>
+            <div style={{fontSize:42,fontWeight:800,lineHeight:1,
+              color:daysUntil(soonest.date)<=7?'#ef4444':daysUntil(soonest.date)<=21?'#f97316':soonest.color}}>
+              {daysUntil(soonest.date)}
+            </div>
+            <div style={{fontSize:10,color:C.muted,fontWeight:600,letterSpacing:0.3}}>days</div>
+          </div>
+        </div>
+      )}
+      <div style={{padding:'14px 18px'}}>
+        {suggestions.length>0&&(
+          <>
+            <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:10}}>
+              Papers to do next
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:0,marginBottom:12}}>
+              {suggestions.slice(0,3).map(m=>(
+                <div key={m.name} style={{display:'flex',alignItems:'center',gap:10,
+                  padding:'8px 0',borderBottom:`1px solid ${C.border}`}}>
+                  <div style={{width:7,height:7,borderRadius:'50%',background:m.color,flexShrink:0}}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:11,color:m.color,fontWeight:700,textTransform:'uppercase',letterSpacing:0.3,marginBottom:1}}>{abbr(m.name)}</div>
+                    <div style={{fontSize:13,color:C.text,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m.paper}</div>
+                  </div>
+                  {m.days!==null&&<div style={{fontSize:11,color:C.muted,flexShrink:0}}>{m.days}d to exam</div>}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+        <button onClick={onQuickLog}
+          style={{width:'100%',padding:'11px',background:C.accent,border:'none',
+            borderRadius:9,color:'#fff',fontSize:14,fontWeight:700,fontFamily:font,
+            cursor:'pointer',letterSpacing:0.2}}>
+          + Log a paper now
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Insurance eligibility ──────────────────────────────────────────────────
 function computeEligibility(scores) {
   const WINDOW = 60 * 86400000;
@@ -497,7 +568,7 @@ function BattleGauge({score, label, labelColor, textColor='#2b2b2b', mutedColor=
 }
 
 // ── Analytics ──────────────────────────────────────────────────────────────
-function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE}) {
+function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, onQuickLog}) {
   const SUBJ_COLORS  = Object.fromEntries(subjects.map(s=>[s.name,s.color]));
   const GRADE_BOUNDS = Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
 
@@ -519,6 +590,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
 
   return (
     <div>
+      <MissionBoard subjects={subjects} scores={scores} C={C} font={font} examSched={examSched} onQuickLog={onQuickLog}/>
       {/* Dismissable notifications */}
       {notifications.length>0&&(
         <div style={{marginBottom:16}}>
@@ -1351,11 +1423,116 @@ function LandingPage({ onGetStarted }) {
   );
 }
 
+// ── Quick log modal ────────────────────────────────────────────────────────
+function QuickLog({subjects,scores,setScores,uid,C,font,onClose}) {
+  const PAPER_SUGGS=Object.fromEntries(subjects.map(s=>[s.name,getPaperSuggestions(s)]));
+  const GRADE_BOUNDS=Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
+  const [subject,setSubject]=useState(subjects[0]?.name??'');
+  const [pct,setPct]=useState('');
+  const [paper,setPaper]=useState('');
+  const [saved,setSaved]=useState(false);
+
+  const suggested=(PAPER_SUGGS[subject]||[]).find(p=>
+    !scores.filter(s=>s.subject===subject).map(s=>s.paper).includes(p)
+  )??'';
+  useEffect(()=>{ setPaper(suggested); },[subject]);
+
+  const numPct=parseInt(pct);
+  const valid=pct!==''&&!isNaN(numPct)&&numPct>=0&&numPct<=100;
+  const grade=valid?getSubjectGrade(numPct,subject,GRADE_BOUNDS):null;
+
+  const save=()=>{
+    if (!valid) return;
+    const entry={
+      subject,
+      paper:paper.trim()||suggested||`Quick log ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`,
+      got:numPct,max:100,maxMark:100,pct:numPct,
+      date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),
+      id:Date.now(),ts:Date.now(),
+    };
+    const updated=[entry,...scores];
+    setScores(updated); ls.set(`rbp_scores_${uid}`,updated);
+    setSaved(true); setTimeout(onClose,1400);
+  };
+
+  return (
+    <div onClick={e=>{if(e.target===e.currentTarget)onClose();}}
+      style={{position:'fixed',inset:0,zIndex:200,background:'rgba(0,0,0,0.65)',
+        display:'flex',alignItems:'flex-end',justifyContent:'center'}}>
+      <div style={{background:C.surface,borderRadius:'18px 18px 0 0',padding:'20px 20px 36px',
+        width:'100%',maxWidth:480}}>
+        {saved?(
+          <div style={{textAlign:'center',padding:'28px 0'}}>
+            <div style={{fontSize:38,marginBottom:8}}>✓</div>
+            <div style={{fontSize:18,fontWeight:700,color:'#22c55e'}}>Logged!</div>
+          </div>
+        ):(
+          <>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:18}}>
+              <div style={{fontSize:16,fontWeight:700,color:C.text}}>Quick log</div>
+              <button onClick={onClose} style={{background:'transparent',border:'none',color:C.muted,fontSize:26,cursor:'pointer',lineHeight:1,padding:0}}>×</button>
+            </div>
+            <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Subject</div>
+            <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:18}}>
+              {subjects.map(s=>(
+                <button key={s.name} onClick={()=>setSubject(s.name)}
+                  style={{padding:'8px 14px',borderRadius:8,
+                    background:subject===s.name?`${s.color}1a`:C.card2,
+                    border:`1px solid ${subject===s.name?s.color:C.border}`,
+                    color:subject===s.name?s.color:C.muted,
+                    fontSize:13,fontWeight:subject===s.name?700:400,fontFamily:font,cursor:'pointer'}}>
+                  {s.name==='Further Mathematics'||s.name==='Further Maths'?'FM':
+                   s.name==='Computer Science'?'CS':s.name}
+                </button>
+              ))}
+            </div>
+            <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Score (%)</div>
+            <div style={{position:'relative',marginBottom:10}}>
+              <input type="number" min="0" max="100" value={pct}
+                onChange={e=>setPct(e.target.value)} onKeyDown={e=>e.key==='Enter'&&save()}
+                placeholder="e.g. 74" autoFocus
+                style={{width:'100%',background:C.card2,border:`1px solid ${C.border}`,
+                  borderRadius:9,padding:'14px 52px 14px 16px',color:C.text,
+                  fontSize:24,fontWeight:700,fontFamily:font,outline:'none',boxSizing:'border-box'}}/>
+              {grade&&(
+                <div style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)',
+                  fontSize:22,fontWeight:800,color:gradeColor(grade)}}>{grade}</div>
+              )}
+            </div>
+            {suggested&&(
+              <div style={{fontSize:12,color:C.muted,marginBottom:4}}>
+                Suggested:{' '}
+                <button onClick={()=>setPaper(suggested)} style={{background:'none',border:'none',
+                  color:C.accent,cursor:'pointer',fontSize:12,fontFamily:font,padding:0,fontWeight:600}}>
+                  {suggested}
+                </button>
+              </div>
+            )}
+            <input value={paper} onChange={e=>setPaper(e.target.value)}
+              placeholder={suggested||'Paper name (optional)'}
+              style={{width:'100%',background:C.card2,border:`1px solid ${C.border}`,
+                borderRadius:9,padding:'10px 14px',color:C.text,fontSize:13,fontFamily:font,
+                outline:'none',boxSizing:'border-box',marginBottom:18}}/>
+            <button onClick={save} disabled={!valid}
+              style={{width:'100%',padding:'14px',background:valid?C.accent:'rgba(0,0,0,0.08)',
+                border:'none',borderRadius:10,color:valid?'#fff':C.muted,
+                fontSize:15,fontWeight:700,fontFamily:font,cursor:valid?'pointer':'default',
+                transition:'all 0.2s'}}>
+              Log it →
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main shell ─────────────────────────────────────────────────────────────
 function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_SCHEDULE}) {
   const [dark,setDark]     = useState(()=>ls.get('rbp_dark',false));
   const [view,setView]     = useState('analytics');
   const [isMobile,setIsMobile] = useState(()=>window.innerWidth<768);
+  const [quickLogOpen,setQuickLogOpen] = useState(false);
 
   const uid      = user?.id??'anon';
   const [scores,setScores] = useState(()=>ls.get(`rbp_scores_${uid}`,[]));
@@ -1467,7 +1644,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
       </nav>
 
       <main style={{maxWidth:740,margin:'0 auto',padding:`${54+20}px 16px ${isMobile?82:32}px`}}>
-        {view==='analytics' && <Analytics {...vp}/>}
+        {view==='analytics' && <Analytics {...vp} onQuickLog={()=>setQuickLogOpen(true)}/>}
         {view==='tracker'   && <Tracker   {...vp} setScores={setScores} setErrors={setErrors} uid={uid}/>}
         {view==='exams'     && <Exams     {...vp}/>}
         {view==='tips'      && <Tips      {...vp}/>}
@@ -1494,6 +1671,22 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
           ))}
         </nav>
       )}
+      {quickLogOpen&&(
+        <QuickLog subjects={subjects} scores={scores} setScores={setScores}
+          uid={uid} C={C} font={font} onClose={()=>setQuickLogOpen(false)}/>
+      )}
+      <button
+        onClick={()=>setQuickLogOpen(true)}
+        aria-label="Log a paper"
+        style={{position:'fixed',bottom:isMobile?72:24,right:isMobile?16:24,
+          width:52,height:52,borderRadius:'50%',background:C.accent,border:'none',
+          color:'#fff',fontSize:30,fontWeight:300,cursor:'pointer',zIndex:90,
+          boxShadow:'0 4px 20px rgba(0,0,0,0.25)',display:'flex',alignItems:'center',
+          justifyContent:'center',lineHeight:1,transition:'transform 0.15s'}}
+        onMouseEnter={e=>e.currentTarget.style.transform='scale(1.1)'}
+        onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
+        +
+      </button>
     </div>
   );
 }
