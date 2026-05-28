@@ -1260,52 +1260,115 @@ function StreakBanner({scores, C}) {
 
 // ── Schedule component ─────────────────────────────────────────────────────
 function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE}) {
+  const [dayIdx, setDayIdx] = useState(0);
   const days = generateSchedule(subjects, scores, errors, examSched);
-  const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const DAY_NAMES   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const stripRef = useRef(null);
+
+  const day = days[dayIdx];
+  const dateLabel = dayIdx===0 ? 'Today'
+    : dayIdx===1 ? 'Tomorrow'
+    : `${DAY_NAMES[day.date.getDay()]} ${day.date.getDate()} ${MONTH_NAMES[day.date.getMonth()]}`;
+  const fullDate = `${DAY_NAMES[day.date.getDay()]}, ${day.date.getDate()} ${MONTH_NAMES[day.date.getMonth()]}`;
+
   return (
-    <div>
-      <div style={{marginBottom:20}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>14-day plan</div>
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <div>
+        <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>Plan</div>
         <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Revision Schedule</h1>
-        <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>Automatically ranked by exam urgency and your weak areas.</p>
+        <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>Ranked by exam urgency and your weak areas.</p>
       </div>
-      <div style={{display:'flex',flexDirection:'column',gap:8}}>
-        {days.map((day,i)=>{
-          const dayName=DAY_NAMES[day.date.getDay()];
-          const dateLabel=`${dayName} ${day.date.getDate()} ${MONTH_NAMES[day.date.getMonth()]}`;
+
+      {/* Day strip */}
+      <div ref={stripRef} style={{display:'flex',gap:6,overflowX:'auto',paddingBottom:2,
+        scrollbarWidth:'none',msOverflowStyle:'none'}}>
+        {days.map((d,i)=>{
+          const lbl = i===0?'Today':i===1?'Tmrw':`${DAY_NAMES[d.date.getDay()]} ${d.date.getDate()}`;
+          const isExam = d.isExamDay;
+          const sel = dayIdx===i;
           return (
-            <div key={i} style={{background:C.surface,
-              border:`1px solid ${day.isExamDay?'rgba(249,115,22,0.4)':C.border}`,
-              borderRadius:10, padding:'12px 16px',
-              background: day.isExamDay ? 'rgba(249,115,22,0.06)' : C.surface}}>
-              <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
-                <div style={{fontSize:13,fontWeight:700,color:C.text,minWidth:120}}>{dateLabel}</div>
-                {day.isExamDay ? (
-                  <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
-                    <span style={{fontSize:11,fontWeight:700,padding:'2px 8px',borderRadius:4,
-                      background:'rgba(249,115,22,0.15)',color:'#f97316',letterSpacing:0.5}}>EXAM</span>
-                    {day.exams.map((e,j)=>(
-                      <span key={j} style={{fontSize:12,color:C.muted}}>
-                        {e.subjectName} — {e.paper.split(':')[1]?.trim()||e.paper}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                    {day.slots.map((s,j)=>(
-                      <span key={j} style={{fontSize:12,fontWeight:600,padding:'3px 10px',
-                        borderRadius:20,background:`${s.color}18`,color:s.color,
-                        border:`1px solid ${s.color}33`}}>
-                        {s.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+            <button key={i} onClick={()=>setDayIdx(i)}
+              style={{flexShrink:0,padding:'7px 13px',borderRadius:8,cursor:'pointer',
+                fontFamily:font,fontSize:12,fontWeight:sel?700:400,whiteSpace:'nowrap',
+                background: sel ? (isExam?'rgba(249,115,22,0.12)':C.accentSoft) : 'transparent',
+                border:`1px solid ${sel?(isExam?'#f97316':C.accent):(isExam?'rgba(249,115,22,0.3)':C.border)}`,
+                color: sel ? (isExam?'#f97316':C.accent) : (isExam?'#f9731699':C.muted),
+                transition:'all 0.12s'}}>
+              {lbl}{isExam?' ·':''}{isExam&&<span style={{fontSize:9,fontWeight:800,letterSpacing:0.3}}> EXAM</span>}
+            </button>
           );
         })}
+      </div>
+
+      {/* Selected day card */}
+      <div style={{background:day.isExamDay?'rgba(249,115,22,0.04)':C.surface,
+        border:`1px solid ${day.isExamDay?'rgba(249,115,22,0.35)':C.border}`,
+        borderRadius:12,overflow:'hidden'}}>
+        <div style={{padding:'14px 18px',borderBottom:`1px solid ${day.isExamDay?'rgba(249,115,22,0.2)':C.border}`,
+          display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div>
+            <div style={{fontSize:15,fontWeight:700,color:C.text}}>{dateLabel}</div>
+            {dayIdx!==0&&<div style={{fontSize:12,color:C.muted,marginTop:1}}>{fullDate}</div>}
+          </div>
+          <div style={{display:'flex',gap:6}}>
+            <button onClick={()=>setDayIdx(i=>Math.max(0,i-1))} disabled={dayIdx===0}
+              style={{width:30,height:30,borderRadius:7,border:`1px solid ${C.border}`,
+                background:'transparent',color:dayIdx===0?C.subtle:C.muted,cursor:dayIdx===0?'default':'pointer',
+                fontSize:16,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:font}}>
+              ‹
+            </button>
+            <button onClick={()=>setDayIdx(i=>Math.min(days.length-1,i+1))} disabled={dayIdx===days.length-1}
+              style={{width:30,height:30,borderRadius:7,border:`1px solid ${C.border}`,
+                background:'transparent',color:dayIdx===days.length-1?C.subtle:C.muted,
+                cursor:dayIdx===days.length-1?'default':'pointer',
+                fontSize:16,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:font}}>
+              ›
+            </button>
+          </div>
+        </div>
+
+        <div style={{padding:'16px 18px'}}>
+          {day.isExamDay ? (
+            <div style={{display:'flex',flexDirection:'column',gap:10}}>
+              <div style={{fontSize:11,fontWeight:700,color:'#f97316',textTransform:'uppercase',letterSpacing:0.5}}>
+                Exam day — rest, review key notes only
+              </div>
+              {day.exams.map((e,j)=>(
+                <div key={j} style={{display:'flex',alignItems:'flex-start',gap:10,
+                  padding:'10px 14px',background:'rgba(249,115,22,0.07)',borderRadius:8}}>
+                  <div style={{width:3,alignSelf:'stretch',borderRadius:2,background:'#f97316',flexShrink:0}}/>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:700,color:C.text}}>{e.subjectName}</div>
+                    <div style={{fontSize:12,color:C.muted,marginTop:2}}>{e.paper}</div>
+                    <div style={{fontSize:11,color:'#f9731699',marginTop:2}}>{e.time} &middot; {e.duration} &middot; {e.code}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div>
+              <div style={{fontSize:11,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>
+                Suggested focus
+              </div>
+              <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                {day.slots.map((s,j)=>(
+                  <div key={j} style={{display:'flex',alignItems:'center',gap:12,
+                    padding:'12px 14px',background:`${s.color}0d`,borderRadius:8,
+                    border:`1px solid ${s.color}22`}}>
+                    <div style={{width:3,alignSelf:'stretch',borderRadius:2,background:s.color,flexShrink:0}}/>
+                    <div style={{fontSize:14,fontWeight:600,color:C.text}}>{s.name}</div>
+                  </div>
+                ))}
+              </div>
+              {dayIdx===0&&(
+                <div style={{marginTop:14,fontSize:12,color:C.subtle,lineHeight:1.6}}>
+                  Order is based on exam urgency and your lowest average scores.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1798,44 +1861,71 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE}) {
 
 // ── Study tips ─────────────────────────────────────────────────────────────
 function StudyTimer({subjects,uid,C,font}) {
+  const [timerMode, setTimerMode] = useState('pomodoro');
   const [selSubject, setSelSubject] = useState(subjects[0]?.id??'');
-  const [workMins,  setWorkMins]   = useState(25);
-  const [breakMins, setBreakMins]  = useState(5);
-  const [mode,      setMode]       = useState('work');
-  const [secsLeft,  setSecsLeft]   = useState(25*60);
-  const [running,   setRunning]    = useState(false);
   const [sessions,  setSessions]   = useState(()=>ls.get(`rbp_sessions_${uid}`,[]) );
-  const timerRef = useRef(null);
 
-  const reset = () => {
-    setRunning(false);
-    clearInterval(timerRef.current);
-    setSecsLeft((mode==='work'?workMins:breakMins)*60);
+  // Pomodoro state
+  const [workMins,  setWorkMins]  = useState(25);
+  const [breakMins, setBreakMins] = useState(5);
+  const [pomMode,   setPomMode]   = useState('work');
+  const [secsLeft,  setSecsLeft]  = useState(25*60);
+  const [running,   setRunning]   = useState(false);
+  const pomRef = useRef(null);
+
+  // Stopwatch state
+  const [swSecs,    setSwSecs]    = useState(0);
+  const [swRunning, setSwRunning] = useState(false);
+  const swRef = useRef(null);
+
+  const switchTimerMode = m => {
+    setRunning(false);  clearInterval(pomRef.current);
+    setSwRunning(false); clearInterval(swRef.current);
+    setTimerMode(m);
   };
 
+  const pomReset = () => { setRunning(false); clearInterval(pomRef.current); setSecsLeft((pomMode==='work'?workMins:breakMins)*60); };
+
   useEffect(()=>{
-    if (!running) { clearInterval(timerRef.current); return; }
-    timerRef.current = setInterval(()=>{
+    if (!running) { clearInterval(pomRef.current); return; }
+    pomRef.current = setInterval(()=>{
       setSecsLeft(s=>{
         if (s<=1) {
-          clearInterval(timerRef.current);
+          clearInterval(pomRef.current);
           setRunning(false);
-          if (mode==='work') {
+          if (pomMode==='work') {
             const sess={id:Date.now(),subjectId:selSubject,secs:workMins*60,ts:Date.now()};
             setSessions(prev=>{ const next=[...prev,sess]; ls.set(`rbp_sessions_${uid}`,next); return next; });
-            setMode('break');
-            setSecsLeft(breakMins*60);
+            setPomMode('break'); setSecsLeft(breakMins*60);
           } else {
-            setMode('work');
-            setSecsLeft(workMins*60);
+            setPomMode('work'); setSecsLeft(workMins*60);
           }
           return 0;
         }
         return s-1;
       });
     },1000);
-    return ()=>clearInterval(timerRef.current);
-  },[running,mode,selSubject,workMins,breakMins,uid]);
+    return ()=>clearInterval(pomRef.current);
+  },[running,pomMode,selSubject,workMins,breakMins,uid]);
+
+  useEffect(()=>{
+    if (!swRunning) { clearInterval(swRef.current); return; }
+    swRef.current = setInterval(()=>setSwSecs(s=>s+1),1000);
+    return ()=>clearInterval(swRef.current);
+  },[swRunning]);
+
+  const saveStopwatch = () => {
+    if (swSecs<60) return;
+    const sess={id:Date.now(),subjectId:selSubject,secs:swSecs,ts:Date.now()};
+    setSessions(prev=>{ const next=[...prev,sess]; ls.set(`rbp_sessions_${uid}`,next); return next; });
+    setSwRunning(false); clearInterval(swRef.current); setSwSecs(0);
+  };
+
+  const fmtSw = secs => {
+    const h=Math.floor(secs/3600), m=Math.floor((secs%3600)/60), s=secs%60;
+    if (h>0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  };
 
   const todayStart = new Date(); todayStart.setHours(0,0,0,0);
   const weekStart  = new Date(todayStart); weekStart.setDate(weekStart.getDate()-6);
@@ -1861,105 +1951,185 @@ function StudyTimer({subjects,uid,C,font}) {
     if (h>0) return `${h}h ${m}m`;
     return `${m}m`;
   };
-  const mm=String(Math.floor(secsLeft/60)).padStart(2,'0');
-  const ss=String(secsLeft%60).padStart(2,'0');
-  const isBreak = mode==='break';
+
+  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  const weekStart  = new Date(todayStart); weekStart.setDate(weekStart.getDate()-6);
+  const workSessions  = sessions.filter(s=>s.subjectId);
+  const todaySessions = workSessions.filter(s=>s.ts>=todayStart.getTime());
+  const weekSessions  = workSessions.filter(s=>s.ts>=weekStart.getTime());
+  const todaySecs = todaySessions.reduce((a,s)=>a+s.secs,0);
+  const weekSecs  = weekSessions.reduce((a,s)=>a+s.secs,0);
+  const bySubject = subjects.map(s=>({
+    ...s, secs:todaySessions.filter(ss=>ss.subjectId===s.id).reduce((a,ss)=>a+ss.secs,0)
+  })).filter(s=>s.secs>0).sort((a,b)=>b.secs-a.secs);
+  const daySet = new Set(workSessions.map(s=>{ const d=new Date(s.ts); d.setHours(0,0,0,0); return d.getTime(); }));
+  let streak=0; const chk=new Date(); chk.setHours(0,0,0,0);
+  while(daySet.has(chk.getTime())){ streak++; chk.setDate(chk.getDate()-1); }
+
+  const pomMm=String(Math.floor(secsLeft/60)).padStart(2,'0');
+  const pomSs=String(secsLeft%60).padStart(2,'0');
+  const isBreak = pomMode==='break';
+
+  const subjectPill = (locked) => (
+    <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:20}}>
+      {subjects.map(s=>(
+        <button key={s.id} onClick={()=>{if(!locked) setSelSubject(s.id);}} disabled={locked}
+          style={{padding:'5px 13px',borderRadius:20,
+            border:`1px solid ${selSubject===s.id?s.color:C.border}`,
+            background:selSubject===s.id?`${s.color}18`:'transparent',
+            color:selSubject===s.id?s.color:C.muted,
+            fontSize:11,fontWeight:selSubject===s.id?700:400,
+            fontFamily:font,cursor:locked?'default':'pointer',transition:'all 0.15s'}}>
+          {s.name}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
       <div>
         <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>Focus</div>
         <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Study Timer</h1>
-        <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>Pomodoro sessions tracked per subject.</p>
+        <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>Sessions tracked per subject.</p>
       </div>
 
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:'24px 20px'}}>
-        <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:20}}>
-          {subjects.map(s=>(
-            <button key={s.id} onClick={()=>{if(!running) setSelSubject(s.id);}} disabled={running}
-              style={{padding:'5px 13px',borderRadius:20,
-                border:`1px solid ${selSubject===s.id?s.color:C.border}`,
-                background:selSubject===s.id?`${s.color}18`:'transparent',
-                color:selSubject===s.id?s.color:C.muted,
-                fontSize:11,fontWeight:selSubject===s.id?700:400,
-                fontFamily:font,cursor:running?'default':'pointer',transition:'all 0.15s'}}>
-              {s.name}
-            </button>
-          ))}
-        </div>
-
-        <div style={{textAlign:'center',marginBottom:16}}>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:1,textTransform:'uppercase',
-            color:isBreak?'#4ade80':C.accent,marginBottom:6}}>
-            {isBreak?'Break':'Focus'}
-          </div>
-          <div style={{fontSize:76,fontWeight:800,color:C.text,
-            fontFamily:"'JetBrains Mono','SF Mono',monospace",
-            lineHeight:1,letterSpacing:-3,marginBottom:18}}>
-            {mm}:{ss}
-          </div>
-
-          <div style={{display:'flex',gap:24,justifyContent:'center',marginBottom:20,flexWrap:'wrap'}}>
-            <div>
-              <div style={{fontSize:10,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:5}}>Work</div>
-              <div style={{display:'flex',gap:4}}>
-                {TIMER_WORK_OPTS.map(m=>(
-                  <button key={m} onClick={()=>{if(!running){setWorkMins(m);if(mode==='work')setSecsLeft(m*60);}}}
-                    disabled={running}
-                    style={{padding:'3px 9px',borderRadius:5,
-                      border:`1px solid ${workMins===m?C.accent:C.border}`,
-                      background:workMins===m?C.accentSoft:'transparent',
-                      color:workMins===m?C.accent:C.muted,
-                      fontSize:11,fontWeight:workMins===m?700:400,fontFamily:font,cursor:running?'default':'pointer'}}>
-                    {m}m
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <div style={{fontSize:10,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:5}}>Break</div>
-              <div style={{display:'flex',gap:4}}>
-                {TIMER_BREAK_OPTS.map(m=>(
-                  <button key={m} onClick={()=>{if(!running){setBreakMins(m);if(mode==='break')setSecsLeft(m*60);}}}
-                    disabled={running}
-                    style={{padding:'3px 9px',borderRadius:5,
-                      border:`1px solid ${breakMins===m?'#4ade80':C.border}`,
-                      background:breakMins===m?'rgba(74,222,128,0.10)':'transparent',
-                      color:breakMins===m?'#4ade80':C.muted,
-                      fontSize:11,fontWeight:breakMins===m?700:400,fontFamily:font,cursor:running?'default':'pointer'}}>
-                    {m}m
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div style={{display:'flex',gap:10,justifyContent:'center'}}>
-            <button onClick={()=>setRunning(r=>!r)}
-              style={{padding:'11px 36px',borderRadius:8,
-                background:running?C.card2:isBreak?'#4ade80':C.accent,
-                border:`1px solid ${running?C.border:isBreak?'#4ade80':C.accent}`,
-                color:running?C.text:'#fff',fontSize:14,fontWeight:700,fontFamily:font,cursor:'pointer',
-                transition:'all 0.15s'}}>
-              {running?'Pause':'Start'}
-            </button>
-            <button onClick={reset}
-              style={{padding:'11px 20px',borderRadius:8,background:'transparent',
-                border:`1px solid ${C.border}`,color:C.muted,
-                fontSize:14,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
-              Reset
-            </button>
-          </div>
-        </div>
-
-        {todaySessions.length>0&&(
-          <div style={{textAlign:'center',fontSize:12,color:C.muted,borderTop:`1px solid ${C.border}`,paddingTop:14}}>
-            {todaySessions.length} session{todaySessions.length!==1?'s':''} today
-            &nbsp;&middot;&nbsp;{fmtDur(todaySecs)} focused
-            {streak>0&&<>&nbsp;&middot;&nbsp;<span style={{color:C.accent,fontWeight:600}}>{streak}-day streak</span></>}
-          </div>
-        )}
+      {/* Mode toggle */}
+      <div style={{display:'flex',gap:0,background:C.card2,borderRadius:9,padding:3,alignSelf:'flex-start',border:`1px solid ${C.border}`}}>
+        {[['pomodoro','Pomodoro'],['stopwatch','Stopwatch']].map(([m,lbl])=>(
+          <button key={m} onClick={()=>switchTimerMode(m)}
+            style={{padding:'7px 18px',borderRadius:7,border:'none',
+              background:timerMode===m?C.surface:'transparent',
+              color:timerMode===m?C.text:C.muted,
+              fontSize:12,fontWeight:timerMode===m?700:400,fontFamily:font,cursor:'pointer',
+              boxShadow:timerMode===m?'0 1px 3px rgba(0,0,0,0.12)':'none',
+              transition:'all 0.15s'}}>
+            {lbl}
+          </button>
+        ))}
       </div>
+
+      {timerMode==='pomodoro' ? (
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:'24px 20px'}}>
+          {subjectPill(running)}
+          <div style={{textAlign:'center',marginBottom:16}}>
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:1,textTransform:'uppercase',
+              color:isBreak?'#4ade80':C.accent,marginBottom:6}}>
+              {isBreak?'Break':'Focus'}
+            </div>
+            <div style={{fontSize:76,fontWeight:800,color:C.text,
+              fontFamily:"'JetBrains Mono','SF Mono',monospace",
+              lineHeight:1,letterSpacing:-3,marginBottom:18}}>
+              {pomMm}:{pomSs}
+            </div>
+            <div style={{display:'flex',gap:24,justifyContent:'center',marginBottom:20,flexWrap:'wrap'}}>
+              <div>
+                <div style={{fontSize:10,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:5}}>Work</div>
+                <div style={{display:'flex',gap:4}}>
+                  {TIMER_WORK_OPTS.map(m=>(
+                    <button key={m} onClick={()=>{if(!running){setWorkMins(m);if(pomMode==='work')setSecsLeft(m*60);}}}
+                      disabled={running}
+                      style={{padding:'3px 9px',borderRadius:5,
+                        border:`1px solid ${workMins===m?C.accent:C.border}`,
+                        background:workMins===m?C.accentSoft:'transparent',
+                        color:workMins===m?C.accent:C.muted,
+                        fontSize:11,fontWeight:workMins===m?700:400,fontFamily:font,cursor:running?'default':'pointer'}}>
+                      {m}m
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div style={{fontSize:10,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:5}}>Break</div>
+                <div style={{display:'flex',gap:4}}>
+                  {TIMER_BREAK_OPTS.map(m=>(
+                    <button key={m} onClick={()=>{if(!running){setBreakMins(m);if(pomMode==='break')setSecsLeft(m*60);}}}
+                      disabled={running}
+                      style={{padding:'3px 9px',borderRadius:5,
+                        border:`1px solid ${breakMins===m?'#4ade80':C.border}`,
+                        background:breakMins===m?'rgba(74,222,128,0.10)':'transparent',
+                        color:breakMins===m?'#4ade80':C.muted,
+                        fontSize:11,fontWeight:breakMins===m?700:400,fontFamily:font,cursor:running?'default':'pointer'}}>
+                      {m}m
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div style={{display:'flex',gap:10,justifyContent:'center'}}>
+              <button onClick={()=>setRunning(r=>!r)}
+                style={{padding:'11px 36px',borderRadius:8,
+                  background:running?C.card2:isBreak?'#4ade80':C.accent,
+                  border:`1px solid ${running?C.border:isBreak?'#4ade80':C.accent}`,
+                  color:running?C.text:'#fff',fontSize:14,fontWeight:700,fontFamily:font,cursor:'pointer',transition:'all 0.15s'}}>
+                {running?'Pause':'Start'}
+              </button>
+              <button onClick={pomReset}
+                style={{padding:'11px 20px',borderRadius:8,background:'transparent',
+                  border:`1px solid ${C.border}`,color:C.muted,fontSize:14,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
+                Reset
+              </button>
+            </div>
+          </div>
+          {todaySessions.length>0&&(
+            <div style={{textAlign:'center',fontSize:12,color:C.muted,borderTop:`1px solid ${C.border}`,paddingTop:14}}>
+              {todaySessions.length} session{todaySessions.length!==1?'s':''} today
+              &nbsp;&middot;&nbsp;{fmtDur(todaySecs)} focused
+              {streak>0&&<>&nbsp;&middot;&nbsp;<span style={{color:C.accent,fontWeight:600}}>{streak}-day streak</span></>}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:'24px 20px'}}>
+          {subjectPill(swRunning)}
+          <div style={{textAlign:'center',marginBottom:16}}>
+            <div style={{fontSize:10,fontWeight:700,letterSpacing:1,textTransform:'uppercase',
+              color:swRunning?C.accent:C.subtle,marginBottom:6}}>
+              {swRunning?'Running':'Stopped'}
+            </div>
+            <div style={{fontSize:swSecs>=3600?64:76,fontWeight:800,color:C.text,
+              fontFamily:"'JetBrains Mono','SF Mono',monospace",
+              lineHeight:1,letterSpacing:-3,marginBottom:24}}>
+              {fmtSw(swSecs)}
+            </div>
+            <div style={{display:'flex',gap:10,justifyContent:'center',flexWrap:'wrap'}}>
+              <button onClick={()=>setSwRunning(r=>!r)}
+                style={{padding:'11px 36px',borderRadius:8,
+                  background:swRunning?C.card2:C.accent,
+                  border:`1px solid ${swRunning?C.border:C.accent}`,
+                  color:swRunning?C.text:'#fff',fontSize:14,fontWeight:700,fontFamily:font,cursor:'pointer',transition:'all 0.15s'}}>
+                {swRunning?'Pause':'Start'}
+              </button>
+              {swSecs>=60&&(
+                <button onClick={saveStopwatch}
+                  style={{padding:'11px 20px',borderRadius:8,
+                    background:'rgba(74,222,128,0.10)',
+                    border:'1px solid #4ade8040',color:'#4ade80',
+                    fontSize:14,fontWeight:700,fontFamily:font,cursor:'pointer',transition:'all 0.15s'}}>
+                  Save Session
+                </button>
+              )}
+              {swSecs>0&&!swRunning&&(
+                <button onClick={()=>setSwSecs(0)}
+                  style={{padding:'11px 16px',borderRadius:8,background:'transparent',
+                    border:`1px solid ${C.border}`,color:C.muted,fontSize:14,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
+                  Reset
+                </button>
+              )}
+            </div>
+            {swSecs>0&&swSecs<60&&!swRunning&&(
+              <div style={{marginTop:12,fontSize:12,color:C.subtle}}>Keep going — save when you hit 1 minute</div>
+            )}
+          </div>
+          {todaySessions.length>0&&(
+            <div style={{textAlign:'center',fontSize:12,color:C.muted,borderTop:`1px solid ${C.border}`,paddingTop:14}}>
+              {todaySessions.length} session{todaySessions.length!==1?'s':''} today
+              &nbsp;&middot;&nbsp;{fmtDur(todaySecs)} focused
+              {streak>0&&<>&nbsp;&middot;&nbsp;<span style={{color:C.accent,fontWeight:600}}>{streak}-day streak</span></>}
+            </div>
+          )}
+        </div>
+      )}
 
       {weekSessions.length>0?(
         <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,overflow:'hidden'}}>
@@ -2009,8 +2179,8 @@ function StudyTimer({subjects,uid,C,font}) {
         <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,
           padding:'24px 20px',textAlign:'center'}}>
           <div style={{fontSize:13,color:C.muted,lineHeight:1.6}}>
-            Complete a session to start tracking your study time.<br/>
-            Analytics appear here once you finish your first Pomodoro.
+            Complete a session to start tracking.<br/>
+            Analytics appear once you finish your first session.
           </div>
         </div>
       )}
