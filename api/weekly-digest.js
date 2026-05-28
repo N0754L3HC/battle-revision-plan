@@ -3,6 +3,16 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = process.env.RESEND_FROM ?? 'Battle Plan <onboarding@resend.dev>';
 
+// Simple in-process rate limit: max 5 digest emails per IP per hour
+const rl = new Map();
+function rateLimit(ip) {
+  const now = Date.now();
+  const entry = rl.get(ip) ?? { count: 0, reset: now + 3600000 };
+  if (now > entry.reset) { entry.count = 0; entry.reset = now + 3600000; }
+  if (entry.count >= 5) return false;
+  entry.count++; rl.set(ip, entry); return true;
+}
+
 function fmtTime(secs) {
   const h = Math.floor(secs / 3600);
   const m = Math.floor((secs % 3600) / 60);
@@ -106,6 +116,8 @@ function buildHtml({ scores = [], subjects = [], rag = {} }) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   if (!process.env.RESEND_API_KEY) return res.status(503).json({ error: 'Email service not configured' });
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ?? req.socket?.remoteAddress ?? 'unknown';
+  if (!rateLimit(ip)) return res.status(429).json({ error: 'Too many requests — try again later' });
 
   const { email, scores = [], subjects = [], rag = {} } = req.body ?? {};
 
