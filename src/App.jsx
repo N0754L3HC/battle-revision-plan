@@ -4,7 +4,7 @@ import AuthGate from './components/AuthGate';
 import SubjectPicker from './components/SubjectPicker';
 import FriendsView from './components/FriendsView';
 import { subjectsFromSelection, GCSE_CATALOG } from './data/subjects';
-import { BarChart3, PenLine, CalendarDays, ClipboardList, Trophy, Users, Timer, BookOpen, User, Sun, Moon, Lock, Pencil, GraduationCap, FileText, TrendingUp, Zap, Star, ArrowUpRight, Target, Shield, CheckCircle, Calendar, Search } from 'lucide-react';
+import { BarChart3, PenLine, CalendarDays, ClipboardList, Trophy, Users, Timer, BookOpen, User, Sun, Moon, Lock, Pencil, GraduationCap, FileText, TrendingUp, Zap, Star, ArrowUpRight, Target, Shield, CheckCircle, Calendar, Search, Grid3x3, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 // ── Error boundary ─────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
@@ -4188,6 +4188,143 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
   );
 }
 
+// ── Timetable view ─────────────────────────────────────────────────────────
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+const PERIODS = ['Period 1','Period 2','Period 3','Period 4','Period 5','Period 6'];
+const BREAK_AFTER = [1, 3]; // show break row after period index 1 (after P2) and 3 (after P4)
+
+function TimetableView({ timetable, onSave, C, font }) {
+  const [editing, setEditing] = useState(null); // {day, period}
+  const [draft, setDraft] = useState('');
+
+  const cellKey = (day, period) => `${day}__${period}`;
+  const get = (day, period) => timetable[cellKey(day, period)] || '';
+
+  const startEdit = (day, period) => {
+    setEditing({day, period});
+    setDraft(get(day, period));
+  };
+
+  const commitEdit = () => {
+    if (!editing) return;
+    const key = cellKey(editing.day, editing.period);
+    const updated = {...timetable, [key]: draft.trim()};
+    if (!draft.trim()) delete updated[key];
+    onSave(updated);
+    setEditing(null);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') commitEdit();
+    if (e.key === 'Escape') setEditing(null);
+  };
+
+  const filledCount = Object.values(timetable).filter(v=>v).length;
+
+  return (
+    <div style={{maxWidth:900}}>
+      <div style={{marginBottom:24}}>
+        <h2 style={{fontSize:22,fontWeight:700,color:C.text,margin:'0 0 6px',fontFamily:font}}>School Timetable</h2>
+        <p style={{fontSize:13,color:C.muted,margin:0,fontFamily:font}}>
+          Click any slot to add your lesson. {filledCount > 0 ? `${filledCount} slots filled.` : 'Your week at a glance.'}
+        </p>
+      </div>
+
+      <div style={{overflowX:'auto',WebkitOverflowScrolling:'touch'}}>
+        <table style={{borderCollapse:'collapse',width:'100%',minWidth:520,fontFamily:font}}>
+          <thead>
+            <tr>
+              <th style={{width:90,padding:'8px 12px',textAlign:'left',fontSize:11,fontWeight:600,
+                color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,borderBottom:`1px solid ${C.border}`}}></th>
+              {DAYS.map(d=>(
+                <th key={d} style={{padding:'8px 8px',textAlign:'center',fontSize:12,fontWeight:700,
+                  color:C.text,borderBottom:`1px solid ${C.border}`,letterSpacing:0.2}}>{d.slice(0,3)}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {PERIODS.map((period, pi) => (
+              <React.Fragment key={period}>
+                <tr>
+                  <td style={{padding:'6px 12px',fontSize:11,fontWeight:600,color:C.muted,
+                    textTransform:'uppercase',letterSpacing:0.3,whiteSpace:'nowrap',
+                    borderBottom:`1px solid ${C.border}44`}}>
+                    {period}
+                  </td>
+                  {DAYS.map(day => {
+                    const isEditing = editing?.day===day && editing?.period===period;
+                    const value = get(day, period);
+                    return (
+                      <td key={day} style={{padding:'4px',borderBottom:`1px solid ${C.border}44`}}>
+                        {isEditing ? (
+                          <input
+                            autoFocus
+                            value={draft}
+                            onChange={e=>setDraft(e.target.value)}
+                            onBlur={commitEdit}
+                            onKeyDown={handleKeyDown}
+                            placeholder="e.g. Maths"
+                            style={{
+                              width:'100%',padding:'8px 10px',
+                              background:C.surface,border:`1px solid ${C.accent}88`,
+                              borderRadius:6,color:C.text,fontSize:12,
+                              fontFamily:font,outline:'none',boxSizing:'border-box',
+                            }}
+                          />
+                        ) : (
+                          <button
+                            onClick={()=>startEdit(day, period)}
+                            style={{
+                              width:'100%',minHeight:40,padding:'6px 10px',
+                              background:value?`${C.accent}0d`:'transparent',
+                              border:`1px solid ${value?C.accent+'33':C.border+'66'}`,
+                              borderRadius:6,cursor:'pointer',textAlign:'left',
+                              fontSize:12,fontWeight:value?600:400,
+                              color:value?C.text:C.subtle,fontFamily:font,
+                              transition:'background 0.12s,border-color 0.12s',
+                            }}
+                          >
+                            {value || <span style={{opacity:0.35,fontSize:11}}>+</span>}
+                          </button>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+                {BREAK_AFTER.includes(pi) && (
+                  <tr>
+                    <td style={{padding:'4px 12px',fontSize:10,color:C.subtle,fontStyle:'italic',
+                      letterSpacing:0.2}}>Break</td>
+                    {DAYS.map(d=>(
+                      <td key={d} style={{background:`${C.border}22`,height:22}}/>
+                    ))}
+                  </tr>
+                )}
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {filledCount > 0 && (
+        <div style={{marginTop:16,display:'flex',gap:8,flexWrap:'wrap'}}>
+          <button
+            onClick={()=>onSave({})}
+            style={{padding:'7px 14px',background:'transparent',
+              border:`1px solid ${C.border}`,borderRadius:7,
+              color:C.muted,fontSize:12,fontFamily:font,cursor:'pointer'}}>
+            Clear all
+          </button>
+        </div>
+      )}
+
+      <p style={{marginTop:16,fontSize:11,color:C.subtle,fontFamily:font}}>
+        Click any slot to edit. Press Enter to save, Escape to cancel. Your timetable is saved automatically.
+      </p>
+    </div>
+  );
+}
+
 // ── Landing page ───────────────────────────────────────────────────────────
 function LandingPage({ onGetStarted }) {
   const font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
@@ -4233,7 +4370,7 @@ function LandingPage({ onGetStarted }) {
     },
   ];
 
-  const TRUST = ['Free — no credit card', 'Works on mobile', 'No ads', 'Made by an A-level student'];
+  const TRUST = ['Free — no credit card', 'A-Levels & GCSEs', 'Works on mobile', 'No ads'];
 
   return (
     <div style={{minHeight:'100vh', background:C.bg, fontFamily:font, color:C.text}}>
@@ -4273,7 +4410,7 @@ function LandingPage({ onGetStarted }) {
         </h1>
         <p style={{fontSize:'clamp(15px, 2.5vw, 19px)', color:C.muted, lineHeight:1.7,
           margin:'0 auto 36px', maxWidth:520}}>
-          Free A-level revision tracker. Log past papers, track your grade trajectory,
+          Free revision tracker for A-Levels and GCSEs. Log past papers, track your grade trajectory,
           and fix weak topics before exam day.
         </p>
         <button onClick={onGetStarted}
@@ -4331,7 +4468,7 @@ function LandingPage({ onGetStarted }) {
           Set up your account — 2 minutes
         </button>
         <div style={{marginTop:20, fontSize:12, color:C.subtle}}>
-          Supports AQA · Edexcel · OCR · WJEC · All major A-level subjects
+          Supports AQA · Edexcel · OCR · WJEC · A-Levels &amp; GCSEs
         </div>
       </section>
 
@@ -4751,12 +4888,19 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
     {id:'tracker',      label:'Tracker',      Icon:PenLine},
     {id:'exams',        label:'Exams',        Icon:CalendarDays},
     {id:'plan',         label:'Plan',         Icon:ClipboardList},
+    {id:'timetable',    label:'Timetable',    Icon:Grid3x3},
     {id:'achievements', label:'Achievements', Icon:Trophy},
     {id:'friends',      label:'Friends',      Icon:Users},
     {id:'timer',        label:'Timer',        Icon:Timer},
     {id:'resources',    label:'Resources',    Icon:BookOpen},
     {id:'account',      label:'Account',      Icon:User},
   ];
+  const [sidebarOpen, setSidebarOpen] = useState(()=>ls.get('rbp_sidebar_open',true));
+  const toggleSidebar = () => { const v=!sidebarOpen; setSidebarOpen(v); ls.set('rbp_sidebar_open',v); };
+  const sidebarW = sidebarOpen ? (isMobile ? 54 : 210) : 0;
+
+  const [timetable, setTimetable] = useState(()=>ls.get(`rbp_timetable_${uid}`,{}));
+  const saveTimetable = (t) => { setTimetable(t); ls.set(`rbp_timetable_${uid}`,t); };
 
   const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse};
 
@@ -4766,7 +4910,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
       {showBubble&&(
         <div style={{
           position:'fixed',
-          left: isMobile ? 64 : 220, top: 16,
+          left: sidebarW + 10, top: 16,
           zIndex:150,maxWidth:260,
           background:C.surface,
           border:`1px solid ${C.border}`,borderRadius:16,padding:'14px 16px 12px',
@@ -4802,12 +4946,26 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
         </div>
       )}
 
+      {/* ── Sidebar open button (shown when sidebar is closed) ── */}
+      {!sidebarOpen&&(
+        <button onClick={toggleSidebar} style={{
+          position:'fixed',left:8,top:'50%',transform:'translateY(-50%)',
+          zIndex:200,padding:'8px 6px',
+          background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,
+          color:C.muted,cursor:'pointer',display:'flex',alignItems:'center',
+          boxShadow:'0 2px 12px rgba(0,0,0,0.15)',transition:'color 0.15s',
+        }}>
+          <PanelLeftOpen size={16} strokeWidth={1.8}/>
+        </button>
+      )}
+
       {/* ── SIDEBAR — always visible, narrow on phones, full on tablet/desktop ── */}
       <aside style={{position:'fixed',left:0,top:0,bottom:0,
-        width:isMobile?54:210,zIndex:100,
+        width:sidebarW,zIndex:100,overflow:'hidden',
         background:C.nav,backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
-        borderRight:`1px solid ${C.border}`,
-        display:'flex',flexDirection:'column',alignItems:isMobile?'center':'stretch'}}>
+        borderRight:sidebarOpen?`1px solid ${C.border}`:'none',
+        display:'flex',flexDirection:'column',alignItems:isMobile?'center':'stretch',
+        transition:'width 0.2s ease'}}>
 
         {isMobile?(
           /* ── NARROW (phone): icon strip ── */
@@ -4853,10 +5011,14 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
               ))}
             </div>
             <div style={{padding:'8px 0',borderTop:`1px solid ${C.border}`,width:'100%',
-              display:'flex',justifyContent:'center'}}>
+              display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
               <button onClick={()=>{const n=!dark;setDark(n);ls.set('rbp_dark',n);}}
                 style={{padding:4,background:'transparent',border:'none',cursor:'pointer',color:C.muted,display:'flex',alignItems:'center'}}>
                 {dark?<Sun size={15} strokeWidth={1.8}/>:<Moon size={15} strokeWidth={1.8}/>}
+              </button>
+              <button onClick={toggleSidebar}
+                style={{padding:4,background:'transparent',border:'none',cursor:'pointer',color:C.muted,display:'flex',alignItems:'center'}}>
+                <PanelLeftClose size={15} strokeWidth={1.8}/>
               </button>
             </div>
           </>
@@ -4922,17 +5084,26 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
               }}>
                 {dark?<><Sun size={12} strokeWidth={2} style={{flexShrink:0}}/><span>Light</span></>:<><Moon size={12} strokeWidth={2} style={{flexShrink:0}}/><span>Dark</span></>}
               </button>
+              <button onClick={toggleSidebar} style={{
+                width:'100%',textAlign:'left',padding:'8px 10px',
+                background:'transparent',border:`1px solid ${C.border}`,borderRadius:8,
+                color:C.muted,fontSize:11,fontWeight:600,fontFamily:font,cursor:'pointer',
+                display:'flex',alignItems:'center',gap:8,letterSpacing:0.4,textTransform:'uppercase'
+              }}>
+                <PanelLeftClose size={12} strokeWidth={2} style={{flexShrink:0}}/><span>Collapse</span>
+              </button>
             </div>
           </>
         )}
       </aside>
 
-      <main style={{marginLeft:isMobile?54:210,padding:isMobile?'16px 12px':'28px 32px',minHeight:'100vh'}}>
+      <main style={{marginLeft:sidebarW,padding:isMobile?'16px 12px':'28px 32px',minHeight:'100vh',transition:'margin-left 0.2s ease'}}>
         {view==='analytics'    && <Analytics    {...vp} onQuickLog={()=>setQuickLogOpen(true)} onUpgrade={()=>setView('account')}/>}
         {view==='tracker'      && <Tracker      {...vp} setScores={setScores} setErrors={setErrors} uid={uid}/>}
         {view==='exams'        && <Exams        {...vp}/>}
         {view==='plan'         && <Schedule     {...vp}/>}
-{view==='achievements' && <AchievementsView {...vp} unlockedIds={unlockedIds}/>}
+        {view==='timetable'    && <TimetableView timetable={timetable} onSave={saveTimetable} C={C} font={font}/>}
+        {view==='achievements' && <AchievementsView {...vp} unlockedIds={unlockedIds}/>}
         {view==='friends'      && <FriendsView   user={user} scores={scores} uid={uid} C={C} font={font} addToast={addToast}/>}
         {view==='timer'        && <StudyTimer    subjects={subjects} uid={uid} C={C} font={font} sessions={sessions} setSessions={setSessions}/>}
         {view==='resources'    && <Resources    {...vp}/>}
@@ -5175,7 +5346,7 @@ export default function App() {
       const u=session.user; const uid=u.id;
       if (alive) setUser(u);
       try {
-        await supabase.from('user_profiles').upsert({id:uid,email:u.email},{onConflict:'id',ignoreDuplicates:true});
+        await supabase.from('user_profiles').upsert({id:uid,email:u.email},{onConflict:'id'});
         const {data}=await supabase.from('user_profiles').select('subjects,subscription_status,stripe_customer_id,referral_code,exam_level').eq('id',uid).single();
         if (!alive) return;
         if (data?.subscription_status) setIsPro(data.subscription_status==='pro'||data.subscription_status==='trialing');
