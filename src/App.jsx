@@ -1350,15 +1350,11 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
 }
 
 // ── Analytics ──────────────────────────────────────────────────────────────
-function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, onQuickLog}) {
+function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, onQuickLog, targets, setTargets}) {
   const SUBJ_COLORS  = Object.fromEntries(subjects.map(s=>[s.name,s.color]));
   const GRADE_BOUNDS = Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
 
-  const defaultTargets = Object.fromEntries(subjects.map(s=>[s.name,'A*']));
-  const [targets,     setTargets]     = useState(()=>ls.get(`rbp_targets_${uid}`, defaultTargets));
   const [chartSubject,setChartSubject] = useState(subjects[0]?.name??'');
-
-  useEffect(()=>ls.set(`rbp_targets_${uid}`, targets),  [targets]);
 
   const br = calcBattleReadiness(scores, errors);
 
@@ -1945,9 +1941,7 @@ const RAG = [
   {k:'green', label:'Confident',     color:'#22c55e', bg:'rgba(34,197,94,0.08)',  border:'rgba(34,197,94,0.28)' },
 ];
 
-function Resources({subjects,uid,C,font}) {
-  const key = `rbp_rag_${uid}`;
-  const [rag,        setRag]      = useState(()=>ls.get(key,{}));
+function Resources({subjects,uid,C,font,rag,setRag}) {
   const [view,       setView]     = useState('status');
   const [selSubject, setSelSubject] = useState(subjects[0]?.id??'');
   const [hovered,    setHovered]  = useState(null); // `${sid}_${i}_${ragKey}`
@@ -1956,7 +1950,7 @@ function Resources({subjects,uid,C,font}) {
     const k=`${sid}_${i}`;
     const next={...rag};
     if(next[k]===st) delete next[k]; else next[k]=st;
-    setRag(next); ls.set(key,next);
+    setRag(next);
   };
 
   const allTopics = subjects.flatMap(s=>
@@ -2637,10 +2631,20 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
   const uid      = user?.id??'anon';
   const [scores,setScores] = useState(()=>ls.get(`rbp_scores_${uid}`,[]));
   const [errors,setErrors] = useState(()=>ls.get(`rbp_errors_${uid}`,[]));
+  const [rag,   setRag]    = useState(()=>ls.get(`rbp_rag_${uid}`,{}));
 
   const C    = dark?T.dark:T.light;
   const font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
   const subjects = subjectsFromSelection(selection);
+
+  const defaultTargets = Object.fromEntries(subjects.map(s=>[s.name,'A*']));
+  const [targets,setTargets] = useState(()=>{
+    const stored=ls.get(`rbp_targets_${uid}`,{});
+    return Object.keys(stored).length>0?stored:defaultTargets;
+  });
+
+  useEffect(()=>ls.set(`rbp_targets_${uid}`,targets),[targets]);
+  useEffect(()=>ls.set(`rbp_rag_${uid}`,rag),[rag]);
 
   useEffect(()=>{
     const fn=()=>setIsMobile(window.innerWidth<768);
@@ -2653,11 +2657,11 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
   },[isMobile]);
 
   // Supabase sync — load on mount, push on change
-  const syncRef   = useRef(null);
-  const loadedRef = useRef(false);
+  const syncRef        = useRef(null);
+  const [syncLoaded,setSyncLoaded] = useState(false);
   useEffect(()=>{
-    if (!user?.id||!isSupabaseConfigured()) { loadedRef.current=true; return; }
-    supabase.from('user_data').select('scores,errors').eq('user_id',user.id).eq('profile','me').single()
+    if (!user?.id||!isSupabaseConfigured()) { setSyncLoaded(true); return; }
+    supabase.from('user_data').select('scores,errors,rag,targets').eq('user_id',user.id).eq('profile','me').single()
       .then(({data})=>{
         if (data) {
           setScores(prev=>{
@@ -2670,21 +2674,25 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
             const merged=[...prev,...(data.errors||[]).filter(e=>!ids.has(e.id))];
             ls.set(`rbp_errors_${uid}`,merged); return merged;
           });
+          if (data.rag&&Object.keys(data.rag).length>0)
+            setRag(prev=>({...data.rag,...prev}));
+          if (data.targets&&Object.keys(data.targets).length>0)
+            setTargets(prev=>Object.keys(prev).length>0?prev:data.targets);
         }
-        loadedRef.current=true;
+        setSyncLoaded(true);
       });
   },[user?.id]);
   useEffect(()=>{
-    if (!user?.id||!isSupabaseConfigured()||!loadedRef.current) return;
+    if (!user?.id||!isSupabaseConfigured()||!syncLoaded) return;
     clearTimeout(syncRef.current);
     syncRef.current=setTimeout(()=>{
       supabase.from('user_data').upsert(
-        {user_id:user.id,profile:'me',scores,errors,updated_at:new Date().toISOString()},
+        {user_id:user.id,profile:'me',scores,errors,rag,targets,updated_at:new Date().toISOString()},
         {onConflict:'user_id,profile'}
       );
     },2000);
     return ()=>clearTimeout(syncRef.current);
-  },[scores,errors]);
+  },[scores,errors,rag,targets,syncLoaded]);
 
   // Browser push notifications
   useEffect(()=>{
@@ -2737,7 +2745,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
     {id:'account',label:'Account'},
   ];
 
-  const vp={subjects,scores,errors,uid,C,font,examSched};
+  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets};
 
   return (
     <div style={{minHeight:'100vh',background:C.bg,fontFamily:font,color:C.text}}>
