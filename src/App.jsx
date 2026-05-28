@@ -1947,9 +1947,10 @@ const RAG = [
 
 function Resources({subjects,uid,C,font}) {
   const key = `rbp_rag_${uid}`;
-  const [rag,      setRag]      = useState(()=>ls.get(key,{}));
-  const [view,     setView]     = useState('status'); // 'status' | 'subject'
-  const [openSubj, setOpenSubj] = useState({});
+  const [rag,        setRag]      = useState(()=>ls.get(key,{}));
+  const [view,       setView]     = useState('status');
+  const [selSubject, setSelSubject] = useState(subjects[0]?.id??'');
+  const [hovered,    setHovered]  = useState(null); // `${sid}_${i}_${ragKey}`
 
   const setStatus = (sid,i,st) => {
     const k=`${sid}_${i}`;
@@ -1973,7 +1974,7 @@ function Resources({subjects,uid,C,font}) {
     const st = rag[`${s.id}_${i}`]||null;
     const ragCfg = RAG.find(r=>r.k===st);
     return (
-      <div style={{display:'flex',alignItems:'center',gap:10,padding:'8px 14px',
+      <div style={{display:'flex',alignItems:'center',gap:10,padding:'9px 14px',
         background:ragCfg?ragCfg.bg:'transparent',
         borderBottom:`1px solid ${C.border}`}}>
         <div style={{width:3,alignSelf:'stretch',minHeight:20,borderRadius:2,background:s.color,flexShrink:0}}/>
@@ -1981,19 +1982,26 @@ function Resources({subjects,uid,C,font}) {
           {showSubject&&<div style={{fontSize:10,fontWeight:700,color:s.color,textTransform:'uppercase',letterSpacing:0.4,marginBottom:1}}>{s.name}</div>}
           <div style={{fontSize:13,color:C.text,lineHeight:1.4}}>{topic}</div>
         </div>
-        <div style={{display:'flex',gap:3,flexShrink:0}}>
-          {RAG.map(r=>(
-            <button key={r.k} onClick={()=>setStatus(s.id,i,r.k)}
-              title={r.label}
-              style={{width:26,height:26,borderRadius:6,cursor:'pointer',
-                border:`2px solid ${st===r.k?r.color:C.border}`,
-                background:st===r.k?r.color:'transparent',
-                color:st===r.k?'#fff':C.muted,
-                fontSize:10,fontWeight:800,fontFamily:font,
-                transition:'background 0.12s,border-color 0.12s'}}>
-              {r.k[0].toUpperCase()}
-            </button>
-          ))}
+        <div style={{display:'flex',gap:4,flexShrink:0}}>
+          {RAG.map(r=>{
+            const active  = st===r.k;
+            const isHover = hovered===`${s.id}_${i}_${r.k}`;
+            return (
+              <button key={r.k}
+                onClick={()=>setStatus(s.id,i,r.k)}
+                onMouseEnter={()=>setHovered(`${s.id}_${i}_${r.k}`)}
+                onMouseLeave={()=>setHovered(null)}
+                title={r.label}
+                style={{width:28,height:28,borderRadius:6,cursor:'pointer',
+                  border:`2px solid ${(active||isHover)?r.color:C.border}`,
+                  background: active ? r.color : isHover ? `${r.color}22` : 'transparent',
+                  color: active ? '#fff' : isHover ? r.color : C.muted,
+                  fontSize:10,fontWeight:800,fontFamily:font,
+                  transition:'background 0.1s,border-color 0.1s,color 0.1s'}}>
+                {r.k[0].toUpperCase()}
+              </button>
+            );
+          })}
         </div>
       </div>
     );
@@ -2089,44 +2097,58 @@ function Resources({subjects,uid,C,font}) {
           )}
         </div>
       ) : (
-        /* ── Grouped by subject ────────────────────────────────────────── */
+        /* ── By Subject: dropdown picker + topic list ──────────────────── */
         <div>
-          {subjects.map(s=>{
-            const topics=SPEC_TOPICS[s.id]||[];
-            const isOpen=!!openSubj[s.id];
+          {/* Subject dropdown */}
+          {(()=>{
+            const sel = subjects.find(s=>s.id===selSubject)||subjects[0];
+            const topics = SPEC_TOPICS[sel?.id]||[];
             const subjCounts={red:0,amber:0,green:0};
-            topics.forEach((_,i)=>{const st=rag[`${s.id}_${i}`]; if(st)subjCounts[st]++;});
+            topics.forEach((_,i)=>{const st=rag[`${sel.id}_${i}`]; if(st)subjCounts[st]++;});
+            const unrated = topics.length - Object.values(subjCounts).reduce((a,b)=>a+b,0);
             return (
-              <div key={s.id} style={{marginBottom:8,background:C.surface,
-                border:`1px solid ${C.border}`,borderLeft:`3px solid ${s.color}`,
-                borderRadius:10,overflow:'hidden'}}>
-                <div onClick={()=>setOpenSubj(p=>({...p,[s.id]:!p[s.id]}))}
-                  style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',cursor:'pointer'}}>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:5}}>{s.name}</div>
-                    <div style={{display:'flex',gap:10}}>
-                      {RAG.map(r=>(
-                        <div key={r.k} style={{display:'flex',alignItems:'center',gap:4}}>
-                          <div style={{width:7,height:7,borderRadius:'50%',background:r.color}}/>
-                          <span style={{fontSize:11,color:r.color,fontWeight:700}}>{subjCounts[r.k]}</span>
-                        </div>
-                      ))}
-                      <span style={{fontSize:11,color:C.muted}}>{topics.length-Object.values(subjCounts).reduce((a,b)=>a+b,0)} unrated</span>
+              <div>
+                {/* Dropdown */}
+                <select value={selSubject} onChange={e=>setSelSubject(e.target.value)}
+                  style={{width:'100%',background:C.surface,border:`1px solid ${sel?.color||C.accent}55`,
+                    borderLeft:`4px solid ${sel?.color||C.accent}`,
+                    borderRadius:10,padding:'11px 14px',color:C.text,fontSize:14,
+                    fontWeight:700,fontFamily:font,outline:'none',cursor:'pointer',
+                    appearance:'none',WebkitAppearance:'none',marginBottom:10,
+                    boxShadow:`0 2px 8px rgba(0,0,0,0.06)`}}>
+                  {subjects.map(s=>(
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+
+                {/* RAG mini-summary for selected subject */}
+                <div style={{display:'flex',gap:10,marginBottom:10,padding:'8px 14px',
+                  background:C.surface,border:`1px solid ${C.border}`,borderRadius:8}}>
+                  {RAG.map(r=>(
+                    <div key={r.k} style={{display:'flex',alignItems:'center',gap:4}}>
+                      <div style={{width:8,height:8,borderRadius:'50%',background:r.color}}/>
+                      <span style={{fontSize:12,color:r.color,fontWeight:700}}>{subjCounts[r.k]}</span>
+                      <span style={{fontSize:11,color:C.muted}}>{r.label}</span>
                     </div>
-                  </div>
-                  <div style={{fontSize:13,color:C.muted,transition:'transform 0.2s',
-                    transform:isOpen?'rotate(180deg)':'none'}}>▾</div>
+                  ))}
+                  <span style={{fontSize:11,color:C.muted,marginLeft:'auto'}}>{unrated} unrated</span>
                 </div>
-                {isOpen&&(
-                  <div style={{borderTop:`1px solid ${C.border}`}}>
+
+                {/* Topic list for selected subject */}
+                {topics.length===0?(
+                  <div style={{padding:'14px',fontSize:13,color:C.muted,background:C.surface,
+                    border:`1px solid ${C.border}`,borderRadius:10}}>No topics defined for this subject.</div>
+                ):(
+                  <div style={{background:C.surface,border:`1px solid ${sel?.color||C.border}33`,
+                    borderLeft:`3px solid ${sel?.color||C.accent}`,borderRadius:10,overflow:'hidden'}}>
                     {topics.map((topic,i)=>(
-                      <TopicRow key={i} topic={topic} i={i} s={s} showSubject={false}/>
+                      <TopicRow key={i} topic={topic} i={i} s={sel} showSubject={false}/>
                     ))}
                   </div>
                 )}
               </div>
             );
-          })}
+          })()}
         </div>
       )}
     </div>
