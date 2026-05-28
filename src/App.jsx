@@ -4,6 +4,7 @@ import AuthGate from './components/AuthGate';
 import SubjectPicker from './components/SubjectPicker';
 import FriendsView from './components/FriendsView';
 import { subjectsFromSelection, GCSE_CATALOG } from './data/subjects';
+import { BarChart3, PenLine, CalendarDays, ClipboardList, Trophy, Users, Timer, BookOpen, User, Sun, Moon, Lock, Pencil, GraduationCap, FileText, TrendingUp, Zap, Star, ArrowUpRight, Target, Shield, CheckCircle, Calendar, Search } from 'lucide-react';
 
 // ── Error boundary ─────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
@@ -1031,18 +1032,18 @@ function getHistoricalThreshold(grade,paperKey){
 
 // ── Achievements ───────────────────────────────────────────────────────────
 const ACHIEVEMENTS=[
-  {id:'first_paper',  title:'First Paper',     desc:'Log your first past paper',              icon:'📝',tier:'bronze'  },
-  {id:'three_papers', title:'Getting Going',   desc:'Log 3 past papers',                      icon:'📚',tier:'bronze'  },
-  {id:'ten_papers',   title:'Grinder',         desc:'Log 10 papers',                          icon:'💪',tier:'silver'  },
-  {id:'twenty_five',  title:'Marathon Runner', desc:'Log 25 papers',                          icon:'🏃',tier:'gold'    },
-  {id:'first_a_star', title:'A* Club',         desc:'Score an A* on any paper',               icon:'⭐',tier:'gold'    },
-  {id:'five_a_stars', title:'Star Collector',  desc:'Score A* on 5 papers',                   icon:'🌟',tier:'platinum'},
-  {id:'improvement',  title:'Level Up',        desc:'Improve your grade on a retried paper',  icon:'📈',tier:'bronze'  },
-  {id:'all_subjects', title:'Versatile',       desc:'Log a paper in every subject',           icon:'🎯',tier:'silver'  },
-  {id:'battle_ready', title:'Battle Ready',    desc:'Reach 80+ Battle Readiness',             icon:'⚔️',tier:'gold'    },
-  {id:'perfect',      title:'Perfect Score',   desc:'Score 100% on a paper',                  icon:'💯',tier:'platinum'},
-  {id:'week_streak',  title:'Week Warrior',    desc:'Log papers on 7 different days',         icon:'🗓️',tier:'silver'  },
-  {id:'error_hunter', title:'Error Hunter',    desc:'Log 10 errors in the error tracker',     icon:'🔍',tier:'bronze'  },
+  {id:'first_paper',  title:'First Paper',     desc:'Log your first past paper',              Icon:FileText,     tier:'bronze'  },
+  {id:'three_papers', title:'Getting Going',   desc:'Log 3 past papers',                      Icon:BookOpen,     tier:'bronze'  },
+  {id:'ten_papers',   title:'Grinder',         desc:'Log 10 papers',                          Icon:TrendingUp,   tier:'silver'  },
+  {id:'twenty_five',  title:'Marathon Runner', desc:'Log 25 papers',                          Icon:Zap,          tier:'gold'    },
+  {id:'first_a_star', title:'A* Club',         desc:'Score an A* on any paper',               Icon:Star,         tier:'gold'    },
+  {id:'five_a_stars', title:'Star Collector',  desc:'Score A* on 5 papers',                   Icon:Trophy,       tier:'platinum'},
+  {id:'improvement',  title:'Level Up',        desc:'Improve your grade on a retried paper',  Icon:ArrowUpRight, tier:'bronze'  },
+  {id:'all_subjects', title:'Versatile',       desc:'Log a paper in every subject',           Icon:Target,       tier:'silver'  },
+  {id:'battle_ready', title:'Battle Ready',    desc:'Reach 80+ Battle Readiness',             Icon:Shield,       tier:'gold'    },
+  {id:'perfect',      title:'Perfect Score',   desc:'Score 100% on a paper',                  Icon:CheckCircle,  tier:'platinum'},
+  {id:'week_streak',  title:'Week Warrior',    desc:'Log papers on 7 different days',         Icon:Calendar,     tier:'silver'  },
+  {id:'error_hunter', title:'Error Hunter',    desc:'Log 10 errors in the error tracker',     Icon:Search,       tier:'bronze'  },
 ];
 const TIER_COLOR={bronze:'#cd7f32',silver:'#9ca3af',gold:'#fbbf24',platinum:'#a78bfa'};
 
@@ -1104,9 +1105,9 @@ function AchievementToast({achievement,onDismiss}){
         padding:'40px 48px',textAlign:'center',maxWidth:340,margin:'0 20px',
         boxShadow:isPlatOrStar?`0 0 80px ${tc}55,0 0 160px ${tc}22`:`0 0 40px ${tc}44`,
         animation:'rbp-ach-card 0.55s cubic-bezier(.34,1.56,.64,1) forwards'}}>
-        <div style={{fontSize:isPlatOrStar?64:52,marginBottom:10,
+        <div style={{fontSize:isPlatOrStar?64:52,marginBottom:10,display:'flex',alignItems:'center',justifyContent:'center',
           animation:isPlatOrStar?'rbp-ach-star 0.9s cubic-bezier(.34,1.56,.64,1) forwards':'rbp-float 2s ease-in-out infinite'}}>
-          {achievement.icon}
+          {achievement.Icon && <achievement.Icon size={isPlatOrStar?54:42} color={tc} strokeWidth={1.5}/>}
         </div>
         <div style={{fontSize:11,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',
           color:tc,marginBottom:10}}>Achievement Unlocked</div>
@@ -1154,11 +1155,11 @@ function ToastBar({toasts,dismiss,isMobile}) {
 
 // ── Onboarding walkthrough ─────────────────────────────────────────────────
 const TOUR_STEPS = [
-  {icon:'📄',title:'Log your past papers',desc:"Hit the + button to record any past paper. Your scores, grades, and trends are tracked automatically."},
-  {icon:'🟢',title:'RAG topic tracker',desc:"Go to Resources → mark every spec topic as Red (needs work), Amber, or Green (confident). Your weakest areas surface automatically."},
-  {icon:'⚡',title:'Battle Readiness',desc:"Analytics combines your scores, paper count, and topic coverage into a single readiness score. Aim for 80+ before exam day."},
-  {icon:'⏱',title:'Study Timer',desc:"Pomodoro and free stopwatch — both track time per subject and sync across your devices so your streaks are always accurate."},
-  {icon:'🗓',title:'Exam countdown',desc:"Exams shows every paper with days remaining. Tap Send Schedule to email your full timetable to yourself."},
+  {Icon:FileText,  title:'Log your past papers',desc:"Hit the + button to record any past paper. Your scores, grades, and trends are tracked automatically."},
+  {Icon:Target,    title:'RAG topic tracker',desc:"Go to Resources → mark every spec topic as Red (needs work), Amber, or Green (confident). Your weakest areas surface automatically."},
+  {Icon:BarChart3, title:'Battle Readiness',desc:"Analytics combines your scores, paper count, and topic coverage into a single readiness score. Aim for 80+ before exam day."},
+  {Icon:Timer,     title:'Study Timer',desc:"Pomodoro and free stopwatch — both track time per subject and sync across your devices so your streaks are always accurate."},
+  {Icon:CalendarDays, title:'Exam countdown',desc:"Exams shows every paper with days remaining. Tap Send Schedule to email your full timetable to yourself."},
 ];
 
 function Onboarding({onDone,setView,C,font}) {
@@ -1181,7 +1182,7 @@ function Onboarding({onDone,setView,C,font}) {
           border:`1px solid ${C.accent}44`,borderRadius:16,padding:'20px',
           boxShadow:`0 8px 48px rgba(0,0,0,0.28),0 0 0 1px ${C.accent}18`}}>
           <div style={{display:'flex',alignItems:'flex-start',gap:12,marginBottom:12}}>
-            <span style={{fontSize:26,lineHeight:1,flexShrink:0}}>{s.icon}</span>
+            <div style={{flexShrink:0,color:C.accent,opacity:0.85}}>{s.Icon&&<s.Icon size={24} strokeWidth={1.8}/>}</div>
             <div style={{flex:1}}>
               <div style={{fontSize:10,fontWeight:700,color:C.accent,letterSpacing:0.8,
                 textTransform:'uppercase',marginBottom:3}}>
@@ -1584,7 +1585,7 @@ function CompanionCard({sessions,scores,subjects,examSched,C,font,isPro=false,on
                 border:`1px solid ${C.border}`,borderRadius:7,
                 color:C.muted,fontSize:12,fontWeight:600,fontFamily:font,cursor:'pointer',
                 display:'flex',alignItems:'center',gap:5}}>
-              <span style={{fontSize:10}}>🔒</span> Chat · Pro feature
+              <Lock size={10} strokeWidth={2.5}/> Chat · Pro feature
             </button>
           )}
         </div>
@@ -1738,7 +1739,7 @@ function AchievementsView({scores,errors,subjects,C,font,unlockedIds=[]}){
               border:`1px solid ${on?tc+'44':C.border}`,borderRadius:12,
               padding:'16px 14px',opacity:on?1:0.45,transition:'all 0.2s',
               boxShadow:on?`0 0 12px ${tc}22`:undefined}}>
-              <div style={{fontSize:32,marginBottom:8,filter:on?'none':'grayscale(1) brightness(0.4)'}}>{a.icon}</div>
+              <div style={{marginBottom:8,color:on?tc:C.subtle,opacity:on?1:0.4}}>{a.Icon&&<a.Icon size={28} strokeWidth={1.5}/>}</div>
               <div style={{fontSize:13,fontWeight:700,color:on?C.text:C.muted,marginBottom:3}}>{a.title}</div>
               <div style={{fontSize:11,color:C.muted,lineHeight:1.5,marginBottom:on?8:0}}>{a.desc}</div>
               {on&&<div style={{fontSize:10,fontWeight:700,color:tc,textTransform:'uppercase',
@@ -2346,7 +2347,7 @@ function ShareReadinessCard({br, subjects, scores, C, font}) {
       await new Promise(resolve=>canvas.toBlob(async blob=>{
         try {
           const file=new File([blob],'battle-readiness.png',{type:'image/png'});
-          const shareText=`${br.total}% Battle Readiness — ${br.label}! 🏆\nTracked with A* Battle Plan`;
+          const shareText=`${br.total}% Battle Readiness — ${br.label}!\nTracked with A* Battle Plan`;
           if (navigator.canShare?.({files:[file]})) {
             await navigator.share({files:[file],title:'My Battle Readiness',text:shareText});
           } else {
@@ -2370,7 +2371,7 @@ function ShareReadinessCard({br, subjects, scores, C, font}) {
     <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:'14px 18px',marginBottom:12}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:8,marginBottom:generated?10:0}}>
         <div>
-          <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:2}}>Brag card 🏆</div>
+          <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:2}}>Brag card</div>
           <div style={{fontSize:11,color:C.muted}}>Generate a shareable readiness card</div>
         </div>
         <div style={{display:'flex',gap:7,flexWrap:'wrap',alignItems:'center'}}>
@@ -4746,15 +4747,15 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   const unlockedIds=ls.get(`rbp_ach_${uid}`,[]);
 
   const DESKTOP_NAV=[
-    {id:'analytics',    label:'Analytics',    icon:'📊'},
-    {id:'tracker',      label:'Tracker',      icon:'✏️'},
-    {id:'exams',        label:'Exams',        icon:'📅'},
-    {id:'plan',         label:'Plan',         icon:'📋'},
-    {id:'achievements', label:'Achievements', icon:'⭐'},
-    {id:'friends',      label:'Friends',      icon:'👥'},
-    {id:'timer',        label:'Timer',        icon:'⏱'},
-    {id:'resources',    label:'Resources',    icon:'📚'},
-    {id:'account',      label:'Account',      icon:'👤'},
+    {id:'analytics',    label:'Analytics',    Icon:BarChart3},
+    {id:'tracker',      label:'Tracker',      Icon:PenLine},
+    {id:'exams',        label:'Exams',        Icon:CalendarDays},
+    {id:'plan',         label:'Plan',         Icon:ClipboardList},
+    {id:'achievements', label:'Achievements', Icon:Trophy},
+    {id:'friends',      label:'Friends',      Icon:Users},
+    {id:'timer',        label:'Timer',        Icon:Timer},
+    {id:'resources',    label:'Resources',    Icon:BookOpen},
+    {id:'account',      label:'Account',      Icon:User},
   ];
 
   const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse};
@@ -4829,8 +4830,10 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
                   border:`2px solid ${C.nav}`}}/>
               </div>
               <button onClick={e=>{e.stopPropagation();setCompanionDraft(companion.name);setCustomising(true);}}
-                style={{fontSize:11,padding:'1px 0',background:'transparent',border:'none',
-                  cursor:'pointer',color:C.muted,lineHeight:1}}>✏️</button>
+                style={{padding:'1px 0',background:'transparent',border:'none',
+                  cursor:'pointer',color:C.muted,lineHeight:1,display:'flex',alignItems:'center'}}>
+                <Pencil size={11} strokeWidth={2}/>
+              </button>
             </div>
             <div style={{flex:1,overflowY:'auto',width:'100%'}}>
               {DESKTOP_NAV.map(n=>(
@@ -4839,8 +4842,9 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
                   justifyContent:'center',padding:'8px 0',background:'transparent',border:'none',
                   cursor:'pointer',position:'relative',
                   borderLeft:`3px solid ${view===n.id?C.accent:'transparent'}`,
-                  transition:'border-color 0.12s'}}>
-                  <span style={{fontSize:17,lineHeight:1}}>{n.icon}</span>
+                  color:view===n.id?C.accent:C.muted,
+                  transition:'border-color 0.12s,color 0.12s'}}>
+                  <n.Icon size={17} strokeWidth={view===n.id?2:1.6}/>
                   {n.id==='achievements'&&unlockedIds.length>0&&(
                     <span style={{position:'absolute',top:4,right:4,width:5,height:5,
                       borderRadius:'50%',background:TIER_COLOR.gold}}/>
@@ -4851,8 +4855,8 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
             <div style={{padding:'8px 0',borderTop:`1px solid ${C.border}`,width:'100%',
               display:'flex',justifyContent:'center'}}>
               <button onClick={()=>{const n=!dark;setDark(n);ls.set('rbp_dark',n);}}
-                style={{fontSize:15,padding:0,background:'transparent',border:'none',cursor:'pointer'}}>
-                {dark?'☀️':'🌙'}
+                style={{padding:4,background:'transparent',border:'none',cursor:'pointer',color:C.muted,display:'flex',alignItems:'center'}}>
+                {dark?<Sun size={15} strokeWidth={1.8}/>:<Moon size={15} strokeWidth={1.8}/>}
               </button>
             </div>
           </>
@@ -4884,7 +4888,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
                   style={{fontSize:10,color:C.accent,background:C.accentSoft,
                     border:`1px solid ${C.accent}44`,borderRadius:5,padding:'3px 8px',
                     fontFamily:font,cursor:'pointer',fontWeight:600}}>
-                  {isPro?'Chat':'Chat 🔒'}
+                  {isPro?'Chat':<span style={{display:'flex',alignItems:'center',gap:3}}>Chat<Lock size={9} strokeWidth={2.5}/></span>}
                 </button>
               </div>
             </div>
@@ -4900,7 +4904,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
                   display:'flex',alignItems:'center',gap:8,position:'relative',
                   transition:'color 0.12s,background 0.12s'
                 }}>
-                  <span style={{fontSize:14,lineHeight:1,width:18,textAlign:'center',flexShrink:0}}>{n.icon}</span>
+                  <n.Icon size={14} strokeWidth={view===n.id?2:1.6} style={{flexShrink:0}}/>
                   {n.label}
                   {n.id==='achievements'&&unlockedIds.length>0&&(
                     <span style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',
@@ -4916,7 +4920,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
                 color:C.muted,fontSize:11,fontWeight:600,fontFamily:font,cursor:'pointer',
                 display:'flex',alignItems:'center',gap:8,letterSpacing:0.4,textTransform:'uppercase'
               }}>
-                {dark?'☀ Light':'☾ Dark'}
+                {dark?<><Sun size={12} strokeWidth={2} style={{flexShrink:0}}/><span>Light</span></>:<><Moon size={12} strokeWidth={2} style={{flexShrink:0}}/><span>Dark</span></>}
               </button>
             </div>
           </>
@@ -5049,7 +5053,7 @@ function LevelPicker({ onComplete }) {
   const options = [
     {
       id: 'alevel',
-      emoji: '🎓',
+      LvlIcon: GraduationCap,
       title: 'A-Levels',
       subtitle: 'Years 12–13',
       desc: 'Tracking A-Level papers with A*–E grade boundaries. Subjects like Maths, Chemistry, Biology, Economics.',
@@ -5057,7 +5061,7 @@ function LevelPicker({ onComplete }) {
     },
     {
       id: 'gcse',
-      emoji: '📚',
+      LvlIcon: BookOpen,
       title: 'GCSEs',
       subtitle: 'Years 10–11',
       desc: 'Tracking GCSE papers with 9–1 grade boundaries. Subjects like Maths, English, Sciences, History.',
@@ -5105,7 +5109,7 @@ function LevelPicker({ onComplete }) {
                   transition:'all 0.15s',
                 }}
               >
-                <div style={{ fontSize:36, lineHeight:1, flexShrink:0, marginTop:2 }}>{opt.emoji}</div>
+                <div style={{ flexShrink:0, marginTop:2, color:C.accent }}><opt.LvlIcon size={32} strokeWidth={1.5}/></div>
                 <div style={{ flex:1 }}>
                   <div style={{ display:'flex', alignItems:'baseline', gap:8, marginBottom:4 }}>
                     <span style={{ fontSize:18, fontWeight:800, color:C.text }}>{opt.title}</span>
