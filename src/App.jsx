@@ -818,10 +818,89 @@ function predictedGrade(scores, subjectName, gradeBounds) {
   return { pct: projectedPct, grade, trend };
 }
 
+// ── Paper bank (PMT + official board past-paper pages) ────────────────────
+const PAPER_BANK = {
+  maths: {
+    edexcel: { pmt:'https://www.physicsandmathstutor.com/maths-revision/a-level-edexcel/past-papers/', board:'https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/mathematics-2017.coursematerials.html' },
+    aqa:     { pmt:'https://www.physicsandmathstutor.com/maths-revision/a-level-aqa/past-papers/', board:'https://www.aqa.org.uk/subjects/mathematics/a-level/mathematics-7357/assessment-resources' },
+    'ocr-a': { pmt:'https://www.physicsandmathstutor.com/maths-revision/a-level-ocr/past-papers/', board:'https://www.ocr.org.uk/qualifications/as-and-a-level/mathematics-a-h240-from-2017/assessment/' },
+    'ocr-b': { pmt:'https://www.physicsandmathstutor.com/maths-revision/a-level-ocr/past-papers/', board:'https://www.ocr.org.uk/qualifications/as-and-a-level/mathematics-b-mei-h640-from-2017/assessment/' },
+    wjec:    { pmt:'https://www.physicsandmathstutor.com/maths-revision/a-level-wjec/past-papers/', board:'https://www.wjec.co.uk/qualifications/mathematics-a-level/#tab_pastpapers' },
+    caie:    { pmt:'https://www.physicsandmathstutor.com/maths-revision/a-level-cie/past-papers/', board:'https://www.cambridgeinternational.org/programmes-and-qualifications/cambridge-international-as-and-a-level-mathematics-9709/past-papers/' },
+  },
+  'further-maths': {
+    edexcel: { pmt:'https://www.physicsandmathstutor.com/maths-revision/a-level-edexcel/further-maths-past-papers/', board:'https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/further-mathematics-2017.coursematerials.html' },
+    aqa:     { pmt:'https://www.physicsandmathstutor.com/maths-revision/a-level-aqa/further-maths-past-papers/', board:'https://www.aqa.org.uk/subjects/mathematics/a-level/further-mathematics-7367/assessment-resources' },
+    'ocr-a': { pmt:'https://www.physicsandmathstutor.com/maths-revision/a-level-ocr/further-maths-past-papers/', board:'https://www.ocr.org.uk/qualifications/as-and-a-level/further-mathematics-a-h245-from-2017/assessment/' },
+    'ocr-b': { pmt:'https://www.physicsandmathstutor.com/maths-revision/a-level-ocr/further-maths-past-papers/', board:'https://www.ocr.org.uk/qualifications/as-and-a-level/further-mathematics-b-mei-h645-from-2017/assessment/' },
+  },
+  biology: {
+    aqa:        { pmt:'https://www.physicsandmathstutor.com/biology-revision/a-level-aqa/past-papers/', board:'https://www.aqa.org.uk/subjects/science/a-level/biology-7402/assessment-resources' },
+    'edexcel-a':{ pmt:'https://www.physicsandmathstutor.com/biology-revision/a-level-edexcel/past-papers/', board:'https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/biology-a-2015.coursematerials.html' },
+    'edexcel-b':{ pmt:'https://www.physicsandmathstutor.com/biology-revision/a-level-edexcel-b/past-papers/', board:'https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/biology-b-2015.coursematerials.html' },
+    'ocr-a':    { pmt:'https://www.physicsandmathstutor.com/biology-revision/a-level-ocr/past-papers/', board:'https://www.ocr.org.uk/qualifications/as-and-a-level/biology-a-h420-from-2015/assessment/' },
+    'ocr-b':    { pmt:'https://www.physicsandmathstutor.com/biology-revision/a-level-ocr-b/past-papers/', board:'https://www.ocr.org.uk/qualifications/as-and-a-level/biology-b-advancing-biology-h422-from-2015/assessment/' },
+    wjec:       { pmt:'https://www.physicsandmathstutor.com/biology-revision/a-level-wjec/past-papers/', board:'https://www.wjec.co.uk/qualifications/biology-a-level/#tab_pastpapers' },
+  },
+  chemistry: {
+    aqa:     { pmt:'https://www.physicsandmathstutor.com/chemistry-revision/a-level-aqa/past-papers/', board:'https://www.aqa.org.uk/subjects/science/a-level/chemistry-7405/assessment-resources' },
+    edexcel: { pmt:'https://www.physicsandmathstutor.com/chemistry-revision/a-level-edexcel/past-papers/', board:'https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/chemistry-2015.coursematerials.html' },
+    'ocr-a': { pmt:'https://www.physicsandmathstutor.com/chemistry-revision/a-level-ocr/past-papers/', board:'https://www.ocr.org.uk/qualifications/as-and-a-level/chemistry-a-h432-from-2015/assessment/' },
+    'ocr-b': { pmt:'https://www.physicsandmathstutor.com/chemistry-revision/a-level-ocr-b/past-papers/', board:'https://www.ocr.org.uk/qualifications/as-and-a-level/chemistry-b-salters-h433-from-2015/assessment/' },
+    wjec:    { pmt:'https://www.physicsandmathstutor.com/chemistry-revision/a-level-wjec/past-papers/', board:'https://www.wjec.co.uk/qualifications/chemistry-a-level/#tab_pastpapers' },
+  },
+  physics: {
+    aqa:     { pmt:'https://www.physicsandmathstutor.com/physics-revision/a-level-aqa/past-papers/', board:'https://www.aqa.org.uk/subjects/science/a-level/physics-7408/assessment-resources' },
+    'ocr-a': { pmt:'https://www.physicsandmathstutor.com/physics-revision/a-level-ocr/past-papers/', board:'https://www.ocr.org.uk/qualifications/as-and-a-level/physics-a-h557-from-2015/assessment/' },
+    edexcel: { pmt:'https://www.physicsandmathstutor.com/physics-revision/a-level-edexcel/past-papers/', board:'https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/physics-2015.coursematerials.html' },
+    wjec:    { pmt:'https://www.physicsandmathstutor.com/physics-revision/a-level-wjec/past-papers/', board:'https://www.wjec.co.uk/qualifications/physics-a-level/#tab_pastpapers' },
+    caie:    { pmt:'https://www.physicsandmathstutor.com/physics-revision/a-level-cie/past-papers/', board:'https://www.cambridgeinternational.org/programmes-and-qualifications/cambridge-international-as-and-a-level-physics-9702/past-papers/' },
+  },
+  cs: {
+    ocr:     { pmt:'https://www.physicsandmathstutor.com/computer-science-revision/a-level-ocr/past-papers/', board:'https://www.ocr.org.uk/qualifications/as-and-a-level/computer-science-h446-from-2015/assessment/' },
+    aqa:     { pmt:'https://www.physicsandmathstutor.com/computer-science-revision/a-level-aqa/past-papers/', board:'https://www.aqa.org.uk/subjects/computer-science-and-it/a-level/computer-science-7517/assessment-resources' },
+    edexcel: { pmt:'https://www.physicsandmathstutor.com/computer-science-revision/a-level-edexcel/past-papers/', board:'https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/computer-science-2015.coursematerials.html' },
+  },
+  economics: {
+    aqa:     { pmt:'https://www.physicsandmathstutor.com/economics-revision/a-level-aqa/past-papers/', board:'https://www.aqa.org.uk/subjects/economics/a-level/economics-7136/assessment-resources' },
+    edexcel: { pmt:'https://www.physicsandmathstutor.com/economics-revision/a-level-edexcel/past-papers/', board:'https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/economics-a-2015.coursematerials.html' },
+    ocr:     { pmt:'https://www.physicsandmathstutor.com/economics-revision/a-level-ocr/past-papers/', board:'https://www.ocr.org.uk/qualifications/as-and-a-level/economics-h460-from-2015/assessment/' },
+    caie:    { pmt:'https://www.physicsandmathstutor.com/economics-revision/a-level-cie/past-papers/', board:'https://www.cambridgeinternational.org/programmes-and-qualifications/cambridge-international-as-and-a-level-economics-9708/past-papers/' },
+  },
+  psychology: {
+    aqa:     { pmt:'https://www.physicsandmathstutor.com/psychology-revision/a-level-aqa/past-papers/', board:'https://www.aqa.org.uk/subjects/psychology/a-level/psychology-7182/assessment-resources' },
+    ocr:     { pmt:'https://www.physicsandmathstutor.com/psychology-revision/a-level-ocr/past-papers/', board:'https://www.ocr.org.uk/qualifications/as-and-a-level/psychology-h567-from-2015/assessment/' },
+    edexcel: { pmt:'https://www.physicsandmathstutor.com/psychology-revision/a-level-edexcel/past-papers/', board:'https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/psychology-2015.coursematerials.html' },
+  },
+  history: {
+    aqa:     { pmt:'https://www.physicsandmathstutor.com/history-revision/a-level-aqa/past-papers/', board:'https://www.aqa.org.uk/subjects/history/a-level/history-7042/assessment-resources' },
+    edexcel: { pmt:'https://www.physicsandmathstutor.com/history-revision/a-level-edexcel/past-papers/', board:'https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/history-2015.coursematerials.html' },
+    ocr:     { pmt:'https://www.physicsandmathstutor.com/history-revision/a-level-ocr/past-papers/', board:'https://www.ocr.org.uk/qualifications/as-and-a-level/history-y100-from-2015/assessment/' },
+  },
+  geography: {
+    aqa:        { pmt:'https://www.physicsandmathstutor.com/geography-revision/a-level-aqa/past-papers/', board:'https://www.aqa.org.uk/subjects/geography/a-level/geography-7037/assessment-resources' },
+    'edexcel-a':{ pmt:'https://www.physicsandmathstutor.com/geography-revision/a-level-edexcel/past-papers/', board:'https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/geography-2016.coursematerials.html' },
+    'ocr-a':    { pmt:'https://www.physicsandmathstutor.com/geography-revision/a-level-ocr/past-papers/', board:'https://www.ocr.org.uk/qualifications/as-and-a-level/geography-h481-from-2016/assessment/' },
+  },
+  'english-lit': {
+    aqa:     { pmt:'https://www.physicsandmathstutor.com/english-revision/a-level-aqa-english-literature/past-papers/', board:'https://www.aqa.org.uk/subjects/english/a-level/english-literature-a-7712/assessment-resources' },
+    edexcel: { pmt:'https://www.physicsandmathstutor.com/english-revision/a-level-edexcel-english-literature/past-papers/', board:'https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/english-literature-2015.coursematerials.html' },
+    ocr:     { pmt:'https://www.physicsandmathstutor.com/english-revision/a-level-ocr-english-literature/past-papers/', board:'https://www.ocr.org.uk/qualifications/as-and-a-level/english-literature-h472-from-2015/assessment/' },
+  },
+  business: {
+    aqa:     { pmt:'https://www.physicsandmathstutor.com/business-revision/a-level-aqa/past-papers/', board:'https://www.aqa.org.uk/subjects/business/a-level/business-7132/assessment-resources' },
+    edexcel: { pmt:'https://www.physicsandmathstutor.com/business-revision/a-level-edexcel/past-papers/', board:'https://qualifications.pearson.com/en/qualifications/edexcel-a-levels/business-2015.coursematerials.html' },
+    ocr:     { pmt:'https://www.physicsandmathstutor.com/business-revision/a-level-ocr/past-papers/', board:'https://www.ocr.org.uk/qualifications/as-and-a-level/business-h431-from-2015/assessment/' },
+  },
+  sociology: {
+    aqa:     { pmt:'https://www.physicsandmathstutor.com/sociology-revision/a-level-aqa/past-papers/', board:'https://www.aqa.org.uk/subjects/sociology/a-level/sociology-7192/assessment-resources' },
+    ocr:     { pmt:'https://www.physicsandmathstutor.com/sociology-revision/a-level-ocr/past-papers/', board:'https://www.ocr.org.uk/qualifications/as-and-a-level/sociology-h580-from-2015/assessment/' },
+  },
+};
+
 // ── Schedule generator ─────────────────────────────────────────────────────
-function generateSchedule(subjects, scores, errors, examSched) {
+function generateSchedule(subjects, scores, errors, examSched, rag={}) {
   const today = new Date(); today.setHours(0,0,0,0);
-  // rank by priority
   const ranked = [...subjects].map(s => {
     const exs = getSubjectExams(examSched, s.id, s.boardId);
     const minDays = exs.length ? Math.min(...exs.map(e=>daysUntil(e.date))) : 999;
@@ -829,7 +908,10 @@ function generateSchedule(subjects, scores, errors, examSched) {
     const ss = scores.filter(x=>x.subject===s.name);
     const avg = ss.length ? ss.reduce((a,x)=>a+x.pct,0)/ss.length : 50;
     const weakness = (100-avg)*0.5;
-    return { name:s.name, color:s.color, priority: urgency+weakness };
+    const topics = SPEC_TOPICS[s.id]||[];
+    const redTopics = topics.filter((_,i)=>rag[`${s.id}_${i}`]==='red');
+    const ragBoost = redTopics.length * 4;
+    return { name:s.name, color:s.color, priority: urgency+weakness+ragBoost, redTopics };
   }).sort((a,b)=>b.priority-a.priority);
 
   const days = [];
@@ -1799,9 +1881,9 @@ function StreakBanner({scores, C}) {
 }
 
 // ── Schedule component ─────────────────────────────────────────────────────
-function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE}) {
+function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, rag={}}) {
   const [dayIdx, setDayIdx] = useState(0);
-  const days = generateSchedule(subjects, scores, errors, examSched);
+  const days = generateSchedule(subjects, scores, errors, examSched, rag);
   const DAY_NAMES   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const stripRef = useRef(null);
@@ -1893,17 +1975,30 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
               </div>
               <div style={{display:'flex',flexDirection:'column',gap:8}}>
                 {day.slots.map((s,j)=>(
-                  <div key={j} style={{display:'flex',alignItems:'center',gap:12,
-                    padding:'12px 14px',background:`${s.color}0d`,borderRadius:8,
+                  <div key={j} style={{padding:'12px 14px',background:`${s.color}0d`,borderRadius:8,
                     border:`1px solid ${s.color}22`}}>
-                    <div style={{width:3,alignSelf:'stretch',borderRadius:2,background:s.color,flexShrink:0}}/>
-                    <div style={{fontSize:14,fontWeight:600,color:C.text}}>{s.name}</div>
+                    <div style={{display:'flex',alignItems:'center',gap:12}}>
+                      <div style={{width:3,alignSelf:'stretch',borderRadius:2,background:s.color,flexShrink:0}}/>
+                      <div style={{fontSize:14,fontWeight:600,color:C.text}}>{s.name}</div>
+                    </div>
+                    {s.redTopics?.length>0&&(
+                      <div style={{marginTop:7,marginLeft:15,display:'flex',flexDirection:'column',gap:3}}>
+                        <div style={{fontSize:10,fontWeight:700,color:'#ef4444',textTransform:'uppercase',letterSpacing:0.4,marginBottom:2}}>
+                          Weak spots to drill
+                        </div>
+                        {s.redTopics.slice(0,2).map((t,k)=>(
+                          <div key={k} style={{fontSize:12,color:C.muted,display:'flex',alignItems:'center',gap:5}}>
+                            <span style={{color:'#ef4444',fontSize:9}}>●</span>{t}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
               {dayIdx===0&&(
                 <div style={{marginTop:14,fontSize:12,color:C.subtle,lineHeight:1.6}}>
-                  Order is based on exam urgency and your lowest average scores.
+                  Priority order: exam urgency + weak scores + red RAG topics.
                 </div>
               )}
             </div>
@@ -2079,6 +2174,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
           const progress  = avg!=null ? Math.min(100,Math.round((avg/targetPct)*100)) : 0;
           const ss=[...scores].filter(x=>x.subject===s.name).reverse();
           const trend=ss.length>=2 ? ss[ss.length-1].pct - ss[ss.length-2].pct : null;
+          const pred=predictedGrade(scores, s.name, GRADE_BOUNDS);
           return (
             <div key={s.name} style={{
               background:C.surface,
@@ -2101,6 +2197,16 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
                       </span>
                     )}
                   </div>
+                  {pred&&(
+                    <div style={{fontSize:11,color:C.muted,marginTop:3,display:'flex',alignItems:'center',gap:4}}>
+                      <span style={{color:C.subtle}}>Projected:</span>
+                      <span style={{fontWeight:700,color:gradeColor(pred.grade)}}>{pred.grade}</span>
+                      <span style={{color:C.subtle}}>({pred.pct}%)</span>
+                      <span style={{color:pred.trend==='up'?'#22c55e':pred.trend==='down'?'#ef4444':C.subtle,fontSize:10}}>
+                        {pred.trend==='up'?'↗ improving':pred.trend==='down'?'↘ declining':'→ stable'}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <div style={{textAlign:'right'}}>
                   <div style={{fontSize:12,color:C.muted,marginBottom:6}}>
@@ -3094,8 +3200,8 @@ function Resources({subjects,uid,C,font,rag,setRag,ragNotes,setRagNotes}) {
       </div>
 
       {/* View toggle */}
-      <div style={{display:'flex',gap:4,marginBottom:14}}>
-        {[{v:'status',l:'By Status'},{v:'subject',l:'By Subject'}].map(({v,l})=>(
+      <div style={{display:'flex',gap:4,marginBottom:14,flexWrap:'wrap'}}>
+        {[{v:'status',l:'By Status'},{v:'subject',l:'By Subject'},{v:'papers',l:'Paper Bank'}].map(({v,l})=>(
           <button key={v} onClick={()=>setView(v)}
             style={{padding:'6px 14px',borderRadius:7,border:`1px solid ${view===v?C.accent:C.border}`,
               background:view===v?C.accentSoft:'transparent',
@@ -3202,6 +3308,54 @@ function Resources({subjects,uid,C,font,rag,setRag,ragNotes,setRagNotes}) {
               </div>
             );
           })()}
+        </div>
+      )}
+
+      {/* ── Paper Bank ──────────────────────────────────────────────────── */}
+      {view==='papers'&&(
+        <div style={{display:'flex',flexDirection:'column',gap:10}}>
+          <div style={{fontSize:12,color:C.muted,lineHeight:1.6,marginBottom:4}}>
+            Official past paper collections for your subjects. Links open the board's assessment resources page and Physics & Maths Tutor (PMT).
+          </div>
+          {subjects.map(s=>{
+            const bank = (PAPER_BANK[s.id]||{})[s.boardId];
+            return (
+              <div key={s.id} style={{background:C.surface,border:`1px solid ${C.border}`,
+                borderLeft:`3px solid ${s.color}`,borderRadius:10,padding:'14px 16px'}}>
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
+                  <div style={{width:8,height:8,borderRadius:'50%',background:s.color,flexShrink:0}}/>
+                  <div style={{fontSize:13,fontWeight:700,color:C.text}}>{s.name}</div>
+                  <div style={{fontSize:11,color:s.color,fontWeight:600,background:`${s.color}14`,
+                    border:`1px solid ${s.color}33`,borderRadius:4,padding:'1px 7px'}}>{s.board}</div>
+                </div>
+                {bank ? (
+                  <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                    <a href={bank.pmt} target="_blank" rel="noopener noreferrer"
+                      style={{display:'inline-flex',alignItems:'center',gap:5,padding:'7px 13px',
+                        background:C.accentSoft,border:`1px solid ${C.accent}44`,borderRadius:7,
+                        color:C.accent,fontSize:12,fontWeight:600,textDecoration:'none',
+                        fontFamily:font,transition:'background 0.12s'}}>
+                      PMT Paper Bank ↗
+                    </a>
+                    <a href={bank.board} target="_blank" rel="noopener noreferrer"
+                      style={{display:'inline-flex',alignItems:'center',gap:5,padding:'7px 13px',
+                        background:C.card2,border:`1px solid ${C.border}`,borderRadius:7,
+                        color:C.muted,fontSize:12,fontWeight:600,textDecoration:'none',
+                        fontFamily:font}}>
+                      Official board page ↗
+                    </a>
+                  </div>
+                ):(
+                  <div style={{fontSize:12,color:C.subtle}}>
+                    No direct link available — search "{s.name} {s.board} past papers" on the board's website.
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          <div style={{fontSize:11,color:C.subtle,marginTop:4,lineHeight:1.7}}>
+            Always verify mark schemes and grade boundaries on the official board site. Links were last checked May 2026 — boards occasionally restructure their pages.
+          </div>
         </div>
       )}
     </div>
