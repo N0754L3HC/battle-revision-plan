@@ -21,9 +21,13 @@ create table if not exists public.user_data (
   errors jsonb default '[]',
   checks jsonb default '{}',
   targets jsonb default '{}',
+  rag jsonb not null default '{}',
   updated_at timestamptz default now(),
   primary key (user_id, profile)
 );
+
+-- Migration: add rag column if upgrading from older schema
+alter table public.user_data add column if not exists rag jsonb not null default '{}';
 
 -- ── Row Level Security ──────────────────────────────────────
 
