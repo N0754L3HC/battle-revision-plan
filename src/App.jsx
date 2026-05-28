@@ -1952,20 +1952,6 @@ function StudyTimer({subjects,uid,C,font}) {
     return `${m}m`;
   };
 
-  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
-  const weekStart  = new Date(todayStart); weekStart.setDate(weekStart.getDate()-6);
-  const workSessions  = sessions.filter(s=>s.subjectId);
-  const todaySessions = workSessions.filter(s=>s.ts>=todayStart.getTime());
-  const weekSessions  = workSessions.filter(s=>s.ts>=weekStart.getTime());
-  const todaySecs = todaySessions.reduce((a,s)=>a+s.secs,0);
-  const weekSecs  = weekSessions.reduce((a,s)=>a+s.secs,0);
-  const bySubject = subjects.map(s=>({
-    ...s, secs:todaySessions.filter(ss=>ss.subjectId===s.id).reduce((a,ss)=>a+ss.secs,0)
-  })).filter(s=>s.secs>0).sort((a,b)=>b.secs-a.secs);
-  const daySet = new Set(workSessions.map(s=>{ const d=new Date(s.ts); d.setHours(0,0,0,0); return d.getTime(); }));
-  let streak=0; const chk=new Date(); chk.setHours(0,0,0,0);
-  while(daySet.has(chk.getTime())){ streak++; chk.setDate(chk.getDate()-1); }
-
   const pomMm=String(Math.floor(secsLeft/60)).padStart(2,'0');
   const pomSs=String(secsLeft%60).padStart(2,'0');
   const isBreak = pomMode==='break';
