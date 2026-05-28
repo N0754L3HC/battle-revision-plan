@@ -988,6 +988,7 @@ const ANIM_CSS=`
 @keyframes rbp-fade-in{0%{opacity:0}100%{opacity:1}}
 @keyframes rbp-slide-right{0%{transform:translateX(-14px);opacity:0}100%{transform:translateX(0);opacity:1}}
 @keyframes rbp-bounce-in{0%{transform:scale(0.7);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+@keyframes rbp-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
 `;
 function ensureAnimStyles(){if(!document.getElementById('rbp-anims')){const s=document.createElement('style');s.id='rbp-anims';s.textContent=ANIM_CSS;document.head.appendChild(s);}}
 
@@ -1123,7 +1124,7 @@ function ToastBar({toasts,dismiss,isMobile}) {
   ensureAnimStyles();
   if (!toasts.length) return null;
   return (
-    <div style={{position:'fixed',bottom:isMobile?70:24,left:16,zIndex:300,
+    <div style={{position:'fixed',bottom:20,left:70,zIndex:300,
       display:'flex',flexDirection:'column-reverse',gap:8,pointerEvents:'none'}}>
       {toasts.map(t=>(
         <div key={t.id} onClick={()=>dismiss(t.id)}
@@ -1305,22 +1306,28 @@ function CompanionAvatar({skin=0,hair=0,hairStyle=0,eyeColor=0,outfitColor=0,acc
         <path d="M71 12 Q88 22 84 68 Q80 82 76 78 Q82 60 78 38 Q74 20 71 12Z" fill={HC}/>
       </>)}
 
-      {/* EYES — Bitmoji style: large whites + thick curved upper lash */}
+      {/* EYES — Bitmoji style: large whites, filled crescent upper lash, wing tip */}
+      {/* Left eye */}
       <ellipse cx="33" cy="42" rx="11" ry="11.5" fill="white"/>
-      <path d="M22 40 Q33 28 44 40" stroke="#1a0a00" strokeWidth="5.5" fill="none" strokeLinecap="round"/>
-      <path d="M44 40 Q47 36 45.5 32" stroke="#1a0a00" strokeWidth="3" fill="none" strokeLinecap="round"/>
+      <path d="M23.5 46.5 Q33 53.5 42.5 46.5" stroke="#2a1a0a" strokeWidth="1.4" fill="none" strokeLinecap="round" opacity="0.45"/>
       <circle cx="33" cy="43" r="7.5"  fill={EC}/>
       <circle cx="33" cy="43" r="4.8"  fill="#0a0a0a"/>
       <circle cx="35.5" cy="40.5" r="2.4" fill="white"/>
-      <circle cx="31"   cy="45"   r="1.1" fill="white" opacity="0.4"/>
+      <circle cx="30.5" cy="45.5" r="1"   fill="white" opacity="0.4"/>
+      <circle cx="22.5" cy="44"   r="2"   fill="#ffb3c0" opacity="0.55"/>
+      <path d="M22 43 Q33 29 44 43 Q33 35.5 22 43Z" fill="#1a0a00"/>
+      <path d="M44 43 Q47 38 46 33 Q46 38.5 45 43Z" fill="#1a0a00"/>
 
+      {/* Right eye */}
       <ellipse cx="67" cy="42" rx="11" ry="11.5" fill="white"/>
-      <path d="M56 40 Q67 28 78 40" stroke="#1a0a00" strokeWidth="5.5" fill="none" strokeLinecap="round"/>
-      <path d="M78 40 Q81 36 79.5 32" stroke="#1a0a00" strokeWidth="3" fill="none" strokeLinecap="round"/>
+      <path d="M57.5 46.5 Q67 53.5 76.5 46.5" stroke="#2a1a0a" strokeWidth="1.4" fill="none" strokeLinecap="round" opacity="0.45"/>
       <circle cx="67" cy="43" r="7.5"  fill={EC}/>
       <circle cx="67" cy="43" r="4.8"  fill="#0a0a0a"/>
       <circle cx="69.5" cy="40.5" r="2.4" fill="white"/>
-      <circle cx="65"   cy="45"   r="1.1" fill="white" opacity="0.4"/>
+      <circle cx="64.5" cy="45.5" r="1"   fill="white" opacity="0.4"/>
+      <circle cx="77.5" cy="44"   r="2"   fill="#ffb3c0" opacity="0.55"/>
+      <path d="M56 43 Q67 29 78 43 Q67 35.5 56 43Z" fill="#1a0a00"/>
+      <path d="M78 43 Q81 38 80 33 Q80 38.5 79 43Z" fill="#1a0a00"/>
 
       {/* EYEBROWS */}
       <path d={browL} stroke={HC} strokeWidth="3.5" fill="none" strokeLinecap="round"/>
@@ -2180,8 +2187,9 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
 // ── Share readiness card ────────────────────────────────────────────────────
 function ShareReadinessCard({br, subjects, scores, C, font}) {
   const canvasRef = useRef(null);
-  const [generated, setGenerated] = useState(false);
-  const [sharing, setSharing] = useState(false);
+  const [generated,  setGenerated]  = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [sharing,    setSharing]    = useState(false);
 
   const subjectAvg = name => {
     const ss=scores.filter(x=>x.subject===name);
@@ -2189,97 +2197,125 @@ function ShareReadinessCard({br, subjects, scores, C, font}) {
   };
 
   const drawCard = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const W=600, H=315;
-    canvas.width=W; canvas.height=H;
+    if (!canvasRef.current) return;
+    ensureAnimStyles();
+    setGenerating(true);
+    requestAnimationFrame(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) { setGenerating(false); return; }
+      const ctx = canvas.getContext('2d');
+      const W=600, H=315, DEG=Math.PI/180;
+      canvas.width=W; canvas.height=H;
 
-    // Background
-    ctx.fillStyle='#0c0e13';
-    ctx.fillRect(0,0,W,H);
+      // ── BACKGROUND ──
+      ctx.fillStyle='#0d0f16';
+      ctx.fillRect(0,0,W,H);
+      const bgG=ctx.createRadialGradient(0,H,0,0,H,W*0.9);
+      bgG.addColorStop(0,'rgba(194,124,96,0.2)');
+      bgG.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=bgG; ctx.fillRect(0,0,W,H);
+      const bgG2=ctx.createRadialGradient(W,0,0,W,0,W*0.55);
+      bgG2.addColorStop(0,'rgba(90,110,200,0.07)');
+      bgG2.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=bgG2; ctx.fillRect(0,0,W,H);
 
-    // Accent gradient
-    const grd=ctx.createLinearGradient(0,0,W*0.6,H);
-    grd.addColorStop(0,'rgba(194,124,96,0.09)');
-    grd.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=grd;
-    ctx.fillRect(0,0,W,H);
+      // Left accent bar
+      const barG=ctx.createLinearGradient(0,0,0,H);
+      barG.addColorStop(0,br.labelColor+'ff');
+      barG.addColorStop(1,br.labelColor+'33');
+      ctx.fillStyle=barG; ctx.fillRect(0,0,4,H);
 
-    // Left accent bar
-    ctx.fillStyle='#c27c60';
-    ctx.fillRect(0,0,3,H);
+      // ── GAUGE ──
+      const GX=118, GY=158, GR=74;
+      const startA=210*DEG, sweepA=240*DEG;
+      const pct=Math.min(Math.max(br.total,0),100)/100;
 
-    // App badge
-    ctx.fillStyle='#c27c60';
-    ctx.font="bold 15px 'Courier New',monospace";
-    ctx.textAlign='left';
-    ctx.fillText('A*',22,38);
-    ctx.fillStyle='#e4dfd8';
-    ctx.font="700 13px system-ui,sans-serif";
-    ctx.fillText('Battle Plan',40,38);
-    ctx.fillStyle='#4e4a47';
-    ctx.font="400 11px system-ui,sans-serif";
-    ctx.fillText('A-Level Revision Tracker',40,54);
-
-    // Big score
-    ctx.fillStyle=br.labelColor;
-    ctx.font="900 100px system-ui,sans-serif";
-    ctx.textAlign='left';
-    const scoreStr=`${br.total}`;
-    ctx.fillText(scoreStr,20,190);
-    const sw=ctx.measureText(scoreStr).width;
-    ctx.font="700 28px system-ui,sans-serif";
-    ctx.fillStyle=br.labelColor+'99';
-    ctx.fillText('%',22+sw,165);
-
-    // Label
-    ctx.fillStyle='#857f79';
-    ctx.font="600 12px system-ui,sans-serif";
-    ctx.textAlign='left';
-    ctx.fillText('BATTLE READINESS',22,212);
-    ctx.fillStyle=br.labelColor;
-    ctx.font="700 12px system-ui,sans-serif";
-    ctx.fillText('· '+br.label.toUpperCase(),22+ctx.measureText('BATTLE READINESS').width+6,212);
-
-    // Subject list (right column)
-    const subList=subjects.slice(0,5);
-    let sy=72;
-    for (const s of subList) {
-      const avg=subjectAvg(s.name);
-      ctx.fillStyle=s.color;
+      // Glow
       ctx.beginPath();
-      ctx.arc(W-170,sy,4,0,Math.PI*2);
-      ctx.fill();
-      ctx.fillStyle='#9b938b';
-      ctx.font="500 12px system-ui,sans-serif";
+      ctx.arc(GX,GY,GR+2,startA,startA+sweepA*pct);
+      ctx.strokeStyle=br.labelColor+'20'; ctx.lineWidth=22; ctx.lineCap='round'; ctx.stroke();
+      // Track
+      ctx.beginPath();
+      ctx.arc(GX,GY,GR,startA,startA+sweepA);
+      ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=13; ctx.lineCap='round'; ctx.stroke();
+      // Progress
+      ctx.beginPath();
+      ctx.arc(GX,GY,GR,startA,startA+sweepA*pct);
+      ctx.strokeStyle=br.labelColor; ctx.lineWidth=13; ctx.lineCap='round'; ctx.stroke();
+
+      // Score number
+      ctx.textAlign='center';
+      ctx.font="900 68px system-ui,-apple-system,sans-serif";
+      ctx.fillStyle=br.labelColor;
+      ctx.fillText(`${br.total}`,GX,GY+12);
+      const sW=ctx.measureText(`${br.total}`).width;
+      ctx.font="700 20px system-ui,-apple-system,sans-serif";
+      ctx.textAlign='left'; ctx.fillStyle=br.labelColor+'88';
+      ctx.fillText('%',GX+sW/2+3,GY-18);
+
+      // Readiness label
+      ctx.textAlign='center';
+      ctx.fillStyle='rgba(255,255,255,0.3)';
+      ctx.font="600 9px system-ui,-apple-system,sans-serif";
+      ctx.fillText('BATTLE READINESS',GX,GY+42);
+      ctx.fillStyle=br.labelColor;
+      ctx.font="800 13px system-ui,-apple-system,sans-serif";
+      ctx.fillText(br.label.toUpperCase(),GX,GY+59);
+
+      // ── DIVIDER ──
+      ctx.strokeStyle='rgba(255,255,255,0.07)';
+      ctx.lineWidth=1; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(228,22); ctx.lineTo(228,H-22); ctx.stroke();
+
+      // ── RIGHT: header ──
       ctx.textAlign='left';
-      const label=s.name.length>18?s.name.slice(0,17)+'…':s.name;
-      ctx.fillText(label,W-160,sy+4);
-      if (avg!==null) {
-        ctx.fillStyle='#e4dfd8';
-        ctx.font="700 12px system-ui,sans-serif";
+      ctx.fillStyle=br.labelColor;
+      ctx.font="800 16px system-ui,-apple-system,sans-serif";
+      ctx.fillText('Battle Plan',246,44);
+      ctx.fillStyle='rgba(255,255,255,0.22)';
+      ctx.font="500 9px system-ui,-apple-system,sans-serif";
+      ctx.fillText('A-LEVEL REVISION TRACKER  ·  BEATTHEEXAM.ORG',246,59);
+
+      ctx.strokeStyle='rgba(255,255,255,0.06)';
+      ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(246,68); ctx.lineTo(W-18,68); ctx.stroke();
+
+      // ── SUBJECT LIST ──
+      const subList=subjects.filter(s=>subjectAvg(s.name)!==null).slice(0,4);
+      let sy=84;
+      for (const s of subList) {
+        const avg=subjectAvg(s.name);
+        ctx.fillStyle=s.color;
+        ctx.beginPath(); ctx.arc(252,sy,5,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='rgba(255,255,255,0.48)';
+        ctx.font="500 11px system-ui,-apple-system,sans-serif";
+        ctx.textAlign='left';
+        ctx.fillText(s.name.length>23?s.name.slice(0,22)+'…':s.name,264,sy+4);
+        ctx.fillStyle=s.color;
+        ctx.font="700 12px system-ui,-apple-system,sans-serif";
         ctx.textAlign='right';
         ctx.fillText(`${avg}%`,W-20,sy+4);
+        // Bar
+        const bx=264,by=sy+10,bw=W-20-264-46,bh=4;
+        ctx.fillStyle='rgba(255,255,255,0.06)'; ctx.fillRect(bx,by,bw,bh);
+        ctx.fillStyle=s.color+'bb'; ctx.fillRect(bx,by,bw*avg/100,bh);
+        sy+=34;
       }
-      sy+=26;
-    }
 
-    // Divider
-    ctx.strokeStyle='rgba(255,255,255,0.06)';
-    ctx.lineWidth=1;
-    ctx.beginPath();
-    ctx.moveTo(W-180,55);
-    ctx.lineTo(W-180,H-30);
-    ctx.stroke();
+      // ── BOTTOM ──
+      ctx.strokeStyle='rgba(255,255,255,0.05)';
+      ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(0,H-24); ctx.lineTo(W,H-24); ctx.stroke();
+      ctx.fillStyle='rgba(255,255,255,0.18)';
+      ctx.font="500 9px system-ui,-apple-system,sans-serif";
+      ctx.textAlign='left';
+      ctx.fillText('Tracked with Battle Plan',8,H-8);
+      ctx.textAlign='right';
+      ctx.fillText('beattheexam.org',W-8,H-8);
 
-    // URL branding
-    ctx.fillStyle='#4e4a47';
-    ctx.font="500 11px system-ui,sans-serif";
-    ctx.textAlign='right';
-    ctx.fillText('beattheexam.org',W-20,H-16);
-
-    setGenerated(true);
+      setGenerating(false);
+      setGenerated(true);
+    });
   };
 
   const download = () => {
@@ -2299,10 +2335,11 @@ function ShareReadinessCard({br, subjects, scores, C, font}) {
       await new Promise(resolve=>canvas.toBlob(async blob=>{
         try {
           const file=new File([blob],'battle-readiness.png',{type:'image/png'});
+          const shareText=`${br.total}% Battle Readiness — ${br.label}! 🏆\nTracked with A* Battle Plan`;
           if (navigator.canShare?.({files:[file]})) {
-            await navigator.share({files:[file],title:'My Battle Readiness',text:`I'm ${br.total}% battle-ready for A-Levels — check out Battle Plan!`});
+            await navigator.share({files:[file],title:'My Battle Readiness',text:shareText});
           } else {
-            await navigator.share({title:'My Battle Readiness',url:'https://beattheexam.org',text:`I'm ${br.total}% battle-ready for A-Levels — check out Battle Plan!`});
+            await navigator.share({title:'My Battle Readiness',url:'https://beattheexam.org',text:shareText});
           }
         } catch {}
         resolve();
@@ -2312,31 +2349,39 @@ function ShareReadinessCard({br, subjects, scores, C, font}) {
   };
 
   const canWebShare=typeof navigator!=='undefined'&&typeof navigator.share==='function';
+  const Spinner=()=>(
+    <span style={{display:'inline-block',width:12,height:12,borderRadius:'50%',
+      border:'2px solid #fff',borderTopColor:'transparent',
+      animation:'rbp-spin 0.65s linear infinite',verticalAlign:'middle'}}/>
+  );
 
   return (
     <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:'14px 18px',marginBottom:12}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:8,marginBottom:generated?10:0}}>
         <div>
-          <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:2}}>Share your readiness</div>
-          <div style={{fontSize:11,color:C.muted}}>Generate a card to share with friends</div>
+          <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:2}}>Brag card 🏆</div>
+          <div style={{fontSize:11,color:C.muted}}>Generate a shareable readiness card</div>
         </div>
-        <div style={{display:'flex',gap:7,flexWrap:'wrap'}}>
-          <button onClick={drawCard}
-            style={{padding:'7px 14px',background:C.accent,border:'none',borderRadius:8,
-              color:'#fff',fontSize:12,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
-            {generated?'Regenerate':'Generate card'}
+        <div style={{display:'flex',gap:7,flexWrap:'wrap',alignItems:'center'}}>
+          <button onClick={drawCard} disabled={generating}
+            style={{padding:'7px 16px',background:C.accent,border:'none',borderRadius:8,
+              color:'#fff',fontSize:12,fontWeight:600,fontFamily:font,
+              cursor:generating?'default':'pointer',
+              display:'flex',alignItems:'center',gap:6,opacity:generating?0.85:1}}>
+            {generating?<Spinner/>:null}
+            {generating?'Building…':generated?'Regenerate':'Generate card'}
           </button>
-          {generated&&(
+          {generated&&!generating&&(
             <>
               <button onClick={download}
-                style={{padding:'7px 14px',background:'transparent',border:`1px solid ${C.border}`,
+                style={{padding:'7px 13px',background:'transparent',border:`1px solid ${C.border}`,
                   borderRadius:8,color:C.muted,fontSize:12,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
-                Download PNG
+                Download
               </button>
               {canWebShare&&(
                 <button onClick={share} disabled={sharing}
-                  style={{padding:'7px 14px',background:'transparent',border:`1px solid ${C.border}`,
-                    borderRadius:8,color:C.muted,fontSize:12,fontWeight:600,fontFamily:font,
+                  style={{padding:'7px 13px',background:C.accentSoft,border:`1px solid ${C.accent}44`,
+                    borderRadius:8,color:C.accent,fontSize:12,fontWeight:600,fontFamily:font,
                     cursor:sharing?'not-allowed':'pointer'}}>
                   {sharing?'…':'Share'}
                 </button>
@@ -2345,10 +2390,8 @@ function ShareReadinessCard({br, subjects, scores, C, font}) {
           )}
         </div>
       </div>
-      {generated&&(
-        <canvas ref={canvasRef} style={{width:'100%',borderRadius:8,display:'block'}}/>
-      )}
-      {!generated&&<canvas ref={canvasRef} style={{display:'none'}}/>}
+      <canvas ref={canvasRef}
+        style={{width:'100%',borderRadius:8,display:generated&&!generating?'block':'none'}}/>
     </div>
   );
 }
@@ -4520,8 +4563,8 @@ function QuickLog({subjects,scores,setScores,uid,C,font,onClose,onSaved}){
 function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_SCHEDULE,isPro=false,stripeCustomerId=null,referralCode=null}) {
   const [dark,setDark]     = useState(()=>ls.get('rbp_dark',false));
   const [view,setView]     = useState('analytics');
-  const [isMobile,setIsMobile] = useState(()=>window.innerWidth<768);
-  const [isWide,  setIsWide]   = useState(()=>window.innerWidth>=1024);
+  const [isMobile,setIsMobile] = useState(()=>window.innerWidth<640);
+  const [isWide,  setIsWide]   = useState(()=>window.innerWidth>=768);
   const [quickLogOpen,setQuickLogOpen] = useState(false);
   const [moreOpen,    setMoreOpen]     = useState(false);
   const [pendingAchievement,setPendingAchievement] = useState(null);
@@ -4581,7 +4624,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
   useEffect(()=>ls.set(`rbp_rag_${uid}`,rag),[rag]);
 
   useEffect(()=>{
-    const fn=()=>{ setIsMobile(window.innerWidth<768); setIsWide(window.innerWidth>=1024); };
+    const fn=()=>{ setIsMobile(window.innerWidth<640); setIsWide(window.innerWidth>=768); };
     window.addEventListener('resize',fn,{passive:true});
     return ()=>window.removeEventListener('resize',fn);
   },[]);
@@ -4690,89 +4733,26 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
   const unlockedIds=ls.get(`rbp_ach_${uid}`,[]);
 
   const DESKTOP_NAV=[
-    {id:'analytics',label:'Analytics'},
-    {id:'tracker',label:'Tracker'},
-    {id:'exams',label:'Exams'},
-    {id:'plan',label:'Plan'},
-    {id:'achievements',label:'Achievements'},
-    {id:'friends',label:'Friends'},
-    {id:'timer',label:'Timer'},
-    {id:'resources',label:'Resources'},
-    {id:'account',label:'Account'},
+    {id:'analytics',    label:'Analytics',    icon:'📊'},
+    {id:'tracker',      label:'Tracker',      icon:'✏️'},
+    {id:'exams',        label:'Exams',        icon:'📅'},
+    {id:'plan',         label:'Plan',         icon:'📋'},
+    {id:'achievements', label:'Achievements', icon:'⭐'},
+    {id:'friends',      label:'Friends',      icon:'👥'},
+    {id:'timer',        label:'Timer',        icon:'⏱'},
+    {id:'resources',    label:'Resources',    icon:'📚'},
+    {id:'account',      label:'Account',      icon:'👤'},
   ];
 
   const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode};
 
   return (
     <div style={{minHeight:'100vh',background:C.bg,fontFamily:font,color:C.text}}>
-      {!isWide&&(
-      <nav style={{position:'fixed',top:0,left:0,right:0,zIndex:100,
-        background:C.nav,backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
-        borderBottom:`1px solid ${C.border}`,height:54}}>
-        <div style={{maxWidth:740,margin:'0 auto',height:'100%',padding:'0 16px',
-          display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <div style={{display:'flex',alignItems:'center',gap:8}}>
-            {/* Mini avatar in mobile/medium nav */}
-            <div style={{position:'relative',cursor:'pointer',flexShrink:0}}
-              onClick={()=>setShowBubble(v=>!v)}>
-              <div style={{width:36,height:36,borderRadius:'50%',overflow:'hidden',
-                border:`2px solid ${C.accent}`,background:C.surface,
-                display:'flex',alignItems:'center',justifyContent:'center'}}>
-                <CompanionAvatar
-                  skin={companion.skin} hair={companion.hair} hairStyle={companion.hairStyle}
-                  eyeColor={companion.eyeColor??0} outfitColor={companion.outfitColor??0}
-                  accessory={companion.accessory??0} mood={mood}
-                  pose={showBubble?'wave':'idle'} size={32}/>
-              </div>
-              <div style={{position:'absolute',bottom:-1,right:-1,width:9,height:9,borderRadius:'50%',
-                background:{happy:'#22c55e',excited:'#fbbf24',worried:'#f97316',neutral:C.accent}[mood]||C.accent,
-                border:`2px solid ${C.nav}`}}/>
-            </div>
-            {!isMobile&&<span style={{fontSize:14,fontWeight:700,color:C.text,letterSpacing:0.2}}>Battle Plan</span>}
-          </div>
-          {!isMobile&&(
-            <div style={{display:'flex',gap:2}}>
-              {DESKTOP_NAV.map(n=>(
-                <button key={n.id} onClick={()=>setView(n.id)}
-                  style={{padding:'6px 13px',background:view===n.id?C.accentSoft:'transparent',
-                    border:'none',borderRadius:7,color:view===n.id?C.accent:C.muted,
-                    fontSize:12,fontWeight:view===n.id?700:400,fontFamily:font,cursor:'pointer',
-                    position:'relative'}}>
-                  {n.label}
-                  {n.id==='achievements'&&unlockedIds.length>0&&(
-                    <span style={{position:'absolute',top:2,right:4,width:6,height:6,
-                      borderRadius:'50%',background:TIER_COLOR.gold}}/>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-          <div style={{display:'flex',alignItems:'center',gap:8}}>
-            <button onClick={()=>{const n=!dark;setDark(n);ls.set('rbp_dark',n);}}
-              style={{padding:'5px 11px',borderRadius:6,background:'transparent',
-                border:`1px solid ${C.border}`,cursor:'pointer',
-                fontSize:11,fontWeight:600,color:C.muted,fontFamily:font,
-                letterSpacing:0.4,textTransform:'uppercase',transition:'color 0.15s,border-color 0.15s'}}>
-              {dark?'Light':'Dark'}
-            </button>
-            {isMobile&&(
-              <button onClick={()=>setView('account')}
-                style={{padding:'5px 11px',borderRadius:6,background:'transparent',
-                  border:`1px solid ${C.border}`,cursor:'pointer',
-                  fontSize:11,fontWeight:600,color:view==='account'?C.accent:C.muted,
-                  fontFamily:font,letterSpacing:0.4,textTransform:'uppercase'}}>
-                Account
-              </button>
-            )}
-          </div>
-        </div>
-      </nav>
-      )}
       {/* ── Speech bubble (desktop: right of sidebar, mobile: top-centre) ── */}
       {showBubble&&(
         <div style={{
           position:'fixed',
-          ...(isWide?{left:228,top:24}:{top:64,left:'50%',transform:'translateX(-50%)'}),
+          left: isMobile ? 64 : 220, top: 16,
           zIndex:150,maxWidth:260,
           background:C.surface,
           border:`1px solid ${C.border}`,borderRadius:16,padding:'14px 16px 12px',
@@ -4780,17 +4760,13 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
           animation:'rbp-slide-right 0.3s ease',
           pointerEvents:'auto',
         }}>
-          {/* Tail pointing left (desktop only) */}
-          {isWide&&(
-            <div style={{position:'absolute',left:-9,top:22,width:0,height:0,
-              borderTop:'9px solid transparent',borderBottom:'9px solid transparent',
-              borderRight:`9px solid ${C.border}`}}/>
-          )}
-          {isWide&&(
-            <div style={{position:'absolute',left:-7,top:23,width:0,height:0,
-              borderTop:'8px solid transparent',borderBottom:'8px solid transparent',
-              borderRight:`8px solid ${C.surface}`}}/>
-          )}
+          {/* Tail pointing left */}
+          <div style={{position:'absolute',left:-9,top:22,width:0,height:0,
+            borderTop:'9px solid transparent',borderBottom:'9px solid transparent',
+            borderRight:`9px solid ${C.border}`}}/>
+          <div style={{position:'absolute',left:-7,top:23,width:0,height:0,
+            borderTop:'8px solid transparent',borderBottom:'8px solid transparent',
+            borderRight:`8px solid ${C.surface}`}}/>
           <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:6}}>
             <span style={{fontSize:12,fontWeight:700,color:C.text}}>{companion.name}</span>
             <span style={{fontSize:10,fontWeight:700,color:{happy:'#22c55e',excited:'#fbbf24',worried:'#f97316',neutral:C.accent}[mood]||C.accent,
@@ -4812,91 +4788,129 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
         </div>
       )}
 
-      {isWide&&(
-      <aside style={{position:'fixed',left:0,top:0,bottom:0,width:216,zIndex:100,
+      {/* ── SIDEBAR — always visible, narrow on phones, full on tablet/desktop ── */}
+      <aside style={{position:'fixed',left:0,top:0,bottom:0,
+        width:isMobile?54:210,zIndex:100,
         background:C.nav,backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
-        borderRight:`1px solid ${C.border}`,display:'flex',flexDirection:'column'}}>
+        borderRight:`1px solid ${C.border}`,
+        display:'flex',flexDirection:'column',alignItems:isMobile?'center':'stretch'}}>
 
-        {/* Avatar section */}
-        <div style={{padding:'18px 16px 14px',borderBottom:`1px solid ${C.border}`,
-          display:'flex',flexDirection:'column',alignItems:'center',gap:6,cursor:'pointer'}}
-          onClick={()=>setShowBubble(v=>!v)}>
-          <div style={{position:'relative'}}>
-            <CompanionAvatar
-              skin={companion.skin} hair={companion.hair} hairStyle={companion.hairStyle}
-              eyeColor={companion.eyeColor??0} outfitColor={companion.outfitColor??0}
-              accessory={companion.accessory??0} mood={mood}
-              pose={showBubble?'wave':'idle'} size={72}/>
-            {/* Mood dot */}
-            <div style={{position:'absolute',bottom:8,right:-2,width:11,height:11,borderRadius:'50%',
-              background:{happy:'#22c55e',excited:'#fbbf24',worried:'#f97316',neutral:C.accent}[mood]||C.accent,
-              border:`2px solid ${C.nav}`}}/>
-          </div>
-          <div style={{fontSize:13,fontWeight:700,color:C.text,letterSpacing:0.1}}>{companion.name}</div>
-          <div style={{display:'flex',gap:5}}>
-            <button onClick={e=>{e.stopPropagation();setCompanionDraft(companion.name);setCustomising(true);}}
-              style={{fontSize:10,color:C.muted,background:'transparent',
-                border:`1px solid ${C.border}`,borderRadius:5,padding:'3px 8px',
-                fontFamily:font,cursor:'pointer',fontWeight:500}}>
-              Customise
-            </button>
-            {isPro&&(
-              <button onClick={e=>{e.stopPropagation();setCompanionChat(true);}}
-                style={{fontSize:10,color:C.accent,background:C.accentSoft,
-                  border:`1px solid ${C.accent}44`,borderRadius:5,padding:'3px 8px',
-                  fontFamily:font,cursor:'pointer',fontWeight:600}}>
-                Chat
+        {isMobile?(
+          /* ── NARROW (phone): icon strip ── */
+          <>
+            <div style={{paddingTop:10,paddingBottom:6,width:'100%',
+              display:'flex',flexDirection:'column',alignItems:'center',gap:3,
+              borderBottom:`1px solid ${C.border}`}}>
+              <div style={{position:'relative',cursor:'pointer'}} onClick={()=>setShowBubble(v=>!v)}>
+                <div style={{width:32,height:32,borderRadius:'50%',overflow:'hidden',
+                  border:`2px solid ${C.accent}`,background:C.surface,
+                  display:'flex',alignItems:'center',justifyContent:'center'}}>
+                  <CompanionAvatar
+                    skin={companion.skin} hair={companion.hair} hairStyle={companion.hairStyle}
+                    eyeColor={companion.eyeColor??0} outfitColor={companion.outfitColor??0}
+                    accessory={companion.accessory??0} mood={mood}
+                    pose={showBubble?'wave':'idle'} size={28}/>
+                </div>
+                <div style={{position:'absolute',bottom:-1,right:-1,width:8,height:8,borderRadius:'50%',
+                  background:{happy:'#22c55e',excited:'#fbbf24',worried:'#f97316',neutral:C.accent}[mood]||C.accent,
+                  border:`2px solid ${C.nav}`}}/>
+              </div>
+              <button onClick={e=>{e.stopPropagation();setCompanionDraft(companion.name);setCustomising(true);}}
+                style={{fontSize:11,padding:'1px 0',background:'transparent',border:'none',
+                  cursor:'pointer',color:C.muted,lineHeight:1}}>✏️</button>
+            </div>
+            <div style={{flex:1,overflowY:'auto',width:'100%'}}>
+              {DESKTOP_NAV.map(n=>(
+                <button key={n.id} onClick={()=>setView(n.id)} style={{
+                  width:'100%',display:'flex',flexDirection:'column',alignItems:'center',
+                  justifyContent:'center',padding:'8px 0',background:'transparent',border:'none',
+                  cursor:'pointer',position:'relative',
+                  borderLeft:`3px solid ${view===n.id?C.accent:'transparent'}`,
+                  transition:'border-color 0.12s'}}>
+                  <span style={{fontSize:17,lineHeight:1}}>{n.icon}</span>
+                  {n.id==='achievements'&&unlockedIds.length>0&&(
+                    <span style={{position:'absolute',top:4,right:4,width:5,height:5,
+                      borderRadius:'50%',background:TIER_COLOR.gold}}/>
+                  )}
+                </button>
+              ))}
+            </div>
+            <div style={{padding:'8px 0',borderTop:`1px solid ${C.border}`,width:'100%',
+              display:'flex',justifyContent:'center'}}>
+              <button onClick={()=>{const n=!dark;setDark(n);ls.set('rbp_dark',n);}}
+                style={{fontSize:15,padding:0,background:'transparent',border:'none',cursor:'pointer'}}>
+                {dark?'☀️':'🌙'}
               </button>
-            )}
-          </div>
-        </div>
-        <div style={{flex:1,overflowY:'auto',padding:'8px 10px'}}>
-          {DESKTOP_NAV.filter(n=>n.id!=='account').map(n=>(
-            <button key={n.id} onClick={()=>setView(n.id)} style={{
-              width:'100%',textAlign:'left',padding:'10px 12px',
-              background:view===n.id?C.accentSoft:'transparent',
-              border:'none',borderRadius:8,
-              color:view===n.id?C.accent:C.muted,
-              fontSize:13,fontWeight:view===n.id?700:400,
-              fontFamily:font,cursor:'pointer',marginBottom:2,
-              display:'flex',alignItems:'center',gap:10,position:'relative',
-              transition:'color 0.12s,background 0.12s'
-            }}>
-              {n.label}
-              {n.id==='achievements'&&unlockedIds.length>0&&(
-                <span style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',
-                  width:6,height:6,borderRadius:'50%',background:TIER_COLOR.gold}}/>
-              )}
-            </button>
-          ))}
-        </div>
-        <div style={{padding:'10px',borderTop:`1px solid ${C.border}`,display:'flex',flexDirection:'column',gap:4}}>
-          <button onClick={()=>setView('account')} style={{
-            width:'100%',textAlign:'left',padding:'10px 12px',
-            background:view==='account'?C.accentSoft:'transparent',
-            border:'none',borderRadius:8,
-            color:view==='account'?C.accent:C.muted,
-            fontSize:13,fontWeight:view==='account'?700:400,
-            fontFamily:font,cursor:'pointer',
-            display:'flex',alignItems:'center',gap:10,transition:'color 0.12s,background 0.12s'
-          }}>
-            Account
-          </button>
-          <button onClick={()=>{const n=!dark;setDark(n);ls.set('rbp_dark',n);}} style={{
-            width:'100%',textAlign:'left',padding:'9px 12px',
-            background:'transparent',border:`1px solid ${C.border}`,borderRadius:8,
-            color:C.muted,fontSize:11,fontWeight:600,fontFamily:font,cursor:'pointer',
-            display:'flex',alignItems:'center',gap:8,letterSpacing:0.4,textTransform:'uppercase'
-          }}>
-            {dark?'☀ Light':'☾ Dark'}
-          </button>
-        </div>
+            </div>
+          </>
+        ):(
+          /* ── FULL (tablet/desktop): avatar + labels ── */
+          <>
+            <div style={{padding:'16px 14px 12px',borderBottom:`1px solid ${C.border}`,
+              display:'flex',flexDirection:'column',alignItems:'center',gap:5,cursor:'pointer'}}
+              onClick={()=>setShowBubble(v=>!v)}>
+              <div style={{position:'relative'}}>
+                <CompanionAvatar
+                  skin={companion.skin} hair={companion.hair} hairStyle={companion.hairStyle}
+                  eyeColor={companion.eyeColor??0} outfitColor={companion.outfitColor??0}
+                  accessory={companion.accessory??0} mood={mood}
+                  pose={showBubble?'wave':'idle'} size={68}/>
+                <div style={{position:'absolute',bottom:8,right:-2,width:11,height:11,borderRadius:'50%',
+                  background:{happy:'#22c55e',excited:'#fbbf24',worried:'#f97316',neutral:C.accent}[mood]||C.accent,
+                  border:`2px solid ${C.nav}`}}/>
+              </div>
+              <div style={{fontSize:13,fontWeight:700,color:C.text,letterSpacing:0.1}}>{companion.name}</div>
+              <div style={{display:'flex',gap:5,flexWrap:'wrap',justifyContent:'center'}}>
+                <button onClick={e=>{e.stopPropagation();setCompanionDraft(companion.name);setCustomising(true);}}
+                  style={{fontSize:10,color:C.muted,background:'transparent',
+                    border:`1px solid ${C.border}`,borderRadius:5,padding:'3px 8px',
+                    fontFamily:font,cursor:'pointer',fontWeight:500}}>
+                  Customise
+                </button>
+                <button onClick={e=>{e.stopPropagation(); isPro?setCompanionChat(true):addToast('Upgrade to Pro to chat with your companion','info');}}
+                  style={{fontSize:10,color:C.accent,background:C.accentSoft,
+                    border:`1px solid ${C.accent}44`,borderRadius:5,padding:'3px 8px',
+                    fontFamily:font,cursor:'pointer',fontWeight:600}}>
+                  {isPro?'Chat':'Chat 🔒'}
+                </button>
+              </div>
+            </div>
+            <div style={{flex:1,overflowY:'auto',padding:'6px 8px'}}>
+              {DESKTOP_NAV.map(n=>(
+                <button key={n.id} onClick={()=>setView(n.id)} style={{
+                  width:'100%',textAlign:'left',padding:'9px 10px',
+                  background:view===n.id?C.accentSoft:'transparent',
+                  border:'none',borderRadius:8,
+                  color:view===n.id?C.accent:C.muted,
+                  fontSize:12,fontWeight:view===n.id?700:400,
+                  fontFamily:font,cursor:'pointer',marginBottom:1,
+                  display:'flex',alignItems:'center',gap:8,position:'relative',
+                  transition:'color 0.12s,background 0.12s'
+                }}>
+                  <span style={{fontSize:14,lineHeight:1,width:18,textAlign:'center',flexShrink:0}}>{n.icon}</span>
+                  {n.label}
+                  {n.id==='achievements'&&unlockedIds.length>0&&(
+                    <span style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',
+                      width:6,height:6,borderRadius:'50%',background:TIER_COLOR.gold}}/>
+                  )}
+                </button>
+              ))}
+            </div>
+            <div style={{padding:'8px',borderTop:`1px solid ${C.border}`,display:'flex',flexDirection:'column',gap:3}}>
+              <button onClick={()=>{const n=!dark;setDark(n);ls.set('rbp_dark',n);}} style={{
+                width:'100%',textAlign:'left',padding:'8px 10px',
+                background:'transparent',border:`1px solid ${C.border}`,borderRadius:8,
+                color:C.muted,fontSize:11,fontWeight:600,fontFamily:font,cursor:'pointer',
+                display:'flex',alignItems:'center',gap:8,letterSpacing:0.4,textTransform:'uppercase'
+              }}>
+                {dark?'☀ Light':'☾ Dark'}
+              </button>
+            </div>
+          </>
+        )}
       </aside>
-      )}
 
-      <main style={isWide
-        ?{marginLeft:216,padding:'32px 40px',minHeight:'100vh'}
-        :{maxWidth:740,margin:'0 auto',padding:`${54+20}px 16px ${isMobile?82:32}px`}}>
+      <main style={{marginLeft:isMobile?54:210,padding:isMobile?'16px 12px':'28px 32px',minHeight:'100vh'}}>
         {view==='analytics'    && <Analytics    {...vp} onQuickLog={()=>setQuickLogOpen(true)} onUpgrade={()=>setView('account')}/>}
         {view==='tracker'      && <Tracker      {...vp} setScores={setScores} setErrors={setErrors} uid={uid}/>}
         {view==='exams'        && <Exams        {...vp}/>}
@@ -4909,76 +4923,6 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
                                     dark={dark} setDark={setDark} onSignOut={onSignOut} onResetSubjects={onResetSubjects} isPro={isPro} stripeCustomerId={stripeCustomerId}/>}
       </main>
 
-      {isMobile&&(
-        <>
-        {moreOpen&&(
-          <div style={{position:'fixed',inset:0,zIndex:105,background:'rgba(0,0,0,0.45)'}}
-            onClick={()=>setMoreOpen(false)}>
-            <div style={{position:'absolute',bottom:56,left:0,right:0,
-              background:C.surface,borderRadius:'18px 18px 0 0',
-              border:`1px solid ${C.border}`,borderBottom:'none',
-              padding:'6px 0 8px'}}
-              onClick={e=>e.stopPropagation()}>
-              <div style={{width:32,height:3,borderRadius:2,background:C.border,
-                margin:'4px auto 12px'}}/>
-              {[{id:'friends',label:'Friends'},{id:'plan',label:'Study Plan'},{id:'timer',label:'Timer'},
-                {id:'resources',label:'Resources'},{id:'account',label:'Account'}]
-                .map(n=>(
-                <button key={n.id} onClick={()=>{setView(n.id);setMoreOpen(false);}} style={{
-                  width:'100%',textAlign:'left',padding:'14px 20px',
-                  background:'transparent',border:'none',
-                  color:view===n.id?C.accent:C.text,
-                  fontSize:15,fontWeight:view===n.id?700:400,fontFamily:font,cursor:'pointer',
-                  display:'flex',alignItems:'center',gap:14}}>
-                  {n.label}
-                  {n.id==='account'&&unlockedIds.length>0&&(
-                    <span style={{marginLeft:'auto',width:6,height:6,borderRadius:'50%',background:TIER_COLOR.gold}}/>
-                  )}
-                </button>
-              ))}
-              <div style={{height:1,background:C.border,margin:'6px 0'}}/>
-              <button onClick={()=>{const n=!dark;setDark(n);ls.set('rbp_dark',n);setMoreOpen(false);}} style={{
-                width:'100%',textAlign:'left',padding:'14px 20px',
-                background:'transparent',border:'none',
-                color:C.muted,fontSize:14,fontFamily:font,cursor:'pointer',
-                display:'flex',alignItems:'center',gap:14}}>
-                <span style={{fontSize:17,lineHeight:1,width:24,textAlign:'center',flexShrink:0}}>{dark?'☀':'☾'}</span>
-                {dark?'Light mode':'Dark mode'}
-              </button>
-            </div>
-          </div>
-        )}
-        <nav style={{position:'fixed',bottom:0,left:0,right:0,zIndex:100,
-          background:C.nav,backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
-          borderTop:`1px solid ${C.border}`,display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr 1fr',height:56}}>
-          {[{id:'analytics',label:'Home'},{id:'tracker',label:'Tracker'},{id:'exams',label:'Exams'},{id:'achievements',label:'Awards'}]
-            .map(n=>(
-            <button key={n.id} onClick={()=>{setView(n.id);setMoreOpen(false);}}
-              style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
-                gap:0,background:'transparent',border:'none',cursor:'pointer',
-                color:view===n.id&&!moreOpen?C.accent:C.muted,fontSize:10,fontFamily:font,
-                fontWeight:view===n.id&&!moreOpen?700:500,position:'relative',transition:'color 0.15s',padding:'0 4px',
-                letterSpacing:0.2,
-                borderTop:`2px solid ${view===n.id&&!moreOpen?C.accent:'transparent'}`}}>
-              {n.id==='achievements'&&unlockedIds.length>0&&(
-                <span style={{position:'absolute',top:6,right:8,width:6,height:6,
-                  borderRadius:'50%',background:TIER_COLOR.gold}}/>
-              )}
-              {n.label}
-            </button>
-          ))}
-          <button onClick={()=>setMoreOpen(m=>!m)}
-            style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
-              gap:0,background:'transparent',border:'none',cursor:'pointer',
-              color:moreOpen?C.accent:['plan','timer','resources','account'].includes(view)?C.accent:C.muted,
-              fontSize:10,fontFamily:font,fontWeight:moreOpen?700:500,
-              transition:'color 0.15s',padding:'0 4px',letterSpacing:0.2,
-              borderTop:`2px solid ${moreOpen?C.accent:'transparent'}`}}>
-            ···
-          </button>
-        </nav>
-        </>
-      )}
       {quickLogOpen&&(
         <QuickLog subjects={subjects} scores={scores} setScores={setScores}
           uid={uid} C={C} font={font} onClose={()=>setQuickLogOpen(false)}
@@ -5045,7 +4989,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
       <button
         onClick={()=>setQuickLogOpen(true)}
         aria-label="Log a paper"
-        style={{position:'fixed',bottom:isMobile?66:24,right:isMobile?16:24,
+        style={{position:'fixed',bottom:24,right:24,
           width:52,height:52,borderRadius:'50%',background:C.accent,border:'none',
           color:'#fff',fontSize:30,fontWeight:300,cursor:'pointer',zIndex:90,
           boxShadow:`0 4px 20px ${C.accent}55`,display:'flex',alignItems:'center',
