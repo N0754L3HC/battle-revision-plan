@@ -470,6 +470,166 @@ const STUDY_TIPS = [
   ]},
 ];
 
+// ── Flashcard decks ────────────────────────────────────────────────────────
+const FLASHCARD_DECKS = {
+  maths: [
+    {q:'What is the quadratic formula?', a:'x = (-b ± √(b²-4ac)) / 2a\nFor ax² + bx + c = 0'},
+    {q:'State the chain rule.', a:'dy/dx = dy/du × du/dx\nIf y = f(g(x)), then y\' = f\'(g(x)) · g\'(x)'},
+    {q:'What is integration by parts?', a:'∫u dv = uv - ∫v du\nChoose u = LIATE order (Logs, Inverse trig, Algebraic, Trig, Exponential)'},
+    {q:'State the binomial expansion for (1+x)ⁿ, |x|<1.', a:'(1+x)ⁿ = 1 + nx + n(n-1)/2! x² + n(n-1)(n-2)/3! x³ + …\nValid for any n when |x| < 1'},
+    {q:'What is the formula for arc length?', a:'s = rθ  (θ in radians)\nArc length = radius × angle'},
+    {q:'Differentiate sin(x), cos(x), tan(x).', a:'d/dx sin(x) = cos(x)\nd/dx cos(x) = -sin(x)\nd/dx tan(x) = sec²(x)'},
+    {q:'What is the trapezium rule?', a:'∫ₐᵇ f(x) dx ≈ h/2 [y₀ + 2(y₁+…+yₙ₋₁) + yₙ]\nwhere h = (b-a)/n'},
+    {q:'State the factor theorem.', a:'If f(a) = 0 then (x-a) is a factor of f(x).'},
+    {q:'What is the normal distribution notation?', a:'X ~ N(μ, σ²)\nμ = mean, σ² = variance\nStandardise: Z = (X-μ)/σ ~ N(0,1)'},
+    {q:'How do you find the nth term of an arithmetic sequence?', a:'aₙ = a + (n-1)d\nSum Sₙ = n/2 (2a + (n-1)d) = n/2 (a + l)'},
+  ],
+  'further-maths': [
+    {q:'What is a complex number in modulus-argument form?', a:'z = r(cosθ + i sinθ) = re^(iθ)\nr = |z| = √(a²+b²), θ = arg(z) = arctan(b/a)'},
+    {q:'State de Moivre\'s theorem.', a:'(cosθ + i sinθ)ⁿ = cos(nθ) + i sin(nθ)\nEquivalently: (re^(iθ))ⁿ = rⁿe^(inθ)'},
+    {q:'What is the scalar (dot) product?', a:'a·b = |a||b|cosθ = a₁b₁ + a₂b₂ + a₃b₃\nPerpendicular ⟺ a·b = 0'},
+    {q:'State the reduction formula approach for ∫sinⁿx dx.', a:'Iₙ = -(1/n)sinⁿ⁻¹x cosx + (n-1)/n Iₙ₋₂\nUse integration by parts repeatedly'},
+    {q:'What is the Maclaurin series for eˣ?', a:'eˣ = 1 + x + x²/2! + x³/3! + … (all x)\nSimilarly: sin x = x - x³/3! + x⁵/5! - …\ncos x = 1 - x²/2! + x⁴/4! - …'},
+    {q:'Define a matrix eigenvalue.', a:'Av = λv\nλ is an eigenvalue if det(A - λI) = 0\nSolve characteristic equation to find λ'},
+    {q:'What is Hooke\'s Law in mechanics?', a:'T = kx  (elastic string)\nT = λx/l  (using modulus of elasticity)\nEPE = λx²/2l'},
+    {q:'State the formula for polar area.', a:'A = ½∫θ₁θ₂ r² dθ\nFor polar curve r = f(θ)'},
+    {q:'What is the Argand diagram?', a:'Complex plane: x-axis = Re(z), y-axis = Im(z)\nz = a + bi plotted at point (a, b)'},
+    {q:'State Newton\'s second law for rotation.', a:'τ = Iα  (torque = moment of inertia × angular acceleration)\nAnalogue of F = ma for rotation'},
+  ],
+  cs: [
+    {q:'What is Big O notation O(n log n)?', a:'Describes algorithm time complexity.\nO(n log n) = linearithmic — typical of efficient sorts (merge sort, quicksort avg case).\nBetter than O(n²) for large n.'},
+    {q:'What is a stack vs a queue?', a:'Stack: LIFO — push/pop from same end.\nQueue: FIFO — enqueue rear, dequeue front.\nStack uses: recursion, undo. Queue uses: scheduling, BFS.'},
+    {q:'Explain the difference between TCP and UDP.', a:'TCP: connection-oriented, reliable, ordered delivery, slower.\nUDP: connectionless, no guarantee, faster.\nUse TCP for web/email, UDP for streaming/gaming.'},
+    {q:'What is a binary search tree (BST)?', a:'Each node: left child < node < right child.\nSearch/insert O(log n) average, O(n) worst.\nIn-order traversal gives sorted output.'},
+    {q:'Define an abstract data type (ADT).', a:'A data type defined by its behaviour (operations) not implementation.\nExamples: Stack, Queue, List, Tree, Graph.\nHides implementation details — encapsulation.'},
+    {q:'What is a hash table collision?', a:'When two keys map to the same index.\nResolution: chaining (linked list at slot) or open addressing (probe for next free slot).\nGood hash function minimises collisions.'},
+    {q:'Explain the fetch-decode-execute cycle.', a:'Fetch: MAR ← PC, MDR ← memory[MAR], PC++, CIR ← MDR\nDecode: control unit interprets CIR\nExecute: ALU performs operation, result stored in registers/memory'},
+    {q:'What is the difference between lossy and lossless compression?', a:'Lossless: exact original recoverable (ZIP, PNG, FLAC).\nLossy: data discarded, smaller files, not reversible (JPEG, MP3).\nLossy exploits human perception limits.'},
+    {q:'Define recursion and state the base case requirement.', a:'A function that calls itself.\nMust have: (1) base case — stops recursion, (2) recursive case — reduces problem size.\nWithout base case: infinite recursion → stack overflow.'},
+    {q:'What are the four principles of OOP?', a:'Encapsulation: bundle data + methods, hide internals.\nInheritance: subclass inherits from superclass.\nPolymorphism: same interface, different implementations.\nAbstraction: hide complexity, show essentials.'},
+  ],
+  chemistry: [
+    {q:'State Le Chatelier\'s principle.', a:'When a system at equilibrium is disturbed, it shifts to oppose the change and restore equilibrium.\nExamples: increase pressure → shift to fewer moles of gas; increase temp → shift endothermic direction.'},
+    {q:'What is the Henderson-Hasselbalch equation?', a:'pH = pKa + log([A⁻]/[HA])\nUsed for buffer calculations.\nAt half-equivalence point: pH = pKa'},
+    {q:'Define enthalpy of formation.', a:'ΔHf°: enthalpy change when 1 mole of compound is formed from its elements in their standard states at 298K, 1 atm.\nElements in standard state: ΔHf° = 0'},
+    {q:'What is Hess\'s law?', a:'The total enthalpy change is independent of the route taken.\nΔH(reaction) = Σ ΔHf°(products) - Σ ΔHf°(reactants)'},
+    {q:'State the rate equation and what it means.', a:'rate = k[A]^m[B]^n\nm = order w.r.t. A, n = order w.r.t. B, overall order = m+n\nk = rate constant (temp-dependent)'},
+    {q:'What is nucleophilic addition? Give an example.', a:'Nu attacks electrophilic carbonyl carbon (C=O).\nExample: HCN + CH₃CHO → CH₃CH(OH)CN (hydroxynitrile)\nNu: CN⁻ attacks C, then H⁺ from HCN attaches to O⁻'},
+    {q:'Define oxidation and reduction in terms of electrons.', a:'Oxidation: loss of electrons (OIL)\nReduction: gain of electrons (RIG)\nOIL RIG — "Oxidation Is Loss, Reduction Is Gain"'},
+    {q:'What is the Born-Haber cycle?', a:'Thermodynamic cycle to calculate lattice enthalpy.\nSteps: atomisation + ionisation energies + electron affinities + lattice enthalpy = ΔHf°\nLattice enthalpy: energy released forming ionic lattice from gaseous ions'},
+    {q:'What is Kp and how does it relate to Kc?', a:'Kp = equilibrium constant in terms of partial pressures.\nKp = Kc(RT)^Δn where Δn = moles gas products - moles gas reactants\nKp = Kc when Δn = 0'},
+    {q:'Describe the mechanism of electrophilic addition to alkenes.', a:'1. π bond attacks electrophile (e.g. Br₂) → forms carbocation intermediate\n2. Nucleophile (Br⁻) attacks carbocation\nMarkovnikov\'s rule: H adds to less substituted C'},
+  ],
+  physics: [
+    {q:'State Newton\'s three laws of motion.', a:'1st: Body stays at rest/constant velocity unless net force acts.\n2nd: F = ma (net force = mass × acceleration).\n3rd: Equal and opposite reaction forces.'},
+    {q:'What is the equation for electric potential energy?', a:'E = kq₁q₂/r = Q₁Q₂/(4πε₀r)\nPotential V = kQ/r\nCoulomb\'s law: F = kq₁q₂/r²'},
+    {q:'State Faraday\'s laws of electromagnetic induction.', a:'1st: EMF induced when flux linkage changes.\n2nd: |EMF| = dΦN/dt = N dΦ/dt\nLenz\'s law: induced current opposes change causing it.'},
+    {q:'What is the de Broglie wavelength?', a:'λ = h/p = h/mv\nh = Planck\'s constant = 6.63×10⁻³⁴ J s\nWave-particle duality: all matter has associated wavelength'},
+    {q:'Define simple harmonic motion (SHM).', a:'a = -ω²x  (acceleration proportional to displacement, opposite direction)\nx = A cos(ωt), v = -Aω sin(ωt)\nT = 2π/ω, ω = 2πf'},
+    {q:'What is the photoelectric effect equation?', a:'hf = φ + ½mv²max\nhf = photon energy, φ = work function, ½mv²max = max KE of electron\nThreshold frequency: f₀ = φ/h'},
+    {q:'State the ideal gas law.', a:'pV = nRT\np = pressure (Pa), V = volume (m³), n = moles, R = 8.31 J mol⁻¹ K⁻¹, T = temp (K)\nAlso: pV = NkT where k = 1.38×10⁻²³ J/K'},
+    {q:'What is radioactive decay? State the decay equation.', a:'N = N₀e^(-λt)\nλ = decay constant, t½ = ln2/λ\nActivity A = λN = A₀e^(-λt)'},
+    {q:'Define capacitance and give the energy stored formula.', a:'C = Q/V (farads)\nE = ½CV² = ½QV = Q²/2C\nSeries: 1/C = 1/C₁ + 1/C₂; Parallel: C = C₁ + C₂'},
+    {q:'What is gravitational potential?', a:'V = -GM/r  (negative — work done to escape)\nGravitational PE = mV = -GMm/r\ng = -dV/dr = GM/r²'},
+  ],
+  economics: [
+    {q:'What is price elasticity of demand (PED)?', a:'PED = % change in Qd / % change in P\n|PED| > 1: elastic, |PED| < 1: inelastic, |PED| = 1: unit elastic\nInelastic goods: necessities, no substitutes, addictive'},
+    {q:'Explain the multiplier effect.', a:'An injection into the economy leads to a larger increase in national income.\nMultiplier = 1/(1-MPC) = 1/MPS+MPT+MPM\nHigher MPC → larger multiplier → more stimulus effect'},
+    {q:'What is a deadweight loss?', a:'Loss of economic efficiency from market distortion (tax, monopoly).\nArea of triangle between supply and demand curves outside equilibrium.\nRepresents transactions that don\'t happen but would benefit both parties.'},
+    {q:'Define comparative advantage.', a:'Country has comparative advantage if it can produce a good at lower opportunity cost.\nBasis for international trade — both countries gain even if one is absolutely better at both.\nRicardo\'s theory of specialisation'},
+    {q:'What is the Lorenz curve and Gini coefficient?', a:'Lorenz curve: plots cumulative income share vs cumulative population %.\nLine of equality = 45° diagonal.\nGini = Area A / (A + B); 0 = perfect equality, 1 = perfect inequality'},
+    {q:'Explain demand-pull vs cost-push inflation.', a:'Demand-pull: AD increases → prices rise (economy overheating).\nCost-push: supply costs rise (e.g. oil price) → AS shifts left → stagflation.\nInflation target UK: 2% CPI'},
+    {q:'What is the J-curve effect?', a:'After depreciation, current account worsens before improving.\nShort run: prices adjust before quantities (contracts, inelastic demand).\nLong run: volumes respond → trade balance improves'},
+    {q:'Define market failure and list types.', a:'When free market misallocates resources.\nTypes: externalities, public goods, information asymmetry, monopoly power, factor immobility.\nResults in over/under-provision'},
+    {q:'What is quantitative easing (QE)?', a:'Central bank creates money to buy government bonds/assets.\nIncreases money supply → lower long-term interest rates → stimulate borrowing/spending.\nUsed when base rate near zero (liquidity trap)'},
+    {q:'Explain the accelerator theory of investment.', a:'Investment depends on change in national income (not level).\nI = v × ΔY, where v = capital-output ratio\nSlowing growth → falling investment even if economy still growing'},
+  ],
+  biology: [
+    {q:'Describe the process of DNA replication.', a:'Semi-conservative: each strand acts as template.\n1. Helicase unwinds double helix\n2. DNA polymerase adds complementary nucleotides (5\'→3\')\n3. Ligase joins Okazaki fragments on lagging strand'},
+    {q:'What is the Bohr effect?', a:'Increased CO₂/lower pH shifts oxyhaemoglobin dissociation curve right.\nHaemoglobin releases O₂ more readily to active tissues.\nBohr shift: CO₂ + H₂O ⇌ H₂CO₃ ⇌ H⁺ + HCO₃⁻'},
+    {q:'Define trophic levels and energy transfer efficiency.', a:'Producers (level 1) → Primary consumers → Secondary → Tertiary\nTypically 10% energy transferred between levels (90% lost as heat/excretion)\nThis limits food chain length to ~4-5 levels'},
+    {q:'What is the Hardy-Weinberg principle?', a:'p² + 2pq + q² = 1, and p + q = 1\np = dominant allele freq, q = recessive allele freq\nAssumptions: large pop, random mating, no selection/mutation/migration'},
+    {q:'Explain the role of ATP synthase in oxidative phosphorylation.', a:'H⁺ ions flow through ATP synthase (chemiosmosis) down concentration gradient.\nProton gradient created by electron transport chain.\nATP synthase uses flow to phosphorylate ADP + Pi → ATP\n~34 ATP per glucose from this stage'},
+    {q:'What is transcription and translation?', a:'Transcription: DNA → mRNA in nucleus (RNA polymerase).\nTranslation: mRNA → protein at ribosome (tRNA brings amino acids).\nCodon = 3 bases on mRNA; anticodon on tRNA'},
+    {q:'Define allopatric and sympatric speciation.', a:'Allopatric: geographic isolation → different selection → reproductive isolation → new species.\nSympatric: in same area, e.g. polyploidy in plants, niche differentiation.\nReproductive isolation is key for speciation'},
+    {q:'What is the Calvin cycle?', a:'Light-independent stage of photosynthesis (stroma).\nCO₂ fixed by RuBisCO onto RuBP (5C) → 2 × GP (3C)\nGP reduced using ATP + NADPH → G3P → glucose/RuBP\n3 turns = 1 net G3P'},
+    {q:'Explain negative feedback in homeostasis. Example.', a:'Receptor detects change → effector produces corrective response → returns to set point.\nExample: blood glucose ↑ → β-cells secrete insulin → glucose uptake ↑ → blood glucose ↓\nGlucagon does opposite when blood glucose falls'},
+    {q:'What is a monoclonal antibody and how is it made?', a:'Single antibody type from cloned B-lymphocyte (hybridoma).\nMade by: immunise mouse → extract B-cells → fuse with myeloma → hybridoma → clone.\nUses: pregnancy tests, cancer therapy (Herceptin), ELISA'},
+  ],
+  psychology: [
+    {q:'What are the three types of conformity? (Kelman)', a:'Compliance: change behaviour not beliefs (public only).\nIdentification: adopt attitudes of group temporarily.\nInternalisation: genuine change in beliefs and behaviour (deepest level).\nRelated to informational vs normative social influence'},
+    {q:'Describe Milgram\'s obedience study (1963).', a:'650V shock machine, "learner" in next room (confederate).\n65% gave maximum 450V shock.\nSituational factors: agentic state, proximity, authority figure in uniform.\nShows situational not dispositional causes of obedience'},
+    {q:'What is Ainsworth\'s Strange Situation?', a:'8 episodes testing infant attachment in standardised lab.\nTypes: Secure (70%): uses caregiver as safe base.\nInsecure-avoidant (20%): little distress, avoids caregiver.\nInsecure-resistant (10%): high distress, angry at return.'},
+    {q:'Explain the Working Memory Model (Baddeley & Hitch).', a:'Central Executive (CE): supervisor, limited capacity, controls other components.\nPhonological Loop: inner ear (phonological store) + inner voice (articulatory process).\nVisuo-spatial Sketchpad: visual/spatial info.\nEpisodic Buffer (added 2000): links to LTM.'},
+    {q:'What is the cognitive approach to psychopathology?', a:'Disorders caused by irrational/negative thinking patterns.\nEllis: ABC model — Activating event → Beliefs → Consequences.\nBeck: negative cognitive triad (self, world, future) → depression.\nTreatment: CBT'},
+    {q:'Describe the biological approach to schizophrenia.', a:'Dopamine hypothesis: excess dopamine activity in mesolimbic pathway.\nEvidence: antipsychotics (dopamine antagonists) reduce positive symptoms.\nGenetics: concordance rate 48% MZ twins → not purely genetic.\nAlso: enlarged ventricles, prefrontal underactivity'},
+    {q:'What is the SLT (Bandura)? Key study?', a:'Social Learning Theory: learn through observation, imitation, vicarious reinforcement.\nMediational processes: Attention → Retention → Reproduction → Motivation.\nBandura (1961) Bobo doll: children imitated aggressive model, esp. same-sex.'},
+    {q:'Explain gender schema theory (Martin & Halverson).', a:'Children develop gender schemas (mental frameworks) about gender-appropriate behaviour.\nBy age 3: know own gender.\nIn-group schema (own gender): detailed. Out-group: limited.\nSchemas distort memory to fit gender expectations'},
+    {q:'What is the psychodynamic explanation of OCD?', a:'Freud: OCD is defence against anxiety from unconscious conflicts.\nFixation at anal stage → obsessional character.\nDefence mechanisms: isolation (emotions detached), reaction formation, undoing.\nLimited empirical support'},
+    {q:'Define reliability and validity in research.', a:'Reliability: consistency of results (test-retest, inter-rater).\nInternal validity: study measures what it claims (controlled variables).\nExternal validity: generalisability (ecological, population).\nReliability ≠ validity'},
+  ],
+  sociology: [
+    {q:'What is the Marxist view of education?', a:'Schools reproduce class inequality — transmit ruling class ideology (Althusser: ISA).\nHidden curriculum: punctuality, obedience, conformity — prepares workers.\nBowles & Gintis correspondence principle: school mirrors workplace hierarchy.\nCounter: doesn\'t explain working-class resistance'},
+    {q:'Explain Durkheim\'s functionalist view of crime.', a:'Crime is normal and functional: universal in all societies.\nFunctions: boundary maintenance (punishments affirm shared norms), social solidarity, safety valve, warnings of problems.\nToo much crime → anomie (normlessness), too little → stagnation'},
+    {q:'What is Willis\'s "Learning to Labour" (1977)?', a:'Ethnographic study of 12 working-class "lads" in Midlands school.\nLads rejected school, formed counter-school culture.\nParadox: resistance led them into manual labour → reproduced class structure.\nChallenge to cultural deprivation theory'},
+    {q:'Define the concept of patriarchy.', a:'System where men hold power and dominate women in social, political, economic spheres.\nFeminist perspectives: liberal (reform through legislation), radical (patriarchy root cause), Marxist (capitalism + patriarchy), intersectionality.\nStatistics: gender pay gap, glass ceiling, domestic labour'},
+    {q:'What is the New Right view of the family?', a:'Traditional nuclear family is best — 2 parents, breadwinner/homemaker.\nMurray: underclass caused by welfare dependency, absent fathers.\nCriticisms: ignores diversity, romanticises nuclear family, ignores domestic abuse.'},
+    {q:'Explain Merton\'s strain theory.', a:'Anomie when cultural goals (success) blocked for some groups by legitimate means.\nAdaptations: Conformity, Innovation (crime), Ritualism, Retreatism, Rebellion.\nExplains working-class crime but not white-collar crime or corporate crime.'},
+    {q:'What is Foucault\'s concept of surveillance?', a:'Power operates through surveillance — Panopticon (Bentham): prisoners behave if they think watched.\nModern institutions (schools, hospitals, prisons) use similar disciplinary power.\nSurveillance society: CCTV, data collection — self-regulation through gaze'},
+    {q:'Describe the functionalist theory of stratification (Davis & Moore).', a:'Social inequality is functional and universal.\nSome positions more important and require scarce talent — high rewards attract able people.\nCriticisms: ignores ascription (birth), doesn\'t explain inheritance of wealth, tautological.'},
+    {q:'What is the secularisation thesis?', a:'Religion\'s social significance declining in modern societies (Weber, Bruce).\nEvidence: church attendance falls, civil religion rises, religion privatised.\nCounter: religious revival, fundamentalism, global religion (Berger revised).\nSocial cohesion functions remain?'},
+    {q:'Explain postmodernist views on identity.', a:'Identity is fluid, multiple, chosen — not fixed by class/gender/religion.\nConsumption defines identity (Bauman: liquid modernity).\nMedia creates simulacra (Baudrillard) — signs detached from reality.\nCriticisms: ignores material constraints on choice'},
+  ],
+  history: [
+    {q:'What were the main causes of WWI?', a:'MAIN: Militarism, Alliances (Triple Alliance vs Triple Entente), Imperialism, Nationalism.\nPrecipitating event: assassination of Archduke Franz Ferdinand (June 1914).\nShort-term: Schlieffen Plan; Long-term: arms race, colonial rivalry.'},
+    {q:'Explain Stalin\'s consolidation of power 1924-1929.', a:'Exploited Lenin\'s Testament against Trotsky; allied with Zinoviev/Kamenev; later turned on them.\nGeneral Secretary: controlled party appointments — packed with loyalists.\nSocialism in one country vs Trotsky\'s permanent revolution.\n1929: Trotsky expelled from USSR.'},
+    {q:'What were the causes of the 1905 Russian Revolution?', a:'Short-term: Bloody Sunday (Jan 1905) — troops fired on peaceful marchers.\nLong-term: poverty, land hunger, autocratic rule, defeat in Russo-Japanese War.\nOutcome: October Manifesto — Duma promised; revolution quelled but pressures remained.'},
+    {q:'Describe the significance of the New Deal (USA 1933).', a:'FDR\'s response to Great Depression — "Relief, Recovery, Reform".\nKey acts: FERA, AAA, NRA, CCC, TVA, Social Security Act (1935).\nDebate: did it end Depression (no — WWII did) or restore confidence and reduce suffering?'},
+    {q:'What were Hitler\'s foreign policy aims 1933-1939?', a:'Overturn Versailles, Lebensraum (living space east), unite German-speaking peoples, destroy communism.\nAchievements: Rhineland (1936), Anschluss (1938), Sudetenland, then rest of Czechoslovakia.\nAppeasement: Munich 1938 — Chamberlain gave Sudetenland.'},
+    {q:'Explain the policy of appeasement and reasons for it.', a:'Giving concessions to aggressor to prevent war.\nReasons: public anti-war feeling, economic weakness, military unpreparedness, belief Hitler\'s demands were reasonable, fear of communism more than fascism.\nFailure: Munich 1938 didn\'t stop Hitler; invaded Poland 1939 → WWII'},
+    {q:'What was the Weimar Republic\'s major crises 1919-1923?', a:'1919: Spartacist uprising (left) suppressed.\n1920: Kapp Putsch (right) failed — general strike stopped it.\n1923: French/Belgian occupation of Ruhr → hyperinflation.\n1923: Munich/Beer Hall Putsch — Hitler arrested.\nStabilised under Stresemann.'},
+    {q:'Describe the causes and consequences of the Wall Street Crash (1929).', a:'Causes: overproduction, speculation on margin, weak banking system, overvalued stocks.\nConsequences: Great Depression, bank failures, 25% unemployment USA, global spread.\nPolitical: rise of extremism, collapse of Weimar, New Deal.'},
+    {q:'What were the main causes of the Cold War?', a:'Ideological clash: capitalism (USA) vs communism (USSR).\nYalta/Potsdam conferences — disagreement over Germany, Eastern Europe.\nMutual suspicion: A-bomb, Soviet expansion, Truman Doctrine (1947), Marshall Plan.\nIron Curtain speech (Churchill 1946).'},
+    {q:'Explain the significance of the Berlin Wall (1961-1989).', a:'Built 1961 by East Germany to stop brain drain (3.5m fled west 1945-61).\nSymbol of Cold War division — "Antifascist Protection Rampart".\nFell 9 Nov 1989 — end of Cold War symbol.\nTear down this wall — Reagan (1987).'},
+  ],
+  geography: [
+    {q:'What is the demographic transition model (DTM)?', a:'4+ stage model of population change:\nStage 1: High BR + DR, stable.\nStage 2: DR falls (medicine/food), BR high → rapid growth.\nStage 3: BR falls (development, women\'s rights).\nStage 4: Low BR + DR, stable.\nStage 5: Sub-replacement fertility.'},
+    {q:'Explain plate tectonics and types of plate boundary.', a:'Constructive (divergent): plates move apart, magma rises, mid-ocean ridges/rift valleys.\nDestructive (convergent): subduction or collision, volcanoes/fold mountains/trenches.\nConservative (transform): plates slide past, earthquakes, no magma (San Andreas).'},
+    {q:'What is the hydrological cycle?', a:'Closed system — no water added/removed from Earth.\nInputs: precipitation. Stores: interception, soil, groundwater, surface water.\nProcesses: evapotranspiration, infiltration, percolation, surface runoff, throughflow.\nOutputs: evaporation, transpiration, river discharge'},
+    {q:'Define urbanisation and its causes.', a:'Increasing proportion of population living in urban areas.\nCauses: rural push (poverty, land shortage) + urban pull (jobs, services, education).\nMegacities (10m+): growing rapidly in Global South.\nUrbanisation level: developed 80%+, developing ~50%'},
+    {q:'What is the Rostow model of development?', a:'Linear 5-stage model: Traditional → Preconditions → Take-off → Drive to maturity → Mass consumption.\nCriticisms: Eurocentric, ignores colonialism, dependency theory (Frank) — development of underdevelopment.\nModernisation theory assumes Western path universal'},
+    {q:'Explain the causes and effects of tropical deforestation.', a:'Causes: commercial farming (soya, cattle), logging, mining, roads, subsistence farming.\nEffects: biodiversity loss, carbon release, soil erosion, disrupted water cycle, indigenous displacement.\nAmazon: "tipping point" at 20-25% deforestation → savannification'},
+    {q:'What is the coastal sediment cell system?', a:'Closed system of sediment transfer along coastline.\nProcesses: erosion (hydraulic action, abrasion, attrition) → transport (longshore drift) → deposition.\nInterventions: groynes trap sediment (updrift accumulation, downdrift starvation).'},
+    {q:'Define globalisation and its critics.', a:'Increasing interconnectedness of economies, cultures, people across world.\nDrivers: TNCs, trade liberalisation, internet, container shipping.\nCritics: widens inequality, cultural homogenisation, race to bottom (labour/environment), Western imperialism.'},
+    {q:'What are the causes of flooding?', a:'Physical: intense rainfall, impermeable geology, snowmelt, deforestation, steep slopes.\nHuman: urbanisation (impermeable surfaces), floodplain development, channel modification.\nManagement: hard (dams, embankments) vs soft (floodplain zoning, afforestation)'},
+    {q:'Explain the concept of sustainable development.', a:'"Development that meets the needs of the present without compromising ability of future generations to meet their own needs" (Brundtland 1987).\nThree pillars: economic, social, environmental.\nSDGs: 17 goals by 2030 (UN).'},
+  ],
+  'english-lit': [
+    {q:'What are the key themes in "The Great Gatsby" (Fitzgerald)?', a:'The American Dream and its corruption/failure.\nClass and social mobility (old money vs new money vs no money).\nIllusion vs reality (Gatsby\'s constructed identity).\nTime and the past ("Can\'t repeat the past? Why of course you can!")'},
+    {q:'What are the main themes of "Hamlet"?', a:'Revenge vs moral paralysis (To be or not to be).\nCorruption — "Something is rotten in the state of Denmark".\nMadness — real (Ophelia) vs performed (Hamlet?).\nParents, duty, mortality. Revenge tragedy conventions.'},
+    {q:'Define dramatic irony.', a:'When the audience knows something characters don\'t.\nEffect: creates tension, sympathy, or dark comedy.\nExample: Othello believes Iago without knowing Iago is villainous.\nContrasted with: situational irony (unexpected outcomes), verbal irony (saying opposite of meaning)'},
+    {q:'What is the significance of colour symbolism in "The Great Gatsby"?', a:'Green light: Gatsby\'s dream, hope, unattainable goal.\nWhite: false purity (Daisy, Jordan — corrupt beneath).\nYellow/Gold: corruption of dream, wealth\'s tawdriness.\nGrey: Valley of Ashes, waste, moral emptiness of the rich.'},
+    {q:'What are the feminist themes in "The Handmaid\'s Tale" (Atwood)?', a:'Patriarchal control of women\'s bodies and fertility.\nLanguage as power — Handmaids stripped of names.\nCollaboration vs resistance.\n"Nolite te bastardes carborundorum" — Don\'t let the bastards grind you down.\nAtwood: "nothing in this book isn\'t already happening somewhere"'},
+    {q:'Explain the concept of an unreliable narrator.', a:'Narrator whose account we cannot fully trust — limited perspective, bias, lies, mental state.\nExamples: Nick Carraway (self-serving), Stevens (Remains of the Day — self-deception).\nEffect: reader must read against the grain; creates irony and complexity.'},
+    {q:'What is the tragic flaw (hamartia) in Greek tragedy?', a:'Protagonist\'s inherent weakness leading to downfall.\nAristotle\'s Poetics: tragedy arouses pity and fear, achieves catharsis.\nExamples: Oedipus — hubris + determination; Macbeth — ambition; Hamlet — indecision.\nNot necessarily a moral failing — may be circumstantial'},
+    {q:'What are the key features of Gothic literature?', a:'Settings: decaying mansions, remote/wild landscapes, darkness.\nThemes: supernatural, death, transgression, the double, repressed desire.\nCharacters: monsters, villains, persecuted heroines, mysterious strangers.\nExamples: Frankenstein, Wuthering Heights, Rebecca.'},
+    {q:'Explain the significance of the "green light" in Gatsby — extended reading.', a:'Chapter 1: Gatsby reaches towards it across the water — hope, longing.\nChapter 5: Enchanted object fades once he has Daisy — "His count of enchanted objects had diminished by one".\nFinal lines: boats against the current — human striving, nostalgia, inevitability of failure.\nRepresents the American Dream\'s contradictions.'},
+    {q:'What is an allegory? Give an example.', a:'Extended narrative where characters/events represent abstract ideas.\nExample: Animal Farm — allegory of Russian Revolution (Napoleon = Stalin, Snowball = Trotsky, pigs = Soviet leadership).\nDistinct from symbolism (single image) — allegory is systematic throughout text.'},
+  ],
+  business: [
+    {q:'What is price elasticity of demand and why does it matter for pricing?', a:'PED = % ΔQd / % ΔP\nInelastic (|PED|<1): price rise → higher revenue. Elastic (|PED|>1): price rise → lower revenue.\nTR = P × Q. Inelastic: raise prices to maximise revenue. Elastic: lower prices.'},
+    {q:'Explain the Boston Matrix (BCG).', a:'2×2 matrix: Market Share (high/low) × Market Growth (high/low).\nStar: high share, high growth — needs investment.\nCash Cow: high share, low growth — generates cash.\nQuestion Mark: low share, high growth — needs decision.\nDog: low share, low growth — divest/harvest.'},
+    {q:'What are Porter\'s Five Forces?', a:'1. Competitive rivalry — intensity of competition.\n2. Supplier power — dependence, switching costs.\n3. Buyer power — concentration, price sensitivity.\n4. Threat of new entrants — barriers to entry.\n5. Threat of substitutes — alternative products.\nUsed for industry attractiveness analysis.'},
+    {q:'Define contribution and how it relates to break-even.', a:'Contribution per unit = Selling price - Variable cost per unit.\nTotal contribution = Revenue - Total variable costs.\nBreak-even output = Fixed costs / Contribution per unit.\nMargin of safety = Actual output - Break-even output'},
+    {q:'What is Herzberg\'s two-factor theory?', a:'Hygiene factors (prevent dissatisfaction): pay, working conditions, security — don\'t motivate.\nMotivators (drive satisfaction): achievement, recognition, responsibility, advancement.\nImplication: fix hygiene first, then focus on intrinsic motivators.\nContrasted with Maslow\'s hierarchy.'},
+    {q:'Explain the difference between organic and inorganic growth.', a:'Organic (internal): develop new products, expand market share gradually, self-funded.\nInorganic (external): mergers, acquisitions, joint ventures — faster but riskier.\nMerger benefits: economies of scale, market power, diversification.\nRisks: culture clash, diseconomies, debt.'},
+    {q:'What is cash flow vs profit? Why can a profitable business fail?', a:'Profit = Revenue - Total costs (accruals accounting).\nCash flow = actual money in vs out at a given time.\nProfitable but cash poor: credit sales (debtors), overtrading, large capital expenditure.\nSolution: invoice factoring, overdraft, reduce credit terms.'},
+    {q:'What are the main sources of finance for a business?', a:'Internal: retained profit, sale of assets, working capital management.\nExternal Debt: bank loan, overdraft, debentures, mortgage.\nExternal Equity: share issue, venture capital, crowdfunding.\nFit to purpose: long-term needs → long-term finance.'},
+    {q:'Define economies of scale with examples.', a:'Fall in average cost as output increases (long run).\nInternal: purchasing (bulk discounts), technical (larger machines), managerial (specialisation), financial (lower interest).\nExternal: industry clusters, skilled labour pool, supplier networks.\nDiseconomies: communication problems, coordination failure.'},
+    {q:'What is Ansoff\'s matrix?', a:'4 growth strategies based on product/market combinations.\nMarket penetration: existing product, existing market (lowest risk).\nMarket development: existing product, new market.\nProduct development: new product, existing market.\nDiversification: new product, new market (highest risk).'},
+  ],
+};
+
 // ── Utilities ──────────────────────────────────────────────────────────────
 const ls = {
   get:(k,fb) => { try { const v=localStorage.getItem(k); return v?JSON.parse(v):fb; } catch { return fb; } },
@@ -532,6 +692,78 @@ function calcBattleReadiness(scores, errors) {
 function getPaperSuggestions(subject) {
   const years=['2023','2022','2019'];
   return subject.papers.flatMap(p=>years.map(y=>`${p} — ${y}`));
+}
+
+// ── Study streak ───────────────────────────────────────────────────────────
+function getStudyStreak(scores) {
+  if (!scores.length) return 0;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate()-1);
+  const loggedDays = new Set(scores.map(s => {
+    const d = new Date(s.ts||s.id); d.setHours(0,0,0,0); return d.getTime();
+  }));
+  // check if today or yesterday has a log (otherwise streak is broken)
+  if (!loggedDays.has(today.getTime()) && !loggedDays.has(yesterday.getTime())) return 0;
+  let streak = 0;
+  const cursor = loggedDays.has(today.getTime()) ? new Date(today) : new Date(yesterday);
+  while (loggedDays.has(cursor.getTime())) {
+    streak++;
+    cursor.setDate(cursor.getDate()-1);
+  }
+  return streak;
+}
+
+// ── Predicted grade ────────────────────────────────────────────────────────
+function predictedGrade(scores, subjectName, gradeBounds) {
+  const ss = [...scores].filter(s=>s.subject===subjectName).sort((a,b)=>(a.ts||a.id)-(b.ts||b.id));
+  if (ss.length < 2) return null;
+  const n = ss.length;
+  const xMean = (n-1)/2;
+  const yMean = ss.reduce((a,s)=>a+s.pct,0)/n;
+  let num=0, den=0;
+  ss.forEach((s,i)=>{ num+=(i-xMean)*(s.pct-yMean); den+=(i-xMean)**2; });
+  const slope = den===0 ? 0 : num/den;
+  const intercept = yMean - slope*xMean;
+  const projectedPct = Math.min(100, Math.max(0, Math.round(intercept + slope*(n+2))));
+  const b = (gradeBounds||{})[subjectName]||{};
+  let grade='U';
+  for (const g of ['A*','A','B','C','D','E']) if (projectedPct>=(b[g]??0)) { grade=g; break; }
+  const trend = slope>1 ? 'up' : slope<-1 ? 'down' : 'stable';
+  return { pct: projectedPct, grade, trend };
+}
+
+// ── Schedule generator ─────────────────────────────────────────────────────
+function generateSchedule(subjects, scores, errors, examSched) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  // rank by priority
+  const ranked = [...subjects].map(s => {
+    const exs = (examSched[s.id]||[]);
+    const minDays = exs.length ? Math.min(...exs.map(e=>daysUntil(e.date))) : 999;
+    const urgency = 1/(Math.max(0,minDays)+1)*50;
+    const ss = scores.filter(x=>x.subject===s.name);
+    const avg = ss.length ? ss.reduce((a,x)=>a+x.pct,0)/ss.length : 50;
+    const weakness = (100-avg)*0.5;
+    return { name:s.name, color:s.color, priority: urgency+weakness };
+  }).sort((a,b)=>b.priority-a.priority);
+
+  const days = [];
+  let slotIdx = 0;
+  for (let i=0; i<14; i++) {
+    const d = new Date(today); d.setDate(today.getDate()+i);
+    const dateStr = d.toISOString().slice(0,10);
+    const examsToday = subjects.flatMap(s=>(examSched[s.id]||[]).filter(e=>e.date===dateStr).map(e=>({...e,subjectName:s.name,color:s.color})));
+    if (examsToday.length) {
+      days.push({date:d, isExamDay:true, exams:examsToday, slots:[]});
+    } else {
+      const slots = [];
+      for (let j=0; j<2; j++) {
+        slots.push(ranked[slotIdx%ranked.length]);
+        slotIdx++;
+      }
+      days.push({date:d, isExamDay:false, exams:[], slots});
+    }
+  }
+  return days;
 }
 
 function getNotifications(scores, errors, subjects, examSched=EXAM_SCHEDULE) {
@@ -1021,6 +1253,266 @@ function BattleGauge({score, label, labelColor, textColor='#2b2b2b', mutedColor=
   );
 }
 
+// ── Streak banner ──────────────────────────────────────────────────────────
+function StreakBanner({scores, C}) {
+  const streak = getStudyStreak(scores);
+  if (streak === 0) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const loggedDays = new Set(scores.map(s=>{
+    const d=new Date(s.ts||s.id); d.setHours(0,0,0,0); return d.getTime();
+  }));
+  const gold = streak>=7;
+  return (
+    <div style={{background: gold ? 'rgba(251,191,36,0.08)' : C.surface,
+      border:`1px solid ${gold?'rgba(251,191,36,0.4)':C.border}`,
+      borderRadius:10, padding:'12px 16px', marginBottom:12,
+      boxShadow: gold ? '0 0 20px rgba(251,191,36,0.15)' : undefined}}>
+      <div style={{display:'flex',alignItems:'center',gap:10}}>
+        <span style={{fontSize:22}}>🔥</span>
+        <div>
+          <div style={{fontSize:15, fontWeight:800,
+            color: gold ? '#fbbf24' : C.text}}>
+            {streak}-day streak
+          </div>
+          <div style={{fontSize:11, color:C.muted}}>Keep it going — log a paper today!</div>
+        </div>
+      </div>
+      <div style={{display:'flex',gap:5,marginTop:10}}>
+        {Array.from({length:7},(_,i)=>{
+          const d=new Date(today); d.setDate(today.getDate()-(6-i));
+          const hasLog=loggedDays.has(d.getTime());
+          const isToday=d.getTime()===today.getTime();
+          return (
+            <div key={i} style={{flex:1,textAlign:'center'}}>
+              <div style={{width:'100%',height:8,borderRadius:4,
+                background:hasLog?(gold?'#fbbf24':C.accent):(isToday?`${C.accent}40`:C.border)}}/>
+              <div style={{fontSize:9,color:C.muted,marginTop:3}}>
+                {['M','T','W','T','F','S','S'][(d.getDay()+6)%7]}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Schedule component ─────────────────────────────────────────────────────
+function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE}) {
+  const days = generateSchedule(subjects, scores, errors, examSched);
+  const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return (
+    <div>
+      <div style={{marginBottom:20}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>14-day plan</div>
+        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Revision Schedule</h1>
+        <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>Automatically ranked by exam urgency and your weak areas.</p>
+      </div>
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        {days.map((day,i)=>{
+          const dayName=DAY_NAMES[day.date.getDay()];
+          const dateLabel=`${dayName} ${day.date.getDate()} ${MONTH_NAMES[day.date.getMonth()]}`;
+          return (
+            <div key={i} style={{background:C.surface,
+              border:`1px solid ${day.isExamDay?'rgba(249,115,22,0.4)':C.border}`,
+              borderRadius:10, padding:'12px 16px',
+              background: day.isExamDay ? 'rgba(249,115,22,0.06)' : C.surface}}>
+              <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+                <div style={{fontSize:13,fontWeight:700,color:C.text,minWidth:120}}>{dateLabel}</div>
+                {day.isExamDay ? (
+                  <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+                    <span style={{fontSize:11,fontWeight:700,padding:'2px 8px',borderRadius:4,
+                      background:'rgba(249,115,22,0.15)',color:'#f97316',letterSpacing:0.5}}>EXAM</span>
+                    {day.exams.map((e,j)=>(
+                      <span key={j} style={{fontSize:12,color:C.muted}}>
+                        {e.subjectName} — {e.paper.split(':')[1]?.trim()||e.paper}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                    {day.slots.map((s,j)=>(
+                      <span key={j} style={{fontSize:12,fontWeight:600,padding:'3px 10px',
+                        borderRadius:20,background:`${s.color}18`,color:s.color,
+                        border:`1px solid ${s.color}33`}}>
+                        {s.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Flashcards component ───────────────────────────────────────────────────
+function Flashcards({subjects, uid, C, font}) {
+  const subjectIds = subjects.map(s=>s.id);
+  const availableSubjects = subjects.filter(s=>FLASHCARD_DECKS[s.id]);
+  const [selectedSubject, setSelectedSubject] = useState(availableSubjects[0]?.id??'maths');
+  const [cardIdx, setCardIdx] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+  const [, forceUpdate] = useState(0);
+
+  const srKey = `rbp_sr_${uid}`;
+  const getSR = () => ls.get(srKey, {});
+  const setSR = (v) => ls.set(srKey, v);
+
+  const deck = FLASHCARD_DECKS[selectedSubject] || [];
+  const now = Date.now();
+
+  const dueDeck = deck.map((card,i)=>{
+    const k = `${selectedSubject}_${i}`;
+    const entry = getSR()[k];
+    const isDue = !entry || entry.nextMs <= now;
+    return {card, i, isDue, entry};
+  }).filter(x=>x.isDue);
+
+  const totalDue = dueDeck.length;
+  const current = dueDeck[cardIdx % Math.max(1, dueDeck.length)];
+
+  const handleResult = (result) => {
+    if (!current) return;
+    const k = `${selectedSubject}_${current.i}`;
+    const sr = getSR();
+    const entry = sr[k] || {level:0, nextMs:0};
+    const INTERVALS = [0, 86400000, 3*86400000, 7*86400000, 14*86400000];
+    let newLevel, nextMs;
+    if (result === 'missed') {
+      newLevel = 0;
+      nextMs = now;
+    } else if (result === 'nearly') {
+      newLevel = 1;
+      nextMs = now + INTERVALS[1];
+    } else {
+      newLevel = Math.min(4, entry.level+1);
+      nextMs = now + INTERVALS[newLevel];
+    }
+    sr[k] = {level:newLevel, nextMs};
+    setSR(sr);
+    setFlipped(false);
+    if (result === 'missed') {
+      setCardIdx(p=>p); // stay, but force refresh
+    } else {
+      setCardIdx(p=>p+1);
+    }
+    forceUpdate(n=>n+1);
+  };
+
+  const subjectColor = subjects.find(s=>s.id===selectedSubject)?.color || C.accent;
+
+  // Count next due
+  const nextDueMs = deck.map((_,i)=>{
+    const k=`${selectedSubject}_${i}`;
+    const e=getSR()[k];
+    return e&&e.nextMs>now ? e.nextMs : null;
+  }).filter(Boolean).sort((a,b)=>a-b)[0];
+
+  const nextDueIn = nextDueMs ? Math.ceil((nextDueMs-now)/3600000) : null;
+
+  return (
+    <div>
+      <div style={{marginBottom:20}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>Spaced repetition</div>
+        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Flashcards</h1>
+        <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>{totalDue} card{totalDue!==1?'s':''} due today</p>
+      </div>
+
+      {/* Subject picker */}
+      <div style={{marginBottom:16}}>
+        <select value={selectedSubject}
+          onChange={e=>{setSelectedSubject(e.target.value);setCardIdx(0);setFlipped(false);forceUpdate(n=>n+1);}}
+          style={{width:'100%',background:C.card2,border:`1px solid ${C.border}`,borderRadius:10,
+            padding:'11px 14px',color:C.text,fontSize:14,fontWeight:600,fontFamily:font,
+            outline:'none',cursor:'pointer',appearance:'none',WebkitAppearance:'none'}}>
+          {availableSubjects.map(s=>(
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
+      </div>
+
+      {totalDue === 0 ? (
+        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,
+          padding:'48px 24px',textAlign:'center'}}>
+          <div style={{fontSize:36,marginBottom:16}}>🎉</div>
+          <div style={{fontSize:18,fontWeight:700,color:C.text,marginBottom:8}}>All caught up!</div>
+          <div style={{fontSize:13,color:C.muted}}>
+            {nextDueIn!==null ? `Next card due in ${nextDueIn < 24 ? nextDueIn+'h' : Math.ceil(nextDueIn/24)+'d'}. Come back then!` : 'Come back tomorrow.'}
+          </div>
+        </div>
+      ) : current ? (
+        <div>
+          {/* Card */}
+          <div onClick={()=>setFlipped(f=>!f)}
+            style={{cursor:'pointer',perspective:1000,marginBottom:16,minHeight:200}}>
+            <div style={{position:'relative',minHeight:200,
+              transformStyle:'preserve-3d',
+              transform:flipped?'rotateY(180deg)':'rotateY(0deg)',
+              transition:'transform 0.5s ease'}}>
+              {/* Front */}
+              <div style={{position:'absolute',inset:0,backfaceVisibility:'hidden',
+                WebkitBackfaceVisibility:'hidden',
+                background:C.surface,border:`2px solid ${subjectColor}44`,
+                borderRadius:16,padding:'28px 24px',
+                display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center'}}>
+                <div style={{fontSize:11,fontWeight:700,color:subjectColor,textTransform:'uppercase',
+                  letterSpacing:0.5,marginBottom:16}}>Question · tap to flip</div>
+                <div style={{fontSize:17,fontWeight:600,color:C.text,textAlign:'center',lineHeight:1.6}}>
+                  {current.card.q}
+                </div>
+              </div>
+              {/* Back */}
+              <div style={{position:'absolute',inset:0,backfaceVisibility:'hidden',
+                WebkitBackfaceVisibility:'hidden',
+                transform:'rotateY(180deg)',
+                background:C.surface,border:`2px solid ${subjectColor}88`,
+                borderRadius:16,padding:'24px',
+                display:'flex',flexDirection:'column',justifyContent:'center'}}>
+                <div style={{fontSize:11,fontWeight:700,color:subjectColor,textTransform:'uppercase',
+                  letterSpacing:0.5,marginBottom:12}}>Answer</div>
+                <div style={{fontSize:14,color:C.text,lineHeight:1.8,whiteSpace:'pre-line'}}>
+                  {current.card.a}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Result buttons */}
+          {flipped && (
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
+              <button onClick={()=>handleResult('missed')}
+                style={{padding:'12px',background:'rgba(239,68,68,0.10)',border:'1px solid rgba(239,68,68,0.3)',
+                  borderRadius:10,color:'#ef4444',fontSize:13,fontWeight:700,fontFamily:font,cursor:'pointer'}}>
+                Missed
+              </button>
+              <button onClick={()=>handleResult('nearly')}
+                style={{padding:'12px',background:'rgba(249,115,22,0.10)',border:'1px solid rgba(249,115,22,0.3)',
+                  borderRadius:10,color:'#f97316',fontSize:13,fontWeight:700,fontFamily:font,cursor:'pointer'}}>
+                Nearly
+              </button>
+              <button onClick={()=>handleResult('got')}
+                style={{padding:'12px',background:'rgba(34,197,94,0.10)',border:'1px solid rgba(34,197,94,0.3)',
+                  borderRadius:10,color:'#22c55e',fontSize:13,fontWeight:700,fontFamily:font,cursor:'pointer'}}>
+                Got it!
+              </button>
+            </div>
+          )}
+          {!flipped && (
+            <div style={{textAlign:'center',fontSize:12,color:C.muted}}>
+              Card {(cardIdx%Math.max(1,totalDue))+1} of {totalDue} due
+            </div>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 // ── Analytics ──────────────────────────────────────────────────────────────
 function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, onQuickLog}) {
   const SUBJ_COLORS  = Object.fromEntries(subjects.map(s=>[s.name,s.color]));
@@ -1064,6 +1556,8 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
           ))}
         </div>
       )}
+
+      <StreakBanner scores={scores} C={C}/>
 
       <div style={{marginBottom:20}}>
         <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>Analytics</div>
@@ -1190,6 +1684,76 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
           ))}
         </div>
       </div>
+
+      {/* Predicted trajectory */}
+      {subjects.length>0&&(
+        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:18,marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Predicted trajectory</div>
+          <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+            {subjects.map(s=>{
+              const pred = predictedGrade(scores, s.name, GRADE_BOUNDS);
+              if (!pred) return (
+                <div key={s.name} style={{fontSize:12,padding:'5px 12px',borderRadius:20,
+                  background:C.card2,color:C.muted,border:`1px solid ${C.border}`}}>
+                  {s.name}: Need 2+ papers
+                </div>
+              );
+              const trendIcon = pred.trend==='up'?'▲':pred.trend==='down'?'▼':'→';
+              const trendColor = pred.trend==='up'?'#22c55e':pred.trend==='down'?'#ef4444':C.muted;
+              return (
+                <div key={s.name} style={{fontSize:12,padding:'5px 12px',borderRadius:20,
+                  background:`${s.color}14`,border:`1px solid ${s.color}33`,
+                  display:'flex',alignItems:'center',gap:6}}>
+                  <span style={{color:s.color,fontWeight:600}}>{s.name}</span>
+                  <span style={{fontSize:14,fontWeight:800,color:gradeColor(pred.grade)}}>{pred.grade}</span>
+                  <span style={{fontSize:11,color:trendColor}}>{trendIcon}</span>
+                  <span style={{fontSize:11,color:C.muted}}>{pred.pct}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Weak topics heatmap */}
+      {(()=>{
+        const subjectsWithErrors = subjects.filter(s=>errors.some(e=>e.subject===s.name));
+        if (!subjectsWithErrors.length) return null;
+        return (
+          <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:18,marginBottom:12}}>
+            <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Weak topics</div>
+            <div style={{display:'flex',flexDirection:'column',gap:14}}>
+              {subjectsWithErrors.map(s=>{
+                const subErrors = errors.filter(e=>e.subject===s.name);
+                const topicCounts = {};
+                subErrors.forEach(e=>{
+                  const t=e.topic||'Unknown';
+                  topicCounts[t]=(topicCounts[t]||0)+1;
+                });
+                const top3 = Object.entries(topicCounts).sort((a,b)=>b[1]-a[1]).slice(0,3);
+                return (
+                  <div key={s.name}>
+                    <div style={{fontSize:12,fontWeight:700,color:s.color,textTransform:'uppercase',letterSpacing:0.3,marginBottom:6}}>{s.name}</div>
+                    <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                      {top3.map(([topic,count])=>(
+                        <div key={topic} style={{fontSize:12,padding:'4px 10px',borderRadius:6,
+                          background:`${s.color}18`,border:`1px solid ${s.color}30`,
+                          display:'flex',alignItems:'center',gap:5}}>
+                          <span style={{color:C.text,fontWeight:500}}>{topic}</span>
+                          <span style={{fontSize:11,fontWeight:700,color:s.color,
+                            background:`${s.color}25`,padding:'1px 5px',borderRadius:4}}>
+                            ×{count}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       <InsuranceEligibilityCard scores={scores} uid={uid} C={C} font={font}/>
     </div>
@@ -1890,6 +2454,7 @@ function QuickLog({subjects,scores,setScores,uid,C,font,onClose,onSaved}){
   const [saved,setSaved]=useState(false);
   const [savedGrade,setSavedGrade]=useState(null);
   const [improvement,setImprovement]=useState(null);
+  const [tip,setTip]=useState(null);
 
   const subjectDone=s=>new Set(scores.filter(x=>x.subject===s).map(x=>x.paper));
   const allPapers=PAPER_SUGGS[subject]||[];
@@ -1936,7 +2501,12 @@ function QuickLog({subjects,scores,setScores,uid,C,font,onClose,onSaved}){
     setScores(updated); ls.set(`rbp_scores_${uid}`,updated);
     setSavedGrade(grade); setImprovement(imp); setSaved(true);
     if(onSaved) onSaved(entry,imp);
-    setTimeout(onClose,2000);
+    // pick a random technique tip for the saved subject
+    const subObj = subjects.find(s=>s.name===subject);
+    if(subObj?.techniques?.length) {
+      const t=subObj.techniques[Math.floor(Math.random()*subObj.techniques.length)];
+      setTip(t);
+    }
   };
 
   const gradeGlow=g=>{
@@ -1979,6 +2549,20 @@ function QuickLog({subjects,scores,setScores,uid,C,font,onClose,onSaved}){
                 <span style={{fontSize:12,color:'#22c55e',fontWeight:600}}>Grade up!</span>
               </div>
             )}
+            {tip&&(
+              <div style={{marginTop:20,padding:'14px 16px',background:C.card2,
+                borderRadius:10,border:`1px solid ${C.border}`,textAlign:'left'}}>
+                <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',
+                  letterSpacing:0.5,marginBottom:6}}>Quick tip:</div>
+                <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4}}>{tip.title}</div>
+                <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>{tip.body}</div>
+              </div>
+            )}
+            <button onClick={onClose}
+              style={{marginTop:18,width:'100%',padding:'12px',background:C.accent,border:'none',
+                borderRadius:10,color:'#fff',fontSize:14,fontWeight:700,fontFamily:font,cursor:'pointer'}}>
+              Done
+            </button>
           </div>
         ):(
           <>
@@ -2112,7 +2696,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
   },[]);
 
   useEffect(()=>{
-    if (isMobile&&!['analytics','tracker','exams'].includes(view)) setView('analytics');
+    if (isMobile&&!['analytics','tracker','exams','cards','achievements'].includes(view)) setView('analytics');
   },[isMobile]);
 
   // Supabase sync — load on mount, push on change
@@ -2149,6 +2733,29 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
     return ()=>clearTimeout(syncRef.current);
   },[scores,errors]);
 
+  // Browser push notifications
+  useEffect(()=>{
+    if (!('Notification' in window)) return;
+    if (Notification.permission==='default' && scores.length>=1) {
+      Notification.requestPermission();
+    }
+    if (Notification.permission==='granted') {
+      const today = new Date().toDateString();
+      const notifKey = `rbp_notif_shown_${today}`;
+      if (ls.get(notifKey, false)) return;
+      if (!scores.length) return;
+      const lastTs = Math.max(...scores.map(s=>s.ts||s.id));
+      const daysSince = Math.floor((Date.now()-lastTs)/86400000);
+      if (daysSince>=3) {
+        new Notification('Time to revise!', {
+          body: "You haven't logged a paper in 3+ days. Keep your streak going.",
+          icon:'/pwa-icon.svg'
+        });
+        ls.set(notifKey, true);
+      }
+    }
+  },[scores]);
+
   // Achievement tracking
   const prevUnlockedRef = useRef(()=>new Set(ls.get(`rbp_ach_${uid}`,[]) ));
   useEffect(()=>{
@@ -2170,6 +2777,8 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
     {id:'analytics',label:'Analytics'},
     {id:'tracker',label:'Tracker'},
     {id:'exams',label:'Exams'},
+    {id:'plan',label:'Plan'},
+    {id:'cards',label:'Cards'},
     {id:'achievements',label:'Achievements'},
     {id:'tips',label:'Tips & Routine'},
     {id:'resources',label:'Resources'},
@@ -2233,6 +2842,8 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
         {view==='analytics'    && <Analytics    {...vp} onQuickLog={()=>setQuickLogOpen(true)}/>}
         {view==='tracker'      && <Tracker      {...vp} setScores={setScores} setErrors={setErrors} uid={uid}/>}
         {view==='exams'        && <Exams        {...vp}/>}
+        {view==='plan'         && <Schedule     {...vp}/>}
+        {view==='cards'        && <Flashcards   subjects={subjects} uid={uid} C={C} font={font}/>}
         {view==='achievements' && <AchievementsView {...vp} unlockedIds={unlockedIds}/>}
         {view==='tips'         && <Tips         {...vp}/>}
         {view==='resources'    && <Resources    {...vp}/>}
@@ -2243,8 +2854,8 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
       {isMobile&&(
         <nav style={{position:'fixed',bottom:0,left:0,right:0,zIndex:100,
           background:C.nav,backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
-          borderTop:`1px solid ${C.border}`,display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',height:56}}>
-          {[{id:'analytics',label:'Home'},{id:'tracker',label:'Tracker'},{id:'exams',label:'Exams'},{id:'achievements',label:'Awards'}]
+          borderTop:`1px solid ${C.border}`,display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr 1fr',height:56}}>
+          {[{id:'analytics',label:'Home'},{id:'tracker',label:'Tracker'},{id:'exams',label:'Exams'},{id:'cards',label:'Cards'},{id:'achievements',label:'Awards'}]
             .map(n=>(
             <button key={n.id} onClick={()=>setView(n.id)}
               style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
