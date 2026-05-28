@@ -114,8 +114,11 @@ export default async function handler(req, res) {
     });
 
     if (error) {
-      console.error('Resend error:', error);
-      return res.status(500).json({ error: 'Failed to send email' });
+      console.error('Resend error:', JSON.stringify(error));
+      const msg = error.statusCode === 403
+        ? 'Sender not verified — verify beattheexam.org in Resend dashboard and set RESEND_FROM in Vercel env vars'
+        : `Failed to send email (${error.statusCode ?? 'unknown'})`;
+      return res.status(500).json({ error: msg });
     }
 
     return res.status(200).json({ ok: true, id: data.id });

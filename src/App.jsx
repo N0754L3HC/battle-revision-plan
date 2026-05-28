@@ -2267,8 +2267,10 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
         )}
         {emailState==='error'&&(
           <div style={{background:'rgba(239,68,68,0.07)',border:'1px solid rgba(239,68,68,0.2)',
-            borderRadius:8,padding:'10px 14px',marginBottom:12,fontSize:13,color:C.danger}}>
-            {emailMsg||'Email service not available yet.'}
+            borderRadius:8,padding:'10px 14px',marginBottom:12,fontSize:13,color:C.danger,lineHeight:1.6}}>
+            {emailMsg?.includes('Sender not verified')
+              ? <>Domain not verified. Go to <b>resend.com/domains</b>, add <b>beattheexam.org</b>, add the DNS records, then set <b>RESEND_FROM</b> in Vercel env vars.</>
+              : (emailMsg||'Email service not available yet.')}
           </div>
         )}
         <button onClick={sendSchedule} disabled={emailSending||emailState==='sent'}
@@ -2742,7 +2744,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
         supabase.from('user_data').upsert(
           {user_id:user.id,profile:'me',scores:fS,errors:fE,rag:fR,targets:fT,updated_at:new Date().toISOString()},
           {onConflict:'user_id,profile'}
-        );
+        ).then(()=>{});
         setSyncLoaded(true);
       })
       .catch(()=>setSyncLoaded(true));
@@ -2754,7 +2756,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
       supabase.from('user_data').upsert(
         {user_id:user.id,profile:'me',scores,errors,rag,targets,updated_at:new Date().toISOString()},
         {onConflict:'user_id,profile'}
-      );
+      ).then(()=>{});
     },2000);
     return ()=>clearTimeout(syncRef.current);
   },[scores,errors,rag,targets,syncLoaded]);
