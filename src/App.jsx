@@ -57,74 +57,198 @@ const T = {
   },
 };
 
-// ── Exam schedule (subjectId → exams) ──────────────────────────────────────
-// Dates confirmed from official AQA timetable (May/June 2026 v1.1) and
-// Edexcel/OCR dates confirmed from ASFC school timetable (Nov 2025 release).
+// ── Exam schedule (subjectId → boardId → exams) ────────────────────────────
 const EXAM_SCHEDULE = {
-  maths: [
-    { date:'2026-06-03', paper:'Paper 1: Pure Mathematics 1',    code:'9MA0/01', board:'Edexcel', time:'PM', duration:'2h',     maxMark:100 },
-    { date:'2026-06-11', paper:'Paper 2: Pure Mathematics 2',    code:'9MA0/02', board:'Edexcel', time:'PM', duration:'2h',     maxMark:100 },
-    { date:'2026-06-18', paper:'Paper 3: Statistics & Mechanics', code:'9MA0/03', board:'Edexcel', time:'PM', duration:'2h',     maxMark:100 },
-  ],
-  'further-maths': [
-    { date:'2026-05-14', paper:'Core Pure Mathematics 1',  code:'9FM0/01', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
-    { date:'2026-05-21', paper:'Core Pure Mathematics 2',  code:'9FM0/02', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
-    { date:'2026-06-05', paper:'Option: Further Mechanics 1', code:'9FM0/3C', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
-    { date:'2026-06-12', paper:'Option: Further Statistics 1', code:'9FM0/3B', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
-    { date:'2026-06-16', paper:'Option: Decision Mathematics 1', code:'9FM0/3D', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
-  ],
-  cs: [
-    { date:'2026-06-10', paper:'Paper 1: Computer Systems',         code:'H446/01', board:'OCR', time:'PM', duration:'2h 30m', maxMark:140 },
-    { date:'2026-06-17', paper:'Paper 2: Algorithms & Programming', code:'H446/02', board:'OCR', time:'AM', duration:'2h 30m', maxMark:140 },
-  ],
-  chemistry: [
-    { date:'2026-06-02', paper:'Paper 1: Inorganic & Physical Chemistry', code:'7405/1', board:'AQA', time:'AM', duration:'2h', maxMark:105 },
-    { date:'2026-06-09', paper:'Paper 2: Organic & Physical Chemistry',   code:'7405/2', board:'AQA', time:'AM', duration:'2h', maxMark:105 },
-    { date:'2026-06-15', paper:'Paper 3: Practical Skills',               code:'7405/3', board:'AQA', time:'AM', duration:'2h', maxMark:90  },
-  ],
-  physics: [
-    { date:'2026-05-20', paper:'Component 1: Modelling Physics', code:'H557/01', board:'OCR A', time:'PM', duration:'2h 15m', maxMark:100 },
-    { date:'2026-06-01', paper:'Component 2: Exploring Physics', code:'H557/02', board:'OCR A', time:'AM', duration:'2h 15m', maxMark:100 },
-    { date:'2026-06-08', paper:'Component 3: Unified Physics',   code:'H557/03', board:'OCR A', time:'AM', duration:'1h 30m', maxMark:70  },
-  ],
-  economics: [
-    { date:'2026-05-11', paper:'Paper 1: Markets & Market Failure',         code:'7136/1', board:'AQA', time:'AM', duration:'2h', maxMark:80 },
-    { date:'2026-05-18', paper:'Paper 2: National & International Economy', code:'7136/2', board:'AQA', time:'PM', duration:'2h', maxMark:80 },
-    { date:'2026-06-04', paper:'Paper 3: Economic Principles & Issues',     code:'7136/3', board:'AQA', time:'AM', duration:'2h', maxMark:80 },
-  ],
-  biology: [
-    { date:'2026-06-04', paper:'Paper 1: Biological Processes',  code:'7402/1', board:'AQA', time:'PM', duration:'2h', maxMark:91 },
-    { date:'2026-06-12', paper:'Paper 2: Biological Diversity',  code:'7402/2', board:'AQA', time:'AM', duration:'2h', maxMark:91 },
-    { date:'2026-06-15', paper:'Paper 3: Essay & Data Analysis', code:'7402/3', board:'AQA', time:'PM', duration:'2h', maxMark:78 },
-  ],
-  psychology: [
-    { date:'2026-05-15', paper:'Paper 1: Social Influence, Memory, Attachment & Psychopathology', code:'7182/1', board:'AQA', time:'AM', duration:'2h', maxMark:96 },
-    { date:'2026-05-20', paper:'Paper 2: Biopsychology, Approaches & Research Methods',            code:'7182/2', board:'AQA', time:'AM', duration:'2h', maxMark:96 },
-    { date:'2026-06-05', paper:'Paper 3: Issues, Debates & Options',                               code:'7182/3', board:'AQA', time:'AM', duration:'2h', maxMark:96 },
-  ],
-  sociology: [
-    { date:'2026-05-18', paper:'Paper 1: Education with Theory & Methods', code:'7192/1', board:'AQA', time:'AM', duration:'2h', maxMark:80 },
-    { date:'2026-06-03', paper:'Paper 2: Topics in Sociology',             code:'7192/2', board:'AQA', time:'AM', duration:'2h', maxMark:80 },
-    { date:'2026-06-12', paper:'Paper 3: Crime & Deviance with Theory & Methods', code:'7192/3', board:'AQA', time:'PM', duration:'2h', maxMark:80 },
-  ],
-  history: [
-    { date:'2026-05-19', paper:'Paper 1: Breadth Study', code:'7042/1', board:'AQA', time:'PM', duration:'2h 30m', maxMark:75 },
-    { date:'2026-06-02', paper:'Paper 2: Depth Study',   code:'7042/2', board:'AQA', time:'PM', duration:'2h 30m', maxMark:75 },
-  ],
-  geography: [
-    { date:'2026-05-12', paper:'Paper 1: Physical Geography', code:'7037/1', board:'AQA', time:'AM', duration:'2h 30m', maxMark:80 },
-    { date:'2026-05-21', paper:'Paper 2: Human Geography',    code:'7037/2', board:'AQA', time:'PM', duration:'2h 30m', maxMark:80 },
-  ],
-  'english-lit': [
-    { date:'2026-05-13', paper:'Paper 1: Love Through the Ages',       code:'7712/1',  board:'AQA', time:'AM', duration:'3h',     maxMark:75 },
-    { date:'2026-06-01', paper:'Paper 2: Texts in Shared Contexts',    code:'7712/2',  board:'AQA', time:'AM', duration:'2h 30m', maxMark:50 },
-  ],
-  business: [
-    { date:'2026-05-13', paper:'Paper 1: Business 1',              code:'7132/1', board:'AQA', time:'PM', duration:'2h', maxMark:100 },
-    { date:'2026-05-19', paper:'Paper 2: Business 2',              code:'7132/2', board:'AQA', time:'AM', duration:'2h', maxMark:100 },
-    { date:'2026-06-10', paper:'Paper 3: Business 3 (Case Study)', code:'7132/3', board:'AQA', time:'AM', duration:'2h', maxMark:100 },
-  ],
+  maths: {
+    edexcel: [
+      { date:'2026-06-03', paper:'Paper 1: Pure Mathematics 1',     code:'9MA0/01', board:'Edexcel', time:'PM', duration:'2h', maxMark:100 },
+      { date:'2026-06-11', paper:'Paper 2: Pure Mathematics 2',     code:'9MA0/02', board:'Edexcel', time:'PM', duration:'2h', maxMark:100 },
+      { date:'2026-06-18', paper:'Paper 3: Statistics & Mechanics', code:'9MA0/03', board:'Edexcel', time:'PM', duration:'2h', maxMark:100 },
+    ],
+    aqa: [
+      { date:'2026-05-20', paper:'Paper 1: Pure Mathematics (7357/1)',              code:'7357/1', board:'AQA', time:'PM', duration:'2h', maxMark:100 },
+      { date:'2026-06-03', paper:'Paper 2: Pure Mathematics & Mechanics (7357/2)',  code:'7357/2', board:'AQA', time:'AM', duration:'2h', maxMark:100 },
+      { date:'2026-06-12', paper:'Paper 3: Pure Mathematics & Statistics (7357/3)', code:'7357/3', board:'AQA', time:'PM', duration:'2h', maxMark:100 },
+    ],
+    'ocr-a': [
+      { date:'2026-05-19', paper:'Paper 1: Pure Mathematics (H230/01)',                       code:'H230/01', board:'OCR A', time:'PM', duration:'2h', maxMark:100 },
+      { date:'2026-06-09', paper:'Paper 2: Pure Mathematics & Statistics (H230/02)',          code:'H230/02', board:'OCR A', time:'AM', duration:'2h', maxMark:100 },
+      { date:'2026-06-19', paper:'Paper 3: Pure Mathematics & Mechanics (H230/03)',           code:'H230/03', board:'OCR A', time:'PM', duration:'2h', maxMark:100 },
+    ],
+  },
+  'further-maths': {
+    edexcel: [
+      { date:'2026-05-14', paper:'Core Pure Mathematics 1',           code:'9FM0/01', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
+      { date:'2026-05-21', paper:'Core Pure Mathematics 2',           code:'9FM0/02', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
+      { date:'2026-06-05', paper:'Option: Further Mechanics 1',       code:'9FM0/3C', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
+      { date:'2026-06-12', paper:'Option: Further Statistics 1',      code:'9FM0/3B', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
+      { date:'2026-06-16', paper:'Option: Decision Mathematics 1',    code:'9FM0/3D', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
+    ],
+    aqa: [
+      { date:'2026-05-14', paper:'Paper 1: Compulsory (7367/1)',  code:'7367/1', board:'AQA', time:'PM', duration:'2h', maxMark:100 },
+      { date:'2026-05-20', paper:'Paper 2: Optional 1 (7367/2)', code:'7367/2', board:'AQA', time:'AM', duration:'1h 30m', maxMark:75 },
+      { date:'2026-06-10', paper:'Paper 3: Optional 2 (7367/3)', code:'7367/3', board:'AQA', time:'PM', duration:'1h 30m', maxMark:75 },
+    ],
+  },
+  cs: {
+    ocr: [
+      { date:'2026-06-10', paper:'Paper 1: Computer Systems',         code:'H446/01', board:'OCR', time:'PM', duration:'2h 30m', maxMark:140 },
+      { date:'2026-06-17', paper:'Paper 2: Algorithms & Programming', code:'H446/02', board:'OCR', time:'AM', duration:'2h 30m', maxMark:140 },
+    ],
+    aqa: [
+      { date:'2026-06-11', paper:'Paper 1: On-screen exam (7517/1)', code:'7517/1', board:'AQA', time:'PM', duration:'2h 30m', maxMark:75 },
+      { date:'2026-06-18', paper:'Paper 2: Written exam (7517/2)',   code:'7517/2', board:'AQA', time:'AM', duration:'2h 30m', maxMark:75 },
+    ],
+    edexcel: [
+      { date:'2026-06-04', paper:'Paper 1: Computational Thinking (9CP0/01)',  code:'9CP0/01', board:'Edexcel', time:'PM', duration:'2h 30m', maxMark:100 },
+      { date:'2026-06-11', paper:'Paper 2: Algorithms & Programming (9CP0/02)', code:'9CP0/02', board:'Edexcel', time:'AM', duration:'2h 30m', maxMark:100 },
+    ],
+  },
+  chemistry: {
+    aqa: [
+      { date:'2026-06-02', paper:'Paper 1: Inorganic & Physical Chemistry', code:'7405/1', board:'AQA', time:'AM', duration:'2h', maxMark:105 },
+      { date:'2026-06-09', paper:'Paper 2: Organic & Physical Chemistry',   code:'7405/2', board:'AQA', time:'AM', duration:'2h', maxMark:105 },
+      { date:'2026-06-15', paper:'Paper 3: Practical Skills',               code:'7405/3', board:'AQA', time:'AM', duration:'2h', maxMark:90  },
+    ],
+    edexcel: [
+      { date:'2026-06-01', paper:'Paper 1: Core Inorganic & Physical Chemistry (9CH0/01)',    code:'9CH0/01', board:'Edexcel', time:'AM', duration:'1h 45m', maxMark:90 },
+      { date:'2026-06-08', paper:'Paper 2: Core Organic & Physical Chemistry (9CH0/02)',      code:'9CH0/02', board:'Edexcel', time:'AM', duration:'1h 45m', maxMark:90 },
+      { date:'2026-06-16', paper:'Paper 3: General & Practical Principles (9CH0/03)',         code:'9CH0/03', board:'Edexcel', time:'AM', duration:'2h 30m', maxMark:120 },
+    ],
+    'ocr-a': [
+      { date:'2026-06-03', paper:'Paper 1: Periodic Table, Elements & Physical Chemistry (H432/01)', code:'H432/01', board:'OCR A', time:'AM', duration:'2h 15m', maxMark:100 },
+      { date:'2026-06-10', paper:'Paper 2: Synthesis & Analytical Techniques (H432/02)',              code:'H432/02', board:'OCR A', time:'AM', duration:'2h 15m', maxMark:100 },
+      { date:'2026-06-18', paper:'Paper 3: Unified Chemistry (H432/03)',                              code:'H432/03', board:'OCR A', time:'AM', duration:'1h 30m', maxMark:70  },
+    ],
+  },
+  physics: {
+    'ocr-a': [
+      { date:'2026-05-20', paper:'Component 1: Modelling Physics (H557/01)',  code:'H557/01', board:'OCR A', time:'PM', duration:'2h 15m', maxMark:100 },
+      { date:'2026-06-01', paper:'Component 2: Exploring Physics (H557/02)',  code:'H557/02', board:'OCR A', time:'AM', duration:'2h 15m', maxMark:100 },
+      { date:'2026-06-08', paper:'Component 3: Unified Physics (H557/03)',    code:'H557/03', board:'OCR A', time:'AM', duration:'1h 30m', maxMark:70  },
+    ],
+    aqa: [
+      { date:'2026-05-21', paper:'Paper 1: Sections 1–5 (7408/1)',          code:'7408/1', board:'AQA', time:'AM', duration:'2h', maxMark:85 },
+      { date:'2026-06-04', paper:'Paper 2: Sections 6–8 (7408/2)',          code:'7408/2', board:'AQA', time:'AM', duration:'2h', maxMark:85 },
+      { date:'2026-06-16', paper:'Paper 3: Practical & Options (7408/3)',   code:'7408/3', board:'AQA', time:'AM', duration:'2h', maxMark:80 },
+    ],
+    edexcel: [
+      { date:'2026-05-19', paper:'Paper 1: Advanced Physics I (9PH0/01)',                   code:'9PH0/01', board:'Edexcel', time:'PM', duration:'1h 45m', maxMark:90 },
+      { date:'2026-06-05', paper:'Paper 2: Advanced Physics II (9PH0/02)',                  code:'9PH0/02', board:'Edexcel', time:'AM', duration:'1h 45m', maxMark:90 },
+      { date:'2026-06-17', paper:'Paper 3: General & Practical Principles (9PH0/03)',       code:'9PH0/03', board:'Edexcel', time:'AM', duration:'2h 30m', maxMark:120 },
+    ],
+  },
+  economics: {
+    aqa: [
+      { date:'2026-05-11', paper:'Paper 1: Markets & Market Failure (7136/1)',         code:'7136/1', board:'AQA', time:'AM', duration:'2h', maxMark:80 },
+      { date:'2026-05-18', paper:'Paper 2: National & International Economy (7136/2)', code:'7136/2', board:'AQA', time:'PM', duration:'2h', maxMark:80 },
+      { date:'2026-06-04', paper:'Paper 3: Economic Principles & Issues (7136/3)',     code:'7136/3', board:'AQA', time:'AM', duration:'2h', maxMark:80 },
+    ],
+    edexcel: [
+      { date:'2026-05-13', paper:'Paper 1: Markets & Business Behaviour (9EC0/01)',               code:'9EC0/01', board:'Edexcel', time:'AM', duration:'2h', maxMark:100 },
+      { date:'2026-05-21', paper:'Paper 2: The Macroeconomy (9EC0/02)',                            code:'9EC0/02', board:'Edexcel', time:'PM', duration:'2h', maxMark:100 },
+      { date:'2026-06-10', paper:'Paper 3: Microeconomics & Macroeconomics (9EC0/03)',             code:'9EC0/03', board:'Edexcel', time:'AM', duration:'2h', maxMark:100 },
+    ],
+  },
+  biology: {
+    aqa: [
+      { date:'2026-06-04', paper:'Paper 1: Biological Processes (7402/1)',  code:'7402/1', board:'AQA', time:'PM', duration:'2h', maxMark:91 },
+      { date:'2026-06-12', paper:'Paper 2: Biological Diversity (7402/2)',  code:'7402/2', board:'AQA', time:'AM', duration:'2h', maxMark:91 },
+      { date:'2026-06-15', paper:'Paper 3: Essay & Data Analysis (7402/3)', code:'7402/3', board:'AQA', time:'PM', duration:'2h', maxMark:78 },
+    ],
+    'edexcel-a': [
+      { date:'2026-05-19', paper:'Paper 1: The Natural Environment (9BI0/01)',              code:'9BI0/01', board:'Edexcel A', time:'PM', duration:'1h 45m', maxMark:90 },
+      { date:'2026-06-05', paper:'Paper 2: Energy, Exercise & Co-ordination (9BI0/02)',    code:'9BI0/02', board:'Edexcel A', time:'AM', duration:'1h 45m', maxMark:90 },
+      { date:'2026-06-16', paper:'Paper 3: General & Practical Principles (9BI0/03)',      code:'9BI0/03', board:'Edexcel A', time:'AM', duration:'2h 30m', maxMark:120 },
+    ],
+    'ocr-a': [
+      { date:'2026-06-03', paper:'Paper 1: Biological Processes (H420/01)',   code:'H420/01', board:'OCR A', time:'AM', duration:'2h 15m', maxMark:100 },
+      { date:'2026-06-11', paper:'Paper 2: Biological Diversity (H420/02)',   code:'H420/02', board:'OCR A', time:'AM', duration:'2h 15m', maxMark:100 },
+      { date:'2026-06-18', paper:'Paper 3: Unified Biology (H420/03)',        code:'H420/03', board:'OCR A', time:'AM', duration:'1h 30m', maxMark:70  },
+    ],
+  },
+  psychology: {
+    aqa: [
+      { date:'2026-05-15', paper:'Paper 1: Social Influence, Memory, Attachment & Psychopathology (7182/1)', code:'7182/1', board:'AQA', time:'AM', duration:'2h', maxMark:96 },
+      { date:'2026-05-20', paper:'Paper 2: Biopsychology, Approaches & Research Methods (7182/2)',            code:'7182/2', board:'AQA', time:'AM', duration:'2h', maxMark:96 },
+      { date:'2026-06-05', paper:'Paper 3: Issues, Debates & Options (7182/3)',                               code:'7182/3', board:'AQA', time:'AM', duration:'2h', maxMark:96 },
+    ],
+    edexcel: [
+      { date:'2026-05-18', paper:'Paper 1: Social & Cognitive Psychology (9PS0/01)',              code:'9PS0/01', board:'Edexcel', time:'AM', duration:'2h', maxMark:100 },
+      { date:'2026-06-03', paper:'Paper 2: Biological & Learning Approaches (9PS0/02)',           code:'9PS0/02', board:'Edexcel', time:'PM', duration:'2h', maxMark:100 },
+      { date:'2026-06-15', paper:'Paper 3: Clinical Psychology & Issues (9PS0/03)',               code:'9PS0/03', board:'Edexcel', time:'AM', duration:'2h', maxMark:100 },
+    ],
+  },
+  sociology: {
+    aqa: [
+      { date:'2026-05-18', paper:'Paper 1: Education with Theory & Methods (7192/1)',            code:'7192/1', board:'AQA', time:'AM', duration:'2h', maxMark:80 },
+      { date:'2026-06-03', paper:'Paper 2: Topics in Sociology (7192/2)',                        code:'7192/2', board:'AQA', time:'AM', duration:'2h', maxMark:80 },
+      { date:'2026-06-12', paper:'Paper 3: Crime & Deviance with Theory & Methods (7192/3)',     code:'7192/3', board:'AQA', time:'PM', duration:'2h', maxMark:80 },
+    ],
+  },
+  history: {
+    aqa: [
+      { date:'2026-05-19', paper:'Paper 1: Breadth Study (7042/1)', code:'7042/1', board:'AQA', time:'PM', duration:'2h 30m', maxMark:75 },
+      { date:'2026-06-02', paper:'Paper 2: Depth Study (7042/2)',   code:'7042/2', board:'AQA', time:'PM', duration:'2h 30m', maxMark:75 },
+    ],
+    edexcel: [
+      { date:'2026-05-14', paper:'Paper 1: Breadth Study (9HI0/1)',                    code:'9HI0/1', board:'Edexcel', time:'AM', duration:'2h 15m', maxMark:80 },
+      { date:'2026-06-02', paper:'Paper 2: Depth Study (9HI0/2)',                      code:'9HI0/2', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:64 },
+      { date:'2026-06-09', paper:'Paper 3: Thematic Study & Source Skills (9HI0/3)',   code:'9HI0/3', board:'Edexcel', time:'AM', duration:'2h 15m', maxMark:64 },
+    ],
+  },
+  geography: {
+    aqa: [
+      { date:'2026-05-12', paper:'Paper 1: Physical Geography (7037/1)', code:'7037/1', board:'AQA', time:'AM', duration:'2h 30m', maxMark:80 },
+      { date:'2026-05-21', paper:'Paper 2: Human Geography (7037/2)',    code:'7037/2', board:'AQA', time:'PM', duration:'2h 30m', maxMark:80 },
+    ],
+    'edexcel-a': [
+      { date:'2026-05-18', paper:'Paper 1: Dynamic Landscapes (9GE0/01)',        code:'9GE0/01', board:'Edexcel A', time:'AM', duration:'2h 15m', maxMark:94 },
+      { date:'2026-06-04', paper:'Paper 2: Dynamic Places (9GE0/02)',            code:'9GE0/02', board:'Edexcel A', time:'PM', duration:'2h 15m', maxMark:94 },
+      { date:'2026-06-15', paper:'Paper 3: Synoptic Investigation (9GE0/03)',    code:'9GE0/03', board:'Edexcel A', time:'AM', duration:'2h 30m', maxMark:70 },
+    ],
+    'ocr-a': [
+      { date:'2026-05-13', paper:'Component 1: Physical Systems (H481/01)',        code:'H481/01', board:'OCR A', time:'AM', duration:'2h 30m', maxMark:66 },
+      { date:'2026-05-20', paper:'Component 2: Human Interactions (H481/02)',      code:'H481/02', board:'OCR A', time:'PM', duration:'2h 30m', maxMark:66 },
+      { date:'2026-06-10', paper:'Component 3: Geographical Debates (H481/03)',    code:'H481/03', board:'OCR A', time:'AM', duration:'3h',     maxMark:70 },
+    ],
+  },
+  'english-lit': {
+    aqa: [
+      { date:'2026-05-13', paper:'Paper 1: Love Through the Ages (7712/1)',    code:'7712/1', board:'AQA', time:'AM', duration:'3h',     maxMark:75 },
+      { date:'2026-06-01', paper:'Paper 2: Texts in Shared Contexts (7712/2)', code:'7712/2', board:'AQA', time:'AM', duration:'2h 30m', maxMark:50 },
+    ],
+    edexcel: [
+      { date:'2026-05-14', paper:'Paper 1: Drama (9ET0/01)',  code:'9ET0/01', board:'Edexcel', time:'AM', duration:'2h 15m', maxMark:60 },
+      { date:'2026-05-21', paper:'Paper 2: Prose (9ET0/02)',  code:'9ET0/02', board:'Edexcel', time:'PM', duration:'1h 15m', maxMark:40 },
+      { date:'2026-06-08', paper:'Paper 3: Poetry (9ET0/03)', code:'9ET0/03', board:'Edexcel', time:'AM', duration:'2h 15m', maxMark:60 },
+    ],
+    ocr: [
+      { date:'2026-05-19', paper:'Paper 1: Drama & Poetry Pre-1900 (H472/01)',         code:'H472/01', board:'OCR', time:'AM', duration:'2h 30m', maxMark:80 },
+      { date:'2026-06-04', paper:'Paper 2: Comparative & Contextual Study (H472/02)', code:'H472/02', board:'OCR', time:'AM', duration:'2h 30m', maxMark:80 },
+    ],
+  },
+  business: {
+    aqa: [
+      { date:'2026-05-13', paper:'Paper 1: Business 1 (7132/1)',              code:'7132/1', board:'AQA', time:'PM', duration:'2h', maxMark:100 },
+      { date:'2026-05-19', paper:'Paper 2: Business 2 (7132/2)',              code:'7132/2', board:'AQA', time:'AM', duration:'2h', maxMark:100 },
+      { date:'2026-06-10', paper:'Paper 3: Business 3 — Case Study (7132/3)', code:'7132/3', board:'AQA', time:'AM', duration:'2h', maxMark:100 },
+    ],
+    edexcel: [
+      { date:'2026-05-12', paper:'Paper 1: Marketing, People & Global Business (9BS0/01)',                          code:'9BS0/01', board:'Edexcel', time:'AM', duration:'2h', maxMark:100 },
+      { date:'2026-05-20', paper:'Paper 2: Business Activities, Decisions & Strategy (9BS0/02)',                    code:'9BS0/02', board:'Edexcel', time:'PM', duration:'2h', maxMark:100 },
+      { date:'2026-06-09', paper:'Paper 3: Investigating Business in a Competitive Environment (9BS0/03)',          code:'9BS0/03', board:'Edexcel', time:'AM', duration:'2h', maxMark:100 },
+    ],
+  },
 };
+
+// Returns the exam list for a specific subject+board; falls back to first available board
+function getSubjectExams(sched, subjectId, boardId) {
+  const sub = sched[subjectId];
+  if (!sub) return [];
+  if (Array.isArray(sub)) return sub; // backward-compat
+  return sub[boardId] || sub[Object.keys(sub)[0]] || [];
+}
 
 // ── Raw grade boundaries (paper-specific) ───────────────────────────────────
 const RAW_BOUNDARIES = {
@@ -698,7 +822,7 @@ function generateSchedule(subjects, scores, errors, examSched) {
   const today = new Date(); today.setHours(0,0,0,0);
   // rank by priority
   const ranked = [...subjects].map(s => {
-    const exs = (examSched[s.id]||[]);
+    const exs = getSubjectExams(examSched, s.id, s.boardId);
     const minDays = exs.length ? Math.min(...exs.map(e=>daysUntil(e.date))) : 999;
     const urgency = 1/(Math.max(0,minDays)+1)*50;
     const ss = scores.filter(x=>x.subject===s.name);
@@ -712,7 +836,7 @@ function generateSchedule(subjects, scores, errors, examSched) {
   for (let i=0; i<14; i++) {
     const d = new Date(today); d.setDate(today.getDate()+i);
     const dateStr = d.toISOString().slice(0,10);
-    const examsToday = subjects.flatMap(s=>(examSched[s.id]||[]).filter(e=>e.date===dateStr).map(e=>({...e,subjectName:s.name,color:s.color})));
+    const examsToday = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId).filter(e=>e.date===dateStr).map(e=>({...e,subjectName:s.name,color:s.color})));
     if (examsToday.length) {
       days.push({date:d, isExamDay:true, exams:examsToday, slots:[]});
     } else {
@@ -730,7 +854,7 @@ function generateSchedule(subjects, scores, errors, examSched) {
 function getNotifications(scores, errors, subjects, examSched=EXAM_SCHEDULE) {
   const now=new Date(); now.setHours(0,0,0,0);
   const notes=[];
-  const allExams=subjects.flatMap(s=>(examSched[s.id]??[]).map(e=>({...e,subject:s.name,color:s.color})));
+  const allExams=subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId).map(e=>({...e,subject:s.name,color:s.color})));
   const upcoming=allExams.map(e=>({...e,d:Math.ceil((new Date(e.date)-now)/86400000)}))
     .filter(e=>e.d>0).sort((a,b)=>a.d-b.d);
   if (upcoming.length&&upcoming[0].d<=14) {
@@ -948,7 +1072,7 @@ function AchievementsView({scores,errors,subjects,C,font,unlockedIds=[]}){
 function MissionBoard({subjects,scores,C,font,examSched,onQuickLog=()=>{}}) {
   const PAPER_SUGGS=Object.fromEntries(subjects.map(s=>[s.name,getPaperSuggestions(s)]));
   const allExams=subjects
-    .flatMap(s=>(examSched[s.id]||[]).map(e=>({...e,subjectName:s.name,color:s.color})))
+    .flatMap(s=>getSubjectExams(examSched,s.id,s.boardId).map(e=>({...e,subjectName:s.name,color:s.color})))
     .filter(e=>daysUntil(e.date)>0)
     .sort((a,b)=>new Date(a.date)-new Date(b.date));
   const soonest=allExams[0]??null;
@@ -1399,6 +1523,41 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
         <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>Track your scores and readiness across all subjects.</p>
       </div>
 
+      {/* ── Exam countdown strip ─────────────────────────────────────────── */}
+      {(()=>{
+        const now=new Date(); now.setHours(0,0,0,0);
+        const upcoming=subjects.flatMap(s=>
+          getSubjectExams(examSched,s.id,s.boardId).map(e=>({...e,subjectName:s.name,color:s.color}))
+        ).map(e=>({...e,d:Math.ceil((new Date(e.date)-now)/86400000)}))
+         .filter(e=>e.d>=0).sort((a,b)=>a.d-b.d);
+        if(!upcoming.length) return null;
+        const thisWeek=upcoming.filter(e=>e.d<=7);
+        return (
+          <div style={{background:C.surface,border:`1px solid ${upcoming[0].d<=7?upcoming[0].color+'44':C.border}`,
+            borderRadius:12,padding:'12px 16px',marginBottom:12}}>
+            <div style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:0.8,textTransform:'uppercase',marginBottom:10}}>
+              {thisWeek.length>1?`${thisWeek.length} exams this week`:'Next exam'}
+            </div>
+            <div style={{display:'flex',gap:8,overflowX:'auto',paddingBottom:2,scrollbarWidth:'none'}}>
+              {upcoming.slice(0,6).map(e=>(
+                <div key={e.code} style={{flexShrink:0,background:`${e.color}12`,
+                  border:`1px solid ${e.d<=7?e.color+'55':e.color+'22'}`,
+                  borderRadius:10,padding:'8px 12px',minWidth:72,textAlign:'center'}}>
+                  <div style={{fontSize:10,fontWeight:700,color:e.color,marginBottom:3,
+                    whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',maxWidth:80}}>
+                    {e.subjectName.split(' ')[0]}
+                  </div>
+                  <div style={{fontSize:e.d===0?18:26,fontWeight:900,color:e.d<=7?e.color:C.text,lineHeight:1}}>
+                    {e.d===0?'Today':e.d}
+                  </div>
+                  {e.d>0&&<div style={{fontSize:9,color:C.muted,fontWeight:600,letterSpacing:0.5,marginTop:1}}>DAYS</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── Battle readiness gauge ───────────────────────────────────────── */}
       <div style={{background:C.surface,border:`1px solid ${br.labelColor}30`,borderRadius:12,
         padding:'16px 18px',marginBottom:12,display:'flex',gap:20,alignItems:'center',flexWrap:'wrap'}}>
@@ -1774,7 +1933,7 @@ function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font}) {
 
 // ── Exams ──────────────────────────────────────────────────────────────────
 function Exams({subjects,C,font,examSched=EXAM_SCHEDULE}) {
-  const allExams=subjects.flatMap(s=>(examSched[s.id]??[]).map(e=>({...e,subjectName:s.name,color:s.color})))
+  const allExams=subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId).map(e=>({...e,subjectName:s.name,color:s.color})))
     .sort((a,b)=>new Date(a.date)-new Date(b.date));
   const upcoming=allExams.filter(e=>daysUntil(e.date)>=0);
   const past=allExams.filter(e=>daysUntil(e.date)<0);
@@ -1860,10 +2019,9 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE}) {
 }
 
 // ── Study tips ─────────────────────────────────────────────────────────────
-function StudyTimer({subjects,uid,C,font}) {
+function StudyTimer({subjects,uid,C,font,sessions,setSessions}) {
   const [timerMode, setTimerMode] = useState('pomodoro');
   const [selSubject, setSelSubject] = useState(subjects[0]?.id??'');
-  const [sessions,  setSessions]   = useState(()=>ls.get(`rbp_sessions_${uid}`,[]) );
 
   // Pomodoro state
   const [workMins,  setWorkMins]  = useState(25);
@@ -1896,6 +2054,7 @@ function StudyTimer({subjects,uid,C,font}) {
           if (pomMode==='work') {
             const sess={id:Date.now(),subjectId:selSubject,secs:workMins*60,ts:Date.now()};
             setSessions(prev=>{ const next=[...prev,sess]; ls.set(`rbp_sessions_${uid}`,next); return next; });
+            // Supabase sync handled by parent's debounced effect via setSessions
             setPomMode('break'); setSecsLeft(breakMins*60);
           } else {
             setPomMode('work'); setSecsLeft(workMins*60);
@@ -2198,16 +2357,22 @@ const RAG = [
   {k:'green', label:'Confident',     color:'#22c55e', bg:'rgba(34,197,94,0.08)',  border:'rgba(34,197,94,0.28)' },
 ];
 
-function Resources({subjects,uid,C,font,rag,setRag}) {
-  const [view,       setView]     = useState('status');
+function Resources({subjects,uid,C,font,rag,setRag,ragNotes,setRagNotes}) {
+  const [view,       setView]      = useState('status');
   const [selSubject, setSelSubject] = useState(subjects[0]?.id??'');
-  const [hovered,    setHovered]  = useState(null); // `${sid}_${i}_${ragKey}`
+  const [hovered,    setHovered]   = useState(null);
+  const [expandedNote, setExpandedNote] = useState(null); // `${sid}_${i}`
 
   const setStatus = (sid,i,st) => {
     const k=`${sid}_${i}`;
     const next={...rag};
     if(next[k]===st) delete next[k]; else next[k]=st;
     setRag(next);
+  };
+
+  const setNote = (sid,i,text) => {
+    const k=`${sid}_${i}`;
+    setRagNotes(prev=>{ const next={...prev}; if(text.trim()) next[k]=text; else delete next[k]; return next; });
   };
 
   const allTopics = subjects.flatMap(s=>
@@ -2222,38 +2387,67 @@ function Resources({subjects,uid,C,font,rag,setRag}) {
   const total = allTopics.length;
 
   const TopicRow = ({topic,i,s,showSubject}) => {
-    const st = rag[`${s.id}_${i}`]||null;
+    const k   = `${s.id}_${i}`;
+    const st  = rag[k]||null;
+    const note= ragNotes?.[k]||'';
     const ragCfg = RAG.find(r=>r.k===st);
+    const noteOpen = expandedNote===k;
     return (
-      <div style={{display:'flex',alignItems:'center',gap:10,padding:'9px 14px',
-        background:ragCfg?ragCfg.bg:'transparent',
-        borderBottom:`1px solid ${C.border}`}}>
-        <div style={{width:3,alignSelf:'stretch',minHeight:20,borderRadius:2,background:s.color,flexShrink:0}}/>
-        <div style={{flex:1,minWidth:0}}>
-          {showSubject&&<div style={{fontSize:10,fontWeight:700,color:s.color,textTransform:'uppercase',letterSpacing:0.4,marginBottom:1}}>{s.name}</div>}
-          <div style={{fontSize:13,color:C.text,lineHeight:1.4}}>{topic}</div>
+      <div style={{borderBottom:`1px solid ${C.border}`}}>
+        <div style={{display:'flex',alignItems:'center',gap:10,padding:'9px 14px',
+          background:ragCfg?ragCfg.bg:'transparent'}}>
+          <div style={{width:3,alignSelf:'stretch',minHeight:20,borderRadius:2,background:s.color,flexShrink:0}}/>
+          <div style={{flex:1,minWidth:0}}>
+            {showSubject&&<div style={{fontSize:10,fontWeight:700,color:s.color,textTransform:'uppercase',letterSpacing:0.4,marginBottom:1}}>{s.name}</div>}
+            <div style={{fontSize:13,color:C.text,lineHeight:1.4}}>{topic}</div>
+            {note&&!noteOpen&&<div style={{fontSize:11,color:C.muted,marginTop:2,fontStyle:'italic',
+              whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',maxWidth:220}}>{note}</div>}
+          </div>
+          <div style={{display:'flex',gap:4,flexShrink:0,alignItems:'center'}}>
+            <button onClick={()=>setExpandedNote(noteOpen?null:k)} title="Add note"
+              style={{width:28,height:28,borderRadius:6,cursor:'pointer',
+                border:`2px solid ${note?C.accent:C.border}`,
+                background:note?C.accentSoft:'transparent',
+                color:note?C.accent:C.subtle,
+                fontSize:11,fontWeight:700,fontFamily:font,
+                transition:'background 0.1s,border-color 0.1s,color 0.1s'}}>
+              ✎
+            </button>
+            {RAG.map(r=>{
+              const active  = st===r.k;
+              const isHover = hovered===`${k}_${r.k}`;
+              return (
+                <button key={r.k}
+                  onClick={()=>setStatus(s.id,i,r.k)}
+                  onMouseEnter={()=>setHovered(`${k}_${r.k}`)}
+                  onMouseLeave={()=>setHovered(null)}
+                  title={r.label}
+                  style={{width:28,height:28,borderRadius:6,cursor:'pointer',
+                    border:`2px solid ${(active||isHover)?r.color:C.border}`,
+                    background: active ? r.color : isHover ? `${r.color}22` : 'transparent',
+                    color: active ? '#fff' : isHover ? r.color : C.muted,
+                    fontSize:10,fontWeight:800,fontFamily:font,
+                    transition:'background 0.1s,border-color 0.1s,color 0.1s'}}>
+                  {r.k[0].toUpperCase()}
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <div style={{display:'flex',gap:4,flexShrink:0}}>
-          {RAG.map(r=>{
-            const active  = st===r.k;
-            const isHover = hovered===`${s.id}_${i}_${r.k}`;
-            return (
-              <button key={r.k}
-                onClick={()=>setStatus(s.id,i,r.k)}
-                onMouseEnter={()=>setHovered(`${s.id}_${i}_${r.k}`)}
-                onMouseLeave={()=>setHovered(null)}
-                title={r.label}
-                style={{width:28,height:28,borderRadius:6,cursor:'pointer',
-                  border:`2px solid ${(active||isHover)?r.color:C.border}`,
-                  background: active ? r.color : isHover ? `${r.color}22` : 'transparent',
-                  color: active ? '#fff' : isHover ? r.color : C.muted,
-                  fontSize:10,fontWeight:800,fontFamily:font,
-                  transition:'background 0.1s,border-color 0.1s,color 0.1s'}}>
-                {r.k[0].toUpperCase()}
-              </button>
-            );
-          })}
-        </div>
+        {noteOpen&&(
+          <div style={{padding:'0 14px 10px 30px',background:ragCfg?ragCfg.bg:'transparent'}}>
+            <textarea
+              value={note}
+              onChange={e=>setNote(s.id,i,e.target.value)}
+              placeholder="Add a note (key formula, weak spot, resource link…)"
+              rows={2}
+              style={{width:'100%',boxSizing:'border-box',padding:'7px 10px',
+                background:C.surface,border:`1px solid ${C.border}`,
+                borderRadius:7,color:C.text,fontSize:12,fontFamily:font,
+                resize:'vertical',outline:'none',lineHeight:1.5}}
+            />
+          </div>
+        )}
       </div>
     );
   };
@@ -2407,18 +2601,21 @@ function Resources({subjects,uid,C,font,rag,setRag}) {
 }
 
 // ── Account ────────────────────────────────────────────────────────────────
-function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,font,examSched}) {
+function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,font,examSched,scores=[],rag={}}) {
   const [analyticsConsent, setAnalyticsConsent] = useState(()=>ls.get(`rbp_analytics_${uid}`,true));
   const [emailSending, setEmailSending] = useState(false);
   const [emailState, setEmailState] = useState('idle'); // 'idle'|'sent'|'error'
   const [emailMsg, setEmailMsg] = useState('');
+  const [digestSending, setDigestSending] = useState(false);
+  const [digestState, setDigestState] = useState('idle'); // 'idle'|'sent'|'error'
+  const [digestMsg, setDigestMsg] = useState('');
 
   const sendSchedule = async () => {
     if (!user?.email) return;
     setEmailSending(true); setEmailState('idle'); setEmailMsg('');
     const today = new Date().toISOString().split('T')[0];
     const exams = subjects.flatMap(s =>
-      (examSched[s.id] || []).map(e => ({ subject: s.name, ...e }))
+      getSubjectExams(examSched, s.id, s.boardId).map(e => ({ subject: s.name, ...e }))
     ).filter(e => e.date >= today).sort((a, b) => a.date.localeCompare(b.date));
     try {
       const r = await fetch('/api/send-schedule', {
@@ -2433,6 +2630,25 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       setEmailState('error'); setEmailMsg(err.message);
     } finally {
       setEmailSending(false);
+    }
+  };
+
+  const sendDigest = async () => {
+    if (!user?.email) return;
+    setDigestSending(true); setDigestState('idle'); setDigestMsg('');
+    try {
+      const r = await fetch('/api/weekly-digest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email, scores, subjects: subjects.map(s=>({id:s.id,name:s.name,color:s.color,board:s.board})), rag }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Failed');
+      setDigestState('sent');
+    } catch (err) {
+      setDigestState('error'); setDigestMsg(err.message);
+    } finally {
+      setDigestSending(false);
     }
   };
 
@@ -2539,6 +2755,37 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
             cursor:emailSending||emailState==='sent'?'not-allowed':'pointer',
             transition:'background 0.15s'}}>
           {emailSending?'Sending…':emailState==='sent'?'Sent ✓':'Email me my schedule'}
+        </button>
+      </div>
+      )}
+
+      {user && (
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Weekly progress digest</div>
+        <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginBottom:12}}>
+          Get a summary of this week's papers, scores, readiness, and RAG status sent to <span style={{color:C.text,fontWeight:500}}>{user.email}</span>.
+        </div>
+        {digestState==='sent'&&(
+          <div style={{background:'rgba(74,222,128,0.07)',border:'1px solid rgba(74,222,128,0.2)',
+            borderRadius:8,padding:'10px 14px',marginBottom:12,fontSize:13,color:C.success}}>
+            Digest sent — check your inbox.
+          </div>
+        )}
+        {digestState==='error'&&(
+          <div style={{background:'rgba(239,68,68,0.07)',border:'1px solid rgba(239,68,68,0.2)',
+            borderRadius:8,padding:'10px 14px',marginBottom:12,fontSize:13,color:C.danger}}>
+            {digestMsg||'Failed to send. Try again.'}
+          </div>
+        )}
+        <button onClick={sendDigest} disabled={digestSending||digestState==='sent'}
+          style={{width:'100%',padding:'11px',
+            background:digestState==='sent'?C.card2:C.accentSoft,
+            border:`1px solid ${digestState==='sent'?C.border:C.accent}`,
+            borderRadius:8,color:digestState==='sent'?C.muted:C.accent,
+            fontSize:13,fontWeight:600,fontFamily:font,
+            cursor:digestSending||digestState==='sent'?'not-allowed':'pointer',
+            transition:'background 0.15s'}}>
+          {digestSending?'Sending…':digestState==='sent'?'Sent ✓':'Email me weekly digest'}
         </button>
       </div>
       )}
@@ -2947,9 +3194,13 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
   const [pendingAchievement,setPendingAchievement] = useState(null);
 
   const uid      = user?.id??'anon';
-  const [scores,setScores] = useState(()=>ls.get(`rbp_scores_${uid}`,[]));
-  const [errors,setErrors] = useState(()=>ls.get(`rbp_errors_${uid}`,[]));
-  const [rag,   setRag]    = useState(()=>ls.get(`rbp_rag_${uid}`,{}));
+  const [scores,   setScores]    = useState(()=>ls.get(`rbp_scores_${uid}`,[]));
+  const [errors,   setErrors]    = useState(()=>ls.get(`rbp_errors_${uid}`,[]));
+  const [rag,      setRag]       = useState(()=>ls.get(`rbp_rag_${uid}`,{}));
+  const [ragNotes, setRagNotes]  = useState(()=>ls.get(`rbp_rag_notes_${uid}`,{}));
+  const [sessions, setSessions]  = useState(()=>ls.get(`rbp_sessions_${uid}`,[]));
+
+  useEffect(()=>ls.set(`rbp_rag_notes_${uid}`,ragNotes),[ragNotes]);
 
   const C    = dark?T.dark:T.light;
   const font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
@@ -2983,9 +3234,11 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
     const lE=ls.get(`rbp_errors_${uid}`,[]);
     const lR=ls.get(`rbp_rag_${uid}`,{});
     const lT=ls.get(`rbp_targets_${uid}`,{});
-    supabase.from('user_data').select('scores,errors,rag,targets').eq('user_id',user.id).eq('profile','me').single()
+    const lSess=ls.get(`rbp_sessions_${uid}`,[]);
+    const lRN=ls.get(`rbp_rag_notes_${uid}`,{});
+    supabase.from('user_data').select('scores,errors,rag,targets,sessions,rag_notes').eq('user_id',user.id).eq('profile','me').single()
       .then(({data})=>{
-        let fS=lS,fE=lE,fR=lR,fT=lT;
+        let fS=lS,fE=lE,fR=lR,fT=lT,fSess=lSess,fRN=lRN;
         if (data) {
           const sIds=new Set(lS.map(s=>s.id));
           fS=[...lS,...(data.scores||[]).filter(s=>!sIds.has(s.id))];
@@ -2993,13 +3246,20 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
           fE=[...lE,...(data.errors||[]).filter(e=>!eIds.has(e.id))];
           if (data.rag&&Object.keys(data.rag).length>0) fR={...data.rag,...lR};
           if (data.targets&&Object.keys(data.targets).length>0&&!Object.keys(lT).length) fT=data.targets;
-          setScores(fS); ls.set(`rbp_scores_${uid}`,fS);
-          setErrors(fE); ls.set(`rbp_errors_${uid}`,fE);
-          setRag(fR);    ls.set(`rbp_rag_${uid}`,fR);
-          setTargets(fT); ls.set(`rbp_targets_${uid}`,fT);
+          if (data.sessions?.length) {
+            const sessIds=new Set(lSess.map(s=>s.id));
+            fSess=[...lSess,...(data.sessions||[]).filter(s=>!sessIds.has(s.id))];
+          }
+          if (data.rag_notes&&Object.keys(data.rag_notes).length>0) fRN={...data.rag_notes,...lRN};
+          setScores(fS);   ls.set(`rbp_scores_${uid}`,fS);
+          setErrors(fE);   ls.set(`rbp_errors_${uid}`,fE);
+          setRag(fR);      ls.set(`rbp_rag_${uid}`,fR);
+          setTargets(fT);  ls.set(`rbp_targets_${uid}`,fT);
+          setSessions(fSess); ls.set(`rbp_sessions_${uid}`,fSess);
+          setRagNotes(fRN);   ls.set(`rbp_rag_notes_${uid}`,fRN);
         }
         supabase.from('user_data').upsert(
-          {user_id:user.id,profile:'me',scores:fS,errors:fE,rag:fR,targets:fT,updated_at:new Date().toISOString()},
+          {user_id:user.id,profile:'me',scores:fS,errors:fE,rag:fR,targets:fT,sessions:fSess,rag_notes:fRN,updated_at:new Date().toISOString()},
           {onConflict:'user_id,profile'}
         ).then(()=>{});
         setSyncLoaded(true);
@@ -3011,12 +3271,12 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
     clearTimeout(syncRef.current);
     syncRef.current=setTimeout(()=>{
       supabase.from('user_data').upsert(
-        {user_id:user.id,profile:'me',scores,errors,rag,targets,updated_at:new Date().toISOString()},
+        {user_id:user.id,profile:'me',scores,errors,rag,targets,sessions,rag_notes:ragNotes,updated_at:new Date().toISOString()},
         {onConflict:'user_id,profile'}
       ).then(()=>{});
     },2000);
     return ()=>clearTimeout(syncRef.current);
-  },[scores,errors,rag,targets,syncLoaded]);
+  },[scores,errors,rag,targets,sessions,ragNotes,syncLoaded]);
 
   // Browser push notifications
   useEffect(()=>{
@@ -3069,7 +3329,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
     {id:'account',label:'Account'},
   ];
 
-  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets};
+  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes};
 
   return (
     <div style={{minHeight:'100vh',background:C.bg,fontFamily:font,color:C.text}}>
@@ -3187,7 +3447,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
         {view==='exams'        && <Exams        {...vp}/>}
         {view==='plan'         && <Schedule     {...vp}/>}
 {view==='achievements' && <AchievementsView {...vp} unlockedIds={unlockedIds}/>}
-        {view==='timer'        && <StudyTimer    subjects={subjects} uid={uid} C={C} font={font}/>}
+        {view==='timer'        && <StudyTimer    subjects={subjects} uid={uid} C={C} font={font} sessions={sessions} setSessions={setSessions}/>}
         {view==='resources'    && <Resources    {...vp}/>}
         {view==='account'      && <Account      {...vp} user={user} selection={selection}
                                     dark={dark} setDark={setDark} onSignOut={onSignOut} onResetSubjects={onResetSubjects}/>}
