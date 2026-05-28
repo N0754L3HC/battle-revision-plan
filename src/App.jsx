@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import AuthGate from './components/AuthGate';
 import SubjectPicker from './components/SubjectPicker';
+import FriendsView from './components/FriendsView';
 import { subjectsFromSelection } from './data/subjects';
 
 // ── Error boundary ─────────────────────────────────────────────────────────
@@ -4017,12 +4018,16 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
     if (!user?.id||!isSupabaseConfigured()||!syncLoaded) return;
     clearTimeout(syncRef.current);
     syncRef.current=setTimeout(()=>{
+      const lbScore = scores.length ? Math.round(scores.reduce((s,x)=>s+(x.pct??0),0)/scores.length) : 0;
       supabase.from('user_data').upsert(
         {user_id:user.id,profile:'me',scores,errors,rag,targets,sessions,rag_notes:ragNotes,updated_at:new Date().toISOString()},
         {onConflict:'user_id,profile'}
       ).then(({error})=>{
         if(error) addToast('Auto-save failed — your data is safe locally','warn');
       });
+      supabase.from('user_profiles')
+        .update({leaderboard_score:lbScore,papers_count:scores.length})
+        .eq('id',user.id);
     },2000);
     return ()=>clearTimeout(syncRef.current);
   },[scores,errors,rag,targets,sessions,ragNotes,syncLoaded]);
@@ -4073,6 +4078,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
     {id:'exams',label:'Exams'},
     {id:'plan',label:'Plan'},
     {id:'achievements',label:'Achievements'},
+    {id:'friends',label:'Friends'},
     {id:'timer',label:'Timer'},
     {id:'resources',label:'Resources'},
     {id:'account',label:'Account'},
@@ -4196,6 +4202,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
         {view==='exams'        && <Exams        {...vp}/>}
         {view==='plan'         && <Schedule     {...vp}/>}
 {view==='achievements' && <AchievementsView {...vp} unlockedIds={unlockedIds}/>}
+        {view==='friends'      && <FriendsView   user={user} scores={scores} uid={uid} C={C} font={font} addToast={addToast}/>}
         {view==='timer'        && <StudyTimer    subjects={subjects} uid={uid} C={C} font={font} sessions={sessions} setSessions={setSessions}/>}
         {view==='resources'    && <Resources    {...vp}/>}
         {view==='account'      && <Account      {...vp} user={user} selection={selection}
@@ -4214,7 +4221,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
               onClick={e=>e.stopPropagation()}>
               <div style={{width:32,height:3,borderRadius:2,background:C.border,
                 margin:'4px auto 12px'}}/>
-              {[{id:'plan',label:'Study Plan'},{id:'timer',label:'Timer'},
+              {[{id:'friends',label:'Friends'},{id:'plan',label:'Study Plan'},{id:'timer',label:'Timer'},
                 {id:'resources',label:'Resources'},{id:'account',label:'Account'}]
                 .map(n=>(
                 <button key={n.id} onClick={()=>{setView(n.id);setMoreOpen(false);}} style={{
