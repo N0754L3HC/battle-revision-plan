@@ -1224,6 +1224,7 @@ function CompanionCard({sessions,scores,subjects,examSched,C,font}) {
   const [companion,setCompanion] = useState(()=>ls.get('rbp_companion',{name:'Alex',skin:0,hair:0,hairStyle:0}));
   const [editing,setEditing]     = useState(false);
   const [draft,setDraft]         = useState(companion.name);
+  const [chatOpen,setChatOpen]   = useState(false);
   const mood    = getCompanionMood({sessions,scores,examSched,subjects});
   const message = getCompanionMessage({mood,sessions,scores,subjects,examSched,name:companion.name});
   const moodColor = {happy:'#22c55e',excited:'#fbbf24',worried:'#f97316',neutral:C.accent}[mood]||C.accent;
@@ -1306,9 +1307,130 @@ function CompanionCard({sessions,scores,subjects,examSched,C,font}) {
                   cursor:'pointer',fontSize:11,marginLeft:'auto',
                   padding:'2px 6px',borderRadius:5}}>Edit</button>
             </div>
-            <p style={{fontSize:13,color:C.muted,lineHeight:1.6,margin:0}}>{message}</p>
+            <p style={{fontSize:13,color:C.muted,lineHeight:1.6,margin:'0 0 10px'}}>{message}</p>
+            <button onClick={()=>setChatOpen(true)}
+              style={{padding:'6px 14px',background:C.accentSoft,
+                border:`1px solid ${C.accent}44`,borderRadius:7,
+                color:C.accent,fontSize:12,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
+              Chat with {companion.name}
+            </button>
           </>
         )}
+      </div>
+      {chatOpen&&(
+        <CompanionChat companion={companion} subjects={subjects} scores={scores}
+          sessions={sessions} examSched={examSched} C={C} font={font}
+          onClose={()=>setChatOpen(false)}/>
+      )}
+    </div>
+  );
+}
+
+// ── Companion chat ─────────────────────────────────────────────────────────
+function getCharacterReply(input, {subjects, scores, sessions, examSched}) {
+  const t = input.toLowerCase().trim();
+  if (!t) return null;
+  if (t.match(/stress|anxious|nervous|overwhelm|panic/))
+    return "That feeling is completely normal — it means you care. Take one breath. The preparation you've done doesn't disappear when nerves show up. Focus on the next 25 minutes, nothing else.";
+  if (t.match(/can'?t focus|distract|procrastinat/))
+    return "Classic. Open the timer, pick one subject, 25 minutes — no phone. Don't open a new tab. The hard part is starting. After 25 minutes you'll probably want to keep going.";
+  if (t.match(/fail|did badly|terrible|awful|bomb|mess/))
+    return "One bad paper is just data. What specifically went wrong — timing, a topic gap, nerves? Log it as an error, spend 20 minutes on that one thing today. That's how you convert a bad paper into real exam prep.";
+  if (t.match(/a\*|aced|nailed|crushed|great paper|did well|went well/))
+    return "That's the work paying off. Log it if you haven't — every A* shifts your readiness score. Don't ease off though. Consistent pressure through to exam day is what locks it in.";
+  if (t.match(/tired|exhaust|burnout|can'?t sleep|no sleep/))
+    return "Rest is part of the process. Tired studying tanks your retention — you'd get more from 5 hours' sleep than 2 hours of grinding half-asleep. Come back sharp tomorrow.";
+  if (t.match(/motivat|inspire|struggling|hard|difficult|giving up/))
+    return "Here's the truth: everyone sitting your exams is also finding it hard. The ones who get the top grades aren't smarter — they just kept going when it got difficult. You're still here. That's the whole job.";
+  if (t.match(/exam|when|how long|days left|next paper/)) {
+    const next = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId))
+      .map(e=>({...e,d:Math.ceil((new Date(e.date)-Date.now())/86400000)}))
+      .filter(e=>e.d>=0).sort((a,b)=>a.d-b.d)[0];
+    if (next) {
+      const when = next.d===0?'today — rest, key notes only.'
+        :next.d===1?'tomorrow. No new topics today, just consolidation.'
+        :`in ${next.d} days — ${Math.floor(next.d/7)} week${next.d>=14?'s':''} of prep. Make them count.`;
+      return `${next.paper.split(':')[0]} is ${when}`;
+    }
+    return "I can't see any upcoming exams — go to the Exams tab and make sure your schedule is set up correctly.";
+  }
+  if (t.match(/help|advice|tip|what should|where do i start/))
+    return "The whole game: past paper under timed conditions → mark it properly → log your errors → drill those topics → repeat. Everything else is secondary. How many papers have you done this week?";
+  if (t.match(/thank|cheers|appreciate|you'?re great/))
+    return "Any time. Now go log a paper — I'll be watching your readiness score climb.";
+  if (t.match(/^(hello|hi|hey|sup|yo|alright)\b/))
+    return `Good ${new Date().getHours()<12?'morning':new Date().getHours()<17?'afternoon':'evening'}. What's on your mind? Ask me anything — exam tips, what to focus on, or just vent if you need to.`;
+  if (t.match(/topic|subject|weak|bad at/))
+    return "Go to Resources and mark your weakest topics red. Then spend your next session on just one of them. Narrow focus beats scattered effort every time.";
+  const fallbacks = [
+    "Tell me more — what specifically are you finding hard right now?",
+    "I'm here. What's weighing on you most at the moment?",
+    "You haven't given up, and that matters more than people think. What do you need?",
+  ];
+  return fallbacks[Math.floor(Math.random()*fallbacks.length)];
+}
+
+function CompanionChat({companion,subjects,scores,sessions,examSched,C,font,onClose}) {
+  ensureAnimStyles();
+  const [messages,setMessages] = useState([{
+    from:'char',
+    text:`Hey, I'm ${companion.name}. What's on your mind? You can ask me anything — how you're doing, what to focus on, or just vent if you need to.`
+  }]);
+  const [input,setInput] = useState('');
+  const listRef = useRef(null);
+  const mood = getCompanionMood({sessions,scores,examSched,subjects});
+  useEffect(()=>{
+    if(listRef.current) listRef.current.scrollTop=listRef.current.scrollHeight;
+  },[messages]);
+  const send = () => {
+    const text=input.trim(); if(!text) return;
+    const reply=getCharacterReply(text,{subjects,scores,sessions,examSched});
+    setMessages(prev=>[...prev,{from:'user',text},...(reply?[{from:'char',text:reply}]:[])]);
+    setInput('');
+  };
+  return (
+    <div style={{position:'fixed',inset:0,zIndex:400,background:'rgba(0,0,0,0.72)',
+      display:'flex',alignItems:'flex-end',justifyContent:'center',
+      animation:'rbp-fade-in 0.2s ease'}}>
+      <div style={{width:'100%',maxWidth:500,height:'72vh',background:C.surface,
+        borderRadius:'20px 20px 0 0',display:'flex',flexDirection:'column',
+        boxShadow:'0 -8px 48px rgba(0,0,0,0.4)'}}>
+        <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px 16px',
+          borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
+          <CompanionAvatar skin={companion.skin} hair={companion.hair} hairStyle={companion.hairStyle} mood={mood} size={40}/>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:700,color:C.text}}>{companion.name}</div>
+            <div style={{fontSize:11,color:C.muted}}>Your study companion</div>
+          </div>
+          <button onClick={onClose}
+            style={{background:'transparent',border:'none',color:C.muted,cursor:'pointer',fontSize:22,lineHeight:1,padding:'4px 8px'}}>×</button>
+        </div>
+        <div ref={listRef} style={{flex:1,overflowY:'auto',padding:'16px',
+          display:'flex',flexDirection:'column',gap:10}}>
+          {messages.map((m,i)=>(
+            <div key={i} style={{display:'flex',justifyContent:m.from==='user'?'flex-end':'flex-start'}}>
+              <div style={{maxWidth:'84%',
+                borderRadius:m.from==='user'?'14px 14px 4px 14px':'14px 14px 14px 4px',
+                padding:'10px 14px',
+                background:m.from==='user'?C.accent:C.card2,
+                color:m.from==='user'?'#fff':C.text,
+                fontSize:13,lineHeight:1.6}}>
+                {m.text}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{display:'flex',gap:8,padding:'12px 16px',
+          borderTop:`1px solid ${C.border}`,flexShrink:0}}>
+          <input value={input} onChange={e=>setInput(e.target.value)}
+            onKeyDown={e=>e.key==='Enter'&&send()}
+            placeholder={`Message ${companion.name}...`}
+            style={{flex:1,background:C.card2,border:`1px solid ${C.border}`,borderRadius:10,
+              padding:'10px 14px',color:C.text,fontSize:13,fontFamily:font,outline:'none'}}/>
+          <button onClick={send}
+            style={{padding:'10px 18px',background:C.accent,border:'none',borderRadius:10,
+              color:'#fff',fontSize:13,fontWeight:700,fontFamily:font,cursor:'pointer'}}>Send</button>
+        </div>
       </div>
     </div>
   );
@@ -1782,7 +1904,7 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
 }
 
 // ── Analytics ──────────────────────────────────────────────────────────────
-function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, onQuickLog, targets, setTargets, sessions=[]}) {
+function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, onQuickLog, targets, setTargets, sessions=[], rag={}}) {
   const SUBJ_COLORS  = Object.fromEntries(subjects.map(s=>[s.name,s.color]));
   const GRADE_BOUNDS = Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
 
@@ -1795,51 +1917,117 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
     return ss.length ? Math.round(ss.reduce((a,x)=>a+x.pct,0)/ss.length) : null;
   };
 
+  const allUpcoming = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId))
+    .map(e=>({...e,d:Math.ceil((new Date(e.date)-Date.now())/86400000)}))
+    .filter(e=>e.d>=0).sort((a,b)=>a.d-b.d);
+  const isOffSeason = allUpcoming.length===0 || allUpcoming[0].d>90;
+
+  const redTopics = isOffSeason ? subjects.flatMap(s=>
+    (SPEC_TOPICS[s.id]||[]).map((topic,i)=>({topic,s,key:`${s.id}_${i}`}))
+  ).filter(t=>rag[t.key]==='red').slice(0,6) : [];
+
   const hour = new Date().getHours();
   const greeting = hour<5?'Night ops':hour<12?'Morning briefing':hour<17?'Afternoon briefing':'Evening briefing';
 
   return (
     <div>
       <div style={{marginBottom:20}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>{greeting}</div>
-        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Performance Dashboard</h1>
-        <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>Track your scores and readiness across all subjects.</p>
+        <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>
+          {isOffSeason?'Foundation Mode':greeting}
+        </div>
+        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>
+          {isOffSeason?'Build Your Foundation':'Performance Dashboard'}
+        </h1>
+        <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>
+          {isOffSeason
+            ? allUpcoming.length>0
+              ? `${allUpcoming[0].d} days until your first exam. Build the habits that will carry you through.`
+              : 'No exams scheduled yet. Set your subjects up in Account and start logging papers.'
+            : 'Track your scores and readiness across all subjects.'}
+        </p>
       </div>
 
-      {/* ── Exam countdown strip ─────────────────────────────────────────── */}
-      {(()=>{
-        const now=new Date(); now.setHours(0,0,0,0);
-        const upcoming=subjects.flatMap(s=>
-          getSubjectExams(examSched,s.id,s.boardId).map(e=>({...e,subjectName:s.name,color:s.color}))
-        ).map(e=>({...e,d:Math.ceil((new Date(e.date)-now)/86400000)}))
-         .filter(e=>e.d>=0).sort((a,b)=>a.d-b.d);
-        if(!upcoming.length) return null;
-        const thisWeek=upcoming.filter(e=>e.d<=7);
-        return (
-          <div style={{background:C.surface,border:`1px solid ${upcoming[0].d<=7?upcoming[0].color+'44':C.border}`,
-            borderRadius:12,padding:'12px 16px',marginBottom:12}}>
-            <div style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:0.8,textTransform:'uppercase',marginBottom:10}}>
-              {thisWeek.length>1?`${thisWeek.length} exams this week`:'Next exam'}
-            </div>
-            <div style={{display:'flex',gap:8,overflowX:'auto',paddingBottom:2,scrollbarWidth:'none'}}>
-              {upcoming.slice(0,6).map(e=>(
-                <div key={e.code} style={{flexShrink:0,background:`${e.color}12`,
-                  border:`1px solid ${e.d<=7?e.color+'55':e.color+'22'}`,
-                  borderRadius:10,padding:'8px 12px',minWidth:72,textAlign:'center'}}>
-                  <div style={{fontSize:10,fontWeight:700,color:e.color,marginBottom:3,
-                    whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',maxWidth:80}}>
-                    {e.subjectName.split(' ')[0]}
-                  </div>
-                  <div style={{fontSize:e.d===0?18:26,fontWeight:900,color:e.d<=7?e.color:C.text,lineHeight:1}}>
-                    {e.d===0?'Today':e.d}
-                  </div>
-                  {e.d>0&&<div style={{fontSize:9,color:C.muted,fontWeight:600,letterSpacing:0.5,marginTop:1}}>DAYS</div>}
+      {/* ── Exam countdown / off-season strip ───────────────────────────── */}
+      {isOffSeason ? (
+        <>
+          {allUpcoming.length>0&&(
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,
+              borderRadius:12,padding:'14px 16px',marginBottom:12}}>
+              <div style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:0.8,
+                textTransform:'uppercase',marginBottom:8}}>Season countdown</div>
+              <div style={{display:'flex',alignItems:'center',gap:16}}>
+                <div>
+                  <div style={{fontSize:36,fontWeight:900,color:C.accent,lineHeight:1}}>{allUpcoming[0].d}</div>
+                  <div style={{fontSize:11,color:C.muted,marginTop:2}}>days to go</div>
                 </div>
-              ))}
+                <div style={{flex:1,fontSize:13,color:C.muted,lineHeight:1.55}}>
+                  {Math.floor(allUpcoming[0].d/7)} week{allUpcoming[0].d>=14?'s':''} to build solid habits.
+                  Log past papers regularly and watch your readiness climb.
+                </div>
+              </div>
             </div>
-          </div>
-        );
-      })()}
+          )}
+          {redTopics.length>0&&(
+            <div style={{background:C.surface,border:'1px solid rgba(239,68,68,0.2)',
+              borderRadius:12,padding:'14px 16px',marginBottom:12}}>
+              <div style={{fontSize:10,fontWeight:700,color:'#ef4444',letterSpacing:0.8,
+                textTransform:'uppercase',marginBottom:10}}>Topics to master before exam season</div>
+              <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                {redTopics.map(t=>(
+                  <div key={t.key} style={{display:'flex',alignItems:'center',gap:10}}>
+                    <div style={{width:8,height:8,borderRadius:'50%',background:t.s.color,flexShrink:0}}/>
+                    <span style={{fontSize:12,color:C.muted,flex:1}}>{t.topic}</span>
+                    <span style={{fontSize:10,color:t.s.color,fontWeight:600}}>{t.s.name.split(' ')[0]}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {redTopics.length===0&&Object.keys(rag).length===0&&(
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,
+              borderRadius:12,padding:'14px 16px',marginBottom:12}}>
+              <div style={{fontSize:13,color:C.muted,lineHeight:1.6}}>
+                Go to <strong style={{color:C.text}}>Resources</strong> and mark your spec topics.
+                Red items will appear here so you know exactly what to focus on before exam season.
+              </div>
+            </div>
+          )}
+        </>
+      ):(
+        (()=>{
+          const now=new Date(); now.setHours(0,0,0,0);
+          const upcoming=subjects.flatMap(s=>
+            getSubjectExams(examSched,s.id,s.boardId).map(e=>({...e,subjectName:s.name,color:s.color}))
+          ).map(e=>({...e,d:Math.ceil((new Date(e.date)-now)/86400000)}))
+           .filter(e=>e.d>=0).sort((a,b)=>a.d-b.d);
+          if(!upcoming.length) return null;
+          const thisWeek=upcoming.filter(e=>e.d<=7);
+          return (
+            <div style={{background:C.surface,border:`1px solid ${upcoming[0].d<=7?upcoming[0].color+'44':C.border}`,
+              borderRadius:12,padding:'12px 16px',marginBottom:12}}>
+              <div style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:0.8,textTransform:'uppercase',marginBottom:10}}>
+                {thisWeek.length>1?`${thisWeek.length} exams this week`:'Next exam'}
+              </div>
+              <div style={{display:'flex',gap:8,overflowX:'auto',paddingBottom:2,scrollbarWidth:'none'}}>
+                {upcoming.slice(0,6).map(e=>(
+                  <div key={e.code} style={{flexShrink:0,background:`${e.color}12`,
+                    border:`1px solid ${e.d<=7?e.color+'55':e.color+'22'}`,
+                    borderRadius:10,padding:'8px 12px',minWidth:72,textAlign:'center'}}>
+                    <div style={{fontSize:10,fontWeight:700,color:e.color,marginBottom:3,
+                      whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',maxWidth:80}}>
+                      {e.subjectName.split(' ')[0]}
+                    </div>
+                    <div style={{fontSize:e.d===0?18:26,fontWeight:900,color:e.d<=7?e.color:C.text,lineHeight:1}}>
+                      {e.d===0?'Today':e.d}
+                    </div>
+                    {e.d>0&&<div style={{fontSize:9,color:C.muted,fontWeight:600,letterSpacing:0.5,marginTop:1}}>DAYS</div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()
+      )}
 
       {/* ── Companion card ──────────────────────────────────────────────── */}
       <CompanionCard sessions={sessions} scores={scores} subjects={subjects} examSched={examSched} C={C} font={font}/>
@@ -3603,6 +3791,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
   const [pendingAchievement,setPendingAchievement] = useState(null);
   const [toasts, setToasts] = useState([]);
   const [showTour, setShowTour] = useState(()=>!ls.get('rbp_tour_v1',false));
+  const [aStarFlash, setAStarFlash] = useState(false);
   const addToast = (msg,type='info') => {
     const id=Date.now()+Math.random();
     setToasts(prev=>[...prev,{id,msg,type}]);
@@ -3691,7 +3880,9 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
       supabase.from('user_data').upsert(
         {user_id:user.id,profile:'me',scores,errors,rag,targets,sessions,rag_notes:ragNotes,updated_at:new Date().toISOString()},
         {onConflict:'user_id,profile'}
-      ).then(()=>{});
+      ).then(({error})=>{
+        if(error) addToast('Auto-save failed — your data is safe locally','warn');
+      });
     },2000);
     return ()=>clearTimeout(syncRef.current);
   },[scores,errors,rag,targets,sessions,ragNotes,syncLoaded]);
@@ -3945,7 +4136,8 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
         <QuickLog subjects={subjects} scores={scores} setScores={setScores}
           uid={uid} C={C} font={font} onClose={()=>setQuickLogOpen(false)}
           onSaved={(entry,imp)=>{
-            // Achievement check happens via scores useEffect
+            addToast(`${entry.grade} · ${entry.subject}`,'success');
+            if(entry.grade==='A*') { setAStarFlash(true); setTimeout(()=>setAStarFlash(false),3200); }
           }}/>
       )}
       {pendingAchievement&&(
@@ -3953,6 +4145,36 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
       )}
       <ToastBar toasts={toasts} dismiss={dismissToast} isMobile={isMobile}/>
       {showTour&&<Onboarding onDone={doneTour} setView={setView} C={C} font={font}/>}
+      {aStarFlash&&(()=>{
+        ensureAnimStyles();
+        const particles=Array.from({length:20},(_,i)=>{
+          const a=(i/20)*Math.PI*2,d=80+Math.random()*120;
+          return{tx:`${Math.cos(a)*d}px`,ty:`${Math.sin(a)*d-40}px`,
+            color:['#fbbf24','#f59e0b','#fde68a','#ffffff','#fcd34d'][i%5],
+            sz:6+Math.random()*8,del:Math.random()*0.4};
+        });
+        return(
+          <div onClick={()=>setAStarFlash(false)}
+            style={{position:'fixed',inset:0,zIndex:600,background:'rgba(0,0,0,0.82)',
+              display:'flex',alignItems:'center',justifyContent:'center',
+              cursor:'pointer',animation:'rbp-fade-in 0.2s ease'}}>
+            {particles.map((p,i)=>(
+              <div key={i} style={{position:'absolute',width:p.sz,height:p.sz,borderRadius:'50%',
+                background:p.color,top:'50%',left:'50%',
+                '--tx':p.tx,'--ty':p.ty,
+                animation:`rbp-particle 1.2s ${p.del}s ease-out forwards`}}/>
+            ))}
+            <div style={{textAlign:'center',animation:'rbp-ach-card 0.5s cubic-bezier(.34,1.56,.64,1) forwards'}}>
+              <div style={{fontSize:90,lineHeight:1,marginBottom:12,
+                animation:'rbp-ach-star 0.8s cubic-bezier(.34,1.56,.64,1) forwards'}}>⭐</div>
+              <div style={{fontSize:64,fontWeight:900,color:'#fbbf24',lineHeight:1,
+                textShadow:'0 0 40px rgba(251,191,36,0.8)',marginBottom:8,letterSpacing:-2}}>A*</div>
+              <div style={{fontSize:18,fontWeight:700,color:'rgba(255,255,255,0.85)'}}>Brilliant work</div>
+              <div style={{fontSize:12,color:'rgba(255,255,255,0.4)',marginTop:8}}>Tap to continue</div>
+            </div>
+          </div>
+        );
+      })()}
       {(()=>{
         const streak = getStudyStreak(scores);
         if (!streak) return null;

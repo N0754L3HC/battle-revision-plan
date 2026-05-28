@@ -331,18 +331,22 @@ export default function AdminPanel({ currentUser, onBack }) {
       const errors = {};
       const checks = {};
       const targets = {};
+      const sessions = {};
       rows.forEach(r => {
         scores[r.profile] = r.scores || [];
         errors[r.profile] = r.errors || [];
         checks[r.profile] = r.checks || {};
         targets[r.profile] = r.targets || {};
+        sessions[r.profile] = r.sessions || [];
       });
       const allScores = Object.values(scores).flat();
       const allErrors = Object.values(errors).flat();
+      const allSessions = Object.values(sessions).flat();
+      const totalStudySecs = allSessions.reduce((a, s) => a + (s.secs || 0), 0);
       const lastActive = rows.length
         ? rows.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))[0].updated_at
         : p.created_at;
-      return { ...p, scores, errors, checks, targets, totalScores: allScores.length, totalErrors: allErrors.length, lastActive };
+      return { ...p, scores, errors, checks, targets, totalScores: allScores.length, totalErrors: allErrors.length, totalStudySecs, lastActive };
     });
 
     setUsers(merged);
@@ -365,6 +369,7 @@ export default function AdminPanel({ currentUser, onBack }) {
   );
 
   const totalPapers = users.reduce((a, u) => a + u.totalScores, 0);
+  const totalHours  = Math.round(users.reduce((a, u) => a + (u.totalStudySecs||0), 0) / 3600);
   const admins = users.filter(u => u.is_admin).length;
   const activeToday = users.filter(u => {
     const d = new Date(u.lastActive);
@@ -404,6 +409,10 @@ export default function AdminPanel({ currentUser, onBack }) {
             <div style={S.stat}>
               <div style={S.statV}>{activeToday}</div>
               <div style={S.statL}>ACTIVE TODAY</div>
+            </div>
+            <div style={S.stat}>
+              <div style={S.statV}>{totalHours}h</div>
+              <div style={S.statL}>HOURS STUDIED</div>
             </div>
             <div style={S.stat}>
               <div style={S.statV}>{admins}</div>
