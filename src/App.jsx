@@ -429,46 +429,8 @@ const ERROR_TYPES = [
   { id:'notation', label:'Notation/presentation',  color:'#14b8a6' },
 ];
 
-const DAILY_ROUTINE = [
-  { time:'07:00', block:'Wake + Move',    desc:'15 min walk or bodyweight. Cold water. No phone for 30 min.',                                          color:'#6b7280' },
-  { time:'07:30', block:'Plan the Day',   desc:'Check today\'s revision blocks. Write 3 priorities. Set a timer.',                                       color:'#6b7280' },
-  { time:'08:00', block:'Deep Block 1',   desc:'Hardest subject. Timed past paper or topic questions. Phone away. 90 min.',                              color:'#3b82f6' },
-  { time:'09:30', block:'Mark + Log',     desc:'Mark with the official mark scheme. Every wrong answer: log topic, what went wrong, correct method.',    color:'#f97316' },
-  { time:'10:00', block:'Break',          desc:'20 min. Walk outside if possible. No scrolling.',                                                        color:'#6b7280' },
-  { time:'10:20', block:'Deep Block 2',   desc:'Second subject. Topic-based questions targeting your weak areas. 90 min.',                               color:'#3b82f6' },
-  { time:'11:50', block:'Lunch + Rest',   desc:'Proper food. Step away completely. 40 min.',                                                             color:'#6b7280' },
-  { time:'12:30', block:'Deep Block 3',   desc:'Third subject or redo all wrong questions from this morning. 60–90 min.',                                color:'#3b82f6' },
-  { time:'14:00', block:'Active Recall',  desc:'Close all notes. Write everything you remember. Check what didn\'t stick.',                              color:'#8b5cf6' },
-  { time:'14:30', block:'Done',           desc:'4+ hours of genuine focused revision. You\'ve earned the rest.',                                         color:'#22c55e' },
-  { time:'21:30', block:'Shutdown',       desc:'Write tomorrow\'s 3 priorities. Screens off by 22:00. Sleep is part of the revision.',                   color:'#6b7280' },
-];
-
-const STUDY_TIPS = [
-  { category:'Past Paper Strategy', color:'#3b82f6', tips:[
-    { title:'Timed conditions first — always', body:'Your first attempt at any paper must be closed-book and timed. Comfortable practice gives false confidence — exam conditions expose real gaps.' },
-    { title:'Mark immediately, log every mistake', body:"Don't skip the mark scheme. Every wrong answer goes into your error log with a topic tag and reason (method / knowledge / careless)." },
-    { title:'Work backwards from mark schemes', body:'When you lose marks, find the expected answer and reverse-engineer why the examiner accepted it. Then rewrite that answer from memory.' },
-    { title:'Redo wrong questions two weeks later', body:'Two weeks after marking, redo every question you dropped marks on — from scratch, no notes. If you still can\'t do it, the topic needs active work.' },
-  ]},
-  { category:'Active Recall', color:'#8b5cf6', tips:[
-    { title:'Close the notes before you write', body:'Every review session: write what you remember before opening any resource. Retrieval practice beats re-reading by 2–3× for long-term retention.' },
-    { title:'Brain-dump to start each session', body:'Spend 5 minutes writing everything you remember from the last session. This primes recall and shows what didn\'t consolidate overnight.' },
-    { title:'Teach it in one sentence', body:"If you can't explain a concept simply, your understanding has gaps. Simplicity is the proxy for depth." },
-    { title:'Spaced repetition for key facts', body:'Review definitions and formulas on day 1, 3, 7, 14, 30. Anything recalled correctly at 30 days is in long-term memory.' },
-  ]},
-  { category:'Exam Technique', color:'#f97316', tips:[
-    { title:'Read the command word first', body:'"Describe" needs observation. "Explain" needs cause and effect. "Evaluate" needs a judgement. Miss the command word and you miss the marks.' },
-    { title:'Write to the mark allocation', body:'3 marks = 3 distinct points. If a question is 6 marks and you wrote 3 lines, you left marks on the table. Count marks before moving on.' },
-    { title:'Show all working — every step', body:'Even if the final answer is wrong, method marks are available. A wrong answer with correct working often scores 70%+ of available marks.' },
-    { title:'Attempt every question', body:'A blank answer scores 0 with certainty. A partial answer, a formula, a diagram — any of these can pick up marks.' },
-  ]},
-  { category:'Error Analysis', color:'#ef4444', tips:[
-    { title:'Tag every error by type', body:'Every mistake is one of three types: knowledge gap (didn\'t know it), method error (applied it wrong), careless slip. Different types need different fixes.' },
-    { title:'Weekly error review', body:'Scan your error log at the end of each week for recurring topics. One topic appearing 3 times is more urgent than 3 one-off errors.' },
-    { title:'Recreate the error before correcting it', body:"Don't just read your mistake — reproduce it, then correct it. Writing the correction embeds the fix far better than reading a mark scheme." },
-    { title:'Build a personal formula sheet', body:'Any formula or rule you\'ve dropped marks on more than once goes on one A4 sheet. Review it before every practice session.' },
-  ]},
-];
+const TIMER_WORK_OPTS  = [25, 50, 90];
+const TIMER_BREAK_OPTS = [5, 10, 15];
 
 const FLASHCARD_DECKS = {
   maths: [
@@ -1267,7 +1229,7 @@ function StreakBanner({scores, C}) {
       borderRadius:10, padding:'12px 16px', marginBottom:12,
       boxShadow: gold ? '0 0 20px rgba(251,191,36,0.15)' : undefined}}>
       <div style={{display:'flex',alignItems:'center',gap:10}}>
-        <span style={{fontSize:22}}>🔥</span>
+        <div style={{width:4,alignSelf:'stretch',minHeight:36,borderRadius:2,background:gold?'#fbbf24':C.accent,flexShrink:0}}/>
         <div>
           <div style={{fontSize:15, fontWeight:800,
             color: gold ? '#fbbf24' : C.text}}>
@@ -1835,84 +1797,223 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE}) {
 }
 
 // ── Study tips ─────────────────────────────────────────────────────────────
-function Tips({subjects,C,font}) {
-  const [tab,setTab]=useState('general');
-  const tabs=[{id:'general',label:'Strategy'},...subjects.map(s=>({id:s.id,label:s.name,color:s.color,techniques:s.techniques}))];
-  const active=tabs.find(t=>t.id===tab);
+function StudyTimer({subjects,uid,C,font}) {
+  const [selSubject, setSelSubject] = useState(subjects[0]?.id??'');
+  const [workMins,  setWorkMins]   = useState(25);
+  const [breakMins, setBreakMins]  = useState(5);
+  const [mode,      setMode]       = useState('work');
+  const [secsLeft,  setSecsLeft]   = useState(25*60);
+  const [running,   setRunning]    = useState(false);
+  const [sessions,  setSessions]   = useState(()=>ls.get(`rbp_sessions_${uid}`,[]) );
+  const timerRef = useRef(null);
+
+  const reset = () => {
+    setRunning(false);
+    clearInterval(timerRef.current);
+    setSecsLeft((mode==='work'?workMins:breakMins)*60);
+  };
+
+  useEffect(()=>{
+    if (!running) { clearInterval(timerRef.current); return; }
+    timerRef.current = setInterval(()=>{
+      setSecsLeft(s=>{
+        if (s<=1) {
+          clearInterval(timerRef.current);
+          setRunning(false);
+          if (mode==='work') {
+            const sess={id:Date.now(),subjectId:selSubject,secs:workMins*60,ts:Date.now()};
+            setSessions(prev=>{ const next=[...prev,sess]; ls.set(`rbp_sessions_${uid}`,next); return next; });
+            setMode('break');
+            setSecsLeft(breakMins*60);
+          } else {
+            setMode('work');
+            setSecsLeft(workMins*60);
+          }
+          return 0;
+        }
+        return s-1;
+      });
+    },1000);
+    return ()=>clearInterval(timerRef.current);
+  },[running,mode,selSubject,workMins,breakMins,uid]);
+
+  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  const weekStart  = new Date(todayStart); weekStart.setDate(weekStart.getDate()-6);
+  const workSessions  = sessions.filter(s=>s.subjectId);
+  const todaySessions = workSessions.filter(s=>s.ts>=todayStart.getTime());
+  const weekSessions  = workSessions.filter(s=>s.ts>=weekStart.getTime());
+  const todaySecs = todaySessions.reduce((a,s)=>a+s.secs,0);
+  const weekSecs  = weekSessions.reduce((a,s)=>a+s.secs,0);
+
+  const bySubject = subjects.map(s=>({
+    ...s, secs:todaySessions.filter(ss=>ss.subjectId===s.id).reduce((a,ss)=>a+ss.secs,0)
+  })).filter(s=>s.secs>0).sort((a,b)=>b.secs-a.secs);
+
+  const daySet = new Set(workSessions.map(s=>{
+    const d=new Date(s.ts); d.setHours(0,0,0,0); return d.getTime();
+  }));
+  let streak=0;
+  const chk=new Date(); chk.setHours(0,0,0,0);
+  while(daySet.has(chk.getTime())){ streak++; chk.setDate(chk.getDate()-1); }
+
+  const fmtDur = secs => {
+    const h=Math.floor(secs/3600), m=Math.floor((secs%3600)/60);
+    if (h>0) return `${h}h ${m}m`;
+    return `${m}m`;
+  };
+  const mm=String(Math.floor(secsLeft/60)).padStart(2,'0');
+  const ss=String(secsLeft%60).padStart(2,'0');
+  const isBreak = mode==='break';
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,overflow:'hidden'}}>
-        <div style={{display:'flex',borderBottom:`1px solid ${C.border}`,overflowX:'auto'}}>
-          {tabs.map(t=>(
-            <button key={t.id} onClick={()=>setTab(t.id)}
-              style={{padding:'11px 16px',background:'transparent',border:'none',
-                borderBottom:`2px solid ${tab===t.id?(t.color||C.accent):'transparent'}`,
-                color:tab===t.id?(t.color||C.accent):C.muted,
-                fontSize:12,fontWeight:tab===t.id?700:400,fontFamily:font,cursor:'pointer',whiteSpace:'nowrap',flexShrink:0}}>
-              {t.label}
+      <div>
+        <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>Focus</div>
+        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Study Timer</h1>
+        <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>Pomodoro sessions tracked per subject.</p>
+      </div>
+
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:'24px 20px'}}>
+        <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:20}}>
+          {subjects.map(s=>(
+            <button key={s.id} onClick={()=>{if(!running) setSelSubject(s.id);}} disabled={running}
+              style={{padding:'5px 13px',borderRadius:20,
+                border:`1px solid ${selSubject===s.id?s.color:C.border}`,
+                background:selSubject===s.id?`${s.color}18`:'transparent',
+                color:selSubject===s.id?s.color:C.muted,
+                fontSize:11,fontWeight:selSubject===s.id?700:400,
+                fontFamily:font,cursor:running?'default':'pointer',transition:'all 0.15s'}}>
+              {s.name}
             </button>
           ))}
         </div>
-        <div style={{padding:'16px 18px'}}>
-          {tab==='general'
-            ?STUDY_TIPS.map((cat,ci)=>(
-              <div key={ci} style={{marginBottom:ci<STUDY_TIPS.length-1?20:0}}>
-                <div style={{fontSize:11,fontWeight:700,color:cat.color,textTransform:'uppercase',letterSpacing:0.5,marginBottom:10}}>
-                  {cat.category}
-                </div>
-                <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                  {cat.tips.map((tip,ti)=>(
-                    <div key={ti} style={{paddingBottom:ti<cat.tips.length-1?10:0,
-                      borderBottom:ti<cat.tips.length-1?`1px solid ${C.border}`:'none'}}>
-                      <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:3}}>{tip.title}</div>
-                      <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>{tip.body}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))
-            :active?.techniques?.map((tip,i)=>(
-              <div key={i} style={{paddingBottom:i<active.techniques.length-1?14:0,
-                borderBottom:i<active.techniques.length-1?`1px solid ${C.border}`:'none',marginBottom:i<active.techniques.length-1?14:0}}>
-                <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:3}}>{tip.title}</div>
-                <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>{tip.body}</div>
-              </div>
-            ))
-          }
-        </div>
-      </div>
 
-      {/* Daily routine */}
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,overflow:'hidden'}}>
-        <div style={{padding:'14px 18px',borderBottom:`1px solid ${C.border}`}}>
-          <div style={{fontSize:13,fontWeight:700,color:C.text}}>Ideal revision day</div>
-          <div style={{fontSize:11,color:C.muted,marginTop:2}}>A structure that works. Adapt to your timetable.</div>
-        </div>
-        <div style={{padding:'0 18px'}}>
-          {DAILY_ROUTINE.map((r,i)=>(
-            <div key={i} style={{display:'flex',gap:12,padding:'12px 0',
-              borderBottom:i<DAILY_ROUTINE.length-1?`1px solid ${C.border}`:'none'}}>
-              <div style={{fontSize:11,fontWeight:600,color:C.subtle,width:40,flexShrink:0,paddingTop:1}}>{r.time}</div>
-              <div style={{width:3,flexShrink:0,borderRadius:2,background:r.color,alignSelf:'stretch'}}/>
-              <div>
-                <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:2}}>{r.block}</div>
-                <div style={{fontSize:11,color:C.muted,lineHeight:1.5}}>{r.desc}</div>
+        <div style={{textAlign:'center',marginBottom:16}}>
+          <div style={{fontSize:10,fontWeight:700,letterSpacing:1,textTransform:'uppercase',
+            color:isBreak?'#4ade80':C.accent,marginBottom:6}}>
+            {isBreak?'Break':'Focus'}
+          </div>
+          <div style={{fontSize:76,fontWeight:800,color:C.text,
+            fontFamily:"'JetBrains Mono','SF Mono',monospace",
+            lineHeight:1,letterSpacing:-3,marginBottom:18}}>
+            {mm}:{ss}
+          </div>
+
+          <div style={{display:'flex',gap:24,justifyContent:'center',marginBottom:20,flexWrap:'wrap'}}>
+            <div>
+              <div style={{fontSize:10,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:5}}>Work</div>
+              <div style={{display:'flex',gap:4}}>
+                {TIMER_WORK_OPTS.map(m=>(
+                  <button key={m} onClick={()=>{if(!running){setWorkMins(m);if(mode==='work')setSecsLeft(m*60);}}}
+                    disabled={running}
+                    style={{padding:'3px 9px',borderRadius:5,
+                      border:`1px solid ${workMins===m?C.accent:C.border}`,
+                      background:workMins===m?C.accentSoft:'transparent',
+                      color:workMins===m?C.accent:C.muted,
+                      fontSize:11,fontWeight:workMins===m?700:400,fontFamily:font,cursor:running?'default':'pointer'}}>
+                    {m}m
+                  </button>
+                ))}
               </div>
             </div>
-          ))}
+            <div>
+              <div style={{fontSize:10,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:5}}>Break</div>
+              <div style={{display:'flex',gap:4}}>
+                {TIMER_BREAK_OPTS.map(m=>(
+                  <button key={m} onClick={()=>{if(!running){setBreakMins(m);if(mode==='break')setSecsLeft(m*60);}}}
+                    disabled={running}
+                    style={{padding:'3px 9px',borderRadius:5,
+                      border:`1px solid ${breakMins===m?'#4ade80':C.border}`,
+                      background:breakMins===m?'rgba(74,222,128,0.10)':'transparent',
+                      color:breakMins===m?'#4ade80':C.muted,
+                      fontSize:11,fontWeight:breakMins===m?700:400,fontFamily:font,cursor:running?'default':'pointer'}}>
+                    {m}m
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div style={{display:'flex',gap:10,justifyContent:'center'}}>
+            <button onClick={()=>setRunning(r=>!r)}
+              style={{padding:'11px 36px',borderRadius:8,
+                background:running?C.card2:isBreak?'#4ade80':C.accent,
+                border:`1px solid ${running?C.border:isBreak?'#4ade80':C.accent}`,
+                color:running?C.text:'#fff',fontSize:14,fontWeight:700,fontFamily:font,cursor:'pointer',
+                transition:'all 0.15s'}}>
+              {running?'Pause':'Start'}
+            </button>
+            <button onClick={reset}
+              style={{padding:'11px 20px',borderRadius:8,background:'transparent',
+                border:`1px solid ${C.border}`,color:C.muted,
+                fontSize:14,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
+              Reset
+            </button>
+          </div>
         </div>
+
+        {todaySessions.length>0&&(
+          <div style={{textAlign:'center',fontSize:12,color:C.muted,borderTop:`1px solid ${C.border}`,paddingTop:14}}>
+            {todaySessions.length} session{todaySessions.length!==1?'s':''} today
+            &nbsp;&middot;&nbsp;{fmtDur(todaySecs)} focused
+            {streak>0&&<>&nbsp;&middot;&nbsp;<span style={{color:C.accent,fontWeight:600}}>{streak}-day streak</span></>}
+          </div>
+        )}
       </div>
 
-      {/* Locked: personalised plan */}
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px',opacity:0.75,position:'relative'}}>
-        <div style={{position:'absolute',top:14,right:14,padding:'2px 8px',borderRadius:4,
-          background:C.accentSoft,fontSize:9,fontWeight:700,color:C.accent,letterSpacing:0.3}}>PRO</div>
-        <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:6}}>📅 Personalised week-by-week plan</div>
-        <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>
-          A structured plan from today to your last exam — built from your paper history, your weakest topics, and your specific exam dates.
+      {weekSessions.length>0?(
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,overflow:'hidden'}}>
+          <div style={{padding:'13px 18px',borderBottom:`1px solid ${C.border}`}}>
+            <div style={{fontSize:13,fontWeight:700,color:C.text}}>This week</div>
+          </div>
+          <div style={{padding:'14px 18px'}}>
+            <div style={{display:'flex',gap:28,flexWrap:'wrap',marginBottom:bySubject.length>0?16:0}}>
+              <div>
+                <div style={{fontSize:22,fontWeight:800,color:C.text}}>{fmtDur(weekSecs)}</div>
+                <div style={{fontSize:11,color:C.muted,marginTop:1}}>total focused</div>
+              </div>
+              <div>
+                <div style={{fontSize:22,fontWeight:800,color:C.text}}>{weekSessions.length}</div>
+                <div style={{fontSize:11,color:C.muted,marginTop:1}}>sessions</div>
+              </div>
+              {streak>1&&(
+                <div>
+                  <div style={{fontSize:22,fontWeight:800,color:C.accent}}>{streak}</div>
+                  <div style={{fontSize:11,color:C.muted,marginTop:1}}>day streak</div>
+                </div>
+              )}
+            </div>
+            {bySubject.length>0&&(
+              <>
+                <div style={{fontSize:11,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:10}}>Today by subject</div>
+                {bySubject.map(s=>{
+                  const maxSecs=Math.max(...bySubject.map(x=>x.secs));
+                  return (
+                    <div key={s.id} style={{marginBottom:10}}>
+                      <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+                        <span style={{fontSize:12,color:C.text,fontWeight:500}}>{s.name}</span>
+                        <span style={{fontSize:11,color:C.muted}}>{fmtDur(s.secs)}</span>
+                      </div>
+                      <div style={{height:5,borderRadius:3,background:C.card2}}>
+                        <div style={{height:'100%',borderRadius:3,background:s.color,
+                          width:`${(s.secs/maxSecs)*100}%`,transition:'width 0.4s'}}/>
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      ):(
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,
+          padding:'24px 20px',textAlign:'center'}}>
+          <div style={{fontSize:13,color:C.muted,lineHeight:1.6}}>
+            Complete a session to start tracking your study time.<br/>
+            Analytics appear here once you finish your first Pomodoro.
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2657,8 +2758,8 @@ function QuickLog({subjects,scores,setScores,uid,C,font,onClose,onSaved}){
               <div style={{fontSize:11,color:C.muted,marginBottom:10,textAlign:'center',padding:'6px 10px',
                 background:C.card2,borderRadius:7}}>
                 {['A*','A','B','C','D','E'].indexOf(histGrade)<['A*','A','B','C','D','E'].indexOf(notGrade)
-                  ?`📈 Grade higher on ${paperYear} paper vs notional standard`
-                  :`📉 Grade lower on ${paperYear} paper vs notional standard`}
+                  ?`Grade higher on ${paperYear} paper vs notional standard`
+                  :`Grade lower on ${paperYear} paper vs notional standard`}
               </div>
             )}
 
@@ -2801,14 +2902,13 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
 
   const unlockedIds=ls.get(`rbp_ach_${uid}`,[]);
 
-  const NAV_ICONS={analytics:'📊',tracker:'📋',exams:'📅',plan:'🗓',achievements:'🏆',tips:'💡',resources:'🎯',account:'👤'};
   const DESKTOP_NAV=[
     {id:'analytics',label:'Analytics'},
     {id:'tracker',label:'Tracker'},
     {id:'exams',label:'Exams'},
     {id:'plan',label:'Plan'},
     {id:'achievements',label:'Achievements'},
-    {id:'tips',label:'Tips & Routine'},
+    {id:'timer',label:'Timer'},
     {id:'resources',label:'Resources'},
     {id:'account',label:'Account'},
   ];
@@ -2891,7 +2991,6 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
               display:'flex',alignItems:'center',gap:10,position:'relative',
               transition:'color 0.12s,background 0.12s'
             }}>
-              <span style={{fontSize:15,lineHeight:1,width:18,textAlign:'center',flexShrink:0}}>{NAV_ICONS[n.id]}</span>
               {n.label}
               {n.id==='achievements'&&unlockedIds.length>0&&(
                 <span style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',
@@ -2910,7 +3009,6 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
             fontFamily:font,cursor:'pointer',
             display:'flex',alignItems:'center',gap:10,transition:'color 0.12s,background 0.12s'
           }}>
-            <span style={{fontSize:15,lineHeight:1,width:18,textAlign:'center',flexShrink:0}}>{NAV_ICONS.account}</span>
             Account
           </button>
           <button onClick={()=>{const n=!dark;setDark(n);ls.set('rbp_dark',n);}} style={{
@@ -2933,7 +3031,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
         {view==='exams'        && <Exams        {...vp}/>}
         {view==='plan'         && <Schedule     {...vp}/>}
 {view==='achievements' && <AchievementsView {...vp} unlockedIds={unlockedIds}/>}
-        {view==='tips'         && <Tips         {...vp}/>}
+        {view==='timer'        && <StudyTimer    subjects={subjects} uid={uid} C={C} font={font}/>}
         {view==='resources'    && <Resources    {...vp}/>}
         {view==='account'      && <Account      {...vp} user={user} selection={selection}
                                     dark={dark} setDark={setDark} onSignOut={onSignOut} onResetSubjects={onResetSubjects}/>}
@@ -2951,8 +3049,8 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
               onClick={e=>e.stopPropagation()}>
               <div style={{width:32,height:3,borderRadius:2,background:C.border,
                 margin:'4px auto 12px'}}/>
-              {[{id:'plan',label:'Study Plan',icon:'🗓'},{id:'tips',label:'Tips & Routine',icon:'💡'},
-                {id:'resources',label:'Resources',icon:'🎯'},{id:'account',label:'Account',icon:'👤'}]
+              {[{id:'plan',label:'Study Plan'},{id:'timer',label:'Timer'},
+                {id:'resources',label:'Resources'},{id:'account',label:'Account'}]
                 .map(n=>(
                 <button key={n.id} onClick={()=>{setView(n.id);setMoreOpen(false);}} style={{
                   width:'100%',textAlign:'left',padding:'14px 20px',
@@ -2960,7 +3058,6 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
                   color:view===n.id?C.accent:C.text,
                   fontSize:15,fontWeight:view===n.id?700:400,fontFamily:font,cursor:'pointer',
                   display:'flex',alignItems:'center',gap:14}}>
-                  <span style={{fontSize:19,lineHeight:1,width:24,textAlign:'center',flexShrink:0}}>{n.icon}</span>
                   {n.label}
                   {n.id==='account'&&unlockedIds.length>0&&(
                     <span style={{marginLeft:'auto',width:6,height:6,borderRadius:'50%',background:TIER_COLOR.gold}}/>
@@ -3001,7 +3098,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
           <button onClick={()=>setMoreOpen(m=>!m)}
             style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
               gap:0,background:'transparent',border:'none',cursor:'pointer',
-              color:moreOpen?C.accent:['plan','tips','resources','account'].includes(view)?C.accent:C.muted,
+              color:moreOpen?C.accent:['plan','timer','resources','account'].includes(view)?C.accent:C.muted,
               fontSize:10,fontFamily:font,fontWeight:moreOpen?700:500,
               transition:'color 0.15s',padding:'0 4px',letterSpacing:0.2,
               borderTop:`2px solid ${moreOpen?C.accent:'transparent'}`}}>
@@ -3033,7 +3130,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
             boxShadow: gold ? '0 0 16px rgba(251,191,36,0.25)' : '0 2px 8px rgba(0,0,0,0.12)',
             backdropFilter:'blur(8px)',WebkitBackdropFilter:'blur(8px)',
             cursor:'default',userSelect:'none'}}>
-            <span style={{fontSize:18,lineHeight:1}}>🔥</span>
+            <span style={{fontSize:11,fontWeight:700,color:gold?'#fbbf24':C.muted,letterSpacing:0.5}}>STREAK</span>
             <span style={{fontSize:14,fontWeight:800,color: gold ? '#fbbf24' : C.text,fontFamily:'inherit'}}>
               {streak}
             </span>
