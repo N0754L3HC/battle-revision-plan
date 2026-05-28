@@ -3,7 +3,7 @@ import { supabase, isSupabaseConfigured } from './lib/supabase';
 import AuthGate from './components/AuthGate';
 import SubjectPicker from './components/SubjectPicker';
 import FriendsView from './components/FriendsView';
-import { subjectsFromSelection } from './data/subjects';
+import { subjectsFromSelection, GCSE_CATALOG } from './data/subjects';
 
 // ── Error boundary ─────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
@@ -730,12 +730,22 @@ function daysUntil(d) {
 }
 
 function gradeColor(g) {
-  return {'A*':'#22c55e',A:'#4ade80',B:'#fbbf24',C:'#fb923c',D:'#f87171',E:'#ef4444',U:'#71717a'}[g]??'#71717a';
+  return {
+    'A*':'#22c55e', A:'#4ade80', B:'#fbbf24', C:'#fb923c', D:'#f87171', E:'#ef4444',
+    '9':'#22c55e', '8':'#4ade80', '7':'#86efac', '6':'#fbbf24', '5':'#fb923c', '4':'#f87171', '3':'#ef4444', '2':'#dc2626', '1':'#b91c1c',
+    U:'#71717a'
+  }[g]??'#71717a';
+}
+
+function gradeScale(boundaries) {
+  if (!boundaries) return ['A*','A','B','C','D','E'];
+  if ('9' in boundaries) return ['9','8','7','6','5','4','3','2','1'];
+  return ['A*','A','B','C','D','E'];
 }
 
 function getSubjectGrade(avg, subjectName, gradeBoundaries) {
   const b = (gradeBoundaries||{})[subjectName]||{};
-  for (const g of ['A*','A','B','C','D','E']) if (avg>=(b[g]??0)) return g;
+  for (const g of gradeScale(b)) if (avg>=(b[g]??0)) return g;
   return 'U';
 }
 
@@ -747,7 +757,7 @@ function getGrade(got, maxMark, paperKey, boundaries) {
   }
   const pct=Math.round((got/maxMark)*100);
   const b=boundaries||{};
-  for (const g of ['A*','A','B','C','D','E']) if (pct>=(b[g]??0)) return {grade:g,exact:false};
+  for (const g of gradeScale(b)) if (pct>=(b[g]??0)) return {grade:g,exact:false};
   return {grade:'U',exact:false};
 }
 
@@ -759,7 +769,7 @@ function getGradeForPaper(got, max, paper, subject, gradeBoundaries) {
   }
   const pct = Math.round((got/max)*100);
   const b = (gradeBoundaries||{})[subject] || {};
-  for (const g of ['A*','A','B','C','D','E']) if (pct>=(b[g]??0)) return {grade:g,exact:false};
+  for (const g of gradeScale(b)) if (pct>=(b[g]??0)) return {grade:g,exact:false};
   return {grade:'U',exact:false};
 }
 
@@ -813,7 +823,7 @@ function predictedGrade(scores, subjectName, gradeBounds) {
   const projectedPct = Math.min(100, Math.max(0, Math.round(intercept + slope*(n+2))));
   const b = (gradeBounds||{})[subjectName]||{};
   let grade='U';
-  for (const g of ['A*','A','B','C','D','E']) if (projectedPct>=(b[g]??0)) { grade=g; break; }
+  for (const g of gradeScale(b)) if (projectedPct>=(b[g]??0)) { grade=g; break; }
   const trend = slope>1 ? 'up' : slope<-1 ? 'down' : 'stable';
   return { pct: projectedPct, grade, trend };
 }
@@ -1967,7 +1977,8 @@ function TrendChart({scores, subject, subjectColors={}, gradeBoundaries={}, bgCo
   const pts=data.map((d,i)=>([xScale(i),yScale(d.pct)]));
   const polyline=pts.map(p=>p.join(',')).join(' ');
   const areaPath=`M ${pts[0][0]},${yScale(minY)} L ${pts.map(p=>p.join(',')).join(' L ')} L ${pts[pts.length-1][0]},${yScale(minY)} Z`;
-  const gradeLines=['A*','A','B'].map(g=>({g,y:yScale(bounds[g]||0),pct:bounds[g]||0})).filter(gl=>gl.pct>minY&&gl.pct<maxY);
+  const topGrades = '9' in bounds ? ['9','8','7'] : ['A*','A','B'];
+  const gradeLines=topGrades.map(g=>({g,y:yScale(bounds[g]||0),pct:bounds[g]||0})).filter(gl=>gl.pct>minY&&gl.pct<maxY);
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{width:'100%',height:H,display:'block'}}>
       {gradeLines.map(gl=>(
@@ -2397,7 +2408,7 @@ function ShareReadinessCard({br, subjects, scores, C, font}) {
 }
 
 // ── Analytics ──────────────────────────────────────────────────────────────
-function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, onQuickLog, targets, setTargets, sessions=[], rag={}, isPro=false, onUpgrade}) {
+function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, onQuickLog, targets, setTargets, sessions=[], rag={}, isPro=false, onUpgrade, isGcse=false}) {
   const SUBJ_COLORS  = Object.fromEntries(subjects.map(s=>[s.name,s.color]));
   const GRADE_BOUNDS = Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
 
@@ -2601,7 +2612,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
                     <select value={target} onChange={e=>setTargets(p=>({...p,[s.name]:e.target.value}))}
                       style={{background:'transparent',border:'none',color:gradeColor(target),
                         fontSize:13,fontWeight:700,fontFamily:'inherit',cursor:'pointer',outline:'none',marginLeft:4}}>
-                      {['A*','A','B','C'].map(g=><option key={g} value={g}>{g}</option>)}
+                      {(isGcse?['9','8','7','6','5']:['A*','A','B','C']).map(g=><option key={g} value={g}>{g}</option>)}
                     </select>
                   </div>
                   <div style={{display:'flex',alignItems:'center',gap:6,justifyContent:'flex-end'}}>
@@ -2652,7 +2663,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
           subjectColors={SUBJ_COLORS} gradeBoundaries={GRADE_BOUNDS}
           bgColor={C.bg} textColor={C.muted}/>
         <div style={{display:'flex',gap:12,marginTop:8,flexWrap:'wrap'}}>
-          {Object.entries(GRADE_BOUNDS[chartSubject]||{}).filter(([g])=>['A*','A','B'].includes(g)).map(([g,v])=>(
+          {Object.entries(GRADE_BOUNDS[chartSubject]||{}).filter(([g])=>isGcse?['9','8','7'].includes(g):['A*','A','B'].includes(g)).map(([g,v])=>(
             <div key={g} style={{display:'flex',alignItems:'center',gap:4}}>
               <div style={{width:16,height:2,background:gradeColor(g),opacity:0.5,borderRadius:1}}/>
               <span style={{fontSize:12,color:gradeColor(g)}}>{g} ≥{v}%</span>
@@ -4396,7 +4407,8 @@ function QuickLog({subjects,scores,setScores,uid,C,font,onClose,onSaved}){
   };
 
   const gradeGlow=g=>{
-    const map={'A*':'0 0 20px rgba(251,191,36,0.6)','A':'0 0 16px rgba(74,222,128,0.5)','B':'0 0 14px rgba(251,191,36,0.35)'};
+    const map={'A*':'0 0 20px rgba(251,191,36,0.6)','A':'0 0 16px rgba(74,222,128,0.5)','B':'0 0 14px rgba(251,191,36,0.35)',
+               '9':'0 0 20px rgba(251,191,36,0.6)','8':'0 0 16px rgba(74,222,128,0.5)','7':'0 0 14px rgba(251,191,36,0.35)'};
     return map[g]??undefined;
   };
 
@@ -4560,7 +4572,7 @@ function QuickLog({subjects,scores,setScores,uid,C,font,onClose,onSaved}){
 }
 
 // ── Main shell ─────────────────────────────────────────────────────────────
-function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_SCHEDULE,isPro=false,stripeCustomerId=null,referralCode=null}) {
+function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjects,examSched=EXAM_SCHEDULE,isPro=false,stripeCustomerId=null,referralCode=null}) {
   const [dark,setDark]     = useState(()=>ls.get('rbp_dark',false));
   const [view,setView]     = useState('analytics');
   const [isMobile,setIsMobile] = useState(()=>window.innerWidth<640);
@@ -4588,7 +4600,8 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
 
   const C    = dark?T.dark:T.light;
   const font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
-  const subjects = subjectsFromSelection(selection);
+  const isGcse = examLevel === 'gcse';
+  const subjects = subjectsFromSelection(selection, isGcse ? GCSE_CATALOG : null);
 
   // ── Companion state (lifted from CompanionCard to here so sidebar can access) ──
   const [companion,setCompanion] = useState(()=>{
@@ -4614,7 +4627,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
 
   useEffect(()=>ls.set(`rbp_rag_notes_${uid}`,ragNotes),[ragNotes]);
 
-  const defaultTargets = Object.fromEntries(subjects.map(s=>[s.name,'A*']));
+  const defaultTargets = Object.fromEntries(subjects.map(s=>[s.name, isGcse ? '9' : 'A*']));
   const [targets,setTargets] = useState(()=>{
     const stored=ls.get(`rbp_targets_${uid}`,{});
     return Object.keys(stored).length>0?stored:defaultTargets;
@@ -4744,7 +4757,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
     {id:'account',      label:'Account',      icon:'👤'},
   ];
 
-  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode};
+  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse};
 
   return (
     <div style={{minHeight:'100vh',background:C.bg,fontFamily:font,color:C.text}}>
@@ -4928,7 +4941,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
           uid={uid} C={C} font={font} onClose={()=>setQuickLogOpen(false)}
           onSaved={(entry,imp)=>{
             addToast(`${entry.grade} · ${entry.subject}`,'success');
-            if(entry.grade==='A*') { setAStarFlash(true); setTimeout(()=>setAStarFlash(false),3200); }
+            if(entry.grade==='A*'||entry.grade==='9') { setAStarFlash(true); setTimeout(()=>setAStarFlash(false),3200); }
           }}/>
       )}
       {pendingAchievement&&(
@@ -5027,11 +5040,111 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
   );
 }
 
+// ── LevelPicker ────────────────────────────────────────────────────────────
+function LevelPicker({ onComplete }) {
+  const font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+  const C = { bg:'#e8e4dd', surface:'#f0ece5', border:'rgba(0,0,0,0.09)', text:'#2b2b2b', muted:'#7a7268', accent:'#b5735a' };
+  const [hover, setHover] = useState(null);
+
+  const options = [
+    {
+      id: 'alevel',
+      emoji: '🎓',
+      title: 'A-Levels',
+      subtitle: 'Years 12–13',
+      desc: 'Tracking A-Level papers with A*–E grade boundaries. Subjects like Maths, Chemistry, Biology, Economics.',
+      grades: ['A*', 'A', 'B', 'C'],
+    },
+    {
+      id: 'gcse',
+      emoji: '📚',
+      title: 'GCSEs',
+      subtitle: 'Years 10–11',
+      desc: 'Tracking GCSE papers with 9–1 grade boundaries. Subjects like Maths, English, Sciences, History.',
+      grades: ['9', '8', '7', '6'],
+    },
+  ];
+
+  return (
+    <div style={{ minHeight:'100vh', background:C.bg, display:'flex', alignItems:'center',
+      justifyContent:'center', fontFamily:font, padding:24 }}>
+      <div style={{ width:'100%', maxWidth:560 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:40 }}>
+          <div style={{ width:26, height:26, borderRadius:6, background:C.accent,
+            display:'flex', alignItems:'center', justifyContent:'center',
+            fontWeight:900, fontSize:11, color:'#fff', fontFamily:"'JetBrains Mono',monospace" }}>
+            A*
+          </div>
+          <span style={{ fontSize:14, fontWeight:600, color:C.text, letterSpacing:0.2 }}>Battle Plan</span>
+        </div>
+
+        <div style={{ marginBottom:32 }}>
+          <h1 style={{ fontSize:22, fontWeight:800, color:C.text, margin:'0 0 8px', lineHeight:1.2 }}>
+            What are you studying?
+          </h1>
+          <p style={{ fontSize:14, color:C.muted, margin:0, lineHeight:1.5 }}>
+            Choose your qualification. This sets the right grade scale and subjects for you.{' '}
+            <span style={{ fontWeight:600, color:'#b91c1c' }}>This cannot be changed later.</span>
+          </p>
+        </div>
+
+        <div style={{ display:'flex', flexDirection:'column', gap:12, marginBottom:24 }}>
+          {options.map(opt => {
+            const isHov = hover === opt.id;
+            return (
+              <button
+                key={opt.id}
+                onMouseEnter={() => setHover(opt.id)}
+                onMouseLeave={() => setHover(null)}
+                onClick={() => onComplete(opt.id)}
+                style={{
+                  display:'flex', alignItems:'flex-start', gap:16, padding:'20px 22px',
+                  background: isHov ? `${C.accent}10` : C.surface,
+                  border: `2px solid ${isHov ? C.accent+'66' : C.border}`,
+                  borderRadius:14, cursor:'pointer', textAlign:'left',
+                  transition:'all 0.15s',
+                }}
+              >
+                <div style={{ fontSize:36, lineHeight:1, flexShrink:0, marginTop:2 }}>{opt.emoji}</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ display:'flex', alignItems:'baseline', gap:8, marginBottom:4 }}>
+                    <span style={{ fontSize:18, fontWeight:800, color:C.text }}>{opt.title}</span>
+                    <span style={{ fontSize:12, color:C.muted, fontWeight:500 }}>{opt.subtitle}</span>
+                  </div>
+                  <p style={{ fontSize:13, color:C.muted, margin:'0 0 10px', lineHeight:1.5 }}>{opt.desc}</p>
+                  <div style={{ display:'flex', gap:6 }}>
+                    {opt.grades.map(g => (
+                      <div key={g} style={{
+                        background:gradeColor(g)+'22', border:`1px solid ${gradeColor(g)}44`,
+                        borderRadius:4, padding:'2px 7px', fontSize:12, fontWeight:700, color:gradeColor(g),
+                      }}>{g}</div>
+                    ))}
+                    <div style={{ fontSize:12, color:C.muted, alignSelf:'center' }}>…</div>
+                  </div>
+                </div>
+                <div style={{
+                  fontSize:18, color: isHov ? C.accent : C.border,
+                  flexShrink:0, alignSelf:'center', transition:'color 0.15s',
+                }}>→</div>
+              </button>
+            );
+          })}
+        </div>
+
+        <p style={{ fontSize:11, color:C.muted, textAlign:'center', margin:0 }}>
+          Your choice is saved securely and cannot be changed after sign-up.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ── App root ───────────────────────────────────────────────────────────────
 export default function App() {
   const [phase,setPhase]           = useState('loading');
   const [user,setUser]             = useState(null);
   const [selection,setSelection]   = useState([]);
+  const [examLevel,setExamLevel]   = useState('alevel');
   const [examSched,setExamSched]   = useState(EXAM_SCHEDULE);
   const [isPro,setIsPro]           = useState(false);
   const [stripeCustomerId,setStripeCustomerId] = useState(null);
@@ -5059,7 +5172,7 @@ export default function App() {
       if (alive) setUser(u);
       try {
         await supabase.from('user_profiles').upsert({id:uid,email:u.email},{onConflict:'id',ignoreDuplicates:true});
-        const {data}=await supabase.from('user_profiles').select('subjects,subscription_status,stripe_customer_id,referral_code').eq('id',uid).single();
+        const {data}=await supabase.from('user_profiles').select('subjects,subscription_status,stripe_customer_id,referral_code,exam_level').eq('id',uid).single();
         if (!alive) return;
         if (data?.subscription_status) setIsPro(data.subscription_status==='pro'||data.subscription_status==='trialing');
         if (data?.stripe_customer_id) setStripeCustomerId(data.stripe_customer_id);
@@ -5077,22 +5190,35 @@ export default function App() {
             fetch('/api/referral',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${s.access_token}`},body:JSON.stringify({referrerCode:pendingRef})}).catch(()=>{});
           });
         }
+        const lvl = data?.exam_level || null;
+        if (lvl && alive) setExamLevel(lvl);
         let sel=[];
         try { if (data?.subjects) sel=JSON.parse(data.subjects); } catch {}
         if (Array.isArray(sel)&&sel.length>0) {
-          ls.set(`rbp_sel_${uid}`,sel); setSelection(sel); setPhase('app');
+          ls.set(`rbp_sel_${uid}`,sel); setSelection(sel);
+          if (!lvl) {
+            // Existing user without exam_level — default to alevel, save it silently
+            setExamLevel('alevel');
+            supabase.from('user_profiles').update({exam_level:'alevel'}).eq('id',uid).then(()=>{});
+          }
+          if (alive) setPhase('app');
         } else {
           const cached=ls.get(`rbp_sel_${uid}`,[]);
           if (cached.length>0) {
-            setSelection(cached); setPhase('app');
+            setSelection(cached);
+            if (!lvl) { setExamLevel('alevel'); supabase.from('user_profiles').update({exam_level:'alevel'}).eq('id',uid).then(()=>{}); }
+            if (alive) setPhase('app');
             supabase.rpc('save_subjects',{p_subjects:JSON.stringify(cached)});
-          } else { setPhase('onboarding'); }
+          } else {
+            // New user — if exam_level not set show level picker, else go to subject picker
+            if (alive) setPhase(lvl ? 'onboarding' : 'level-pick');
+          }
         }
       } catch {
         if (!alive) return;
         const cached=ls.get(`rbp_sel_${uid}`,[]);
         if (cached.length>0) { setSelection(cached); setPhase('app'); }
-        else setPhase('onboarding');
+        else setPhase('level-pick');
       }
     }
 
@@ -5107,11 +5233,18 @@ export default function App() {
 
   function handleSubjectsDone(sel) { setSelection(sel); setPhase('app'); }
 
+  async function handleLevelDone(level) {
+    setExamLevel(level);
+    const uid=user?.id;
+    if (uid) await supabase.from('user_profiles').update({exam_level:level}).eq('id',uid);
+    setPhase('onboarding');
+  }
+
   async function handleSignOut() {
     const uid=user?.id;
     await supabase.auth.signOut();
     if (uid) ls.del(`rbp_sel_${uid}`);
-    setUser(null); setSelection([]); setPhase('anon');
+    setUser(null); setSelection([]); setExamLevel('alevel'); setPhase('anon');
   }
 
   async function handleResetSubjects() {
@@ -5134,10 +5267,11 @@ export default function App() {
   if (phase==='loading')    return <ErrorBoundary>{loading}</ErrorBoundary>;
   if (phase==='landing')    return <ErrorBoundary><LandingPage onGetStarted={()=>setPhase('anon')}/></ErrorBoundary>;
   if (phase==='anon')       return <ErrorBoundary><AuthGate onAuth={()=>{}}/></ErrorBoundary>;
-  if (phase==='onboarding') return <ErrorBoundary><SubjectPicker user={user} onComplete={handleSubjectsDone}/></ErrorBoundary>;
+  if (phase==='level-pick') return <ErrorBoundary><LevelPicker onComplete={handleLevelDone}/></ErrorBoundary>;
+  if (phase==='onboarding') return <ErrorBoundary><SubjectPicker user={user} onComplete={handleSubjectsDone} examLevel={examLevel}/></ErrorBoundary>;
   return (
     <ErrorBoundary>
-      <RevisionPlan user={user} selection={selection} onSignOut={handleSignOut} onResetSubjects={handleResetSubjects} examSched={examSched} isPro={isPro} stripeCustomerId={stripeCustomerId} referralCode={referralCode}/>
+      <RevisionPlan user={user} selection={selection} examLevel={examLevel} onSignOut={handleSignOut} onResetSubjects={handleResetSubjects} examSched={examSched} isPro={isPro} stripeCustomerId={stripeCustomerId} referralCode={referralCode}/>
     </ErrorBoundary>
   );
 }

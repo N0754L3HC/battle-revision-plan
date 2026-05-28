@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { SUBJECT_CATALOG } from '../data/subjects';
+import { SUBJECT_CATALOG, GCSE_CATALOG } from '../data/subjects';
 import { supabase } from '../lib/supabase';
 
 const font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
@@ -13,8 +13,6 @@ const colors = {
   subtle:  '#9a9490',
   accent:  '#b5735a',
 };
-
-const MAX_SUBJECTS = 4;
 
 function SubjectBadge({ subject, size = 32 }) {
   return (
@@ -31,16 +29,16 @@ function SubjectBadge({ subject, size = 32 }) {
   );
 }
 
-function PickSubjects({ selection, onChange }) {
+function PickSubjects({ selection, onChange, catalog, maxSubjects }) {
   const selectedIds = selection.map(s => s.subjectId);
-  const atMax = selectedIds.length >= MAX_SUBJECTS;
+  const atMax = selectedIds.length >= maxSubjects;
 
   const toggle = id => {
     if (selectedIds.includes(id)) {
       onChange(selection.filter(s => s.subjectId !== id));
     } else {
       if (atMax) return;
-      const subject = SUBJECT_CATALOG.find(s => s.id === id);
+      const subject = catalog.find(s => s.id === id);
       onChange([...selection, { subjectId: id, boardId: subject.boards[0].id }]);
     }
   };
@@ -52,12 +50,12 @@ function PickSubjects({ selection, onChange }) {
           Which subjects are you studying?
         </h2>
         <p style={{ fontSize: 13, color: colors.muted, margin: 0, fontFamily: font }}>
-          Select 2 to 4 subjects. You can change these later.{' '}
+          Select {maxSubjects <= 4 ? '2 to 4' : 'up to ' + maxSubjects} subjects. You can change these later.{' '}
           <span style={{
             fontSize: 12, fontWeight: 600,
             color: atMax ? colors.accent : colors.muted,
           }}>
-            {selectedIds.length}/{MAX_SUBJECTS} selected
+            {selectedIds.length}/{maxSubjects} selected
           </span>
         </p>
       </div>
@@ -67,7 +65,7 @@ function PickSubjects({ selection, onChange }) {
         gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))',
         gap: 8,
       }}>
-        {SUBJECT_CATALOG.map(s => {
+        {catalog.map(s => {
           const selected = selectedIds.includes(s.id);
           const locked   = atMax && !selected;
           return (
@@ -124,7 +122,7 @@ function PickSubjects({ selection, onChange }) {
   );
 }
 
-function PickBoards({ selection, onChange }) {
+function PickBoards({ selection, onChange, catalog }) {
   const update = (subjectId, boardId) => {
     onChange(selection.map(s => s.subjectId === subjectId ? { ...s, boardId } : s));
   };
@@ -142,7 +140,7 @@ function PickBoards({ selection, onChange }) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {selection.map(({ subjectId, boardId }) => {
-          const subject = SUBJECT_CATALOG.find(s => s.id === subjectId);
+          const subject = catalog.find(s => s.id === subjectId);
           if (!subject) return null;
           return (
             <div key={subjectId} style={{
@@ -183,7 +181,8 @@ function PickBoards({ selection, onChange }) {
   );
 }
 
-function Confirm({ selection }) {
+function Confirm({ selection, catalog, examLevel }) {
+  const isGcse = examLevel === 'gcse';
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
@@ -197,9 +196,11 @@ function Confirm({ selection }) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {selection.map(({ subjectId, boardId }) => {
-          const subject = SUBJECT_CATALOG.find(s => s.id === subjectId);
+          const subject = catalog.find(s => s.id === subjectId);
           if (!subject) return null;
           const board = subject.boards.find(b => b.id === boardId) || subject.boards[0];
+          const topGrade = isGcse ? '9' : 'A*';
+          const topPct = subject.gradeBoundaries[topGrade];
           return (
             <div key={subjectId} style={{
               display: 'flex', alignItems: 'center', gap: 12,
@@ -227,7 +228,7 @@ function Confirm({ selection }) {
                 border: `1px solid ${subject.color}30`,
                 padding: '3px 8px', borderRadius: 4,
               }}>
-                A* at {subject.gradeBoundaries['A*']}%
+                {isGcse ? `Grade 9 at ${topPct}%` : `A* at ${topPct}%`}
               </div>
             </div>
           );
@@ -237,13 +238,18 @@ function Confirm({ selection }) {
   );
 }
 
-export default function SubjectPicker({ user, onComplete }) {
+export default function SubjectPicker({ user, onComplete, examLevel = 'alevel' }) {
   const [step, setStep] = useState(1);
   const [selection, setSelection] = useState([]);
   const [saving, setSaving] = useState(false);
 
+  const isGcse = examLevel === 'gcse';
+  const catalog = isGcse ? GCSE_CATALOG : SUBJECT_CATALOG;
+  const maxSubjects = isGcse ? 10 : 4;
+  const minSubjects = isGcse ? 3 : 2;
+
   const canNext = step === 1
-    ? selection.length >= 2
+    ? selection.length >= minSubjects
     : step === 2
       ? selection.every(s => s.boardId)
       : true;
@@ -332,9 +338,9 @@ export default function SubjectPicker({ user, onComplete }) {
           borderRadius: 14, padding: '28px 28px 24px',
           marginBottom: 12,
         }}>
-          {step === 1 && <PickSubjects selection={selection} onChange={setSelection} />}
-          {step === 2 && <PickBoards  selection={selection} onChange={setSelection} />}
-          {step === 3 && <Confirm     selection={selection} />}
+          {step === 1 && <PickSubjects selection={selection} onChange={setSelection} catalog={catalog} maxSubjects={maxSubjects} />}
+          {step === 2 && <PickBoards  selection={selection} onChange={setSelection} catalog={catalog} />}
+          {step === 3 && <Confirm     selection={selection} catalog={catalog} examLevel={examLevel} />}
         </div>
 
         <div style={{ display: 'flex', gap: 8 }}>
@@ -370,7 +376,7 @@ export default function SubjectPicker({ user, onComplete }) {
         </div>
 
         <p style={{ fontSize: 11, color: colors.subtle, textAlign: 'center', marginTop: 14, fontFamily: font }}>
-          You can update your subjects any time in Settings.
+          {isGcse ? 'Select at least 3 GCSEs. You can update your subjects any time in Settings.' : 'You can update your subjects any time in Settings.'}
         </p>
       </div>
     </div>
