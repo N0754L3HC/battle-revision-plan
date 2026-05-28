@@ -419,16 +419,429 @@ export const SUBJECT_CATALOG = [
   },
 ];
 
+// ── GCSE Subject Catalogue ─────────────────────────────────────────────────
+// Grade boundaries are approximate percentages (Higher tier typical values)
+export const GCSE_CATALOG = [
+  {
+    id: 'gcse-maths',
+    name: 'Mathematics',
+    abbr: 'Ma',
+    color: '#3b82f6',
+    popular: true,
+    boards: [
+      { id: 'aqa',     name: 'AQA (8300)' },
+      { id: 'edexcel', name: 'Edexcel (1MA1)' },
+      { id: 'ocr',     name: 'OCR (J560)' },
+      { id: 'wjec',    name: 'WJEC/Eduqas' },
+    ],
+    gradeBoundaries: { '9': 79, '8': 68, '7': 57, '6': 48, '5': 40, '4': 32, '3': 24 },
+    papers: {
+      aqa:     ['Paper 1: Non-Calculator (8300/1H)', 'Paper 2: Calculator (8300/2H)', 'Paper 3: Calculator (8300/3H)'],
+      edexcel: ['Paper 1: Non-Calculator (1MA1/1H)', 'Paper 2: Calculator (1MA1/2H)', 'Paper 3: Calculator (1MA1/3H)'],
+      ocr:     ['Paper 1: Non-Calculator (J560/01)', 'Paper 2: Calculator (J560/02)', 'Paper 3: Calculator (J560/03)'],
+      wjec:    ['Unit 1: Non-Calculator', 'Unit 2: Calculator', 'Unit 3: Calculator'],
+    },
+    techniques: [
+      { title: 'Show all working — every step', body: 'Method marks are awarded even when the final answer is wrong. Never skip steps.' },
+      { title: 'Exact value means no rounding', body: 'Leave answers as surds, fractions, or multiples of π where the question asks for an exact value.' },
+      { title: 'Circle theorems: name the theorem', body: 'Always state which theorem you are using: "angle at the centre is twice the angle at the circumference."' },
+      { title: 'Check by substituting back', body: '30 seconds to verify saves marks on show-that questions.' },
+    ],
+    resources: [
+      { name: 'Maths Genie — GCSE past papers', url: 'https://www.mathsgenie.co.uk/gcse.html' },
+      { name: 'Dr Frost Maths — GCSE', url: 'https://www.drfrostmaths.com/' },
+      { name: 'Save My Exams — GCSE Maths', url: 'https://www.savemyexams.com/gcse/maths/' },
+    ],
+  },
+  {
+    id: 'gcse-english-lang',
+    name: 'English Language',
+    abbr: 'EL',
+    color: '#ec4899',
+    popular: true,
+    boards: [
+      { id: 'aqa',     name: 'AQA (8700)' },
+      { id: 'edexcel', name: 'Edexcel (1EN0)' },
+      { id: 'ocr',     name: 'OCR (J351)' },
+      { id: 'wjec',    name: 'WJEC/Eduqas' },
+    ],
+    gradeBoundaries: { '9': 81, '8': 71, '7': 61, '6': 51, '5': 42, '4': 34, '3': 26 },
+    papers: {
+      aqa:     ['Paper 1: Explorations in Creative Reading & Writing (8700/1)', 'Paper 2: Writers\' Viewpoints & Perspectives (8700/2)'],
+      edexcel: ['Paper 1: Fiction & Imaginative Writing (1EN0/01)', 'Paper 2: Non-Fiction & Transactional Writing (1EN0/02)'],
+      ocr:     ['Component 1: Communicating Information & Ideas (J351/01)', 'Component 2: Exploring Effects & Impact (J351/02)'],
+      wjec:    ['Component 1: 20th Century Literature Reading & Creative Prose Writing', 'Component 2: 19th & 21st Century Non-Fiction Reading & Transactional/Persuasive Writing'],
+    },
+    techniques: [
+      { title: 'Language analysis: use subject terminology', body: 'Name techniques (metaphor, sibilance, semantic field) and explain the effect on the reader. Never quote without analysing.' },
+      { title: 'Structure: write about whole-text effects', body: 'Discuss how the writer structures the text — the opening, turning points, ending — not just individual sentences.' },
+      { title: 'Writing tasks: plan for 5 minutes', body: 'Identify your audience, purpose, and form. A clear structure with varied sentence lengths scores higher than a content dump.' },
+      { title: 'Read the question carefully', body: 'Examiners deduct marks for writing to the wrong audience or form. Re-read the question after writing.' },
+    ],
+    resources: [
+      { name: 'PMT — English Language GCSE', url: 'https://www.physicsandmathstutor.com/english-language/gcse/' },
+      { name: 'Save My Exams — GCSE English Language', url: 'https://www.savemyexams.com/gcse/english-language/' },
+    ],
+  },
+  {
+    id: 'gcse-english-lit',
+    name: 'English Literature',
+    abbr: 'En',
+    color: '#a855f7',
+    popular: true,
+    boards: [
+      { id: 'aqa',     name: 'AQA (8702)' },
+      { id: 'edexcel', name: 'Edexcel (1ET0)' },
+      { id: 'ocr',     name: 'OCR (J352)' },
+      { id: 'wjec',    name: 'WJEC/Eduqas' },
+    ],
+    gradeBoundaries: { '9': 80, '8': 70, '7': 60, '6': 50, '5': 41, '4': 33, '3': 25 },
+    papers: {
+      aqa:     ['Paper 1: Shakespeare & the 19th Century Novel (8702/1)', 'Paper 2: Modern Texts, Poetry & Unseen Poetry (8702/2)'],
+      edexcel: ['Paper 1: Shakespeare & Post-1914 Literature (1ET0/01)', 'Paper 2: 19th Century Novel & Poetry since 1789 (1ET0/02)'],
+      ocr:     ['Component 1: Shakespeare & Poetry (J352/01)', 'Component 2: Prose & Drama (J352/02)', 'Component 3: Unseen Poetry (J352/03)'],
+      wjec:    ['Unit 1: Shakespeare & Poetry', 'Unit 2: Prose & Drama', 'Unit 3: Unseen'],
+    },
+    techniques: [
+      { title: 'Quote short, analyse long', body: 'A two-word quotation with three sentences of analysis outperforms a long quotation with one sentence of commentary.' },
+      { title: 'Context: weave in, not bolt on', body: 'Contextual knowledge should emerge from the text, not be added at the end.' },
+      { title: 'AQA: answer in full sentences', body: 'Bullet points are not acceptable. Every paragraph needs a clear argument linked to the question.' },
+      { title: 'Open book exams: know where things are', body: 'If you have the text, know which page key quotes appear on. Do not waste time searching during the exam.' },
+    ],
+    resources: [
+      { name: 'Sparknotes — set text study guides', url: 'https://www.sparknotes.com/' },
+      { name: 'Save My Exams — GCSE English Literature', url: 'https://www.savemyexams.com/gcse/english-literature/' },
+    ],
+  },
+  {
+    id: 'gcse-biology',
+    name: 'Biology',
+    abbr: 'Bi',
+    color: '#22c55e',
+    popular: true,
+    boards: [
+      { id: 'aqa',        name: 'AQA (8461)' },
+      { id: 'edexcel',    name: 'Edexcel (1BI0)' },
+      { id: 'ocr-gateway', name: 'OCR Gateway (J257)' },
+      { id: 'ocr-twenty', name: 'OCR 21st Century (J260)' },
+      { id: 'wjec',       name: 'WJEC/Eduqas' },
+    ],
+    gradeBoundaries: { '9': 81, '8': 71, '7': 61, '6': 51, '5': 42, '4': 34, '3': 26 },
+    papers: {
+      aqa:         ['Paper 1: Cell Biology, Organisation, Infection & Response, Bioenergetics (8461/1H)', 'Paper 2: Homeostasis, Inheritance, Ecology (8461/2H)'],
+      edexcel:     ['Paper 1: Key Concepts in Biology (1BI0/1H)', 'Paper 2: Application of Key Concepts (1BI0/2H)'],
+      'ocr-gateway':['Paper 1: Biology B1–B4 (J257/01)', 'Paper 2: Biology B5–B7 (J257/02)'],
+      'ocr-twenty': ['Paper 1: Biology B1–B3 (J260/01)', 'Paper 2: Biology B4–B7 (J260/02)'],
+      wjec:        ['Unit 1: Variety of Life & Living Processes', 'Unit 2: Adaptation, Interdependence & Biodiversity'],
+    },
+    techniques: [
+      { title: '6-mark questions: use a logical sequence', body: 'State → explain → link. Examiners award marks for logical chains, not bullet-point lists of facts.' },
+      { title: 'Required practicals: know the method', body: 'Know the independent variable, dependent variable, control variables, and sources of error for every required practical.' },
+      { title: 'Definitions must be precise', body: '"Active transport requires energy and moves substances against a concentration gradient." Vague answers lose marks.' },
+      { title: 'Maths in biology: show units', body: 'Magnification, surface area, rate of reaction — always include units in your final answer.' },
+    ],
+    resources: [
+      { name: 'Save My Exams — GCSE Biology', url: 'https://www.savemyexams.com/gcse/biology/' },
+      { name: 'Seneca Learning — GCSE Biology', url: 'https://app.senecalearning.com/' },
+      { name: 'BBC Bitesize — Biology', url: 'https://www.bbc.co.uk/bitesize/subjects/z9ddmp3' },
+    ],
+  },
+  {
+    id: 'gcse-chemistry',
+    name: 'Chemistry',
+    abbr: 'Ch',
+    color: '#f43f5e',
+    popular: true,
+    boards: [
+      { id: 'aqa',        name: 'AQA (8462)' },
+      { id: 'edexcel',    name: 'Edexcel (1CH0)' },
+      { id: 'ocr-gateway', name: 'OCR Gateway (J258)' },
+      { id: 'ocr-twenty', name: 'OCR 21st Century (J261)' },
+      { id: 'wjec',       name: 'WJEC/Eduqas' },
+    ],
+    gradeBoundaries: { '9': 80, '8': 70, '7': 60, '6': 50, '5': 41, '4': 33, '3': 25 },
+    papers: {
+      aqa:         ['Paper 1: Atomic Structure, Bonding, Quantitative, Chemical Changes, Energy (8462/1H)', 'Paper 2: Rates, Equilibrium, Organic, Analysis, Atmosphere, Using Resources (8462/2H)'],
+      edexcel:     ['Paper 1: Key Concepts in Chemistry (1CH0/1H)', 'Paper 2: Application of Key Concepts (1CH0/2H)'],
+      'ocr-gateway':['Paper 1: Chemistry C1–C4 (J258/01)', 'Paper 2: Chemistry C5–C8 (J258/02)'],
+      'ocr-twenty': ['Paper 1: Chemistry C1–C3 (J261/01)', 'Paper 2: Chemistry C4–C7 (J261/02)'],
+      wjec:        ['Unit 1: Particles & Atoms', 'Unit 2: Carbon Compounds, Water & Rates'],
+    },
+    techniques: [
+      { title: 'Balancing equations: check atoms on both sides', body: 'Count every atom. A balanced equation is often worth 1–2 marks and is quick to check.' },
+      { title: 'Ionic equations: only write reacting species', body: 'Leave out spectator ions. AQA in particular tests net ionic equations at Higher tier.' },
+      { title: 'Calculation questions: give correct units', body: 'g/mol, mol/dm³, kJ/mol — a correct answer without units loses the mark at Higher.' },
+      { title: 'Required practicals: know the purpose of each step', body: 'Why do you heat to constant mass? Why filter before titrating? Examiners ask about method, not just results.' },
+    ],
+    resources: [
+      { name: 'Save My Exams — GCSE Chemistry', url: 'https://www.savemyexams.com/gcse/chemistry/' },
+      { name: 'ChemGuide — GCSE section', url: 'https://www.chemguide.co.uk/' },
+      { name: 'BBC Bitesize — Chemistry', url: 'https://www.bbc.co.uk/bitesize/subjects/zyn3rwx' },
+    ],
+  },
+  {
+    id: 'gcse-physics',
+    name: 'Physics',
+    abbr: 'Ph',
+    color: '#0ea5e9',
+    popular: true,
+    boards: [
+      { id: 'aqa',        name: 'AQA (8463)' },
+      { id: 'edexcel',    name: 'Edexcel (1PH0)' },
+      { id: 'ocr-gateway', name: 'OCR Gateway (J259)' },
+      { id: 'ocr-twenty', name: 'OCR 21st Century (J265)' },
+      { id: 'wjec',       name: 'WJEC/Eduqas' },
+    ],
+    gradeBoundaries: { '9': 80, '8': 70, '7': 60, '6': 50, '5': 41, '4': 33, '3': 25 },
+    papers: {
+      aqa:         ['Paper 1: Energy, Electricity, Particle Model, Atomic Structure (8463/1H)', 'Paper 2: Forces, Waves, Magnetism & Electromagnetism, Space (8463/2H)'],
+      edexcel:     ['Paper 1: Key Concepts in Physics (1PH0/1H)', 'Paper 2: Application of Key Concepts (1PH0/2H)'],
+      'ocr-gateway':['Paper 1: Physics P1–P4 (J259/01)', 'Paper 2: Physics P5–P8 (J259/02)'],
+      'ocr-twenty': ['Paper 1: Physics P1–P3 (J265/01)', 'Paper 2: Physics P4–P7 (J265/02)'],
+      wjec:        ['Unit 1: Electricity & Energy', 'Unit 2: Forces, Space & Radioactivity'],
+    },
+    techniques: [
+      { title: 'Use the equation sheet', body: 'GCSE Physics provides an equation sheet — know which equations are on it and which must be memorised.' },
+      { title: 'Standard form: always check the power of 10', body: 'Speed of light, gravitational field strength — getting the power of 10 wrong loses all marks on a calculation.' },
+      { title: 'Required practicals: draw a proper results table', body: 'Headers, units, consistent decimal places. A rushed table loses method marks before you even calculate.' },
+      { title: 'Explain questions: cause → mechanism → effect', body: '"When resistance increases, current decreases (V=IR), so the motor spins slower." Always complete the chain.' },
+    ],
+    resources: [
+      { name: 'Save My Exams — GCSE Physics', url: 'https://www.savemyexams.com/gcse/physics/' },
+      { name: 'Isaac Physics — GCSE support', url: 'https://isaacphysics.org/' },
+      { name: 'BBC Bitesize — Physics', url: 'https://www.bbc.co.uk/bitesize/subjects/zh2xsbk' },
+    ],
+  },
+  {
+    id: 'gcse-combined-science',
+    name: 'Combined Science',
+    abbr: 'CS',
+    color: '#10b981',
+    popular: true,
+    boards: [
+      { id: 'aqa',     name: 'AQA Trilogy (8464)' },
+      { id: 'edexcel', name: 'Edexcel Combined (1SC0)' },
+      { id: 'ocr',     name: 'OCR Gateway (J250)' },
+      { id: 'wjec',    name: 'WJEC/Eduqas' },
+    ],
+    gradeBoundaries: { '9': 80, '8': 69, '7': 59, '6': 49, '5': 40, '4': 32, '3': 24 },
+    papers: {
+      aqa:     ['Biology Paper 1 (8464/B/1H)', 'Biology Paper 2 (8464/B/2H)', 'Chemistry Paper 1 (8464/C/1H)', 'Chemistry Paper 2 (8464/C/2H)', 'Physics Paper 1 (8464/P/1H)', 'Physics Paper 2 (8464/P/2H)'],
+      edexcel: ['Biology 1 (1SC0/1BH)', 'Chemistry 1 (1SC0/1CH)', 'Physics 1 (1SC0/1PH)', 'Biology 2 (1SC0/2BH)', 'Chemistry 2 (1SC0/2CH)', 'Physics 2 (1SC0/2PH)'],
+      ocr:     ['Paper 1: Biology', 'Paper 2: Chemistry', 'Paper 3: Physics', 'Paper 4: Biology', 'Paper 5: Chemistry', 'Paper 6: Physics'],
+      wjec:    ['Component 1: Biology', 'Component 2: Chemistry', 'Component 3: Physics'],
+    },
+    techniques: [
+      { title: 'Study all three sciences equally', body: 'Combined Science is double-weighted — weak physics can drag down your biology grade. Balance your revision time.' },
+      { title: 'Required practicals appear on every paper', body: 'There are 16 required practicals across the 3 sciences. Know each one cold.' },
+      { title: 'Maths skills: practice across all three sciences', body: 'Many students lose marks on calculations. The same maths (rearranging, standard form, graphs) appears in all three.' },
+      { title: 'Use past papers by paper, not by subject', body: 'Biology Paper 1 has a specific topic list — don\'t mix up which content appears in which paper.' },
+    ],
+    resources: [
+      { name: 'BBC Bitesize — Combined Science', url: 'https://www.bbc.co.uk/bitesize/subjects/zrkw2hv' },
+      { name: 'Save My Exams — GCSE Sciences', url: 'https://www.savemyexams.com/gcse/' },
+      { name: 'Seneca Learning — Sciences', url: 'https://app.senecalearning.com/' },
+    ],
+  },
+  {
+    id: 'gcse-history',
+    name: 'History',
+    abbr: 'Hi',
+    color: '#d97706',
+    popular: true,
+    boards: [
+      { id: 'aqa',     name: 'AQA (8145)' },
+      { id: 'edexcel', name: 'Edexcel (1HI0)' },
+      { id: 'ocr',     name: 'OCR (J410)' },
+      { id: 'wjec',    name: 'WJEC/Eduqas' },
+    ],
+    gradeBoundaries: { '9': 79, '8': 68, '7': 57, '6': 47, '5': 39, '4': 31, '3': 23 },
+    papers: {
+      aqa:     ['Paper 1: Understanding the Modern World (8145/1)', 'Paper 2: Shaping the Nation (8145/2)'],
+      edexcel: ['Paper 1: Thematic Study & Historic Environment (1HI0/1)', 'Paper 2: Period Study & British Depth Study (1HI0/2)', 'Paper 3: Modern Depth Study (1HI0/3)'],
+      ocr:     ['Component 1: Studies in Depth (J410/01)', 'Component 2: Period Studies (J410/02)', 'Component 3: Historical Investigations (J410/03)'],
+      wjec:    ['Unit 1: Changes in Health & Medicine', 'Unit 2: Depth Study', 'Unit 3: Development of Democracy in Britain'],
+    },
+    techniques: [
+      { title: 'Source questions: CONTENT → PROVENANCE', body: 'Don\'t just summarise what a source says. What does the author\'s position and purpose tell us about reliability?' },
+      { title: 'Avoid narrative — analyse instead', body: '"This caused X because…" not "This happened, then this happened." Every sentence should explain causation.' },
+      { title: 'Balance your argument', body: 'A* responses weigh multiple factors and reach a reasoned judgement — not just listing evidence on both sides.' },
+      { title: 'Know your own topic in depth', body: 'GCSE History is topic-specific. Know your Britain, Germany, or USA topic cold — dates, key figures, key events.' },
+    ],
+    resources: [
+      { name: 'PMT — History GCSE papers', url: 'https://www.physicsandmathstutor.com/history/gcse/' },
+      { name: 'Tutor2u — History GCSE', url: 'https://www.tutor2u.net/history/gcse' },
+      { name: 'BBC Bitesize — History', url: 'https://www.bbc.co.uk/bitesize/subjects/zk26n39' },
+    ],
+  },
+  {
+    id: 'gcse-geography',
+    name: 'Geography',
+    abbr: 'Ge',
+    color: '#14b8a6',
+    popular: true,
+    boards: [
+      { id: 'aqa',     name: 'AQA (8035)' },
+      { id: 'edexcel', name: 'Edexcel B (1GB0)' },
+      { id: 'ocr-a',  name: 'OCR A (J383)' },
+      { id: 'wjec',   name: 'WJEC/Eduqas' },
+    ],
+    gradeBoundaries: { '9': 80, '8': 70, '7': 59, '6': 49, '5': 40, '4': 32, '3': 24 },
+    papers: {
+      aqa:     ['Paper 1: Living with the Physical Environment (8035/1)', 'Paper 2: Challenges in the Human Environment (8035/2)', 'Paper 3: Geographical Applications (8035/3)'],
+      edexcel: ['Paper 1: Global Geographical Issues (1GB0/01)', 'Paper 2: UK Geographical Issues (1GB0/02)', 'Paper 3: People and Environment Issues — Making Geographical Decisions (1GB0/03)'],
+      'ocr-a': ['Component 1: Our Natural World (J383/01)', 'Component 2: People and Society (J383/02)', 'Component 3: Geographical Skills (J383/03)'],
+      wjec:    ['Unit 1: Changing Landscapes', 'Unit 2: Changing Places', 'Unit 3: Environmental Challenges'],
+    },
+    techniques: [
+      { title: 'Use data precisely', body: 'Quote statistics exactly. "Population grew significantly" earns less than "Population grew by 34% between 2000 and 2020."' },
+      { title: 'Fieldwork: know your own investigation', body: 'You will be asked about your own fieldwork. Know your hypotheses, collection methods, and conclusions.' },
+      { title: 'Case studies: learn specific place names and facts', body: 'Generic answers score poorly. Name the specific place, date, and statistic for every case study.' },
+      { title: 'Sketch maps: label everything', body: 'A well-labelled sketch map can earn dedicated marks. Practise drawing key maps from memory.' },
+    ],
+    resources: [
+      { name: 'Coolgeography — GCSE notes', url: 'https://www.coolgeography.co.uk/' },
+      { name: 'PMT — Geography GCSE', url: 'https://www.physicsandmathstutor.com/geography/gcse/' },
+      { name: 'BBC Bitesize — Geography', url: 'https://www.bbc.co.uk/bitesize/subjects/zr982hv' },
+    ],
+  },
+  {
+    id: 'gcse-cs',
+    name: 'Computer Science',
+    abbr: 'CS',
+    color: '#6366f1',
+    popular: false,
+    boards: [
+      { id: 'aqa',     name: 'AQA (8525)' },
+      { id: 'ocr',     name: 'OCR (J277)' },
+      { id: 'edexcel', name: 'Edexcel (1CP2)' },
+      { id: 'wjec',    name: 'WJEC/Eduqas' },
+    ],
+    gradeBoundaries: { '9': 77, '8': 67, '7': 57, '6': 47, '5': 38, '4': 30, '3': 22 },
+    papers: {
+      aqa:     ['Paper 1: Computational Thinking & Programming (8525/1)', 'Paper 2: Computer Systems (8525/2)'],
+      ocr:     ['Paper 1: Computer Systems (J277/01)', 'Paper 2: Computational Thinking, Algorithms & Programming (J277/02)'],
+      edexcel: ['Paper 1: Computational Thinking & Problem Solving (1CP2/01)', 'Paper 2: Applications & Implications of Computing (1CP2/02)'],
+      wjec:    ['Unit 1: Computer Systems', 'Unit 2: Computational Thinking & Programming'],
+    },
+    techniques: [
+      { title: 'Pseudocode: be consistent and clear', body: 'Examiners reward clear logic, not a specific syntax. Define variables, use clear loop structures, indent consistently.' },
+      { title: 'Binary and hex: show conversion steps', body: 'Even if you can do it in your head, show the column headers or intermediate steps.' },
+      { title: 'Trace tables: complete every row', body: 'Show the value of each variable at every iteration. Stopping early loses marks even if the algorithm is correct.' },
+      { title: 'Theory questions: use technical vocabulary', body: '"The OS uses round-robin scheduling" scores more than "the OS takes turns." Use exact terminology.' },
+    ],
+    resources: [
+      { name: 'Craig and Dave — video lessons', url: 'https://craigndave.org/' },
+      { name: 'BBC Bitesize — Computer Science', url: 'https://www.bbc.co.uk/bitesize/subjects/zvnygk7' },
+      { name: 'Save My Exams — GCSE CS', url: 'https://www.savemyexams.com/gcse/computer-science/' },
+    ],
+  },
+  {
+    id: 'gcse-french',
+    name: 'French',
+    abbr: 'Fr',
+    color: '#0284c7',
+    popular: false,
+    boards: [
+      { id: 'aqa',     name: 'AQA (8658)' },
+      { id: 'edexcel', name: 'Edexcel (1FR0)' },
+      { id: 'ocr',     name: 'OCR (J031)' },
+      { id: 'wjec',    name: 'WJEC/Eduqas' },
+    ],
+    gradeBoundaries: { '9': 82, '8': 72, '7': 62, '6': 52, '5': 43, '4': 35, '3': 27 },
+    papers: {
+      aqa:     ['Paper 1: Listening (8658/LH)', 'Paper 2: Reading (8658/RH)', 'Paper 3: Writing (8658/WH)', 'Speaking: Oral Exam'],
+      edexcel: ['Paper 1: Listening & Understanding in French (1FR0/1H)', 'Paper 2: Reading & Understanding in French (1FR0/2H)', 'Paper 3: Writing in French (1FR0/3H)', 'Speaking: Oral Exam'],
+      ocr:     ['Component 1: Listening (J031/01)', 'Component 2: Reading & Writing (J031/02)', 'Component 3: Speaking (J031/03)'],
+      wjec:    ['Unit 1: Listening', 'Unit 2: Speaking', 'Unit 3: Reading', 'Unit 4: Writing'],
+    },
+    techniques: [
+      { title: 'Speaking: use complex structures', body: 'Include subjunctive, conditional, and perfect tense in your oral. Examiners reward grammatical range.' },
+      { title: 'Listening: read questions before the audio plays', body: 'Use the preparation time to identify key words to listen for. You cannot rewind.' },
+      { title: 'Writing: vary tenses deliberately', body: 'Past, present, future, conditional — include all four in longer writing tasks to hit the top grade descriptors.' },
+      { title: 'Vocabulary: prioritise high-frequency words', body: 'Learn the most common 500 words cold. They appear in every paper and compose most of the unseen text.' },
+    ],
+    resources: [
+      { name: 'BBC Bitesize — French', url: 'https://www.bbc.co.uk/bitesize/subjects/z9dkqhv' },
+      { name: 'Language Nut — vocab builder', url: 'https://www.languagenut.com/' },
+    ],
+  },
+  {
+    id: 'gcse-spanish',
+    name: 'Spanish',
+    abbr: 'Sp',
+    color: '#dc2626',
+    popular: false,
+    boards: [
+      { id: 'aqa',     name: 'AQA (8698)' },
+      { id: 'edexcel', name: 'Edexcel (1SP0)' },
+      { id: 'ocr',     name: 'OCR (J032)' },
+      { id: 'wjec',    name: 'WJEC/Eduqas' },
+    ],
+    gradeBoundaries: { '9': 82, '8': 72, '7': 62, '6': 52, '5': 43, '4': 35, '3': 27 },
+    papers: {
+      aqa:     ['Paper 1: Listening (8698/LH)', 'Paper 2: Reading (8698/RH)', 'Paper 3: Writing (8698/WH)', 'Speaking: Oral Exam'],
+      edexcel: ['Paper 1: Listening & Understanding (1SP0/1H)', 'Paper 2: Reading & Understanding (1SP0/2H)', 'Paper 3: Writing (1SP0/3H)', 'Speaking: Oral Exam'],
+      ocr:     ['Component 1: Listening (J032/01)', 'Component 2: Reading & Writing (J032/02)', 'Component 3: Speaking (J032/03)'],
+      wjec:    ['Unit 1: Listening', 'Unit 2: Speaking', 'Unit 3: Reading', 'Unit 4: Writing'],
+    },
+    techniques: [
+      { title: 'Speaking: use complex structures', body: 'Include subjunctive, conditional, and perfect tense. Examiners reward grammatical range at grade 7+.' },
+      { title: 'Listening: listen for gender and number', body: 'Spanish adjective agreement is tested implicitly. Listen for plural/feminine markers in listening tasks.' },
+      { title: 'Writing: use connectives and opinions', body: 'aunque (although), sin embargo (however), me parece que (I think that) — these signal sophistication to examiners.' },
+      { title: 'Learn ser vs estar cold', body: 'The most common pitfall in Spanish writing and speaking. A single ser/estar error can break the flow of a whole answer.' },
+    ],
+    resources: [
+      { name: 'BBC Bitesize — Spanish', url: 'https://www.bbc.co.uk/bitesize/subjects/zfckjxs' },
+      { name: 'Language Nut — vocab builder', url: 'https://www.languagenut.com/' },
+    ],
+  },
+  {
+    id: 'gcse-religious-studies',
+    name: 'Religious Studies',
+    abbr: 'RS',
+    color: '#f59e0b',
+    popular: false,
+    boards: [
+      { id: 'aqa',     name: 'AQA (8062)' },
+      { id: 'edexcel', name: 'Edexcel (1RB0)' },
+      { id: 'ocr',     name: 'OCR (J625)' },
+      { id: 'wjec',    name: 'WJEC/Eduqas' },
+    ],
+    gradeBoundaries: { '9': 80, '8': 70, '7': 60, '6': 50, '5': 41, '4': 33, '3': 25 },
+    papers: {
+      aqa:     ['Paper 1: Catholic Christianity or Component 1 Religion (8062/1)', 'Paper 2: Thematic Studies (8062/2)'],
+      edexcel: ['Paper 1: Area of Study 1 — Study of Religion (1RB0/1H)', 'Paper 2: Area of Study 2 — Christianity (1RB0/2H)', 'Paper 3: Area of Study 3 — Philosophical/Ethical Studies (1RB0/3H)'],
+      ocr:     ['Paper 1: Beliefs & Teachings & Practices (J625/01)', 'Paper 2: Religious, Philosophical & Ethical Studies (J625/02)'],
+      wjec:    ['Unit 1: Religion & Philosophical Themes', 'Unit 2: Religious Practices & Community'],
+    },
+    techniques: [
+      { title: '12-mark questions: argue both sides, then conclude', body: 'Present the argument, counter-argument, and a clear personal conclusion. The judgement earns top marks.' },
+      { title: 'Use religious language precisely', body: 'Name specific beliefs (e.g. "the sanctity of life", "the principle of utility"). Vague language loses marks.' },
+      { title: 'Include religious quotes or teachings', body: 'Specific scriptural references or teachings (Hadith, Bible verse, Buddhist Precepts) lift answers from grade 5 to grade 8.' },
+      { title: 'Ethical theories: apply, don\'t just describe', body: "Don't just say 'a utilitarian would consider outcomes.' Apply it: 'a utilitarian might argue X because it maximises happiness by…'" },
+    ],
+    resources: [
+      { name: 'BBC Bitesize — Religious Studies', url: 'https://www.bbc.co.uk/bitesize/subjects/zh3rkqt' },
+      { name: 'Tutor2u — RS GCSE', url: 'https://www.tutor2u.net/religious-studies/gcse' },
+    ],
+  },
+];
+
+export const GCSE_MAP = Object.fromEntries(GCSE_CATALOG.map(s => [s.id, s]));
+
 export const SUBJECT_MAP = Object.fromEntries(SUBJECT_CATALOG.map(s => [s.id, s]));
 
 export function getSubjectByName(name) {
   return SUBJECT_CATALOG.find(s => s.name === name);
 }
 
-export function subjectsFromSelection(selection) {
-  // selection: [{subjectId, boardId}]
+export function subjectsFromSelection(selection, catalog) {
+  const map = catalog
+    ? Object.fromEntries(catalog.map(s => [s.id, s]))
+    : SUBJECT_MAP;
   return selection.map(sel => {
-    const s = SUBJECT_MAP[sel.subjectId];
+    const s = map[sel.subjectId];
     if (!s) return null;
     const board = s.boards.find(b => b.id === sel.boardId) || s.boards[0];
     return {
