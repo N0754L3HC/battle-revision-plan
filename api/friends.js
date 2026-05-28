@@ -72,9 +72,20 @@ export default async function handler(req, res) {
       const email = rawEmail.toLowerCase().trim();
       if (email === user.email?.toLowerCase()) return res.status(400).json({ error: "Can't add yourself" });
 
-      // Resolve target by email
-      const { data: target } = await admin.from('user_profiles')
-        .select('id,email').eq('email', email).maybeSingle();
+      // Resolve target by email — case-insensitive; fallback to auth.users for users whose profile email is still null
+      let target = null;
+      const { data: profileMatch } = await admin.from('user_profiles')
+        .select('id,email').ilike('email', email).maybeSingle();
+      if (profileMatch) {
+        target = profileMatch;
+      } else {
+        const { data: { users: authUsers } } = await admin.auth.admin.listUsers({ perPage: 1000 });
+        const authMatch = authUsers?.find(u => u.email?.toLowerCase() === email);
+        if (authMatch) {
+          await admin.from('user_profiles').upsert({ id: authMatch.id, email: authMatch.email }, { onConflict: 'id' });
+          target = { id: authMatch.id, email: authMatch.email };
+        }
+      }
       if (!target) return res.status(404).json({ error: 'No Battle Plan account found with that email' });
 
       // Check existing connection
