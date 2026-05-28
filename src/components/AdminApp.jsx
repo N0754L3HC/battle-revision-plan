@@ -3,7 +3,6 @@ import { supabase } from '../lib/supabase';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const mono = "'JetBrains Mono','SF Mono','Fira Code',monospace";
-const ADMIN_EMAILS = ['51r4h100@gmail.com'];
 const GC = { 'A*':'#00E676', A:'#69F0AE', B:'#FFD600', C:'#FF9100', D:'#FF6D00', E:'#FF3D00', U:'#555' };
 const SC = { maths:'#3b82f6','further-maths':'#E040FB',cs:'#00E676',chemistry:'#FF4081',physics:'#40C4FF',economics:'#FFD600',biology:'#84cc16',history:'#fb923c',psychology:'#a78bfa',geography:'#22d3ee' };
 const GRADE_BOUNDS = { Maths:{'A*':80,A:70,B:60,C:50,D:40,E:30},'Further Maths':{'A*':83,A:72,B:60,C:50,D:40,E:30},CS:{'A*':75,A:65,B:55,C:45,D:35,E:25},Chemistry:{'A*':80,A:70,B:60,C:50,D:40,E:30},Physics:{'A*':80,A:70,B:60,C:50,D:40,E:30},Economics:{'A*':75,A:65,B:55,C:45,D:35,E:25} };
@@ -78,9 +77,8 @@ function LoginScreen({onAuth}) {
     const {data,error:aE}=await supabase.auth.signInWithPassword({email,password:pw});
     if (aE) { setLoading(false); setErr(aE.message); setStatus('idle'); return; }
     const {data:prof}=await supabase.from('user_profiles').select('*').eq('id',data.user.id).single();
-    const isAdmin=prof?.is_admin||ADMIN_EMAILS.includes(data.user.email);
+    const isAdmin=prof?.is_admin===true;
     if (!isAdmin) { await supabase.auth.signOut(); setLoading(false); setStatus('denied'); setTimeout(()=>setStatus('idle'),3000); return; }
-    if (!prof?.is_admin) await supabase.from('user_profiles').update({is_admin:true}).eq('id',data.user.id);
     setStatus('ok');
     setTimeout(()=>onAuth(data.user,{...prof,is_admin:true}),600);
   };

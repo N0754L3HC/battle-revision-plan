@@ -2150,8 +2150,34 @@ function Resources({subjects,uid,C,font,rag,setRag}) {
 }
 
 // ── Account ────────────────────────────────────────────────────────────────
-function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,font}) {
+function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,font,examSched}) {
   const [analyticsConsent, setAnalyticsConsent] = useState(()=>ls.get(`rbp_analytics_${uid}`,true));
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailState, setEmailState] = useState('idle'); // 'idle'|'sent'|'error'
+  const [emailMsg, setEmailMsg] = useState('');
+
+  const sendSchedule = async () => {
+    if (!user?.email) return;
+    setEmailSending(true); setEmailState('idle'); setEmailMsg('');
+    const today = new Date().toISOString().split('T')[0];
+    const exams = subjects.flatMap(s =>
+      (examSched[s.id] || []).map(e => ({ subject: s.name, ...e }))
+    ).filter(e => e.date >= today).sort((a, b) => a.date.localeCompare(b.date));
+    try {
+      const r = await fetch('/api/send-schedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email, exams }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Failed');
+      setEmailState('sent');
+    } catch (err) {
+      setEmailState('error'); setEmailMsg(err.message);
+    } finally {
+      setEmailSending(false);
+    }
+  };
 
   const toggleConsent = async (v) => {
     setAnalyticsConsent(v);
@@ -2226,6 +2252,37 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
           </button>
         </div>
       </div>
+
+      {user && (
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Exam schedule email</div>
+        <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginBottom:12}}>
+          Send your full exam timetable to <span style={{color:C.text,fontWeight:500}}>{user.email}</span>.
+        </div>
+        {emailState==='sent'&&(
+          <div style={{background:'rgba(74,222,128,0.07)',border:'1px solid rgba(74,222,128,0.2)',
+            borderRadius:8,padding:'10px 14px',marginBottom:12,fontSize:13,color:C.success}}>
+            Sent — check your inbox.
+          </div>
+        )}
+        {emailState==='error'&&(
+          <div style={{background:'rgba(239,68,68,0.07)',border:'1px solid rgba(239,68,68,0.2)',
+            borderRadius:8,padding:'10px 14px',marginBottom:12,fontSize:13,color:C.danger}}>
+            {emailMsg||'Email service not available yet.'}
+          </div>
+        )}
+        <button onClick={sendSchedule} disabled={emailSending||emailState==='sent'}
+          style={{width:'100%',padding:'10px',
+            background:emailState==='sent'?C.card2:C.accentSoft,
+            border:`1px solid ${emailState==='sent'?C.border:C.accent}`,
+            borderRadius:8,color:emailState==='sent'?C.muted:C.accent,
+            fontSize:13,fontWeight:600,fontFamily:font,
+            cursor:emailSending||emailState==='sent'?'not-allowed':'pointer',
+            transition:'background 0.15s'}}>
+          {emailSending?'Sending…':emailState==='sent'?'Sent ✓':'Email me my schedule'}
+        </button>
+      </div>
+      )}
 
       <button onClick={onSignOut}
         style={{width:'100%',padding:'12px',background:'transparent',
