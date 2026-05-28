@@ -1367,102 +1367,232 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
     return ss.length ? Math.round(ss.reduce((a,x)=>a+x.pct,0)/ss.length) : null;
   };
 
+  // ── Hero helpers ──────────────────────────────────────────────────────────
+  const today0 = new Date(); today0.setHours(0,0,0,0);
+  const allUpcoming = subjects.flatMap(s=>(examSched[s.id]||[]).map(e=>({
+    ...e, subjectName:s.name, subjectColor:s.color,
+    days: Math.ceil((new Date(e.date)-today0)/86400000),
+  }))).filter(e=>e.days>=0).sort((a,b)=>a.days-b.days);
+  const nextExam = allUpcoming[0]||null;
+
+  const shortSubj = n => n==='Further Mathematics'||n==='Further Maths'?'FM':n==='Computer Science'?'CS':n.length>9?n.slice(0,8)+'…':n;
+  const shortPaper = p => {
+    if (/Core Pure.*1/i.test(p)) return 'CP1';
+    if (/Core Pure.*2/i.test(p)) return 'CP2';
+    if (/Decision/i.test(p)) return 'D1';
+    if (/Mechanics.*1/i.test(p)) return 'M1';
+    if (/Statistics.*1/i.test(p)) return 'S1';
+    const m = p.match(/Paper\s*(\d)/i)||p.match(/Component\s*(\d)/i);
+    return m ? 'P'+m[1] : p.slice(0,3);
+  };
+  const urgencyCol = d => d<=7?'#ef4444':d<=14?'#f97316':'#22c55e';
+  const urgencyBg  = d => d<=7?'rgba(239,68,68,0.08)':d<=14?'rgba(249,115,22,0.08)':'rgba(34,197,94,0.06)';
+  const urgencyBorder = d => d<=7?'rgba(239,68,68,0.3)':d<=14?'rgba(249,115,22,0.3)':'rgba(34,197,94,0.25)';
+
+  const hour = new Date().getHours();
+  const greeting = hour<5?'Night ops':hour<12?'Morning briefing':hour<17?'Afternoon briefing':'Evening briefing';
+  const statusLine = br.total>=80?'Battle ready. Maintain the standard.'
+    :br.total>=60?'Solid progress. Keep the momentum.'
+    :br.total>=40?'Building form. Step it up.'
+    :'Time to get serious. Start logging.';
+
   return (
     <div>
-      <div style={{marginBottom:20}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>Analytics</div>
-        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Performance Dashboard</h1>
-        <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>Track your scores and readiness across all subjects.</p>
+      {/* ── Hero command card ─────────────────────────────────────────────── */}
+      <div style={{
+        position:'relative',overflow:'hidden',
+        background:`linear-gradient(140deg, ${C.accent}1a 0%, ${C.surface} 55%)`,
+        border:`1px solid ${C.accent}35`,
+        borderRadius:16,padding:'20px 20px 16px',marginBottom:14,
+      }}>
+        {/* Top accent stripe */}
+        <div style={{position:'absolute',top:0,left:0,right:0,height:3,
+          background:`linear-gradient(90deg,${C.accent},${C.accent}55,transparent)`}}/>
+        {/* Decorative circle glow */}
+        <div style={{position:'absolute',top:-40,right:-40,width:160,height:160,
+          borderRadius:'50%',background:`${C.accent}0c`,pointerEvents:'none'}}/>
+
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',position:'relative'}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:10,fontWeight:700,color:C.accent,letterSpacing:1.2,textTransform:'uppercase',marginBottom:6}}>
+              {greeting}
+            </div>
+            <div style={{fontSize:22,fontWeight:900,color:C.text,lineHeight:1.15,marginBottom:4}}>
+              A-Level 2026
+            </div>
+            <div style={{fontSize:13,color:C.muted}}>{statusLine}</div>
+          </div>
+          {/* Big readiness number */}
+          <div style={{textAlign:'center',flexShrink:0,marginLeft:20,
+            background:`${br.labelColor}12`,border:`1px solid ${br.labelColor}30`,
+            borderRadius:12,padding:'10px 16px'}}>
+            <div style={{fontSize:42,fontWeight:900,color:br.labelColor,lineHeight:1,fontVariantNumeric:'tabular-nums'}}>
+              {br.total}
+            </div>
+            <div style={{fontSize:10,fontWeight:700,color:br.labelColor,letterSpacing:0.8,marginTop:2}}>
+              {br.label.toUpperCase()}
+            </div>
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div style={{display:'flex',gap:20,marginTop:14,paddingTop:12,
+          borderTop:`1px solid ${C.border}`,flexWrap:'wrap',alignItems:'center'}}>
+          {nextExam&&(
+            <div style={{display:'flex',alignItems:'center',gap:7}}>
+              <span style={{fontSize:15}}>⏱</span>
+              <div>
+                <div style={{fontSize:10,color:C.muted,textTransform:'uppercase',letterSpacing:0.5}}>Next exam</div>
+                <div style={{fontSize:13,fontWeight:700,color:urgencyCol(nextExam.days)}}>
+                  {shortSubj(nextExam.subjectName)} {shortPaper(nextExam.paper)} — {nextExam.days===0?'TODAY':`${nextExam.days}d`}
+                </div>
+              </div>
+            </div>
+          )}
+          <div style={{display:'flex',alignItems:'center',gap:7}}>
+            <span style={{fontSize:15}}>📋</span>
+            <div>
+              <div style={{fontSize:10,color:C.muted,textTransform:'uppercase',letterSpacing:0.5}}>Papers logged</div>
+              <div style={{fontSize:13,fontWeight:700,color:C.text}}>{scores.length}</div>
+            </div>
+          </div>
+          <button onClick={onQuickLog}
+            style={{marginLeft:'auto',background:C.accent,border:'none',color:'#fff',
+              padding:'8px 18px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:700,
+              fontFamily:font,boxShadow:`0 3px 12px ${C.accent}44`,flexShrink:0}}>
+            + Log paper
+          </button>
+        </div>
       </div>
 
-      {/* Gauge + subject cards */}
-      <div style={{display:'grid',gridTemplateColumns:'200px 1fr',gap:12,marginBottom:16}}>
-        {/* Battle readiness */}
-        <div style={{background:C.surface,border:`1px solid ${br.labelColor}40`,borderRadius:10,
-          padding:'16px 12px',display:'flex',flexDirection:'column',alignItems:'center'}}>
-          <div style={{fontSize:11,fontWeight:600,color:C.muted,letterSpacing:0.5,textTransform:'uppercase',marginBottom:8}}>
-            Battle Readiness
+      {/* ── Exam countdown strip ──────────────────────────────────────────── */}
+      {allUpcoming.length>0&&(
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:0.8,textTransform:'uppercase',marginBottom:8}}>
+            Upcoming exams
           </div>
-          <BattleGauge score={br.total} label={br.label} labelColor={br.labelColor} textColor={C.text} mutedColor={C.muted}/>
-          <div style={{width:'100%',marginTop:12}}>
-            {[
-              ['Papers',    br.paperComp, 20, '#3b82f6'],
-              ['Avg score', br.scoreComp, 40, '#8b5cf6'],
-              ['Error ctrl',br.errorComp, 20, '#f97316'],
-              ['Plan done', 0,            20, '#22c55e'],
-            ].map(([l,v,mx,c])=>(
-              <div key={l} style={{display:'flex',alignItems:'center',gap:6,marginBottom:5}}>
-                <div style={{fontSize:12,color:C.muted,width:58,flexShrink:0}}>{l}</div>
-                <div style={{flex:1,height:4,borderRadius:2,background:C.border,overflow:'hidden'}}>
-                  <div style={{height:'100%',width:`${(v/mx)*100}%`,background:c,borderRadius:2,transition:'width 1s ease'}}/>
+          <div style={{display:'flex',gap:8,overflowX:'auto',paddingBottom:4}}>
+            {allUpcoming.slice(0,10).map((e,i)=>(
+              <div key={i} style={{
+                background:urgencyBg(e.days),
+                border:`1px solid ${urgencyBorder(e.days)}`,
+                borderRadius:10,padding:'8px 11px',
+                minWidth:70,maxWidth:80,textAlign:'center',flexShrink:0,
+              }}>
+                <div style={{fontSize:e.days===0?14:22,fontWeight:900,color:urgencyCol(e.days),lineHeight:1}}>
+                  {e.days===0?'TODAY':e.days}
                 </div>
-                <div style={{fontSize:12,color:c,width:18,textAlign:'right'}}>{v}</div>
+                {e.days!==0&&<div style={{fontSize:9,color:C.muted,marginBottom:3}}>days</div>}
+                <div style={{fontSize:11,fontWeight:700,color:e.subjectColor,marginTop:e.days===0?4:0}}>{shortSubj(e.subjectName)}</div>
+                <div style={{fontSize:10,color:C.muted}}>{shortPaper(e.paper)}</div>
               </div>
             ))}
           </div>
         </div>
+      )}
 
-        {/* Per-subject cards */}
-        <div style={{display:'flex',flexDirection:'column',gap:8}}>
-          {subjects.map(s=>{
-            const avg      = subjectAvg(s.name);
-            const grade    = avg!=null ? getSubjectGrade(avg, s.name, GRADE_BOUNDS) : null;
-            const cnt      = scores.filter(x=>x.subject===s.name).length;
-            const target   = targets[s.name]||'A*';
-            const targetPct = (s.gradeBoundaries?.[target])||80;
-            const progress  = avg!=null ? Math.min(100,Math.round((avg/targetPct)*100)) : 0;
-            const ss=[...scores].filter(x=>x.subject===s.name).reverse();
-            const trend=ss.length>=2 ? ss[ss.length-1].pct - ss[ss.length-2].pct : null;
-            return (
-              <div key={s.name} style={{background:C.surface,border:`1px solid ${s.color}40`,borderRadius:10,padding:'12px 16px'}}>
-                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
-                  <div>
-                    <div style={{fontSize:12,color:s.color,fontWeight:600,textTransform:'uppercase',letterSpacing:0.3}}>{s.name}</div>
-                    <div style={{display:'flex',alignItems:'baseline',gap:6,marginTop:2}}>
-                      <span style={{fontSize:28,fontWeight:900,color:grade?gradeColor(grade):'#888'}}>{grade||'—'}</span>
-                      {avg!=null&&<span style={{fontSize:15,color:C.muted}}>{avg}% avg</span>}
-                      {trend!=null&&(
-                        <span style={{fontSize:14,color:trend>=0?'#00E676':'#FF3D00'}}>
-                          {trend>=0?'▲':'▼'}{Math.abs(trend)}%
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div style={{textAlign:'right'}}>
-                    <div style={{fontSize:12,color:C.muted,marginBottom:4}}>
-                      {cnt} paper{cnt!==1?'s':''} · Target:
-                      <select value={target} onChange={e=>setTargets(p=>({...p,[s.name]:e.target.value}))}
-                        style={{background:'transparent',border:'none',color:gradeColor(target),
-                          fontSize:13,fontWeight:700,fontFamily:'inherit',cursor:'pointer',outline:'none',marginLeft:4}}>
-                        {['A*','A','B','C'].map(g=><option key={g} value={g}>{g}</option>)}
-                      </select>
-                    </div>
-                    <div style={{display:'flex',alignItems:'center',gap:6,justifyContent:'flex-end'}}>
-                      <div style={{width:80,height:4,borderRadius:2,background:C.border,overflow:'hidden'}}>
-                        <div style={{height:'100%',width:`${progress}%`,background:s.color,borderRadius:2,transition:'width 1s ease'}}/>
+      {/* ── Battle readiness gauge ───────────────────────────────────────── */}
+      <div style={{background:C.surface,border:`1px solid ${br.labelColor}30`,borderRadius:12,
+        padding:'16px 18px',marginBottom:12,display:'flex',gap:20,alignItems:'center',flexWrap:'wrap'}}>
+        <div style={{display:'flex',flexDirection:'column',alignItems:'center',flexShrink:0}}>
+          <div style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:0.8,textTransform:'uppercase',marginBottom:6}}>Battle Readiness</div>
+          <BattleGauge score={br.total} label={br.label} labelColor={br.labelColor} textColor={C.text} mutedColor={C.muted}/>
+        </div>
+        <div style={{flex:1,minWidth:160}}>
+          {[
+            ['Papers',    br.paperComp, 20, '#3b82f6'],
+            ['Avg score', br.scoreComp, 40, '#8b5cf6'],
+            ['Error ctrl',br.errorComp, 20, '#f97316'],
+            ['Plan done', 0,            20, '#22c55e'],
+          ].map(([l,v,mx,c])=>(
+            <div key={l} style={{display:'flex',alignItems:'center',gap:8,marginBottom:7}}>
+              <div style={{fontSize:12,color:C.muted,width:62,flexShrink:0}}>{l}</div>
+              <div style={{flex:1,height:5,borderRadius:3,background:C.border,overflow:'hidden'}}>
+                <div style={{height:'100%',width:`${(v/mx)*100}%`,background:c,borderRadius:3,transition:'width 1.2s ease'}}/>
+              </div>
+              <div style={{fontSize:12,fontWeight:600,color:c,width:20,textAlign:'right'}}>{v}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Per-subject cards ─────────────────────────────────────────────── */}
+      <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:16}}>
+        {subjects.map(s=>{
+          const avg      = subjectAvg(s.name);
+          const grade    = avg!=null ? getSubjectGrade(avg, s.name, GRADE_BOUNDS) : null;
+          const cnt      = scores.filter(x=>x.subject===s.name).length;
+          const target   = targets[s.name]||'A*';
+          const targetPct = (s.gradeBoundaries?.[target])||80;
+          const progress  = avg!=null ? Math.min(100,Math.round((avg/targetPct)*100)) : 0;
+          const ss=[...scores].filter(x=>x.subject===s.name).reverse();
+          const trend=ss.length>=2 ? ss[ss.length-1].pct - ss[ss.length-2].pct : null;
+          const nextE = allUpcoming.find(e=>e.subjectName===s.name);
+          return (
+            <div key={s.name} style={{
+              background:C.surface,
+              borderRadius:10,padding:'12px 16px',
+              borderLeft:`3px solid ${s.color}`,
+              border:`1px solid ${C.border}`,
+              borderLeftWidth:3,borderLeftColor:s.color,
+              boxShadow:`0 2px 8px rgba(0,0,0,0.05)`,
+            }}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
+                <div>
+                  <div style={{display:'flex',alignItems:'center',gap:8}}>
+                    <div style={{fontSize:12,color:s.color,fontWeight:700,textTransform:'uppercase',letterSpacing:0.3}}>{s.name}</div>
+                    {nextE&&(
+                      <div style={{fontSize:11,fontWeight:700,padding:'1px 7px',borderRadius:10,
+                        background:urgencyBg(nextE.days),color:urgencyCol(nextE.days),
+                        border:`1px solid ${urgencyBorder(nextE.days)}`}}>
+                        {nextE.days===0?'TODAY':`${nextE.days}d`}
                       </div>
-                      <span style={{fontSize:13,color:progress>=100?'#00E676':s.color}}>{progress}%</span>
-                    </div>
+                    )}
+                  </div>
+                  <div style={{display:'flex',alignItems:'baseline',gap:6,marginTop:2}}>
+                    <span style={{fontSize:30,fontWeight:900,color:grade?gradeColor(grade):'#888',lineHeight:1}}>{grade||'—'}</span>
+                    {avg!=null&&<span style={{fontSize:14,color:C.muted}}>{avg}% avg</span>}
+                    {trend!=null&&(
+                      <span style={{fontSize:13,fontWeight:700,color:trend>=0?'#22c55e':'#ef4444'}}>
+                        {trend>=0?'▲':'▼'}{Math.abs(trend)}%
+                      </span>
+                    )}
                   </div>
                 </div>
-                {ss.length>=2&&(()=>{
-                  const minP=Math.min(...ss.map(d=>d.pct))-5;
-                  const maxP=Math.min(100,Math.max(...ss.map(d=>d.pct))+5);
-                  const W2=200,H2=28;
-                  const x2=i=>(i/(ss.length-1))*W2;
-                  const y2=v=>H2-(((v-minP)/(maxP-minP))*H2);
-                  const poly2=ss.map((d,i)=>`${x2(i)},${y2(d.pct)}`).join(' ');
-                  return (
-                    <svg viewBox={`0 0 ${W2} ${H2}`} style={{width:'100%',height:28,display:'block',marginTop:4}}>
-                      <polyline points={poly2} fill="none" stroke={s.color} strokeWidth="1.5" strokeLinejoin="round" opacity="0.6"/>
-                      {ss.map((d,i)=><circle key={i} cx={x2(i)} cy={y2(d.pct)} r="2.5" fill={s.color} opacity="0.8"/>)}
-                    </svg>
-                  );
-                })()}
+                <div style={{textAlign:'right'}}>
+                  <div style={{fontSize:12,color:C.muted,marginBottom:6}}>
+                    {cnt} paper{cnt!==1?'s':''} · Target:
+                    <select value={target} onChange={e=>setTargets(p=>({...p,[s.name]:e.target.value}))}
+                      style={{background:'transparent',border:'none',color:gradeColor(target),
+                        fontSize:13,fontWeight:700,fontFamily:'inherit',cursor:'pointer',outline:'none',marginLeft:4}}>
+                      {['A*','A','B','C'].map(g=><option key={g} value={g}>{g}</option>)}
+                    </select>
+                  </div>
+                  <div style={{display:'flex',alignItems:'center',gap:6,justifyContent:'flex-end'}}>
+                    <div style={{width:80,height:5,borderRadius:3,background:C.border,overflow:'hidden'}}>
+                      <div style={{height:'100%',width:`${progress}%`,background:s.color,borderRadius:3,transition:'width 1.2s ease'}}/>
+                    </div>
+                    <span style={{fontSize:12,fontWeight:700,color:progress>=100?'#22c55e':s.color}}>{progress}%</span>
+                  </div>
+                </div>
               </div>
-            );
-          })}
-        </div>
+              {ss.length>=2&&(()=>{
+                const minP=Math.min(...ss.map(d=>d.pct))-5;
+                const maxP=Math.min(100,Math.max(...ss.map(d=>d.pct))+5);
+                const W2=200,H2=28;
+                const x2=i=>(i/(ss.length-1))*W2;
+                const y2=v=>H2-(((v-minP)/(maxP-minP))*H2);
+                const poly2=ss.map((d,i)=>`${x2(i)},${y2(d.pct)}`).join(' ');
+                return (
+                  <svg viewBox={`0 0 ${W2} ${H2}`} style={{width:'100%',height:28,display:'block',marginTop:4}}>
+                    <polyline points={poly2} fill="none" stroke={s.color} strokeWidth="1.5" strokeLinejoin="round" opacity="0.6"/>
+                    {ss.map((d,i)=><circle key={i} cx={x2(i)} cy={y2(d.pct)} r="2.5" fill={s.color} opacity="0.8"/>)}
+                  </svg>
+                );
+              })()}
+            </div>
+          );
+        })}
       </div>
 
       {/* Score trend chart */}
