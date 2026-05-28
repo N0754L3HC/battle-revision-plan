@@ -2625,7 +2625,9 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
   const [dark,setDark]     = useState(()=>ls.get('rbp_dark',false));
   const [view,setView]     = useState('analytics');
   const [isMobile,setIsMobile] = useState(()=>window.innerWidth<768);
+  const [isWide,  setIsWide]   = useState(()=>window.innerWidth>=1024);
   const [quickLogOpen,setQuickLogOpen] = useState(false);
+  const [moreOpen,    setMoreOpen]     = useState(false);
   const [pendingAchievement,setPendingAchievement] = useState(null);
 
   const uid      = user?.id??'anon';
@@ -2647,40 +2649,46 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
   useEffect(()=>ls.set(`rbp_rag_${uid}`,rag),[rag]);
 
   useEffect(()=>{
-    const fn=()=>setIsMobile(window.innerWidth<768);
+    const fn=()=>{ setIsMobile(window.innerWidth<768); setIsWide(window.innerWidth>=1024); };
     window.addEventListener('resize',fn,{passive:true});
     return ()=>window.removeEventListener('resize',fn);
   },[]);
 
   useEffect(()=>{
-    if (isMobile&&!['analytics','tracker','exams','achievements'].includes(view)) setView('analytics');
-  },[isMobile]);
+    if (isMobile&&isWide) setMoreOpen(false);
+  },[isMobile,isWide]);
 
   // Supabase sync — load on mount, push on change
   const syncRef        = useRef(null);
   const [syncLoaded,setSyncLoaded] = useState(false);
   useEffect(()=>{
     if (!user?.id||!isSupabaseConfigured()) { setSyncLoaded(true); return; }
+    const lS=ls.get(`rbp_scores_${uid}`,[]);
+    const lE=ls.get(`rbp_errors_${uid}`,[]);
+    const lR=ls.get(`rbp_rag_${uid}`,{});
+    const lT=ls.get(`rbp_targets_${uid}`,{});
     supabase.from('user_data').select('scores,errors,rag,targets').eq('user_id',user.id).eq('profile','me').single()
       .then(({data})=>{
+        let fS=lS,fE=lE,fR=lR,fT=lT;
         if (data) {
-          setScores(prev=>{
-            const ids=new Set(prev.map(s=>s.id));
-            const merged=[...prev,...(data.scores||[]).filter(s=>!ids.has(s.id))];
-            ls.set(`rbp_scores_${uid}`,merged); return merged;
-          });
-          setErrors(prev=>{
-            const ids=new Set(prev.map(e=>e.id));
-            const merged=[...prev,...(data.errors||[]).filter(e=>!ids.has(e.id))];
-            ls.set(`rbp_errors_${uid}`,merged); return merged;
-          });
-          if (data.rag&&Object.keys(data.rag).length>0)
-            setRag(prev=>({...data.rag,...prev}));
-          if (data.targets&&Object.keys(data.targets).length>0)
-            setTargets(prev=>Object.keys(prev).length>0?prev:data.targets);
+          const sIds=new Set(lS.map(s=>s.id));
+          fS=[...lS,...(data.scores||[]).filter(s=>!sIds.has(s.id))];
+          const eIds=new Set(lE.map(e=>e.id));
+          fE=[...lE,...(data.errors||[]).filter(e=>!eIds.has(e.id))];
+          if (data.rag&&Object.keys(data.rag).length>0) fR={...data.rag,...lR};
+          if (data.targets&&Object.keys(data.targets).length>0&&!Object.keys(lT).length) fT=data.targets;
+          setScores(fS); ls.set(`rbp_scores_${uid}`,fS);
+          setErrors(fE); ls.set(`rbp_errors_${uid}`,fE);
+          setRag(fR);    ls.set(`rbp_rag_${uid}`,fR);
+          setTargets(fT); ls.set(`rbp_targets_${uid}`,fT);
         }
+        supabase.from('user_data').upsert(
+          {user_id:user.id,profile:'me',scores:fS,errors:fE,rag:fR,targets:fT,updated_at:new Date().toISOString()},
+          {onConflict:'user_id,profile'}
+        );
         setSyncLoaded(true);
-      });
+      })
+      .catch(()=>setSyncLoaded(true));
   },[user?.id]);
   useEffect(()=>{
     if (!user?.id||!isSupabaseConfigured()||!syncLoaded) return;
@@ -2734,6 +2742,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
 
   const unlockedIds=ls.get(`rbp_ach_${uid}`,[]);
 
+  const NAV_ICONS={analytics:'📊',tracker:'📋',exams:'📅',plan:'🗓',achievements:'🏆',tips:'💡',resources:'🎯',account:'👤'};
   const DESKTOP_NAV=[
     {id:'analytics',label:'Analytics'},
     {id:'tracker',label:'Tracker'},
@@ -2749,6 +2758,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
 
   return (
     <div style={{minHeight:'100vh',background:C.bg,fontFamily:font,color:C.text}}>
+      {!isWide&&(
       <nav style={{position:'fixed',top:0,left:0,right:0,zIndex:100,
         background:C.nav,backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
         borderBottom:`1px solid ${C.border}`,height:54}}>
@@ -2797,8 +2807,68 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
           </div>
         </div>
       </nav>
+      )}
+      {isWide&&(
+      <aside style={{position:'fixed',left:0,top:0,bottom:0,width:216,zIndex:100,
+        background:C.nav,backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
+        borderRight:`1px solid ${C.border}`,display:'flex',flexDirection:'column'}}>
+        <div style={{padding:'22px 20px 18px',borderBottom:`1px solid ${C.border}`}}>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <div style={{width:32,height:32,borderRadius:9,background:C.accent,display:'flex',
+              alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:900,color:'#fff',
+              fontFamily:"'JetBrains Mono',monospace"}}>A*</div>
+            <span style={{fontSize:15,fontWeight:700,color:C.text,letterSpacing:0.1}}>Battle Plan</span>
+          </div>
+        </div>
+        <div style={{flex:1,overflowY:'auto',padding:'8px 10px'}}>
+          {DESKTOP_NAV.filter(n=>n.id!=='account').map(n=>(
+            <button key={n.id} onClick={()=>setView(n.id)} style={{
+              width:'100%',textAlign:'left',padding:'10px 12px',
+              background:view===n.id?C.accentSoft:'transparent',
+              border:'none',borderRadius:8,
+              color:view===n.id?C.accent:C.muted,
+              fontSize:13,fontWeight:view===n.id?700:400,
+              fontFamily:font,cursor:'pointer',marginBottom:2,
+              display:'flex',alignItems:'center',gap:10,position:'relative',
+              transition:'color 0.12s,background 0.12s'
+            }}>
+              <span style={{fontSize:15,lineHeight:1,width:18,textAlign:'center',flexShrink:0}}>{NAV_ICONS[n.id]}</span>
+              {n.label}
+              {n.id==='achievements'&&unlockedIds.length>0&&(
+                <span style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',
+                  width:6,height:6,borderRadius:'50%',background:TIER_COLOR.gold}}/>
+              )}
+            </button>
+          ))}
+        </div>
+        <div style={{padding:'10px',borderTop:`1px solid ${C.border}`,display:'flex',flexDirection:'column',gap:4}}>
+          <button onClick={()=>setView('account')} style={{
+            width:'100%',textAlign:'left',padding:'10px 12px',
+            background:view==='account'?C.accentSoft:'transparent',
+            border:'none',borderRadius:8,
+            color:view==='account'?C.accent:C.muted,
+            fontSize:13,fontWeight:view==='account'?700:400,
+            fontFamily:font,cursor:'pointer',
+            display:'flex',alignItems:'center',gap:10,transition:'color 0.12s,background 0.12s'
+          }}>
+            <span style={{fontSize:15,lineHeight:1,width:18,textAlign:'center',flexShrink:0}}>{NAV_ICONS.account}</span>
+            Account
+          </button>
+          <button onClick={()=>{const n=!dark;setDark(n);ls.set('rbp_dark',n);}} style={{
+            width:'100%',textAlign:'left',padding:'9px 12px',
+            background:'transparent',border:`1px solid ${C.border}`,borderRadius:8,
+            color:C.muted,fontSize:11,fontWeight:600,fontFamily:font,cursor:'pointer',
+            display:'flex',alignItems:'center',gap:8,letterSpacing:0.4,textTransform:'uppercase'
+          }}>
+            {dark?'☀ Light':'☾ Dark'}
+          </button>
+        </div>
+      </aside>
+      )}
 
-      <main style={{maxWidth:740,margin:'0 auto',padding:`${54+20}px 16px ${isMobile?82:32}px`}}>
+      <main style={isWide
+        ?{marginLeft:216,padding:'32px 40px',minHeight:'100vh'}
+        :{maxWidth:740,margin:'0 auto',padding:`${54+20}px 16px ${isMobile?82:32}px`}}>
         {view==='analytics'    && <Analytics    {...vp} onQuickLog={()=>setQuickLogOpen(true)}/>}
         {view==='tracker'      && <Tracker      {...vp} setScores={setScores} setErrors={setErrors} uid={uid}/>}
         {view==='exams'        && <Exams        {...vp}/>}
@@ -2811,18 +2881,57 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
       </main>
 
       {isMobile&&(
+        <>
+        {moreOpen&&(
+          <div style={{position:'fixed',inset:0,zIndex:105,background:'rgba(0,0,0,0.45)'}}
+            onClick={()=>setMoreOpen(false)}>
+            <div style={{position:'absolute',bottom:56,left:0,right:0,
+              background:C.surface,borderRadius:'18px 18px 0 0',
+              border:`1px solid ${C.border}`,borderBottom:'none',
+              padding:'6px 0 8px'}}
+              onClick={e=>e.stopPropagation()}>
+              <div style={{width:32,height:3,borderRadius:2,background:C.border,
+                margin:'4px auto 12px'}}/>
+              {[{id:'plan',label:'Study Plan',icon:'🗓'},{id:'tips',label:'Tips & Routine',icon:'💡'},
+                {id:'resources',label:'Resources',icon:'🎯'},{id:'account',label:'Account',icon:'👤'}]
+                .map(n=>(
+                <button key={n.id} onClick={()=>{setView(n.id);setMoreOpen(false);}} style={{
+                  width:'100%',textAlign:'left',padding:'14px 20px',
+                  background:'transparent',border:'none',
+                  color:view===n.id?C.accent:C.text,
+                  fontSize:15,fontWeight:view===n.id?700:400,fontFamily:font,cursor:'pointer',
+                  display:'flex',alignItems:'center',gap:14}}>
+                  <span style={{fontSize:19,lineHeight:1,width:24,textAlign:'center',flexShrink:0}}>{n.icon}</span>
+                  {n.label}
+                  {n.id==='account'&&unlockedIds.length>0&&(
+                    <span style={{marginLeft:'auto',width:6,height:6,borderRadius:'50%',background:TIER_COLOR.gold}}/>
+                  )}
+                </button>
+              ))}
+              <div style={{height:1,background:C.border,margin:'6px 0'}}/>
+              <button onClick={()=>{const n=!dark;setDark(n);ls.set('rbp_dark',n);setMoreOpen(false);}} style={{
+                width:'100%',textAlign:'left',padding:'14px 20px',
+                background:'transparent',border:'none',
+                color:C.muted,fontSize:14,fontFamily:font,cursor:'pointer',
+                display:'flex',alignItems:'center',gap:14}}>
+                <span style={{fontSize:17,lineHeight:1,width:24,textAlign:'center',flexShrink:0}}>{dark?'☀':'☾'}</span>
+                {dark?'Light mode':'Dark mode'}
+              </button>
+            </div>
+          </div>
+        )}
         <nav style={{position:'fixed',bottom:0,left:0,right:0,zIndex:100,
           background:C.nav,backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
-          borderTop:`1px solid ${C.border}`,display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',height:56}}>
+          borderTop:`1px solid ${C.border}`,display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr 1fr',height:56}}>
           {[{id:'analytics',label:'Home'},{id:'tracker',label:'Tracker'},{id:'exams',label:'Exams'},{id:'achievements',label:'Awards'}]
             .map(n=>(
-            <button key={n.id} onClick={()=>setView(n.id)}
+            <button key={n.id} onClick={()=>{setView(n.id);setMoreOpen(false);}}
               style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
                 gap:0,background:'transparent',border:'none',cursor:'pointer',
-                color:view===n.id?C.accent:C.muted,fontSize:10,fontFamily:font,
-                fontWeight:view===n.id?700:500,position:'relative',transition:'color 0.15s',padding:'0 4px',
+                color:view===n.id&&!moreOpen?C.accent:C.muted,fontSize:10,fontFamily:font,
+                fontWeight:view===n.id&&!moreOpen?700:500,position:'relative',transition:'color 0.15s',padding:'0 4px',
                 letterSpacing:0.2,
-                borderTop:`2px solid ${view===n.id?C.accent:'transparent'}`}}>
+                borderTop:`2px solid ${view===n.id&&!moreOpen?C.accent:'transparent'}`}}>
               {n.id==='achievements'&&unlockedIds.length>0&&(
                 <span style={{position:'absolute',top:6,right:8,width:6,height:6,
                   borderRadius:'50%',background:TIER_COLOR.gold}}/>
@@ -2830,7 +2939,17 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
               {n.label}
             </button>
           ))}
+          <button onClick={()=>setMoreOpen(m=>!m)}
+            style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
+              gap:0,background:'transparent',border:'none',cursor:'pointer',
+              color:moreOpen?C.accent:['plan','tips','resources','account'].includes(view)?C.accent:C.muted,
+              fontSize:10,fontFamily:font,fontWeight:moreOpen?700:500,
+              transition:'color 0.15s',padding:'0 4px',letterSpacing:0.2,
+              borderTop:`2px solid ${moreOpen?C.accent:'transparent'}`}}>
+            ···
+          </button>
         </nav>
+        </>
       )}
       {quickLogOpen&&(
         <QuickLog subjects={subjects} scores={scores} setScores={setScores}
@@ -2847,7 +2966,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
         if (!streak) return null;
         const gold = streak >= 7;
         return (
-          <div style={{position:'fixed',top:62,right:16,zIndex:95,
+          <div style={{position:'fixed',top:isWide?20:62,right:16,zIndex:95,
             display:'flex',alignItems:'center',gap:6,
             padding:'6px 12px',borderRadius:20,
             background: gold ? 'rgba(251,191,36,0.18)' : C.surface,
