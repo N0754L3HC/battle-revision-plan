@@ -1201,67 +1201,154 @@ function Onboarding({onDone,setView,C,font}) {
 }
 
 // ── Companion character ─────────────────────────────────────────────────────
-const SKIN_TONES  = ['#FDDBB4','#F1C27D','#C68642','#8D5524','#4A2912'];
-const HAIR_COLORS = ['#2C1A0E','#5C3A1E','#8B5E3C','#C9A96E','#3A3A3A'];
+const SKIN_TONES   = ['#FDDBB4','#F0C185','#C68642','#8D5524','#4A2912'];
+const HAIR_COLORS  = ['#1a0a00','#3d1f0c','#7a4520','#c28a3a','#e8c86a','#c8c0b8','#cc2828','#4a2ee0'];
+const EYE_COLORS   = ['#4a2c17','#8b6914','#1a6b2a','#1a5090','#5a5f64'];
+const OUTFIT_COLORS = ['#4a90d9','#e87c3e','#5cb85c','#9b59b6','#e74c3c','#2c3e50'];
 
-function CompanionAvatar({skin,hair,hairStyle=0,mood,size=72}) {
-  const ST = SKIN_TONES[skin??0];
-  const HC = HAIR_COLORS[hair??0];
-  const hs = hairStyle??0;
+const HAIR_STYLE_LABELS = ['Buzz','Bob','Long','Bun','Curly','Ponytail'];
+const ACCESSORY_LABELS  = ['None','Glasses','Cat-eye','Headband'];
+
+function CompanionAvatar({skin=0,hair=0,hairStyle=0,eyeColor=0,outfitColor=0,accessory=0,mood='neutral',size=80}) {
+  const ST = SKIN_TONES[skin]  ?? SKIN_TONES[0];
+  const HC = HAIR_COLORS[hair] ?? HAIR_COLORS[0];
+  const EC = EYE_COLORS[eyeColor] ?? EYE_COLORS[0];
+  const OC = OUTFIT_COLORS[outfitColor] ?? OUTFIT_COLORS[0];
+  // Slightly darken outfit for collar/shadow
+  const OC2 = OC + 'cc';
+
+  // Excited eyes squint slightly
+  const lidY = mood === 'excited' ? 45 : 42;
+
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100">
-      <ellipse cx="50" cy="97" rx="26" ry="9" fill={ST}/>
-      <rect x="37" y="82" width="26" height="15" rx="6" fill={ST}/>
-      <rect x="44" y="78" width="12" height="9" rx="4" fill={ST}/>
-      <ellipse cx="50" cy="50" rx="30" ry="33" fill={ST}/>
-      {hs===0&&<path d="M22 50 Q22 17 50 13 Q78 17 78 50 Q76 19 50 17 Q24 19 22 50Z" fill={HC}/>}
-      {hs===1&&<>
-        <path d="M20 53 Q20 13 50 9 Q80 13 80 53 L81 68 Q78 18 50 16 Q22 18 19 68Z" fill={HC}/>
-        <rect x="18" y="60" width="9" height="24" rx="4.5" fill={HC}/>
-        <rect x="73" y="60" width="9" height="24" rx="4.5" fill={HC}/>
-      </>}
-      {hs===2&&<path d="M20 53 Q20 13 50 9 Q80 13 80 53 L83 88 Q76 64 50 66 Q24 64 17 88Z" fill={HC}/>}
-      <ellipse cx="20" cy="53" rx="5" ry="7" fill={ST}/>
-      <ellipse cx="80" cy="53" rx="5" ry="7" fill={ST}/>
-      <ellipse cx="37" cy="48" rx="7" ry="6.5" fill="white"/>
-      <ellipse cx="63" cy="48" rx="7" ry="6.5" fill="white"/>
+    <svg width={size} height={Math.round(size*1.15)} viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg">
+
+      {/* ── OUTFIT / SHOULDERS ── */}
+      <path d="M29 87 Q22 85 19 91 L15 115 L85 115 L81 91 Q78 85 71 87 L61 80 Q56 77 50 77 Q44 77 39 80Z" fill={OC}/>
+      {/* Collar detail */}
+      <path d="M43 80 Q50 86 57 80 Q53 78 50 78 Q47 78 43 80Z" fill={OC2}/>
+
+      {/* ── NECK ── */}
+      <rect x="43" y="76" width="14" height="12" rx="5" fill={ST}/>
+
+      {/* ── EARS ── */}
+      <ellipse cx="20" cy="50" rx="5.5" ry="6.5" fill={ST}/>
+      <ellipse cx="80" cy="50" rx="5.5" ry="6.5" fill={ST}/>
+      <ellipse cx="20" cy="50" rx="3.2" ry="4" fill={ST} opacity="0.55"/>
+      <ellipse cx="80" cy="50" rx="3.2" ry="4" fill={ST} opacity="0.55"/>
+
+      {/* ── HEAD ── */}
+      <ellipse cx="50" cy="48" rx="30" ry="32" fill={ST}/>
+
+      {/* ── HAIR (drawn behind eyes but in front of head) ── */}
+      {hairStyle===0&&(
+        <path d="M21 48 Q21 16 50 13 Q79 16 79 48 Q77 18 50 16 Q23 18 21 48Z" fill={HC}/>
+      )}
+      {hairStyle===1&&(<>
+        <path d="M21 48 Q21 16 50 13 Q79 16 79 48 Q77 18 50 16 Q23 18 21 48Z" fill={HC}/>
+        <path d="M19 57 L14 92 Q18 95 22 92 L23 57Z" fill={HC}/>
+        <path d="M81 57 L86 92 Q82 95 78 92 L77 57Z" fill={HC}/>
+      </>)}
+      {hairStyle===2&&(<>
+        <path d="M21 48 Q21 16 50 13 Q79 16 79 48 Q77 18 50 16 Q23 18 21 48Z" fill={HC}/>
+        <path d="M18 54 L11 115 Q16 115 20 113 L23 54Z" fill={HC}/>
+        <path d="M82 54 L89 115 Q84 115 80 113 L77 54Z" fill={HC}/>
+      </>)}
+      {hairStyle===3&&(<>
+        <path d="M23 51 Q23 19 50 17 Q77 19 77 51 Q75 21 50 20 Q25 21 23 51Z" fill={HC}/>
+        <circle cx="50" cy="7" r="10" fill={HC}/>
+        <ellipse cx="50" cy="15" rx="7" ry="3" fill={HC}/>
+        {/* hair tie */}
+        <ellipse cx="50" cy="15" rx="5" ry="2" fill={HC} opacity="0.6"/>
+      </>)}
+      {hairStyle===4&&(<>
+        <ellipse cx="50" cy="27" rx="32" ry="20" fill={HC}/>
+        <circle cx="22" cy="39" r="10" fill={HC}/>
+        <circle cx="78" cy="39" r="10" fill={HC}/>
+        <circle cx="50" cy="12" r="9"  fill={HC}/>
+        <circle cx="33" cy="16" r="8"  fill={HC}/>
+        <circle cx="67" cy="16" r="8"  fill={HC}/>
+      </>)}
+      {hairStyle===5&&(<>
+        <path d="M23 51 Q23 19 50 17 Q77 19 77 51 Q75 21 50 20 Q25 21 23 51Z" fill={HC}/>
+        {/* ponytail to the right */}
+        <path d="M67 20 Q85 30 80 70 Q74 86 70 82 Q76 62 72 44 Q68 30 67 20Z" fill={HC}/>
+      </>)}
+
+      {/* ── EYES (white + iris + pupil + highlight) ── */}
+      {/* Left eye */}
+      <ellipse cx="36" cy="47" rx="9" ry="9.5" fill="white"/>
+      <path d={`M27 47 Q36 ${lidY} 45 47`} fill={ST}/>
+      <circle cx="36" cy="49" r="6" fill={EC}/>
+      <circle cx="36" cy="49" r="3.8" fill="#0a0a0a"/>
+      <circle cx="38" cy="47" r="1.9" fill="white"/>
+      <circle cx="34.5" cy="51" r="0.9" fill="white" opacity="0.55"/>
+      {/* Right eye */}
+      <ellipse cx="64" cy="47" rx="9" ry="9.5" fill="white"/>
+      <path d={`M55 47 Q64 ${lidY} 73 47`} fill={ST}/>
+      <circle cx="64" cy="49" r="6" fill={EC}/>
+      <circle cx="64" cy="49" r="3.8" fill="#0a0a0a"/>
+      <circle cx="66" cy="47" r="1.9" fill="white"/>
+      <circle cx="62.5" cy="51" r="0.9" fill="white" opacity="0.55"/>
+
+      {/* ── EYEBROWS ── */}
       {mood==='worried'?(
         <>
-          <path d="M30 39 Q37 34 44 39" stroke={HC} strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-          <path d="M56 39 Q63 34 70 39" stroke={HC} strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-          <circle cx="37" cy="49" r="4.5" fill="#2c2c2c"/>
-          <circle cx="63" cy="49" r="4.5" fill="#2c2c2c"/>
-          <circle cx="38.5" cy="47.5" r="1.3" fill="white"/>
-          <circle cx="64.5" cy="47.5" r="1.3" fill="white"/>
-        </>
-      ):(mood==='happy'||mood==='excited')?(
-        <>
-          <path d="M30 40 Q37 37 44 40" stroke={HC} strokeWidth="2" fill="none" strokeLinecap="round"/>
-          <path d="M56 40 Q63 37 70 40" stroke={HC} strokeWidth="2" fill="none" strokeLinecap="round"/>
-          <path d="M31 49 Q37 43 43 49" stroke="#2c2c2c" strokeWidth="3" fill="none" strokeLinecap="round"/>
-          <path d="M57 49 Q63 43 69 49" stroke="#2c2c2c" strokeWidth="3" fill="none" strokeLinecap="round"/>
-          <ellipse cx="25" cy="58" rx="7" ry="4" fill="#f9a8d4" opacity="0.4"/>
-          <ellipse cx="75" cy="58" rx="7" ry="4" fill="#f9a8d4" opacity="0.4"/>
+          <path d="M28 36 Q36 32 44 37" stroke={HC} strokeWidth="2.8" fill="none" strokeLinecap="round"/>
+          <path d="M56 37 Q64 32 72 36" stroke={HC} strokeWidth="2.8" fill="none" strokeLinecap="round"/>
         </>
       ):(
         <>
-          <path d="M30 40 Q37 37 44 40" stroke={HC} strokeWidth="2" fill="none" strokeLinecap="round"/>
-          <path d="M56 40 Q63 37 70 40" stroke={HC} strokeWidth="2" fill="none" strokeLinecap="round"/>
-          <circle cx="37" cy="49" r="4.5" fill="#2c2c2c"/>
-          <circle cx="63" cy="49" r="4.5" fill="#2c2c2c"/>
-          <circle cx="38.5" cy="47.5" r="1.3" fill="white"/>
-          <circle cx="64.5" cy="47.5" r="1.3" fill="white"/>
+          <path d="M28 37 Q36 33 44 37" stroke={HC} strokeWidth="2.8" fill="none" strokeLinecap="round"/>
+          <path d="M56 37 Q64 33 72 37" stroke={HC} strokeWidth="2.8" fill="none" strokeLinecap="round"/>
         </>
       )}
-      <path d="M48 62 Q50 66 52 62" stroke={`${ST}99`} strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-      {mood==='worried'?(
-        <path d="M42 72 Q50 68 58 72" stroke="#2c2c2c" strokeWidth="2" fill="none" strokeLinecap="round"/>
-      ):(mood==='excited')?(
-        <path d="M40 70 Q50 80 60 70" stroke="#2c2c2c" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-      ):(mood==='happy')?(
-        <path d="M41 70 Q50 79 59 70" stroke="#2c2c2c" strokeWidth="2" fill="none" strokeLinecap="round"/>
-      ):(
-        <path d="M43 71 Q50 75 57 71" stroke="#2c2c2c" strokeWidth="2" fill="none" strokeLinecap="round"/>
+
+      {/* ── NOSE ── */}
+      <circle cx="46" cy="58" r="1.4" fill={ST} opacity="0.42"/>
+      <circle cx="54" cy="58" r="1.4" fill={ST} opacity="0.42"/>
+
+      {/* ── CHEEK BLUSH ── */}
+      <ellipse cx="21" cy="60" rx="8" ry="5" fill="#f9a8d4" opacity="0.22"/>
+      <ellipse cx="79" cy="60" rx="8" ry="5" fill="#f9a8d4" opacity="0.22"/>
+
+      {/* ── MOUTH ── */}
+      {mood==='excited'&&(<>
+        <path d="M34 67 Q50 84 66 67 Q56 78 50 79 Q44 78 34 67Z" fill="#c93060"/>
+        <path d="M34 67 Q50 82 66 67" fill="white" opacity="0.85"/>
+        <line x1="50" y1="67" x2="50" y2="78" stroke="#f0c0cc" strokeWidth="0.8"/>
+      </>)}
+      {mood==='happy'&&(<>
+        <path d="M38 67 Q50 80 62 67 Q54 76 50 77 Q46 76 38 67Z" fill="#c93060"/>
+        <path d="M38 67 Q50 78 62 67" fill="white" opacity="0.85"/>
+      </>)}
+      {mood==='worried'&&(
+        <path d="M40 73 Q50 67 60 73" stroke="#996060" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+      )}
+      {mood==='neutral'&&(
+        <path d="M40 70 Q50 77 60 70 Q52 75 50 75.5 Q48 75 40 70Z" fill="#c04060" opacity="0.8"/>
+      )}
+
+      {/* ── ACCESSORIES ── */}
+      {accessory===1&&(<>
+        {/* Round glasses */}
+        <circle cx="36" cy="48" r="11.5" fill="none" stroke="#1a1a1a" strokeWidth="2.2"/>
+        <circle cx="64" cy="48" r="11.5" fill="none" stroke="#1a1a1a" strokeWidth="2.2"/>
+        <line x1="47.5" y1="48" x2="52.5" y2="48" stroke="#1a1a1a" strokeWidth="2"/>
+        <line x1="14" y1="47" x2="24.5" y2="48" stroke="#1a1a1a" strokeWidth="1.8"/>
+        <line x1="86" y1="47" x2="75.5" y2="48" stroke="#1a1a1a" strokeWidth="1.8"/>
+      </>)}
+      {accessory===2&&(<>
+        {/* Cat-eye glasses */}
+        <path d="M24.5 43 Q36 40 47.5 46 Q47.5 56 36 58 Q24.5 56 24.5 43Z" fill="none" stroke="#1a1a1a" strokeWidth="2.2"/>
+        <path d="M52.5 43 Q64 40 75.5 46 Q75.5 56 64 58 Q52.5 56 52.5 43Z" fill="none" stroke="#1a1a1a" strokeWidth="2.2"/>
+        <line x1="47.5" y1="46" x2="52.5" y2="46" stroke="#1a1a1a" strokeWidth="1.8"/>
+        <line x1="14" y1="45" x2="24.5" y2="43" stroke="#1a1a1a" strokeWidth="1.8"/>
+        <line x1="86" y1="45" x2="75.5" y2="43" stroke="#1a1a1a" strokeWidth="1.8"/>
+      </>)}
+      {accessory===3&&(
+        /* Headband */
+        <path d="M20 37 Q50 23 80 37" fill="none" stroke="#e03870" strokeWidth="7" strokeLinecap="round"/>
       )}
     </svg>
   );
@@ -1302,9 +1389,106 @@ function getCompanionMessage({mood,sessions,scores,subjects,examSched,name}) {
   return `${tod}. Even one paper a week builds real momentum over time. Let's get to work.`;
 }
 
+function CompanionCustomiser({companion,draft,setDraft,setCompanion,onSave,onCancel,C,font}) {
+  const Swatch = ({colors,field,size=22})=>(
+    <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
+      {colors.map((c,i)=>(
+        <button key={i} onClick={()=>setCompanion(p=>({...p,[field]:i}))}
+          style={{width:size,height:size,borderRadius:'50%',background:c,cursor:'pointer',padding:0,
+            border:`2.5px solid ${companion[field]===i?C.accent:'transparent'}`,
+            boxShadow:companion[field]===i?`0 0 0 1.5px ${C.accent}55`:'none',
+            transition:'border 0.1s,box-shadow 0.1s',flexShrink:0}}/>
+      ))}
+    </div>
+  );
+  const ChipRow = ({items,field})=>(
+    <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
+      {items.map((lbl,i)=>(
+        <button key={i} onClick={()=>setCompanion(p=>({...p,[field]:i}))}
+          style={{padding:'4px 10px',borderRadius:6,fontSize:11,fontFamily:font,cursor:'pointer',
+            background:companion[field]===i?C.accentSoft:'transparent',
+            border:`1px solid ${companion[field]===i?C.accent:C.border}`,
+            color:companion[field]===i?C.accent:C.muted,
+            fontWeight:companion[field]===i?600:400,transition:'all 0.1s'}}>
+          {lbl}
+        </button>
+      ))}
+    </div>
+  );
+  const Row = ({label,children})=>(
+    <div style={{display:'flex',alignItems:'center',gap:12,minHeight:32}}>
+      <div style={{fontSize:11,fontWeight:600,color:C.subtle,width:52,flexShrink:0,textAlign:'right'}}>{label}</div>
+      {children}
+    </div>
+  );
+  return (
+    <div style={{position:'fixed',inset:0,zIndex:320,background:'rgba(0,0,0,0.55)',
+      display:'flex',alignItems:'center',justifyContent:'center',padding:'16px',
+      backdropFilter:'blur(4px)',WebkitBackdropFilter:'blur(4px)'}}
+      onClick={e=>{if(e.target===e.currentTarget)onCancel();}}>
+      <div style={{background:C.surface,borderRadius:20,width:'100%',maxWidth:520,
+        boxShadow:'0 24px 80px rgba(0,0,0,0.45)',overflow:'hidden',maxHeight:'92vh',display:'flex',flexDirection:'column'}}>
+
+        {/* Header */}
+        <div style={{padding:'20px 22px 0',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div style={{fontSize:15,fontWeight:700,color:C.text}}>Customise your character</div>
+          <button onClick={onCancel}
+            style={{background:'transparent',border:'none',color:C.muted,cursor:'pointer',
+              fontSize:20,lineHeight:1,padding:'2px 4px',borderRadius:6}}>✕</button>
+        </div>
+
+        <div style={{display:'flex',gap:0,overflow:'auto',flex:1}}>
+
+          {/* Avatar preview */}
+          <div style={{padding:'24px 20px',display:'flex',flexDirection:'column',alignItems:'center',
+            gap:12,borderRight:`1px solid ${C.border}`,flexShrink:0,width:140}}>
+            <CompanionAvatar
+              skin={companion.skin} hair={companion.hair} hairStyle={companion.hairStyle}
+              eyeColor={companion.eyeColor??0} outfitColor={companion.outfitColor??0}
+              accessory={companion.accessory??0} mood="happy" size={100}/>
+            <input value={draft} onChange={e=>setDraft(e.target.value)} maxLength={16}
+              placeholder="Name" autoFocus onKeyDown={e=>e.key==='Enter'&&onSave()}
+              style={{background:C.card2,border:`1px solid ${C.border}`,borderRadius:8,
+                padding:'7px 10px',color:C.text,fontSize:13,fontFamily:font,outline:'none',
+                width:'100%',boxSizing:'border-box',textAlign:'center',fontWeight:600}}/>
+          </div>
+
+          {/* Options */}
+          <div style={{padding:'20px 20px',display:'flex',flexDirection:'column',gap:14,flex:1,overflow:'auto'}}>
+            <Row label="Skin"><Swatch colors={SKIN_TONES} field="skin"/></Row>
+            <Row label="Eyes"><Swatch colors={EYE_COLORS} field="eyeColor"/></Row>
+            <Row label="Hair">
+              <Swatch colors={HAIR_COLORS} field="hair" size={20}/>
+            </Row>
+            <Row label="Style"><ChipRow items={HAIR_STYLE_LABELS} field="hairStyle"/></Row>
+            <Row label="Outfit"><Swatch colors={OUTFIT_COLORS} field="outfitColor"/></Row>
+            <Row label="Extras"><ChipRow items={ACCESSORY_LABELS} field="accessory"/></Row>
+
+            <div style={{display:'flex',gap:8,marginTop:4}}>
+              <button onClick={onSave}
+                style={{flex:1,padding:'10px',background:C.accent,border:'none',borderRadius:10,
+                  color:'#fff',fontSize:13,fontWeight:700,fontFamily:font,cursor:'pointer'}}>
+                Save
+              </button>
+              <button onClick={onCancel}
+                style={{padding:'10px 16px',background:'transparent',border:`1px solid ${C.border}`,
+                  borderRadius:10,color:C.muted,fontSize:13,fontFamily:font,cursor:'pointer'}}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CompanionCard({sessions,scores,subjects,examSched,C,font,isPro=false,onUpgrade}) {
   ensureAnimStyles();
-  const [companion,setCompanion] = useState(()=>ls.get('rbp_companion',{name:'Alex',skin:0,hair:0,hairStyle:0}));
+  const [companion,setCompanion] = useState(()=>{
+    const saved = ls.get('rbp_companion',{name:'Alex',skin:0,hair:0,hairStyle:0});
+    return {eyeColor:0,outfitColor:0,accessory:0,...saved};
+  });
   const [editing,setEditing]     = useState(false);
   const [draft,setDraft]         = useState(companion.name);
   const [chatOpen,setChatOpen]   = useState(false);
@@ -1312,110 +1496,76 @@ function CompanionCard({sessions,scores,subjects,examSched,C,font,isPro=false,on
   const message = getCompanionMessage({mood,sessions,scores,subjects,examSched,name:companion.name});
   const moodColor = {happy:'#22c55e',excited:'#fbbf24',worried:'#f97316',neutral:C.accent}[mood]||C.accent;
   const moodLabel = {happy:'Happy',excited:'Pumped',worried:'Worried',neutral:'Ready'}[mood]||'Ready';
+
+  const openEdit = () => { setDraft(companion.name); setEditing(true); };
   const save = () => {
     const c={...companion,name:draft.trim()||'Alex'};
     setCompanion(c); ls.set('rbp_companion',c); setEditing(false);
   };
+  const cancel = () => {
+    // revert any live-preview changes back to saved
+    const saved=ls.get('rbp_companion',{name:'Alex',skin:0,hair:0,hairStyle:0,eyeColor:0,outfitColor:0,accessory:0});
+    setCompanion({eyeColor:0,outfitColor:0,accessory:0,...saved});
+    setEditing(false);
+  };
+
   return (
-    <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,
-      padding:'14px 16px',marginBottom:12,display:'flex',gap:14,alignItems:'flex-start'}}>
-      <div style={{position:'relative',flexShrink:0}}>
-        <CompanionAvatar skin={companion.skin} hair={companion.hair} hairStyle={companion.hairStyle} mood={mood} size={70}/>
-        <div style={{position:'absolute',bottom:-2,left:'50%',transform:'translateX(-50%)',
-          background:moodColor,borderRadius:20,padding:'1px 8px',fontSize:9,fontWeight:700,
-          color:'#fff',border:`2px solid ${C.surface}`,whiteSpace:'nowrap'}}>
-          {moodLabel}
+    <>
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,
+        padding:'14px 16px',marginBottom:12,display:'flex',gap:14,alignItems:'flex-start'}}>
+        <div style={{position:'relative',flexShrink:0}}>
+          <CompanionAvatar
+            skin={companion.skin} hair={companion.hair} hairStyle={companion.hairStyle}
+            eyeColor={companion.eyeColor??0} outfitColor={companion.outfitColor??0}
+            accessory={companion.accessory??0} mood={mood} size={80}/>
+          <div style={{position:'absolute',bottom:0,left:'50%',transform:'translateX(-50%)',
+            background:moodColor,borderRadius:20,padding:'1px 8px',fontSize:9,fontWeight:700,
+            color:'#fff',border:`2px solid ${C.surface}`,whiteSpace:'nowrap'}}>
+            {moodLabel}
+          </div>
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:'flex',alignItems:'center',marginBottom:6}}>
+            <span style={{fontSize:14,fontWeight:700,color:C.text}}>{companion.name}</span>
+            <span style={{fontSize:11,color:C.subtle,marginLeft:6}}>· your study companion</span>
+            <button onClick={openEdit}
+              style={{background:'transparent',border:`1px solid ${C.border}`,color:C.muted,
+                cursor:'pointer',fontSize:11,marginLeft:'auto',
+                padding:'3px 9px',borderRadius:6,fontFamily:font}}>
+              Customise
+            </button>
+          </div>
+          <p style={{fontSize:13,color:C.muted,lineHeight:1.6,margin:'0 0 10px'}}>{message}</p>
+          {isPro?(
+            <button onClick={()=>setChatOpen(true)}
+              style={{padding:'6px 14px',background:C.accentSoft,
+                border:`1px solid ${C.accent}44`,borderRadius:7,
+                color:C.accent,fontSize:12,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
+              Chat with {companion.name}
+            </button>
+          ):(
+            <button onClick={onUpgrade}
+              style={{padding:'6px 14px',background:'transparent',
+                border:`1px solid ${C.border}`,borderRadius:7,
+                color:C.muted,fontSize:12,fontWeight:600,fontFamily:font,cursor:'pointer',
+                display:'flex',alignItems:'center',gap:5}}>
+              <span style={{fontSize:10}}>🔒</span> Chat · Pro feature
+            </button>
+          )}
         </div>
       </div>
-      <div style={{flex:1,minWidth:0}}>
-        {editing?(
-          <div style={{display:'flex',flexDirection:'column',gap:9}}>
-            <input value={draft} onChange={e=>setDraft(e.target.value)} maxLength={16}
-              placeholder="Name your companion"
-              style={{background:C.card2,border:`1px solid ${C.border}`,borderRadius:6,
-                padding:'6px 10px',color:C.text,fontSize:13,fontFamily:font,
-                outline:'none',width:'100%',boxSizing:'border-box'}}
-              autoFocus onKeyDown={e=>e.key==='Enter'&&save()}/>
-            <div>
-              <div style={{fontSize:10,color:C.muted,marginBottom:4}}>Skin tone</div>
-              <div style={{display:'flex',gap:5}}>
-                {SKIN_TONES.map((t,i)=>(
-                  <button key={i} onClick={()=>setCompanion(c=>({...c,skin:i}))}
-                    style={{width:20,height:20,borderRadius:'50%',background:t,cursor:'pointer',padding:0,
-                      border:`2px solid ${companion.skin===i?C.accent:'transparent'}`}}/>
-                ))}
-              </div>
-            </div>
-            <div>
-              <div style={{fontSize:10,color:C.muted,marginBottom:4}}>Hair colour</div>
-              <div style={{display:'flex',gap:5}}>
-                {HAIR_COLORS.map((h,i)=>(
-                  <button key={i} onClick={()=>setCompanion(c=>({...c,hair:i}))}
-                    style={{width:20,height:20,borderRadius:'50%',background:h,cursor:'pointer',padding:0,
-                      border:`2px solid ${companion.hair===i?C.accent:'transparent'}`}}/>
-                ))}
-              </div>
-            </div>
-            <div>
-              <div style={{fontSize:10,color:C.muted,marginBottom:4}}>Hair style</div>
-              <div style={{display:'flex',gap:5}}>
-                {['Short','Medium','Long'].map((lbl,i)=>(
-                  <button key={i} onClick={()=>setCompanion(c=>({...c,hairStyle:i}))}
-                    style={{padding:'3px 10px',borderRadius:5,fontSize:11,fontFamily:font,cursor:'pointer',
-                      background:companion.hairStyle===i?C.accentSoft:'transparent',
-                      border:`1px solid ${companion.hairStyle===i?C.accent:C.border}`,
-                      color:companion.hairStyle===i?C.accent:C.muted}}>
-                    {lbl}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div style={{display:'flex',gap:7}}>
-              <button onClick={save}
-                style={{padding:'6px 16px',background:C.accent,border:'none',borderRadius:7,
-                  color:'#fff',fontSize:12,fontWeight:700,fontFamily:font,cursor:'pointer'}}>Save</button>
-              <button onClick={()=>setEditing(false)}
-                style={{padding:'6px 12px',background:'transparent',
-                  border:`1px solid ${C.border}`,borderRadius:7,
-                  color:C.muted,fontSize:12,fontFamily:font,cursor:'pointer'}}>Cancel</button>
-            </div>
-          </div>
-        ):(
-          <>
-            <div style={{display:'flex',alignItems:'center',marginBottom:6}}>
-              <span style={{fontSize:14,fontWeight:700,color:C.text}}>{companion.name}</span>
-              <span style={{fontSize:11,color:C.subtle,marginLeft:6}}>· your study companion</span>
-              <button onClick={()=>{setDraft(companion.name);setEditing(true);}}
-                style={{background:'transparent',border:'none',color:C.muted,
-                  cursor:'pointer',fontSize:11,marginLeft:'auto',
-                  padding:'2px 6px',borderRadius:5}}>Edit</button>
-            </div>
-            <p style={{fontSize:13,color:C.muted,lineHeight:1.6,margin:'0 0 10px'}}>{message}</p>
-            {isPro?(
-              <button onClick={()=>setChatOpen(true)}
-                style={{padding:'6px 14px',background:C.accentSoft,
-                  border:`1px solid ${C.accent}44`,borderRadius:7,
-                  color:C.accent,fontSize:12,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
-                Chat with {companion.name}
-              </button>
-            ):(
-              <button onClick={onUpgrade}
-                style={{padding:'6px 14px',background:'transparent',
-                  border:`1px solid ${C.border}`,borderRadius:7,
-                  color:C.muted,fontSize:12,fontWeight:600,fontFamily:font,cursor:'pointer',
-                  display:'flex',alignItems:'center',gap:5}}>
-                <span style={{fontSize:10}}>🔒</span> Chat · Pro feature
-              </button>
-            )}
-          </>
-        )}
-      </div>
+      {editing&&(
+        <CompanionCustomiser
+          companion={companion} draft={draft} setDraft={setDraft}
+          setCompanion={setCompanion} onSave={save} onCancel={cancel}
+          C={C} font={font}/>
+      )}
       {chatOpen&&(
         <CompanionChat companion={companion} subjects={subjects} scores={scores}
           sessions={sessions} examSched={examSched} C={C} font={font}
           onClose={()=>setChatOpen(false)}/>
       )}
-    </div>
+    </>
   );
 }
 
@@ -1490,7 +1640,7 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,C,font,onCl
         boxShadow:'0 -8px 48px rgba(0,0,0,0.4)'}}>
         <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px 16px',
           borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
-          <CompanionAvatar skin={companion.skin} hair={companion.hair} hairStyle={companion.hairStyle} mood={mood} size={40}/>
+          <CompanionAvatar skin={companion.skin} hair={companion.hair} hairStyle={companion.hairStyle} eyeColor={companion.eyeColor??0} outfitColor={companion.outfitColor??0} accessory={companion.accessory??0} mood={mood} size={40}/>
           <div style={{flex:1}}>
             <div style={{fontSize:14,fontWeight:700,color:C.text}}>{companion.name}</div>
             <div style={{fontSize:11,color:C.muted}}>Your study companion</div>
