@@ -182,7 +182,7 @@ export default function FriendsView({ user, scores = [], uid, C, font, addToast 
               }}>
                 <div style={{ width: 24, textAlign: 'center', fontSize: 14, fontWeight: 800,
                   color: i === 0 ? '#fbbf24' : i === 1 ? '#9ca3af' : i === 2 ? '#b5735a' : C.subtle, flexShrink: 0 }}>
-                  {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+                  {i + 1}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: e.isMe ? 700 : 500, color: C.text,
@@ -322,7 +322,7 @@ export default function FriendsView({ user, scores = [], uid, C, font, addToast 
                   }}>
                     <div style={{ width: 24, textAlign: 'center', fontSize: 13, fontWeight: 800,
                       color: i === 0 ? '#fbbf24' : i === 1 ? '#9ca3af' : i === 2 ? '#b5735a' : C.subtle, flexShrink: 0 }}>
-                      {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+                      {i + 1}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 500, color: C.text,

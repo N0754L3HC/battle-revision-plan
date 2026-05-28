@@ -520,8 +520,8 @@ export default function AdminPanel({ currentUser, onBack }) {
   const proCount    = users.filter(u=>u.subscription_status==='active').length;
 
   const TABS = [
-    { id:'analytics', label:'📊 Product Analytics' },
-    { id:'users',     label:'👥 Users' },
+    { id:'analytics', label:'Product Analytics' },
+    { id:'users',     label:'Users' },
   ];
 
   return (
