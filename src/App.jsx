@@ -557,6 +557,16 @@ const ERROR_TYPES = [
 
 const TIMER_WORK_OPTS  = [25, 50, 90];
 const TIMER_BREAK_OPTS = [5, 10, 15];
+// [label, minutes]
+const EXAM_DURATIONS = [
+  ['45m',  45], ['1h',  60], ['1h 15m', 75], ['1h 30m', 90],
+  ['1h 45m', 105], ['2h', 120], ['2h 30m', 150], ['3h', 180],
+];
+const EXTRA_TIME_OPTS = [
+  {label:'None', factor:0},
+  {label:'+25%', factor:0.25},
+  {label:'+50%', factor:0.50},
+];
 
 const FLASHCARD_DECKS = {
   maths: [
@@ -1222,6 +1232,7 @@ const OUTFIT_COLORS = ['#4a90d9','#e87c3e','#5cb85c','#9b59b6','#e74c3c','#2c3e5
 
 const HAIR_STYLE_LABELS = ['Buzz','Bob','Long','Bun','Curly','Ponytail'];
 const ACCESSORY_LABELS  = ['None','Glasses','Cat-eye','Headband'];
+const GENDER_LABELS     = ['Male','Female','Non-binary','No preference'];
 
 function CompanionAvatar({skin=0,hair=0,hairStyle=0,eyeColor=0,outfitColor=0,accessory=0,mood='neutral',pose='idle',size=80}) {
   const ST   = SKIN_TONES[skin]           ?? SKIN_TONES[0];
@@ -1499,6 +1510,7 @@ function CompanionCustomiser({companion,draft,setDraft,setCompanion,onSave,onCan
             <Row label="Style"><ChipRow items={HAIR_STYLE_LABELS} field="hairStyle"/></Row>
             <Row label="Outfit"><Swatch colors={OUTFIT_COLORS} field="outfitColor"/></Row>
             <Row label="Extras"><ChipRow items={ACCESSORY_LABELS} field="accessory"/></Row>
+            <Row label="Gender"><ChipRow items={GENDER_LABELS} field="gender"/></Row>
 
             <div style={{display:'flex',gap:8,marginTop:4}}>
               <button onClick={onSave}
@@ -3072,6 +3084,34 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions}) {
   const [pieSelected,setPieSelected]= useState(null);
   const [,setTick] = useState(0); // force re-renders
 
+  // Exam mode state
+  const [examBaseMins,  setExamBaseMins]  = useState(90);
+  const [examExtraIdx,  setExamExtraIdx]  = useState(0); // index into EXTRA_TIME_OPTS
+  const [examRunning,   setExamRunning]   = useState(false);
+  const [examDone,      setExamDone]      = useState(false);
+  const examEndRef  = useRef(null);
+  const examRemRef  = useRef(90*60);
+
+  const examExtraFactor = EXTRA_TIME_OPTS[examExtraIdx]?.factor ?? 0;
+  const examTotalMins   = Math.round(examBaseMins * (1 + examExtraFactor));
+  const examExtraMins   = examTotalMins - examBaseMins;
+  // Keep examRemRef in sync with settings changes (only when not running)
+  useEffect(()=>{ if(!examRunning){ examRemRef.current=examTotalMins*60; setTick(t=>t+1); } },[examBaseMins,examExtraIdx]);
+
+  const examSecs = examRunning
+    ? Math.max(0, Math.ceil((examEndRef.current - Date.now()) / 1000))
+    : examRemRef.current;
+
+  const examStart = () => {
+    examEndRef.current = Date.now() + examRemRef.current * 1000;
+    setExamRunning(true); setExamDone(false);
+  };
+  const examReset = () => {
+    examEndRef.current = null;
+    examRemRef.current = examTotalMins * 60;
+    setExamRunning(false); setExamDone(false); setTick(t=>t+1);
+  };
+
   // Background-safe timer refs: all time derived from Date.now() not counters
   const pomEndRef  = useRef(null); // timestamp when pomodoro expires
   const pomRemRef  = useRef(25*60); // remaining secs when paused
@@ -3088,7 +3128,7 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions}) {
 
   // Tick interval — just triggers re-renders; accuracy comes from Date.now()
   useEffect(()=>{
-    if (!pomRunning && !swRunning) return;
+    if (!pomRunning && !swRunning && !examRunning) return;
     const id = setInterval(()=>{
       setTick(t=>t+1);
       if (pomRunning && pomEndRef.current && Date.now()>=pomEndRef.current) {
@@ -3101,9 +3141,13 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions}) {
           setPomMode('work'); pomRemRef.current=workMins*60;
         }
       }
+      if (examRunning && examEndRef.current && Date.now()>=examEndRef.current) {
+        setExamRunning(false); examEndRef.current=null;
+        examRemRef.current=0; setExamDone(true);
+      }
     }, 250);
     return ()=>clearInterval(id);
-  },[pomRunning,swRunning,pomMode,selSubject,workMins,breakMins,uid]);
+  },[pomRunning,swRunning,examRunning,pomMode,selSubject,workMins,breakMins,uid]);
 
   // Re-render when tab regains focus (catches background throttling)
   useEffect(()=>{
@@ -3146,7 +3190,7 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions}) {
     swReset();
   };
   const switchTimerMode = m => {
-    pomReset(); swReset(); setTimerMode(m);
+    pomReset(); swReset(); examReset(); setTimerMode(m);
   };
 
   const fmtSw = secs=>{
@@ -3222,7 +3266,7 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions}) {
       </div>
 
       <div style={{display:'flex',gap:0,background:C.card2,borderRadius:9,padding:3,alignSelf:'flex-start',border:`1px solid ${C.border}`}}>
-        {[['pomodoro','Pomodoro'],['stopwatch','Stopwatch']].map(([m,lbl])=>(
+        {[['pomodoro','Pomodoro'],['stopwatch','Stopwatch'],['exam','Exam Mode']].map(([m,lbl])=>(
           <button key={m} onClick={()=>switchTimerMode(m)}
             style={{padding:'7px 18px',borderRadius:7,border:'none',
               background:timerMode===m?C.surface:'transparent',
@@ -3300,6 +3344,115 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions}) {
               {streak>0&&<>&nbsp;&middot;&nbsp;<span style={{color:C.accent,fontWeight:600}}>{streak}-day streak</span></>}
             </div>
           )}
+        </div>
+      ):timerMode==='exam'?(
+        /* ── EXAM MODE ── */
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:'24px 20px'}}>
+          {examDone?(
+            /* Time's up screen */
+            <div style={{textAlign:'center',padding:'20px 0'}}>
+              <div style={{fontSize:13,fontWeight:700,color:'#ef4444',letterSpacing:1,textTransform:'uppercase',marginBottom:12}}>Time's up</div>
+              <div style={{fontSize:72,fontWeight:900,color:'#ef4444',
+                fontFamily:"'JetBrains Mono','SF Mono',monospace",lineHeight:1,marginBottom:8}}>00:00</div>
+              {examExtraMins>0&&(
+                <div style={{fontSize:13,color:C.muted,marginBottom:20}}>
+                  That included {examExtraMins} min extra time
+                </div>
+              )}
+              <button onClick={examReset}
+                style={{padding:'11px 32px',borderRadius:8,background:C.accent,
+                  border:'none',color:'#fff',fontSize:14,fontWeight:700,fontFamily:font,cursor:'pointer'}}>
+                Reset
+              </button>
+            </div>
+          ):(()=>{
+            const mm=String(Math.floor(examSecs/60)).padStart(2,'0');
+            const ss=String(examSecs%60).padStart(2,'0');
+            const pct=examTotalMins>0?examSecs/(examTotalMins*60):1;
+            const warn10=examSecs<=600&&examSecs>0;
+            const warn30=examSecs<=1800&&examSecs>600;
+            const dispColor=warn10?'#ef4444':warn30?'#f97316':C.text;
+            return (
+              <>
+                {/* Duration picker */}
+                <div style={{marginBottom:18}}>
+                  <div style={{fontSize:10,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Exam duration</div>
+                  <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
+                    {EXAM_DURATIONS.map(([lbl,mins])=>(
+                      <button key={mins} disabled={examRunning}
+                        onClick={()=>{if(!examRunning){setExamBaseMins(mins);examRemRef.current=Math.round(mins*(1+examExtraFactor))*60;setTick(t=>t+1);}}}
+                        style={{padding:'5px 11px',borderRadius:6,
+                          border:`1px solid ${examBaseMins===mins?C.accent:C.border}`,
+                          background:examBaseMins===mins?C.accentSoft:'transparent',
+                          color:examBaseMins===mins?C.accent:C.muted,
+                          fontSize:11,fontWeight:examBaseMins===mins?700:400,fontFamily:font,
+                          cursor:examRunning?'default':'pointer'}}>
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Extra time */}
+                <div style={{marginBottom:20}}>
+                  <div style={{fontSize:10,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Extra time</div>
+                  <div style={{display:'flex',gap:5}}>
+                    {EXTRA_TIME_OPTS.map((opt,i)=>(
+                      <button key={i} disabled={examRunning}
+                        onClick={()=>{if(!examRunning){setExamExtraIdx(i);examRemRef.current=Math.round(examBaseMins*(1+(opt.factor)))*60;setTick(t=>t+1);}}}
+                        style={{padding:'5px 12px',borderRadius:6,
+                          border:`1px solid ${examExtraIdx===i?'#22c55e':C.border}`,
+                          background:examExtraIdx===i?'rgba(34,197,94,0.10)':'transparent',
+                          color:examExtraIdx===i?'#22c55e':C.muted,
+                          fontSize:11,fontWeight:examExtraIdx===i?700:400,fontFamily:font,
+                          cursor:examRunning?'default':'pointer'}}>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  {examExtraMins>0&&(
+                    <div style={{fontSize:11,color:'#22c55e',marginTop:6}}>
+                      Total: {examTotalMins} min ({examBaseMins} + {examExtraMins} extra)
+                    </div>
+                  )}
+                </div>
+
+                {/* Countdown */}
+                <div style={{textAlign:'center',marginBottom:16}}>
+                  {warn10&&<div style={{fontSize:11,fontWeight:700,color:'#ef4444',letterSpacing:0.8,textTransform:'uppercase',marginBottom:6}}>Under 10 minutes</div>}
+                  {warn30&&!warn10&&<div style={{fontSize:11,fontWeight:700,color:'#f97316',letterSpacing:0.8,textTransform:'uppercase',marginBottom:6}}>30 minutes remaining</div>}
+                  {!warn10&&!warn30&&<div style={{fontSize:10,fontWeight:700,letterSpacing:1,textTransform:'uppercase',color:examRunning?C.accent:C.subtle,marginBottom:6}}>{examRunning?'In progress':'Ready'}</div>}
+                  <div style={{fontSize:76,fontWeight:900,color:dispColor,
+                    fontFamily:"'JetBrains Mono','SF Mono',monospace",
+                    lineHeight:1,letterSpacing:-3,marginBottom:8}}>{mm}:{ss}</div>
+                  {/* Progress bar */}
+                  <div style={{height:4,background:C.border,borderRadius:2,marginBottom:20,overflow:'hidden'}}>
+                    <div style={{height:'100%',borderRadius:2,
+                      background:warn10?'#ef4444':warn30?'#f97316':C.accent,
+                      width:`${pct*100}%`,transition:'width 1s linear'}}/>
+                  </div>
+                  <button onClick={examRunning?()=>{}:examStart} disabled={examRunning}
+                    style={{padding:'11px 36px',borderRadius:8,
+                      background:examRunning?C.card2:C.accent,
+                      border:`1px solid ${examRunning?C.border:C.accent}`,
+                      color:examRunning?C.muted:'#fff',fontSize:14,fontWeight:700,fontFamily:font,
+                      cursor:examRunning?'not-allowed':'pointer',transition:'all 0.15s'}}>
+                    {examRunning?'Running…':'Start Exam'}
+                  </button>
+                  {!examRunning&&examSecs<examTotalMins*60&&examSecs>0&&(
+                    <button onClick={examReset} style={{marginLeft:10,padding:'11px 20px',borderRadius:8,
+                      background:'transparent',border:`1px solid ${C.border}`,
+                      color:C.muted,fontSize:14,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
+                      Reset
+                    </button>
+                  )}
+                </div>
+                <div style={{fontSize:11,color:C.subtle,textAlign:'center',lineHeight:1.6}}>
+                  Once started, the timer cannot be paused — just like a real exam.
+                </div>
+              </>
+            );
+          })()}
         </div>
       ):(
         <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:'24px 20px'}}>
