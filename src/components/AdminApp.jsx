@@ -169,10 +169,16 @@ function UserDetail({u,onClose,onToggleAdmin,onDeleteUser}) {
             <div style={{fontSize:9,color:MUT,letterSpacing:2,marginTop:3}}>READINESS</div>
             <div style={{height:3,width:'80%',background:'rgba(255,255,255,0.05)',borderRadius:2,marginTop:8,overflow:'hidden'}}><div style={{height:'100%',width:`${br.t}%`,background:R(br.t)}}/></div>
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8}}>
-            {[{v:allScores.length,l:'PAPERS',c:'#fff'},{v:allErrors.length,l:'ERRORS',c:allErrors.length>10?'#FF9100':'#fff'},{v:`${br.avg}%`,l:'AVG SCORE',c:br.avg>=70?'#00E676':br.avg>=50?'#FFD600':'#FF3D00'},{v:u.subjectList?.length||0,l:'SUBJECTS',c:'#40C4FF'}].map(({v,l,c})=>(
+          <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:8}}>
+            {[
+              {v:allScores.length,l:'PAPERS',c:'#fff'},
+              {v:allErrors.length,l:'ERRORS',c:allErrors.length>10?'#FF9100':'#fff'},
+              {v:`${br.avg}%`,l:'AVG SCORE',c:br.avg>=70?'#00E676':br.avg>=50?'#FFD600':'#FF3D00'},
+              {v:u.subjectList?.length||0,l:'SUBJECTS',c:'#40C4FF'},
+              {v:`${Math.round((u.totalStudySecs||0)/3600)}h`,l:'STUDY TIME',c:'#00E676'},
+            ].map(({v,l,c})=>(
               <div key={l} style={{...card,padding:'14px 16px'}}>
-                <div style={{fontSize:28,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
+                <div style={{fontSize:22,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
                 <div style={{fontSize:9,color:MUT,letterSpacing:1.5,marginTop:4}}>{l}</div>
               </div>
             ))}
@@ -227,7 +233,7 @@ function UserDetail({u,onClose,onToggleAdmin,onDeleteUser}) {
           {allScores.length>30&&<div style={{fontSize:11,color:DIM,marginTop:8}}>+ {allScores.length-30} more</div>}
         </div>
         {/* Errors */}
-        <div style={{...card,padding:'16px 20px'}}>
+        <div style={{...card,padding:'16px 20px',marginBottom:12}}>
           <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:12}}>ERROR LOG ({allErrors.length})</div>
           {allErrors.length===0?<div style={{color:DIM,fontSize:12}}>No errors logged.</div>:allErrors.slice(0,20).map((e,i)=>(
             <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'6px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12}}>
@@ -237,6 +243,53 @@ function UserDetail({u,onClose,onToggleAdmin,onDeleteUser}) {
                 {e.note&&<span style={{color:MUT,fontSize:11}}>— {e.note}</span>}
               </div>
               <span style={pill('#FF9100',true)}>{e.type}</span>
+            </div>
+          ))}
+        </div>
+        {/* Study sessions */}
+        {(()=>{
+          const allSess=Object.values(u.sessions||{}).flat();
+          if (!allSess.length) return null;
+          const totalSecs=allSess.reduce((a,s)=>a+(s.secs||0),0);
+          const bySubj={};
+          allSess.forEach(s=>{ const k=s.subjectId||'unknown'; bySubj[k]=(bySubj[k]||0)+(s.secs||0); });
+          const recent=allSess.sort((a,b)=>(b.ts||b.id||0)-(a.ts||a.id||0)).slice(0,10);
+          return (
+            <div style={{...card,padding:'16px 20px',marginBottom:12}}>
+              <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:12}}>STUDY SESSIONS ({allSess.length} · {Math.round(totalSecs/3600)}h total)</div>
+              <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>
+                {Object.entries(bySubj).sort((a,b)=>b[1]-a[1]).map(([sub,secs])=>(
+                  <div key={sub} style={{...card,padding:'8px 12px',borderColor:`${SC[sub]||'#888'}33`}}>
+                    <div style={{fontSize:9,color:MUT,textTransform:'uppercase'}}>{sub.replace(/-/g,' ')}</div>
+                    <div style={{fontSize:16,fontWeight:800,color:SC[sub]||'#888',marginTop:2}}>{Math.round(secs/3600)}h {Math.round((secs%3600)/60)}m</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{fontSize:9,letterSpacing:2,color:DIM,marginBottom:8}}>RECENT SESSIONS</div>
+              {recent.map((s,i)=>(
+                <div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:11,padding:'5px 0',borderBottom:'1px solid rgba(255,255,255,0.03)'}}>
+                  <span style={pill(SC[s.subjectId]||'#888',true)}>{(s.subjectId||'?').replace(/-/g,' ')}</span>
+                  <span style={{color:'#bbb'}}>{Math.round((s.secs||0)/60)}m</span>
+                  <span style={{color:DIM}}>{s.ts?timeSince(new Date(s.ts)):s.id?timeSince(new Date(s.id)):'—'}</span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+        {/* User metadata */}
+        <div style={{...card,padding:'16px 20px'}}>
+          <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:12}}>USER METADATA</div>
+          {[
+            ['Exam level',    u.exam_level||'—'],
+            ['School',        u.school_name||'—'],
+            ['School opt-in', u.school_opt_in?'Yes':'No'],
+            ['Referral code', u.referral_code||'—'],
+            ['Subscription',  u.subscription_status||'free'],
+            ['Subjects',      (u.subjectList||[]).join(', ')||'—'],
+          ].map(([l,v])=>(
+            <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12}}>
+              <span style={{color:MUT,fontSize:11}}>{l}</span>
+              <span style={{color:'#ccc',maxWidth:320,textAlign:'right',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{v}</span>
             </div>
           ))}
         </div>
@@ -298,6 +351,325 @@ function BroadcastPanel({users}) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// ── Full Analytics Dashboard ───────────────────────────────────────────────
+function AnalyticsDashboard({users}) {
+  const now=Date.now();
+  const D1=86400000,D7=D1*7,D14=D1*14,D30=D1*30,D60=D1*60;
+
+  const total   = users.length;
+  const pro     = users.filter(u=>u.subscription_status==='active').length;
+  const trialing= users.filter(u=>u.subscription_status==='trialing').length;
+  const cancelled=users.filter(u=>u.subscription_status==='canceled'||u.subscription_status==='cancelled').length;
+  const mrr     = +(pro*4.99).toFixed(2);
+  const arr     = +(mrr*12).toFixed(0);
+  const conv    = total?Math.round(pro/total*100):0;
+
+  const new7    = users.filter(u=>now-new Date(u.created_at)<D7).length;
+  const new30   = users.filter(u=>now-new Date(u.created_at)<D30).length;
+  const dau     = users.filter(u=>now-new Date(u.lastActive)<D1).length;
+  const wau     = users.filter(u=>now-new Date(u.lastActive)<D7).length;
+  const mau     = users.filter(u=>now-new Date(u.lastActive)<D30).length;
+  const stick   = mau?Math.round(dau/mau*100):0;
+
+  const act1    = users.filter(u=>u.totalScores>=1).length;
+  const act5    = users.filter(u=>u.totalScores>=5).length;
+  const act10   = users.filter(u=>u.totalScores>=10).length;
+  const dormant = users.filter(u=>now-new Date(u.created_at)>D14&&u.totalScores===0).length;
+  const atRisk  = users.filter(u=>{const i=now-new Date(u.lastActive);return i>D7&&i<D30&&u.totalScores>=1;}).length;
+  const churned = users.filter(u=>now-new Date(u.lastActive)>D30&&u.totalScores>=1).length;
+  const schoolOpt=users.filter(u=>u.school_opt_in).length;
+  const usedErr = users.filter(u=>u.totalErrors>0).length;
+  const usedTimer=users.filter(u=>u.totalStudySecs>0).length;
+
+  const c7=users.filter(u=>{const a=now-new Date(u.created_at);return a>=D7&&a<D14;});
+  const c30=users.filter(u=>{const a=now-new Date(u.created_at);return a>=D30&&a<D60;});
+  const r7=c7.filter(u=>now-new Date(u.lastActive)<D7).length;
+  const r30=c30.filter(u=>now-new Date(u.lastActive)<D30).length;
+  const ret7=c7.length?Math.round(r7/c7.length*100):null;
+  const ret30=c30.length?Math.round(r30/c30.length*100):null;
+  const retC=r=>r===null?'#555':r>=40?'#00E676':r>=20?'#FFD600':'#FF3D00';
+
+  const signupDays=Array.from({length:30},(_,i)=>{
+    const d=new Date(now-(29-i)*D1); d.setHours(0,0,0,0);
+    const e=d.getTime()+D1;
+    return {v:users.filter(u=>{const t=new Date(u.created_at).getTime();return t>=d.getTime()&&t<e;}).length,
+      label:d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})};
+  });
+  const peakDay=Math.max(...signupDays.map(d=>d.v));
+  const totalPapers=users.reduce((a,u)=>a+u.totalScores,0);
+  const totalHours=Math.round(users.reduce((a,u)=>a+(u.totalStudySecs||0),0)/3600);
+  const avgPapers=total?(totalPapers/total).toFixed(1):0;
+
+  const subMap={};
+  for (const u of users) for (const sc of Object.values(u.scores||{})) for (const s of sc) subMap[s.subject]=(subMap[s.subject]||0)+1;
+  const topSubs=Object.entries(subMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const maxSub=topSubs[0]?.[1]||1;
+
+  const Sec=({title,children,cols=1})=>(
+    <div style={{...card,padding:'18px 20px',marginBottom:14,gridColumn:cols>1?`span ${cols}`:undefined}}>
+      <div style={{fontSize:9,color:SEC,letterSpacing:2,fontWeight:700,marginBottom:14}}>{title}</div>
+      {children}
+    </div>
+  );
+  const Kpi=({v,l,c='#FF3D00',sub})=>(
+    <div style={{...card,padding:'14px 16px',flex:'1 1 140px'}}>
+      <div style={{fontSize:9,color:DIM,letterSpacing:2,fontWeight:700,marginBottom:8,textTransform:'uppercase'}}>{l}</div>
+      <div style={{fontSize:26,fontWeight:800,color:c,letterSpacing:-0.5,lineHeight:1}}>{v}</div>
+      {sub&&<div style={{fontSize:10,color:MUT,marginTop:4}}>{sub}</div>}
+    </div>
+  );
+  const FRow=({label,count,base,color,prev})=>{
+    const pct=base?Math.round(count/base*100):0;
+    const drop=prev?Math.round((1-count/prev)*100):null;
+    return (
+      <div style={{marginBottom:12}}>
+        <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:4}}>
+          <span style={{color:'#999'}}>{label}</span>
+          <span style={{fontWeight:700,color:'#fff'}}>{count.toLocaleString()} <span style={{color:DIM,fontWeight:400}}>({pct}%)</span>{drop!==null&&drop>0&&<span style={{color:'#FF9100',fontWeight:400,fontSize:10}}> ↓{drop}%</span>}</span>
+        </div>
+        <div style={{height:6,background:'rgba(255,255,255,0.05)',borderRadius:3,overflow:'hidden'}}>
+          <div style={{height:'100%',width:`${pct}%`,background:color,borderRadius:3}}/>
+        </div>
+      </div>
+    );
+  };
+
+  const SparkBar=({data,color='#00E676',h=52})=>{
+    const mx=Math.max(...data.map(d=>d.v),1);
+    return (
+      <div style={{display:'flex',alignItems:'flex-end',gap:2,height:h,overflow:'hidden'}}>
+        {data.map((d,i)=>(
+          <div key={i} title={`${d.label}: ${d.v}`} style={{
+            flex:1,background:color,borderRadius:'2px 2px 0 0',
+            height:`${Math.max(2,Math.round(d.v/mx*100))}%`,
+            opacity:0.4+0.6*(d.v/mx),
+          }}/>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      <div style={{fontSize:9,color:'#FF3D00',letterSpacing:3,fontWeight:800,marginBottom:10,opacity:0.7}}>ACQUISITION</div>
+      <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:14}}>
+        <Kpi v={total} l="Total Users" sub={`+${new7} this week · +${new30} this month`}/>
+        <Kpi v={new7} l="New (7d)" c='#00E676' sub={`${new30} this month`}/>
+        <Kpi v={mau} l="MAU" c='#40C4FF' sub={`${wau} wau · ${dau} dau`}/>
+        <Kpi v={`${stick}%`} l="Stickiness DAU/MAU" c='#40C4FF' sub="industry avg ~25%"/>
+      </div>
+
+      <div style={{fontSize:9,color:'#FF3D00',letterSpacing:3,fontWeight:800,marginBottom:10,opacity:0.7}}>REVENUE</div>
+      <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:14}}>
+        <Kpi v={pro} l="Pro Users" c='#FFD600' sub={`${conv}% conv · ${trialing} trialing · ${cancelled} cancelled`}/>
+        <Kpi v={`£${mrr}`} l="MRR (est.)" c='#FFD600' sub="£4.99/mo per Pro"/>
+        <Kpi v={`£${arr}`} l="ARR (est.)" c='#FFD600' sub="MRR × 12"/>
+        <Kpi v={`£${(total?mrr/total:0).toFixed(2)}`} l="ARPU" c='#FFD600' sub="MRR ÷ all users"/>
+      </div>
+
+      <div style={{fontSize:9,color:'#FF3D00',letterSpacing:3,fontWeight:800,marginBottom:10,opacity:0.7}}>RETENTION</div>
+      <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:14}}>
+        <Kpi v={ret7!==null?`${ret7}%`:'—'} l="D7 Retention" c={retC(ret7)} sub={`n=${c7.length} · ≥40% good`}/>
+        <Kpi v={ret30!==null?`${ret30}%`:'—'} l="D30 Retention" c={retC(ret30)} sub={`n=${c30.length} · ≥25% good`}/>
+        <Kpi v={avgPapers} l="Avg Papers/User" c='#40C4FF' sub={`${totalPapers} total`}/>
+        <Kpi v={`${totalHours}h`} l="Total Study Time" c='#40C4FF' sub="all users combined"/>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:14}}>
+        <Sec title={`DAILY SIGNUPS — 30 DAYS  (peak: ${peakDay}/day)`}>
+          <SparkBar data={signupDays} color='#00E676' h={60}/>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:9,color:DIM,marginTop:4}}>
+            <span>{signupDays[0].label}</span><span>{signupDays[29].label}</span>
+          </div>
+        </Sec>
+
+        <Sec title="ACTIVATION FUNNEL">
+          <FRow label="Signed up"              count={total} base={total} color='#40C4FF'/>
+          <FRow label="Logged 1st paper"       count={act1}  base={total} color='#00E676' prev={total}/>
+          <FRow label="5+ papers (engaged)"    count={act5}  base={total} color='#00E676' prev={act1}/>
+          <FRow label="10+ papers (power)"     count={act10} base={total} color='#FFD600' prev={act5}/>
+          <FRow label="Upgraded to Pro"        count={pro}   base={total} color='#FF3D00' prev={act10}/>
+          <div style={{fontSize:10,color:DIM,marginTop:6}}>
+            {act1>0&&pro>0?`${Math.round(pro/act1*100)}% of activated users convert to Pro`:'no data yet'}
+          </div>
+        </Sec>
+
+        <Sec title="USER HEALTH SEGMENTS">
+          {[
+            ['Active today',           dau,       '#00E676'],
+            ['Active this week',       wau,       '#00E676'],
+            ['Active this month',      mau,       '#40C4FF'],
+            ['Pro subscribers',        pro,       '#FFD600'],
+            ['Dormant (14d+, 0 papers)',dormant,   '#FF3D00'],
+            ['At-risk (7–30d idle)',    atRisk,    '#FF9100'],
+            ['Churned (30d+ inactive)',churned,    '#FF3D00'],
+            ['School opt-in',          schoolOpt, '#40C4FF'],
+          ].map(([l,n,c])=>(
+            <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12}}>
+              <span style={{color:'#888'}}>{l}</span>
+              <span style={{fontWeight:800,color:c}}>{n} <span style={{color:DIM,fontWeight:400,fontSize:10}}>({total?Math.round(n/total*100):0}%)</span></span>
+            </div>
+          ))}
+        </Sec>
+
+        <Sec title="FEATURE ADOPTION">
+          {[
+            ['Past paper tracker',  act1,      total, '#00E676'],
+            ['Error log',          usedErr,   total, '#40C4FF'],
+            ['Study timer',        usedTimer, total, '#40C4FF'],
+            ['School opt-in',      schoolOpt, total, '#FFD600'],
+          ].map(([l,n,t,c])=>{
+            const pct=t?Math.round(n/t*100):0;
+            return (
+              <div key={l} style={{marginBottom:12}}>
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:4}}>
+                  <span style={{color:'#888'}}>{l}</span>
+                  <span style={{color:'#fff',fontWeight:700}}>{pct}% <span style={{color:DIM,fontWeight:400}}>({n})</span></span>
+                </div>
+                <div style={{height:5,background:'rgba(255,255,255,0.05)',borderRadius:3,overflow:'hidden'}}>
+                  <div style={{height:'100%',width:`${pct}%`,background:c,borderRadius:3}}/>
+                </div>
+              </div>
+            );
+          })}
+          <div style={{height:1,background:'rgba(255,255,255,0.06)',margin:'12px 0'}}/>
+          <div style={{fontSize:11,color:DIM,lineHeight:1.8}}>
+            Total papers: <strong style={{color:'#ccc'}}>{totalPapers.toLocaleString()}</strong><br/>
+            Total study hours: <strong style={{color:'#ccc'}}>{totalHours}h</strong>
+          </div>
+        </Sec>
+
+        <Sec title="TOP SUBJECTS BY PAPERS LOGGED">
+          {topSubs.map(([s,n])=>(
+            <div key={s} style={{marginBottom:10}}>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:10,marginBottom:3}}>
+                <span style={{textTransform:'capitalize',color:SC[s]||'#888'}}>{s.replace(/-/g,' ')}</span>
+                <span style={{color:'#FF3D00'}}>{n} <span style={{color:DIM}}>({total?Math.round(n/total*100):0}%)</span></span>
+              </div>
+              <div style={{height:4,background:'rgba(255,255,255,0.04)',borderRadius:2,overflow:'hidden'}}>
+                <div style={{height:'100%',width:`${(n/maxSub)*100}%`,background:SC[s]||'#FF3D00',borderRadius:2}}/>
+              </div>
+            </div>
+          ))}
+        </Sec>
+
+        <Sec title="RETENTION COHORT DETAIL">
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}}>
+            {[{label:'D7',rate:ret7,size:c7.length},{label:'D30',rate:ret30,size:c30.length}].map(({label,rate,size})=>(
+              <div key={label} style={{...card,padding:12}}>
+                <div style={{fontSize:9,color:DIM,letterSpacing:2,marginBottom:6}}>{label} RETENTION</div>
+                <div style={{fontSize:30,fontWeight:800,color:retC(rate)}}>{rate!==null?`${rate}%`:'—'}</div>
+                <div style={{fontSize:10,color:DIM,marginTop:3}}>n={size}</div>
+                {rate!==null&&<div style={{height:4,background:'rgba(255,255,255,0.06)',borderRadius:2,overflow:'hidden',marginTop:8}}><div style={{height:'100%',width:`${rate}%`,background:retC(rate)}}/></div>}
+              </div>
+            ))}
+          </div>
+          <div style={{fontSize:10,color:DIM,lineHeight:1.7}}>D7 ≥40% good · D30 ≥25% good · D30 ≥10% median</div>
+        </Sec>
+      </div>
+    </div>
+  );
+}
+
+// ── Query Explorer (read-only) ─────────────────────────────────────────────
+function QueryExplorer({users}) {
+  const [query,setQuery]=useState('');
+  const [result,setResult]=useState(null);
+  const [running,setRunning]=useState(false);
+  const [err,setErr]=useState('');
+  const [activePreset,setActivePreset]=useState(null);
+
+  const PRESETS=[
+    {label:'Top 10 by papers',fn:u=>[...u].sort((a,b)=>b.totalScores-a.totalScores).slice(0,10).map(u=>({email:u.email,papers:u.totalScores,avg:`${u.avgScore}%`,readiness:u.readiness}))},
+    {label:'Active this week',fn:u=>u.filter(x=>Date.now()-new Date(x.lastActive)<604800000).map(x=>({email:x.email,last_active:timeSince(x.lastActive),papers:x.totalScores}))},
+    {label:'Pro subscribers',fn:u=>u.filter(x=>x.subscription_status==='active').map(x=>({email:x.email,name:x.display_name,joined:fmtDate(x.created_at)}))},
+    {label:'Zero papers (dormant)',fn:u=>u.filter(x=>x.totalScores===0).map(x=>({email:x.email,joined:fmtDate(x.created_at),last_seen:timeSince(x.lastActive)}))},
+    {label:'Subject breakdown',fn:u=>{const m={};u.forEach(x=>(x.subjectList||[]).forEach(s=>m[s]=(m[s]||0)+1));return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([s,n])=>({subject:s,users:n}));}},
+    {label:'Errors by type (all users)',fn:u=>{const m={};u.forEach(x=>Object.values(x.errors||{}).flat().forEach(e=>m[e.type]=(m[e.type]||0)+1));return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([type,count])=>({type,count}));}},
+  ];
+
+  const runPreset=p=>{
+    setActivePreset(p.label); setErr(''); setRunning(true);
+    try { setResult(p.fn(users)); } catch(e) { setErr(e.message); }
+    setRunning(false);
+  };
+
+  const runCustom=()=>{
+    setErr(''); setRunning(true); setActivePreset(null);
+    try {
+      // Safe eval: only allow users array manipulation
+      // eslint-disable-next-line no-new-func
+      const fn=new Function('users','fmtDate','timeSince',`"use strict"; return (${query})`);
+      const r=fn(users,fmtDate,timeSince);
+      if (Array.isArray(r)) setResult(r.slice(0,100));
+      else setResult([r]);
+    } catch(e) { setErr(e.message); }
+    setRunning(false);
+  };
+
+  const cols=result?.length>0?Object.keys(result[0]):[];
+
+  return (
+    <div>
+      <div style={{...card,padding:20,marginBottom:14}}>
+        <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:16,fontWeight:700}}>PRESET QUERIES</div>
+        <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+          {PRESETS.map(p=>(
+            <button key={p.label} onClick={()=>runPreset(p)} style={{
+              ...btn(activePreset===p.label?'#00E676':'#FF3D00',activePreset===p.label),
+              fontSize:10,padding:'6px 12px'
+            }}>{p.label}</button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{...card,padding:20,marginBottom:14}}>
+        <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:10,fontWeight:700}}>CUSTOM QUERY</div>
+        <div style={{fontSize:10,color:DIM,marginBottom:10,lineHeight:1.7}}>
+          JavaScript expression operating on the <code style={{color:'#888'}}>users</code> array.
+          Read-only — no writes or network calls. Returns up to 100 rows.<br/>
+          Example: <code style={{color:'#aaa'}}>users.filter(u=&gt;u.totalScores&gt;5).map(u=&gt;(&#123;email:u.email,papers:u.totalScores&#125;))</code>
+        </div>
+        <textarea value={query} onChange={e=>setQuery(e.target.value)} style={{...iS,height:80,resize:'vertical',marginBottom:10,fontSize:11}} placeholder="users.filter(u => ...).map(u => ({...}))"/>
+        <button onClick={runCustom} disabled={running||!query.trim()} style={{...btn('#FF3D00',true),padding:'8px 20px'}}>RUN QUERY</button>
+        {err&&<div style={{color:'#FF9100',fontSize:11,marginTop:8}}>{err}</div>}
+      </div>
+
+      {result&&(
+        <div style={{...card,overflow:'hidden'}}>
+          <div style={{padding:'12px 16px',borderBottom:'1px solid rgba(255,61,0,0.08)',fontSize:9,color:SEC,letterSpacing:2,fontWeight:700}}>
+            RESULTS — {result.length} row{result.length!==1?'s':''}
+            <button onClick={()=>{
+              const blob=new Blob([JSON.stringify(result,null,2)],{type:'application/json'});
+              const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='query-result.json';a.click();
+            }} style={{...btn('#00E676'),marginLeft:12,fontSize:9,padding:'3px 8px'}}>↓ JSON</button>
+          </div>
+          {result.length===0?(
+            <div style={{padding:24,color:DIM,fontSize:12,textAlign:'center'}}>No results.</div>
+          ):(
+            <div style={{overflowX:'auto'}}>
+              <table style={{width:'100%',borderCollapse:'collapse',fontSize:11}}>
+                <thead>
+                  <tr style={{borderBottom:'1px solid rgba(255,61,0,0.1)'}}>
+                    {cols.map(c=><th key={c} style={{textAlign:'left',padding:'8px 14px',fontSize:9,color:SEC,letterSpacing:1.5,fontWeight:700,whiteSpace:'nowrap'}}>{c.toUpperCase()}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.slice(0,100).map((row,i)=>(
+                    <tr key={i} style={{borderBottom:'1px solid rgba(255,255,255,0.03)'}}>
+                      {cols.map(c=><td key={c} style={{padding:'8px 14px',color:'#bbb',maxWidth:260,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{String(row[c]??'—')}</td>)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -592,15 +964,17 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
     if (!profiles) { setLoading(false); return; }
     const merged=profiles.map(p=>{
       const rows=(userData||[]).filter(d=>d.user_id===p.id);
-      const scores={},errors={},checks={},targets={};
-      rows.forEach(r=>{ scores[r.profile]=r.scores||[]; errors[r.profile]=r.errors||[]; checks[r.profile]=r.checks||{}; targets[r.profile]=r.targets||{}; });
+      const scores={},errors={},checks={},targets={},sessions={},timetables={};
+      rows.forEach(r=>{ scores[r.profile]=r.scores||[]; errors[r.profile]=r.errors||[]; checks[r.profile]=r.checks||{}; targets[r.profile]=r.targets||{}; sessions[r.profile]=r.sessions||[]; timetables[r.profile]=r.timetable||{}; });
       const allS=Object.values(scores).flat();
       const allE=Object.values(errors).flat();
+      const allSess=Object.values(sessions).flat();
+      const totalStudySecs=allSess.reduce((a,s)=>a+(s.secs||0),0);
       const lastA=rows.length?rows.sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at))[0].updated_at:p.created_at;
       const br=calcReadiness(allS,allE);
       let subjectList=[];
       try { if (p.subjects) { const ps=JSON.parse(p.subjects); if (Array.isArray(ps)) subjectList=ps.map(s=>s.subjectId||s.subject||'').filter(Boolean); } } catch(_) {}
-      return {...p,scores,errors,checks,targets,subjectList,allScores:allS,totalScores:allS.length,totalErrors:allE.length,lastActive:lastA,readiness:br.t,avgScore:br.avg};
+      return {...p,scores,errors,checks,targets,sessions,timetables,subjectList,allScores:allS,totalScores:allS.length,totalErrors:allE.length,totalStudySecs,lastActive:lastA,readiness:br.t,avgScore:br.avg};
     });
     setUsers(merged);
     setLastRefresh(new Date());
@@ -638,8 +1012,10 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
     activated:users.filter(u=>u.totalScores>0).length,
     totalPapers:users.reduce((a,u)=>a+u.totalScores,0),
     totalErrors:users.reduce((a,u)=>a+u.totalErrors,0),
+    totalStudyHours:Math.round(users.reduce((a,u)=>a+(u.totalStudySecs||0),0)/3600),
     avgReadiness:users.length?Math.round(users.reduce((a,u)=>a+u.readiness,0)/users.length):0,
     admins:users.filter(u=>u.is_admin).length,
+    pro:users.filter(u=>u.subscription_status==='active').length,
   };
 
   const subjectCounts={};
@@ -669,7 +1045,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
   const topByReadiness=[...users].sort((a,b)=>b.readiness-a.readiness).slice(0,5);
   const recentSignups=[...users].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5);
 
-  const TABS=['overview','users','analytics','exams','resources','broadcast','system'];
+  const TABS=['overview','users','analytics','query','exams','resources','broadcast','system'];
 
   return (
     <>
@@ -699,16 +1075,27 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
 
         <div style={{maxWidth:1280,margin:'0 auto',padding:'24px 24px 80px'}}>
           {/* Stat cards — always visible */}
-          <div style={{display:'grid',gridTemplateColumns:'repeat(8,1fr)',gap:8,marginBottom:20}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:8,marginBottom:8}}>
             {[
               {v:stats.total,l:'USERS',c:'#FF3D00'},
               {v:stats.activeWeek,l:'ACTIVE / WEEK',c:stats.activeWeek>0?'#00E676':'#555'},
               {v:stats.newWeek,l:'NEW / WEEK',c:stats.newWeek>0?'#FFD600':'#555'},
               {v:stats.activated,l:'ACTIVATED',c:'#40C4FF'},
-              {v:stats.totalPapers,l:'PAPERS',c:'#fff'},
-              {v:stats.totalErrors,l:'ERRORS',c:'#FF9100'},
-              {v:stats.avgReadiness,l:'AVG READY',c:R(stats.avgReadiness)},
               {v:stats.admins,l:'ADMINS',c:'#FF3D00'},
+            ].map(({v,l,c})=>(
+              <div key={l} style={{...card,padding:'12px 14px'}}>
+                <div style={{fontSize:24,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
+                <div style={{fontSize:9,color:'#b07060',letterSpacing:1.5,marginTop:4}}>{l}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:8,marginBottom:20}}>
+            {[
+              {v:stats.totalPapers,l:'PAPERS',c:'#fff'},
+              {v:`${stats.totalStudyHours}h`,l:'STUDY HOURS',c:'#00E676'},
+              {v:stats.totalErrors,l:'ERRORS',c:'#FF9100'},
+              {v:stats.avgReadiness,l:'AVG READINESS',c:R(stats.avgReadiness)},
+              {v:`£${(stats.pro*4.99).toFixed(0)}`,l:'MRR (EST.)',c:'#FFD600'},
             ].map(({v,l,c})=>(
               <div key={l} style={{...card,padding:'12px 14px'}}>
                 <div style={{fontSize:24,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
@@ -836,81 +1223,10 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
           )}
 
           {/* ANALYTICS */}
-          {tab==='analytics'&&(
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
-              <div style={{...card,padding:20}}>
-                <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:16,fontWeight:700}}>SUBJECT POPULARITY</div>
-                {topSubjects.map(([s,n])=>(
-                  <div key={s} style={{marginBottom:12}}>
-                    <div style={{display:'flex',justifyContent:'space-between',fontSize:10,marginBottom:3}}>
-                      <span style={{textTransform:'capitalize',color:SC[s]||'#888'}}>{s.replace(/-/g,' ')}</span>
-                      <span style={{color:'#FF3D00'}}>{n} user{n!==1?'s':''} &nbsp;<span style={{color:DIM}}>({users.length?Math.round((n/users.length)*100):0}%)</span></span>
-                    </div>
-                    <div style={{height:5,background:'rgba(255,255,255,0.04)',borderRadius:3,overflow:'hidden'}}>
-                      <div style={{height:'100%',width:`${(n/maxSub)*100}%`,background:SC[s]||'#FF3D00',borderRadius:3}}/>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div style={{...card,padding:20}}>
-                <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:16,fontWeight:700}}>READINESS DISTRIBUTION</div>
-                {[{l:'Battle Ready (80+)',min:80,max:101,c:'#00E676'},{l:'On Track (60–79)',min:60,max:80,c:'#FFD600'},{l:'Building (40–59)',min:40,max:60,c:'#FF9100'},{l:'Just Started (<40)',min:0,max:40,c:'#FF3D00'}].map(({l,min,max,c})=>{
-                  const count=users.filter(u=>u.readiness>=min&&u.readiness<max).length;
-                  const pct=users.length?Math.round((count/users.length)*100):0;
-                  return (
-                    <div key={l} style={{marginBottom:12}}>
-                      <div style={{display:'flex',justifyContent:'space-between',fontSize:10,marginBottom:3}}>
-                        <span style={{color:c,fontWeight:700}}>{l}</span>
-                        <span style={{color:'#aaa'}}>{count} ({pct}%)</span>
-                      </div>
-                      <div style={{height:5,background:'rgba(255,255,255,0.04)',borderRadius:3,overflow:'hidden'}}>
-                        <div style={{height:'100%',width:`${pct}%`,background:c,borderRadius:3}}/>
-                      </div>
-                    </div>
-                  );
-                })}
-                <div style={{marginTop:16,paddingTop:14,borderTop:'1px solid rgba(255,255,255,0.05)',display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-                  {[{l:'Activation rate',v:`${users.length?Math.round((stats.activated/users.length)*100):0}%`},{l:'Avg papers/user',v:users.length?Math.round(stats.totalPapers/users.length):0},{l:'Avg readiness',v:stats.avgReadiness},{l:'Total papers',v:stats.totalPapers}].map(({l,v})=>(
-                    <div key={l}><div style={{fontSize:9,color:DIM}}>{l}</div><div style={{fontSize:16,fontWeight:700,color:'#ccc'}}>{v}</div></div>
-                  ))}
-                </div>
-              </div>
-              <div style={{...card,padding:20}}>
-                <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:16,fontWeight:700}}>SCORE DISTRIBUTION BY GRADE</div>
-                {['A*','A','B','C','D','E','U'].map(g=>{
-                  const count=users.reduce((a,u)=>a+u.allScores.filter(s=>gradeFromPct(s.pct,s.subject)===g).length,0);
-                  const total=stats.totalPapers||1;
-                  return (
-                    <div key={g} style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
-                      <span style={{...pill(GC[g]),minWidth:26,textAlign:'center'}}>{g}</span>
-                      <div style={{flex:1,height:4,background:'rgba(255,255,255,0.04)',borderRadius:2,overflow:'hidden'}}>
-                        <div style={{height:'100%',width:`${(count/total)*100}%`,background:GC[g],borderRadius:2}}/>
-                      </div>
-                      <span style={{fontSize:10,color:'#aaa',minWidth:40,textAlign:'right'}}>{count}</span>
-                    </div>
-                  );
-                })}
-              </div>
-              <div style={{...card,padding:20}}>
-                <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:16,fontWeight:700}}>ERROR PATTERN ACROSS ALL USERS</div>
-                {(()=>{
-                  const et={};
-                  users.forEach(u=>Object.values(u.errors||{}).flat().forEach(e=>{et[e.type]=(et[e.type]||0)+1;}));
-                  const top=Object.entries(et).sort((a,b)=>b[1]-a[1]).slice(0,8);
-                  const mx=top[0]?.[1]||1;
-                  return top.map(([t,n])=>(
-                    <div key={t} style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
-                      <span style={{fontSize:10,color:'#FF9100',minWidth:100,textTransform:'capitalize'}}>{t}</span>
-                      <div style={{flex:1,height:4,background:'rgba(255,255,255,0.04)',borderRadius:2,overflow:'hidden'}}>
-                        <div style={{height:'100%',width:`${(n/mx)*100}%`,background:'#FF9100',borderRadius:2,opacity:0.7}}/>
-                      </div>
-                      <span style={{fontSize:10,color:'#aaa',minWidth:30,textAlign:'right'}}>{n}</span>
-                    </div>
-                  ));
-                })()}
-              </div>
-            </div>
-          )}
+          {tab==='analytics'&&<AnalyticsDashboard users={users}/>}
+
+          {/* QUERY */}
+          {tab==='query'&&<QueryExplorer users={users}/>}
 
           {/* EXAMS */}
           {tab==='exams'&&<ExamEditor/>}

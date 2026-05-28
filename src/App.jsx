@@ -5211,9 +5211,10 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
     const lT=ls.get(`rbp_targets_${uid}`,{});
     const lSess=ls.get(`rbp_sessions_${uid}`,[]);
     const lRN=ls.get(`rbp_rag_notes_${uid}`,{});
-    supabase.from('user_data').select('scores,errors,rag,targets,sessions,rag_notes').eq('user_id',user.id).eq('profile','me').single()
+    const lTT=ls.get(`rbp_timetable_${uid}`,{});
+    supabase.from('user_data').select('scores,errors,rag,targets,sessions,rag_notes,timetable').eq('user_id',user.id).eq('profile','me').single()
       .then(({data})=>{
-        let fS=lS,fE=lE,fR=lR,fT=lT,fSess=lSess,fRN=lRN;
+        let fS=lS,fE=lE,fR=lR,fT=lT,fSess=lSess,fRN=lRN,fTT=lTT;
         if (data) {
           const sIds=new Set(lS.map(s=>s.id));
           fS=[...lS,...(data.scores||[]).filter(s=>!sIds.has(s.id))];
@@ -5226,15 +5227,17 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
             fSess=[...lSess,...(data.sessions||[]).filter(s=>!sessIds.has(s.id))];
           }
           if (data.rag_notes&&Object.keys(data.rag_notes).length>0) fRN={...data.rag_notes,...lRN};
+          if (data.timetable&&Object.keys(data.timetable).length>0&&!Object.keys(lTT).length) fTT=data.timetable;
           setScores(fS);   ls.set(`rbp_scores_${uid}`,fS);
           setErrors(fE);   ls.set(`rbp_errors_${uid}`,fE);
           setRag(fR);      ls.set(`rbp_rag_${uid}`,fR);
           setTargets(fT);  ls.set(`rbp_targets_${uid}`,fT);
           setSessions(fSess); ls.set(`rbp_sessions_${uid}`,fSess);
           setRagNotes(fRN);   ls.set(`rbp_rag_notes_${uid}`,fRN);
+          setTimetable(fTT);  ls.set(`rbp_timetable_${uid}`,fTT);
         }
         supabase.from('user_data').upsert(
-          {user_id:user.id,profile:'me',scores:fS,errors:fE,rag:fR,targets:fT,sessions:fSess,rag_notes:fRN,updated_at:new Date().toISOString()},
+          {user_id:user.id,profile:'me',scores:fS,errors:fE,rag:fR,targets:fT,sessions:fSess,rag_notes:fRN,timetable:fTT,updated_at:new Date().toISOString()},
           {onConflict:'user_id,profile'}
         ).then(()=>{});
         setSyncLoaded(true);
@@ -5247,17 +5250,17 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
     syncRef.current=setTimeout(()=>{
       const lbScore = scores.length ? Math.round(scores.reduce((s,x)=>s+(x.pct??0),0)/scores.length) : 0;
       supabase.from('user_data').upsert(
-        {user_id:user.id,profile:'me',scores,errors,rag,targets,sessions,rag_notes:ragNotes,updated_at:new Date().toISOString()},
+        {user_id:user.id,profile:'me',scores,errors,rag,targets,sessions,rag_notes:ragNotes,timetable,updated_at:new Date().toISOString()},
         {onConflict:'user_id,profile'}
       ).then(({error})=>{
         if(error) addToast('Auto-save failed — your data is safe locally','warn');
       });
       supabase.from('user_profiles')
-        .update({leaderboard_score:lbScore,papers_count:scores.length})
+        .update({leaderboard_score:lbScore,papers_count:scores.length,last_seen_at:new Date().toISOString()})
         .eq('id',user.id);
     },2000);
     return ()=>clearTimeout(syncRef.current);
-  },[scores,errors,rag,targets,sessions,ragNotes,syncLoaded]);
+  },[scores,errors,rag,targets,sessions,ragNotes,timetable,syncLoaded]);
 
   // Browser push notifications
   useEffect(()=>{
@@ -5762,7 +5765,7 @@ export default function App() {
       const u=session.user; const uid=u.id;
       if (alive) setUser(u);
       try {
-        await supabase.from('user_profiles').upsert({id:uid,email:u.email},{onConflict:'id'});
+        await supabase.from('user_profiles').upsert({id:uid,email:u.email,last_seen_at:new Date().toISOString()},{onConflict:'id'});
         const {data}=await supabase.from('user_profiles').select('subjects,subscription_status,stripe_customer_id,referral_code,exam_level').eq('id',uid).single();
         if (!alive) return;
         if (data?.subscription_status) setIsPro(data.subscription_status==='pro'||data.subscription_status==='trialing');
