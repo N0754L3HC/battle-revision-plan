@@ -1987,41 +1987,36 @@ function QuickLog({subjects,scores,setScores,uid,C,font,onClose,onSaved}){
               <button onClick={onClose} style={{background:'transparent',border:'none',color:C.muted,fontSize:26,cursor:'pointer',lineHeight:1,padding:0}}>×</button>
             </div>
 
-            {/* Subject picker */}
+            {/* Subject dropdown */}
             <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Subject</div>
-            <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:18}}>
+            <select value={subject} onChange={e=>setSubject(e.target.value)}
+              style={{width:'100%',background:C.card2,border:`1px solid ${C.border}`,
+                borderRadius:10,padding:'12px 14px',color:C.text,fontSize:14,fontWeight:600,
+                fontFamily:font,outline:'none',cursor:'pointer',
+                appearance:'none',WebkitAppearance:'none',
+                backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
+                backgroundRepeat:'no-repeat',backgroundPosition:'right 14px center',
+                paddingRight:36,marginBottom:16}}>
               {subjects.map(s=>(
-                <button key={s.name} onClick={()=>setSubject(s.name)}
-                  style={{padding:'7px 12px',borderRadius:8,
-                    background:subject===s.name?`${s.color}20`:C.card2,
-                    border:`1px solid ${subject===s.name?s.color:C.border}`,
-                    color:subject===s.name?s.color:C.muted,
-                    fontSize:12,fontWeight:subject===s.name?700:400,fontFamily:font,cursor:'pointer'}}>
-                  {s.name==='Further Mathematics'||s.name==='Further Maths'?'FM':
-                   s.name==='Computer Science'?'CS':s.name}
-                </button>
+                <option key={s.name} value={s.name}>{s.name}</option>
               ))}
-            </div>
+            </select>
 
-            {/* Paper picker */}
+            {/* Paper dropdown */}
             <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Paper</div>
-            <div style={{display:'flex',gap:6,overflowX:'auto',paddingBottom:4,marginBottom:16,
-              scrollbarWidth:'none',WebkitOverflowScrolling:'touch'}}>
+            <select value={paper} onChange={e=>setPaper(e.target.value)}
+              style={{width:'100%',background:C.card2,border:`1px solid ${C.border}`,
+                borderRadius:10,padding:'12px 14px',color:C.text,fontSize:13,fontWeight:500,
+                fontFamily:font,outline:'none',cursor:'pointer',
+                appearance:'none',WebkitAppearance:'none',
+                backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
+                backgroundRepeat:'no-repeat',backgroundPosition:'right 14px center',
+                paddingRight:36,marginBottom:16}}>
               {allPapers.map(p=>{
                 const done=subjectDone(subject).has(p);
-                return(
-                  <button key={p} onClick={()=>setPaper(p)}
-                    style={{flexShrink:0,padding:'6px 12px',borderRadius:20,
-                      background:paper===p?C.accent:`${C.card2}`,
-                      border:`1px solid ${paper===p?C.accent:done?C.border+'80':C.border}`,
-                      color:paper===p?'#fff':done?C.subtle:C.muted,
-                      fontSize:11,fontWeight:paper===p?700:400,fontFamily:font,cursor:'pointer',
-                      maxWidth:180,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-                    {done?'✓ ':''}{p}
-                  </button>
-                );
+                return <option key={p} value={p}>{done?'✓ ':''}{p}</option>;
               })}
-            </div>
+            </select>
 
             {/* Score input */}
             <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Score (%)</div>
