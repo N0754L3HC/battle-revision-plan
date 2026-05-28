@@ -901,6 +901,8 @@ const ANIM_CSS=`
 @keyframes rbp-particle{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(0)}}
 @keyframes rbp-shimmer{0%{background-position:200% center}100%{background-position:-200% center}}
 @keyframes rbp-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes rbp-slide-up{0%{transform:translateY(16px);opacity:0}100%{transform:translateY(0);opacity:1}}
+@keyframes rbp-fade-in{0%{opacity:0}100%{opacity:1}}
 `;
 function ensureAnimStyles(){if(!document.getElementById('rbp-anims')){const s=document.createElement('style');s.id='rbp-anims';s.textContent=ANIM_CSS;document.head.appendChild(s);}}
 
@@ -1026,6 +1028,287 @@ function AchievementToast({achievement,onDismiss}){
           fontWeight:600,padding:'4px 10px',borderRadius:20,border:`1px solid ${tc}44`,
           display:'inline-block'}}>{achievement.tier}</div>
         <div style={{marginTop:14,fontSize:11,color:'#3a3a3a'}}>Tap to continue</div>
+      </div>
+    </div>
+  );
+}
+
+// ── Toast bar ──────────────────────────────────────────────────────────────
+function ToastBar({toasts,dismiss,isMobile}) {
+  ensureAnimStyles();
+  if (!toasts.length) return null;
+  return (
+    <div style={{position:'fixed',bottom:isMobile?70:24,left:16,zIndex:300,
+      display:'flex',flexDirection:'column-reverse',gap:8,pointerEvents:'none'}}>
+      {toasts.map(t=>(
+        <div key={t.id} onClick={()=>dismiss(t.id)}
+          style={{pointerEvents:'auto',maxWidth:300,borderRadius:10,padding:'10px 14px',
+            display:'flex',alignItems:'flex-start',gap:10,cursor:'pointer',
+            background:t.type==='error'?'#ef4444':t.type==='success'?'#22c55e':t.type==='warn'?'#f97316':'#18170f',
+            border:`1px solid rgba(255,255,255,0.12)`,
+            boxShadow:'0 4px 20px rgba(0,0,0,0.3)',
+            animation:'rbp-slide-up 0.22s ease'}}>
+          <span style={{fontSize:12,color:'#fff',lineHeight:1.5,flex:1}}>{t.msg}</span>
+          <span style={{fontSize:13,color:'rgba(255,255,255,0.55)',lineHeight:1,marginTop:1}}>✕</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Onboarding walkthrough ─────────────────────────────────────────────────
+const TOUR_STEPS = [
+  {icon:'📄',title:'Log your past papers',desc:"Hit the + button to record any past paper. Your scores, grades, and trends are tracked automatically."},
+  {icon:'🟢',title:'RAG topic tracker',desc:"Go to Resources → mark every spec topic as Red (needs work), Amber, or Green (confident). Your weakest areas surface automatically."},
+  {icon:'⚡',title:'Battle Readiness',desc:"Analytics combines your scores, paper count, and topic coverage into a single readiness score. Aim for 80+ before exam day."},
+  {icon:'⏱',title:'Study Timer',desc:"Pomodoro and free stopwatch — both track time per subject and sync across your devices so your streaks are always accurate."},
+  {icon:'🗓',title:'Exam countdown',desc:"Exams shows every paper with days remaining. Tap Send Schedule to email your full timetable to yourself."},
+];
+
+function Onboarding({onDone,setView,C,font}) {
+  ensureAnimStyles();
+  const [step,setStep] = useState(0);
+  const s = TOUR_STEPS[step];
+  const isLast = step===TOUR_STEPS.length-1;
+  const navMap = {1:'resources',2:'analytics',3:'timer',4:'exams'};
+  const next = () => {
+    if (isLast){onDone();return;}
+    if (navMap[step+1]) setView(navMap[step+1]);
+    setStep(step+1);
+  };
+  return (
+    <div style={{position:'fixed',inset:0,zIndex:250,pointerEvents:'none',
+      animation:'rbp-fade-in 0.3s ease'}}>
+      <div style={{position:'absolute',bottom:66,left:0,right:0,padding:'0 16px',
+        display:'flex',justifyContent:'center',pointerEvents:'auto'}}>
+        <div style={{width:'100%',maxWidth:480,background:C.surface,
+          border:`1px solid ${C.accent}44`,borderRadius:16,padding:'20px',
+          boxShadow:`0 8px 48px rgba(0,0,0,0.28),0 0 0 1px ${C.accent}18`}}>
+          <div style={{display:'flex',alignItems:'flex-start',gap:12,marginBottom:12}}>
+            <span style={{fontSize:26,lineHeight:1,flexShrink:0}}>{s.icon}</span>
+            <div style={{flex:1}}>
+              <div style={{fontSize:10,fontWeight:700,color:C.accent,letterSpacing:0.8,
+                textTransform:'uppercase',marginBottom:3}}>
+                Step {step+1} of {TOUR_STEPS.length}
+              </div>
+              <div style={{fontSize:15,fontWeight:700,color:C.text}}>{s.title}</div>
+            </div>
+            <button onClick={onDone}
+              style={{background:'transparent',border:'none',color:C.muted,
+                cursor:'pointer',fontSize:18,lineHeight:1,padding:'2px 4px',flexShrink:0}}>✕</button>
+          </div>
+          <p style={{fontSize:13,color:C.muted,lineHeight:1.65,margin:'0 0 16px'}}>{s.desc}</p>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <div style={{display:'flex',gap:4}}>
+              {TOUR_STEPS.map((_,i)=>(
+                <div key={i} style={{width:i===step?18:6,height:6,borderRadius:3,
+                  background:i===step?C.accent:C.border,transition:'all 0.2s'}}/>
+              ))}
+            </div>
+            <button onClick={next}
+              style={{padding:'8px 22px',background:C.accent,border:'none',borderRadius:8,
+                color:'#fff',fontSize:13,fontWeight:700,fontFamily:font,cursor:'pointer'}}>
+              {isLast?'Get started':'Next →'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Companion character ─────────────────────────────────────────────────────
+const SKIN_TONES  = ['#FDDBB4','#F1C27D','#C68642','#8D5524','#4A2912'];
+const HAIR_COLORS = ['#2C1A0E','#5C3A1E','#8B5E3C','#C9A96E','#3A3A3A'];
+
+function CompanionAvatar({skin,hair,hairStyle=0,mood,size=72}) {
+  const ST = SKIN_TONES[skin??0];
+  const HC = HAIR_COLORS[hair??0];
+  const hs = hairStyle??0;
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100">
+      <ellipse cx="50" cy="97" rx="26" ry="9" fill={ST}/>
+      <rect x="37" y="82" width="26" height="15" rx="6" fill={ST}/>
+      <rect x="44" y="78" width="12" height="9" rx="4" fill={ST}/>
+      <ellipse cx="50" cy="50" rx="30" ry="33" fill={ST}/>
+      {hs===0&&<path d="M22 50 Q22 17 50 13 Q78 17 78 50 Q76 19 50 17 Q24 19 22 50Z" fill={HC}/>}
+      {hs===1&&<>
+        <path d="M20 53 Q20 13 50 9 Q80 13 80 53 L81 68 Q78 18 50 16 Q22 18 19 68Z" fill={HC}/>
+        <rect x="18" y="60" width="9" height="24" rx="4.5" fill={HC}/>
+        <rect x="73" y="60" width="9" height="24" rx="4.5" fill={HC}/>
+      </>}
+      {hs===2&&<path d="M20 53 Q20 13 50 9 Q80 13 80 53 L83 88 Q76 64 50 66 Q24 64 17 88Z" fill={HC}/>}
+      <ellipse cx="20" cy="53" rx="5" ry="7" fill={ST}/>
+      <ellipse cx="80" cy="53" rx="5" ry="7" fill={ST}/>
+      <ellipse cx="37" cy="48" rx="7" ry="6.5" fill="white"/>
+      <ellipse cx="63" cy="48" rx="7" ry="6.5" fill="white"/>
+      {mood==='worried'?(
+        <>
+          <path d="M30 39 Q37 34 44 39" stroke={HC} strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+          <path d="M56 39 Q63 34 70 39" stroke={HC} strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+          <circle cx="37" cy="49" r="4.5" fill="#2c2c2c"/>
+          <circle cx="63" cy="49" r="4.5" fill="#2c2c2c"/>
+          <circle cx="38.5" cy="47.5" r="1.3" fill="white"/>
+          <circle cx="64.5" cy="47.5" r="1.3" fill="white"/>
+        </>
+      ):(mood==='happy'||mood==='excited')?(
+        <>
+          <path d="M30 40 Q37 37 44 40" stroke={HC} strokeWidth="2" fill="none" strokeLinecap="round"/>
+          <path d="M56 40 Q63 37 70 40" stroke={HC} strokeWidth="2" fill="none" strokeLinecap="round"/>
+          <path d="M31 49 Q37 43 43 49" stroke="#2c2c2c" strokeWidth="3" fill="none" strokeLinecap="round"/>
+          <path d="M57 49 Q63 43 69 49" stroke="#2c2c2c" strokeWidth="3" fill="none" strokeLinecap="round"/>
+          <ellipse cx="25" cy="58" rx="7" ry="4" fill="#f9a8d4" opacity="0.4"/>
+          <ellipse cx="75" cy="58" rx="7" ry="4" fill="#f9a8d4" opacity="0.4"/>
+        </>
+      ):(
+        <>
+          <path d="M30 40 Q37 37 44 40" stroke={HC} strokeWidth="2" fill="none" strokeLinecap="round"/>
+          <path d="M56 40 Q63 37 70 40" stroke={HC} strokeWidth="2" fill="none" strokeLinecap="round"/>
+          <circle cx="37" cy="49" r="4.5" fill="#2c2c2c"/>
+          <circle cx="63" cy="49" r="4.5" fill="#2c2c2c"/>
+          <circle cx="38.5" cy="47.5" r="1.3" fill="white"/>
+          <circle cx="64.5" cy="47.5" r="1.3" fill="white"/>
+        </>
+      )}
+      <path d="M48 62 Q50 66 52 62" stroke={`${ST}99`} strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+      {mood==='worried'?(
+        <path d="M42 72 Q50 68 58 72" stroke="#2c2c2c" strokeWidth="2" fill="none" strokeLinecap="round"/>
+      ):(mood==='excited')?(
+        <path d="M40 70 Q50 80 60 70" stroke="#2c2c2c" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+      ):(mood==='happy')?(
+        <path d="M41 70 Q50 79 59 70" stroke="#2c2c2c" strokeWidth="2" fill="none" strokeLinecap="round"/>
+      ):(
+        <path d="M43 71 Q50 75 57 71" stroke="#2c2c2c" strokeWidth="2" fill="none" strokeLinecap="round"/>
+      )}
+    </svg>
+  );
+}
+
+function getCompanionMood({sessions,scores,examSched,subjects}) {
+  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  const recent2d = sessions.filter(s=>s.ts>=(todayStart.getTime()-86400000));
+  const lastScore = scores.length?scores[scores.length-1]:null;
+  const nextExamDays = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId))
+    .map(e=>Math.ceil((new Date(e.date)-Date.now())/86400000))
+    .filter(d=>d>=0).sort((a,b)=>a-b)[0]??999;
+  if (nextExamDays<=3&&recent2d.length>=1) return 'excited';
+  if (nextExamDays<=5&&recent2d.length===0) return 'worried';
+  if (lastScore&&lastScore.pct>=80) return 'excited';
+  if (lastScore&&lastScore.pct>=65) return 'happy';
+  if (recent2d.length>=1) return 'happy';
+  return 'neutral';
+}
+
+function getCompanionMessage({mood,sessions,scores,subjects,examSched,name}) {
+  const hour = new Date().getHours();
+  const tod = hour<12?'Morning':hour<17?'Afternoon':'Evening';
+  const nextExam = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId))
+    .map(e=>({...e,d:Math.ceil((new Date(e.date)-Date.now())/86400000)}))
+    .filter(e=>e.d>=0).sort((a,b)=>a.d-b.d)[0];
+  if (mood==='excited'&&nextExam&&nextExam.d<=3) {
+    const when = nextExam.d===0?'today':nextExam.d===1?'tomorrow':`in ${nextExam.d} days`;
+    return `${nextExam.paper?.split(':')[0]||'Your exam'} is ${when}. You've put in the work — go show it.`;
+  }
+  if (mood==='worried') return `Haven't seen you study recently. Even 30 focused minutes today makes a real difference.`;
+  if (mood==='excited'&&scores.length) {
+    const l=scores[scores.length-1];
+    return `${l.grade||Math.round(l.pct)+'%'} on ${l.paper||l.subject} — that's what the work looks like. Keep it up.`;
+  }
+  if (mood==='happy') return `${tod}. Solid progress. Stay consistent and the grades will follow.`;
+  if (!scores.length) return `${tod}! Log your first past paper to get your readiness score. I'll track everything for you.`;
+  return `${tod}. Even one paper a week builds real momentum over time. Let's get to work.`;
+}
+
+function CompanionCard({sessions,scores,subjects,examSched,C,font}) {
+  ensureAnimStyles();
+  const [companion,setCompanion] = useState(()=>ls.get('rbp_companion',{name:'Alex',skin:0,hair:0,hairStyle:0}));
+  const [editing,setEditing]     = useState(false);
+  const [draft,setDraft]         = useState(companion.name);
+  const mood    = getCompanionMood({sessions,scores,examSched,subjects});
+  const message = getCompanionMessage({mood,sessions,scores,subjects,examSched,name:companion.name});
+  const moodColor = {happy:'#22c55e',excited:'#fbbf24',worried:'#f97316',neutral:C.accent}[mood]||C.accent;
+  const moodLabel = {happy:'Happy',excited:'Pumped',worried:'Worried',neutral:'Ready'}[mood]||'Ready';
+  const save = () => {
+    const c={...companion,name:draft.trim()||'Alex'};
+    setCompanion(c); ls.set('rbp_companion',c); setEditing(false);
+  };
+  return (
+    <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,
+      padding:'14px 16px',marginBottom:12,display:'flex',gap:14,alignItems:'flex-start'}}>
+      <div style={{position:'relative',flexShrink:0}}>
+        <CompanionAvatar skin={companion.skin} hair={companion.hair} hairStyle={companion.hairStyle} mood={mood} size={70}/>
+        <div style={{position:'absolute',bottom:-2,left:'50%',transform:'translateX(-50%)',
+          background:moodColor,borderRadius:20,padding:'1px 8px',fontSize:9,fontWeight:700,
+          color:'#fff',border:`2px solid ${C.surface}`,whiteSpace:'nowrap'}}>
+          {moodLabel}
+        </div>
+      </div>
+      <div style={{flex:1,minWidth:0}}>
+        {editing?(
+          <div style={{display:'flex',flexDirection:'column',gap:9}}>
+            <input value={draft} onChange={e=>setDraft(e.target.value)} maxLength={16}
+              placeholder="Name your companion"
+              style={{background:C.card2,border:`1px solid ${C.border}`,borderRadius:6,
+                padding:'6px 10px',color:C.text,fontSize:13,fontFamily:font,
+                outline:'none',width:'100%',boxSizing:'border-box'}}
+              autoFocus onKeyDown={e=>e.key==='Enter'&&save()}/>
+            <div>
+              <div style={{fontSize:10,color:C.muted,marginBottom:4}}>Skin tone</div>
+              <div style={{display:'flex',gap:5}}>
+                {SKIN_TONES.map((t,i)=>(
+                  <button key={i} onClick={()=>setCompanion(c=>({...c,skin:i}))}
+                    style={{width:20,height:20,borderRadius:'50%',background:t,cursor:'pointer',padding:0,
+                      border:`2px solid ${companion.skin===i?C.accent:'transparent'}`}}/>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div style={{fontSize:10,color:C.muted,marginBottom:4}}>Hair colour</div>
+              <div style={{display:'flex',gap:5}}>
+                {HAIR_COLORS.map((h,i)=>(
+                  <button key={i} onClick={()=>setCompanion(c=>({...c,hair:i}))}
+                    style={{width:20,height:20,borderRadius:'50%',background:h,cursor:'pointer',padding:0,
+                      border:`2px solid ${companion.hair===i?C.accent:'transparent'}`}}/>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div style={{fontSize:10,color:C.muted,marginBottom:4}}>Hair style</div>
+              <div style={{display:'flex',gap:5}}>
+                {['Short','Medium','Long'].map((lbl,i)=>(
+                  <button key={i} onClick={()=>setCompanion(c=>({...c,hairStyle:i}))}
+                    style={{padding:'3px 10px',borderRadius:5,fontSize:11,fontFamily:font,cursor:'pointer',
+                      background:companion.hairStyle===i?C.accentSoft:'transparent',
+                      border:`1px solid ${companion.hairStyle===i?C.accent:C.border}`,
+                      color:companion.hairStyle===i?C.accent:C.muted}}>
+                    {lbl}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{display:'flex',gap:7}}>
+              <button onClick={save}
+                style={{padding:'6px 16px',background:C.accent,border:'none',borderRadius:7,
+                  color:'#fff',fontSize:12,fontWeight:700,fontFamily:font,cursor:'pointer'}}>Save</button>
+              <button onClick={()=>setEditing(false)}
+                style={{padding:'6px 12px',background:'transparent',
+                  border:`1px solid ${C.border}`,borderRadius:7,
+                  color:C.muted,fontSize:12,fontFamily:font,cursor:'pointer'}}>Cancel</button>
+            </div>
+          </div>
+        ):(
+          <>
+            <div style={{display:'flex',alignItems:'center',marginBottom:6}}>
+              <span style={{fontSize:14,fontWeight:700,color:C.text}}>{companion.name}</span>
+              <span style={{fontSize:11,color:C.subtle,marginLeft:6}}>· your study companion</span>
+              <button onClick={()=>{setDraft(companion.name);setEditing(true);}}
+                style={{background:'transparent',border:'none',color:C.muted,
+                  cursor:'pointer',fontSize:11,marginLeft:'auto',
+                  padding:'2px 6px',borderRadius:5}}>Edit</button>
+            </div>
+            <p style={{fontSize:13,color:C.muted,lineHeight:1.6,margin:0}}>{message}</p>
+          </>
+        )}
       </div>
     </div>
   );
@@ -1499,7 +1782,7 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
 }
 
 // ── Analytics ──────────────────────────────────────────────────────────────
-function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, onQuickLog, targets, setTargets}) {
+function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, onQuickLog, targets, setTargets, sessions=[]}) {
   const SUBJ_COLORS  = Object.fromEntries(subjects.map(s=>[s.name,s.color]));
   const GRADE_BOUNDS = Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
 
@@ -1557,6 +1840,9 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
           </div>
         );
       })()}
+
+      {/* ── Companion card ──────────────────────────────────────────────── */}
+      <CompanionCard sessions={sessions} scores={scores} subjects={subjects} examSched={examSched} C={C} font={font}/>
 
       {/* ── Battle readiness gauge ───────────────────────────────────────── */}
       <div style={{background:C.surface,border:`1px solid ${br.labelColor}30`,borderRadius:12,
@@ -2018,107 +2304,199 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE}) {
   );
 }
 
-// ── Study tips ─────────────────────────────────────────────────────────────
+// ── Donut chart for timer ──────────────────────────────────────────────────
+function DonutChart({slices,selected,onSelect,C,size=140}) {
+  const total = slices.reduce((a,s)=>a+s.secs,0);
+  if (!total) return null;
+  const R=size*0.37, r=size*0.24, cx=size/2, cy=size/2;
+  let angle=-Math.PI/2;
+  const paths=slices.map(s=>{
+    const frac=s.secs/total;
+    const a1=angle, a2=angle+frac*2*Math.PI; angle=a2;
+    const x1=cx+R*Math.cos(a1),y1=cy+R*Math.sin(a1);
+    const x2=cx+R*Math.cos(a2),y2=cy+R*Math.sin(a2);
+    const xi1=cx+r*Math.cos(a2),yi1=cy+r*Math.sin(a2);
+    const xi2=cx+r*Math.cos(a1),yi2=cy+r*Math.sin(a1);
+    const lg=frac>0.5?1:0;
+    const d=frac>0.9999
+      ?`M ${cx} ${cy-R} A ${R} ${R} 0 1 1 ${cx-0.01} ${cy-R} Z M ${cx} ${cy-r} A ${r} ${r} 0 1 0 ${cx-0.01} ${cy-r} Z`
+      :`M ${x1} ${y1} A ${R} ${R} 0 ${lg} 1 ${x2} ${y2} L ${xi1} ${yi1} A ${r} ${r} 0 ${lg} 0 ${xi2} ${yi2} Z`;
+    return {...s,d,frac};
+  });
+  const fmt=secs=>{const h=Math.floor(secs/3600),m=Math.floor((secs%3600)/60);return h>0?`${h}h ${m}m`:`${m}m`;};
+  const sel=slices.find(s=>s.id===selected);
+  return (
+    <svg width={size} height={size} style={{flexShrink:0,overflow:'visible'}}>
+      {paths.map(p=>(
+        <path key={p.id} d={p.d} fill={p.color}
+          opacity={selected&&selected!==p.id?0.22:1}
+          style={{cursor:'pointer',transition:'opacity 0.2s'}}
+          onClick={()=>onSelect(selected===p.id?null:p.id)}/>
+      ))}
+      {sel?(
+        <>
+          <text x={cx} y={cy-5} textAnchor="middle" fontSize={10} fontWeight="700" fill={sel.color}>
+            {sel.name.split(' ').slice(0,2).join(' ')}
+          </text>
+          <text x={cx} y={cy+11} textAnchor="middle" fontSize={13} fontWeight="800" fill={sel.color}>
+            {fmt(sel.secs)}
+          </text>
+        </>
+      ):(
+        <>
+          <text x={cx} y={cy-4} textAnchor="middle" fontSize={15} fontWeight="800" fill={C.text}>
+            {fmt(total)}
+          </text>
+          <text x={cx} y={cy+12} textAnchor="middle" fontSize={8} fontWeight="700" fill={C.muted}>
+            TODAY
+          </text>
+        </>
+      )}
+    </svg>
+  );
+}
+
+// ── Study timer ────────────────────────────────────────────────────────────
 function StudyTimer({subjects,uid,C,font,sessions,setSessions}) {
-  const [timerMode, setTimerMode] = useState('pomodoro');
+  const [timerMode,  setTimerMode]  = useState('pomodoro');
   const [selSubject, setSelSubject] = useState(subjects[0]?.id??'');
+  const [workMins,   setWorkMins]   = useState(25);
+  const [breakMins,  setBreakMins]  = useState(5);
+  const [pomMode,    setPomMode]    = useState('work');
+  const [pomRunning, setPomRunning] = useState(false);
+  const [swRunning,  setSwRunning]  = useState(false);
+  const [pieSelected,setPieSelected]= useState(null);
+  const [,setTick] = useState(0); // force re-renders
 
-  // Pomodoro state
-  const [workMins,  setWorkMins]  = useState(25);
-  const [breakMins, setBreakMins] = useState(5);
-  const [pomMode,   setPomMode]   = useState('work');
-  const [secsLeft,  setSecsLeft]  = useState(25*60);
-  const [running,   setRunning]   = useState(false);
-  const pomRef = useRef(null);
+  // Background-safe timer refs: all time derived from Date.now() not counters
+  const pomEndRef  = useRef(null); // timestamp when pomodoro expires
+  const pomRemRef  = useRef(25*60); // remaining secs when paused
+  const swStartRef = useRef(null); // adjusted start time for stopwatch
+  const swAccumRef = useRef(0);    // accumulated secs when stopped
 
-  // Stopwatch state
-  const [swSecs,    setSwSecs]    = useState(0);
-  const [swRunning, setSwRunning] = useState(false);
-  const swRef = useRef(null);
+  // Derived display values (always computed from timestamps)
+  const pomSecs = pomRunning
+    ? Math.max(0, Math.ceil((pomEndRef.current - Date.now()) / 1000))
+    : pomRemRef.current;
+  const swSecs = swRunning
+    ? Math.max(0, Math.round((Date.now() - swStartRef.current) / 1000))
+    : swAccumRef.current;
 
-  const switchTimerMode = m => {
-    setRunning(false);  clearInterval(pomRef.current);
-    setSwRunning(false); clearInterval(swRef.current);
-    setTimerMode(m);
-  };
-
-  const pomReset = () => { setRunning(false); clearInterval(pomRef.current); setSecsLeft((pomMode==='work'?workMins:breakMins)*60); };
-
+  // Tick interval — just triggers re-renders; accuracy comes from Date.now()
   useEffect(()=>{
-    if (!running) { clearInterval(pomRef.current); return; }
-    pomRef.current = setInterval(()=>{
-      setSecsLeft(s=>{
-        if (s<=1) {
-          clearInterval(pomRef.current);
-          setRunning(false);
-          if (pomMode==='work') {
-            const sess={id:Date.now(),subjectId:selSubject,secs:workMins*60,ts:Date.now()};
-            setSessions(prev=>{ const next=[...prev,sess]; ls.set(`rbp_sessions_${uid}`,next); return next; });
-            // Supabase sync handled by parent's debounced effect via setSessions
-            setPomMode('break'); setSecsLeft(breakMins*60);
-          } else {
-            setPomMode('work'); setSecsLeft(workMins*60);
-          }
-          return 0;
+    if (!pomRunning && !swRunning) return;
+    const id = setInterval(()=>{
+      setTick(t=>t+1);
+      if (pomRunning && pomEndRef.current && Date.now()>=pomEndRef.current) {
+        setPomRunning(false); pomEndRef.current=null;
+        if (pomMode==='work') {
+          const sess={id:Date.now(),subjectId:selSubject,secs:workMins*60,ts:Date.now()};
+          setSessions(prev=>{const next=[...prev,sess];ls.set(`rbp_sessions_${uid}`,next);return next;});
+          setPomMode('break'); pomRemRef.current=breakMins*60;
+        } else {
+          setPomMode('work'); pomRemRef.current=workMins*60;
         }
-        return s-1;
-      });
-    },1000);
-    return ()=>clearInterval(pomRef.current);
-  },[running,pomMode,selSubject,workMins,breakMins,uid]);
+      }
+    }, 250);
+    return ()=>clearInterval(id);
+  },[pomRunning,swRunning,pomMode,selSubject,workMins,breakMins,uid]);
 
+  // Re-render when tab regains focus (catches background throttling)
   useEffect(()=>{
-    if (!swRunning) { clearInterval(swRef.current); return; }
-    swRef.current = setInterval(()=>setSwSecs(s=>s+1),1000);
-    return ()=>clearInterval(swRef.current);
-  },[swRunning]);
+    const fn=()=>{if(!document.hidden)setTick(t=>t+1);};
+    document.addEventListener('visibilitychange',fn);
+    return ()=>document.removeEventListener('visibilitychange',fn);
+  },[]);
 
-  const saveStopwatch = () => {
-    if (swSecs<60) return;
-    const sess={id:Date.now(),subjectId:selSubject,secs:swSecs,ts:Date.now()};
-    setSessions(prev=>{ const next=[...prev,sess]; ls.set(`rbp_sessions_${uid}`,next); return next; });
-    setSwRunning(false); clearInterval(swRef.current); setSwSecs(0);
+  const pomStart = () => {
+    pomEndRef.current = Date.now() + pomRemRef.current * 1000;
+    setPomRunning(true);
+  };
+  const pomPause = () => {
+    pomRemRef.current = Math.max(0, Math.ceil((pomEndRef.current - Date.now()) / 1000));
+    pomEndRef.current = null; setPomRunning(false);
+  };
+  const pomReset = () => {
+    pomEndRef.current = null;
+    pomRemRef.current = (pomMode==='work'?workMins:breakMins)*60;
+    setPomRunning(false); setTick(t=>t+1);
   };
 
-  const fmtSw = secs => {
-    const h=Math.floor(secs/3600), m=Math.floor((secs%3600)/60), s=secs%60;
-    if (h>0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  const swStart = () => {
+    swStartRef.current = Date.now() - swAccumRef.current * 1000;
+    setSwRunning(true);
+  };
+  const swPause = () => {
+    swAccumRef.current = Math.round((Date.now() - swStartRef.current) / 1000);
+    swStartRef.current = null; setSwRunning(false);
+  };
+  const swReset = () => {
+    swAccumRef.current = 0; swStartRef.current = null;
+    setSwRunning(false); setTick(t=>t+1);
+  };
+  const saveStopwatch = () => {
+    const secs = swSecs;
+    if (secs < 60) return;
+    const sess={id:Date.now(),subjectId:selSubject,secs,ts:Date.now()};
+    setSessions(prev=>{const next=[...prev,sess];ls.set(`rbp_sessions_${uid}`,next);return next;});
+    swReset();
+  };
+  const switchTimerMode = m => {
+    pomReset(); swReset(); setTimerMode(m);
+  };
+
+  const fmtSw = secs=>{
+    const h=Math.floor(secs/3600),m=Math.floor((secs%3600)/60),s=secs%60;
+    if(h>0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
     return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
   };
+  const fmtDur=secs=>{const h=Math.floor(secs/3600),m=Math.floor((secs%3600)/60);return h>0?`${h}h ${m}m`:`${m}m`;};
 
-  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
-  const weekStart  = new Date(todayStart); weekStart.setDate(weekStart.getDate()-6);
-  const workSessions  = sessions.filter(s=>s.subjectId);
-  const todaySessions = workSessions.filter(s=>s.ts>=todayStart.getTime());
-  const weekSessions  = workSessions.filter(s=>s.ts>=weekStart.getTime());
-  const todaySecs = todaySessions.reduce((a,s)=>a+s.secs,0);
-  const weekSecs  = weekSessions.reduce((a,s)=>a+s.secs,0);
+  const todayStart=new Date(); todayStart.setHours(0,0,0,0);
+  const weekStart=new Date(todayStart); weekStart.setDate(weekStart.getDate()-6);
+  const workSessions=sessions.filter(s=>s.subjectId);
+  const todaySessions=workSessions.filter(s=>s.ts>=todayStart.getTime());
+  const weekSessions=workSessions.filter(s=>s.ts>=weekStart.getTime());
+  const todaySecs=todaySessions.reduce((a,s)=>a+s.secs,0);
+  const weekSecs=weekSessions.reduce((a,s)=>a+s.secs,0);
 
-  const bySubject = subjects.map(s=>({
+  const bySubjectToday = subjects.map(s=>({
     ...s, secs:todaySessions.filter(ss=>ss.subjectId===s.id).reduce((a,ss)=>a+ss.secs,0)
   })).filter(s=>s.secs>0).sort((a,b)=>b.secs-a.secs);
 
-  const daySet = new Set(workSessions.map(s=>{
-    const d=new Date(s.ts); d.setHours(0,0,0,0); return d.getTime();
-  }));
-  let streak=0;
-  const chk=new Date(); chk.setHours(0,0,0,0);
-  while(daySet.has(chk.getTime())){ streak++; chk.setDate(chk.getDate()-1); }
+  const daySet=new Set(workSessions.map(s=>{const d=new Date(s.ts);d.setHours(0,0,0,0);return d.getTime();}));
+  let streak=0; const chk=new Date(); chk.setHours(0,0,0,0);
+  while(daySet.has(chk.getTime())){streak++;chk.setDate(chk.getDate()-1);}
 
-  const fmtDur = secs => {
-    const h=Math.floor(secs/3600), m=Math.floor((secs%3600)/60);
-    if (h>0) return `${h}h ${m}m`;
-    return `${m}m`;
-  };
+  const pomMm=String(Math.floor(pomSecs/60)).padStart(2,'0');
+  const pomSs=String(pomSecs%60).padStart(2,'0');
+  const isBreak=pomMode==='break';
 
-  const pomMm=String(Math.floor(secsLeft/60)).padStart(2,'0');
-  const pomSs=String(secsLeft%60).padStart(2,'0');
-  const isBreak = pomMode==='break';
+  // Detail panel for selected pie segment
+  const selSubjectObj = pieSelected ? subjects.find(s=>s.id===pieSelected) : null;
+  const selDetail = selSubjectObj ? (()=>{
+    const allSess = workSessions.filter(s=>s.subjectId===pieSelected);
+    const totalSecs = allSess.reduce((a,s)=>a+s.secs,0);
+    const weekSubSecs = weekSessions.filter(s=>s.subjectId===pieSelected).reduce((a,s)=>a+s.secs,0);
+    // Last 7 days bars
+    const days=[];
+    for(let i=6;i>=0;i--){
+      const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i);
+      const next=new Date(d); next.setDate(next.getDate()+1);
+      days.push({
+        label:d.toLocaleDateString('en-GB',{weekday:'short'}).slice(0,1),
+        secs:allSess.filter(s=>s.ts>=d.getTime()&&s.ts<next.getTime()).reduce((a,s)=>a+s.secs,0),
+        isToday:i===0,
+      });
+    }
+    const maxDay=Math.max(...days.map(d=>d.secs),1);
+    return {allSess,totalSecs,weekSubSecs,days,maxDay};
+  })() : null;
 
-  const subjectPill = (locked) => (
+  const subjectPill = locked=>(
     <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:20}}>
       {subjects.map(s=>(
-        <button key={s.id} onClick={()=>{if(!locked) setSelSubject(s.id);}} disabled={locked}
+        <button key={s.id} onClick={()=>{if(!locked)setSelSubject(s.id);}} disabled={locked}
           style={{padding:'5px 13px',borderRadius:20,
             border:`1px solid ${selSubject===s.id?s.color:C.border}`,
             background:selSubject===s.id?`${s.color}18`:'transparent',
@@ -2136,10 +2514,9 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions}) {
       <div>
         <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>Focus</div>
         <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Study Timer</h1>
-        <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>Sessions tracked per subject.</p>
+        <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>Runs in background. Sessions synced across devices.</p>
       </div>
 
-      {/* Mode toggle */}
       <div style={{display:'flex',gap:0,background:C.card2,borderRadius:9,padding:3,alignSelf:'flex-start',border:`1px solid ${C.border}`}}>
         {[['pomodoro','Pomodoro'],['stopwatch','Stopwatch']].map(([m,lbl])=>(
           <button key={m} onClick={()=>switchTimerMode(m)}
@@ -2154,31 +2531,27 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions}) {
         ))}
       </div>
 
-      {timerMode==='pomodoro' ? (
+      {timerMode==='pomodoro'?(
         <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:'24px 20px'}}>
-          {subjectPill(running)}
+          {subjectPill(pomRunning)}
           <div style={{textAlign:'center',marginBottom:16}}>
             <div style={{fontSize:10,fontWeight:700,letterSpacing:1,textTransform:'uppercase',
-              color:isBreak?'#4ade80':C.accent,marginBottom:6}}>
-              {isBreak?'Break':'Focus'}
-            </div>
+              color:isBreak?'#4ade80':C.accent,marginBottom:6}}>{isBreak?'Break':'Focus'}</div>
             <div style={{fontSize:76,fontWeight:800,color:C.text,
               fontFamily:"'JetBrains Mono','SF Mono',monospace",
-              lineHeight:1,letterSpacing:-3,marginBottom:18}}>
-              {pomMm}:{pomSs}
-            </div>
+              lineHeight:1,letterSpacing:-3,marginBottom:18}}>{pomMm}:{pomSs}</div>
             <div style={{display:'flex',gap:24,justifyContent:'center',marginBottom:20,flexWrap:'wrap'}}>
               <div>
                 <div style={{fontSize:10,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:5}}>Work</div>
                 <div style={{display:'flex',gap:4}}>
                   {TIMER_WORK_OPTS.map(m=>(
-                    <button key={m} onClick={()=>{if(!running){setWorkMins(m);if(pomMode==='work')setSecsLeft(m*60);}}}
-                      disabled={running}
+                    <button key={m} onClick={()=>{if(!pomRunning){setWorkMins(m);if(pomMode==='work')pomRemRef.current=m*60;setTick(t=>t+1);}}}
+                      disabled={pomRunning}
                       style={{padding:'3px 9px',borderRadius:5,
                         border:`1px solid ${workMins===m?C.accent:C.border}`,
                         background:workMins===m?C.accentSoft:'transparent',
                         color:workMins===m?C.accent:C.muted,
-                        fontSize:11,fontWeight:workMins===m?700:400,fontFamily:font,cursor:running?'default':'pointer'}}>
+                        fontSize:11,fontWeight:workMins===m?700:400,fontFamily:font,cursor:pomRunning?'default':'pointer'}}>
                       {m}m
                     </button>
                   ))}
@@ -2188,13 +2561,13 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions}) {
                 <div style={{fontSize:10,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:5}}>Break</div>
                 <div style={{display:'flex',gap:4}}>
                   {TIMER_BREAK_OPTS.map(m=>(
-                    <button key={m} onClick={()=>{if(!running){setBreakMins(m);if(pomMode==='break')setSecsLeft(m*60);}}}
-                      disabled={running}
+                    <button key={m} onClick={()=>{if(!pomRunning){setBreakMins(m);if(pomMode==='break')pomRemRef.current=m*60;setTick(t=>t+1);}}}
+                      disabled={pomRunning}
                       style={{padding:'3px 9px',borderRadius:5,
                         border:`1px solid ${breakMins===m?'#4ade80':C.border}`,
                         background:breakMins===m?'rgba(74,222,128,0.10)':'transparent',
                         color:breakMins===m?'#4ade80':C.muted,
-                        fontSize:11,fontWeight:breakMins===m?700:400,fontFamily:font,cursor:running?'default':'pointer'}}>
+                        fontSize:11,fontWeight:breakMins===m?700:400,fontFamily:font,cursor:pomRunning?'default':'pointer'}}>
                       {m}m
                     </button>
                   ))}
@@ -2202,12 +2575,12 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions}) {
               </div>
             </div>
             <div style={{display:'flex',gap:10,justifyContent:'center'}}>
-              <button onClick={()=>setRunning(r=>!r)}
+              <button onClick={pomRunning?pomPause:pomStart}
                 style={{padding:'11px 36px',borderRadius:8,
-                  background:running?C.card2:isBreak?'#4ade80':C.accent,
-                  border:`1px solid ${running?C.border:isBreak?'#4ade80':C.accent}`,
-                  color:running?C.text:'#fff',fontSize:14,fontWeight:700,fontFamily:font,cursor:'pointer',transition:'all 0.15s'}}>
-                {running?'Pause':'Start'}
+                  background:pomRunning?C.card2:isBreak?'#4ade80':C.accent,
+                  border:`1px solid ${pomRunning?C.border:isBreak?'#4ade80':C.accent}`,
+                  color:pomRunning?C.text:'#fff',fontSize:14,fontWeight:700,fontFamily:font,cursor:'pointer',transition:'all 0.15s'}}>
+                {pomRunning?'Pause':'Start'}
               </button>
               <button onClick={pomReset}
                 style={{padding:'11px 20px',borderRadius:8,background:'transparent',
@@ -2224,21 +2597,17 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions}) {
             </div>
           )}
         </div>
-      ) : (
+      ):(
         <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:'24px 20px'}}>
           {subjectPill(swRunning)}
           <div style={{textAlign:'center',marginBottom:16}}>
             <div style={{fontSize:10,fontWeight:700,letterSpacing:1,textTransform:'uppercase',
-              color:swRunning?C.accent:C.subtle,marginBottom:6}}>
-              {swRunning?'Running':'Stopped'}
-            </div>
+              color:swRunning?C.accent:C.subtle,marginBottom:6}}>{swRunning?'Running':'Stopped'}</div>
             <div style={{fontSize:swSecs>=3600?64:76,fontWeight:800,color:C.text,
               fontFamily:"'JetBrains Mono','SF Mono',monospace",
-              lineHeight:1,letterSpacing:-3,marginBottom:24}}>
-              {fmtSw(swSecs)}
-            </div>
+              lineHeight:1,letterSpacing:-3,marginBottom:24}}>{fmtSw(swSecs)}</div>
             <div style={{display:'flex',gap:10,justifyContent:'center',flexWrap:'wrap'}}>
-              <button onClick={()=>setSwRunning(r=>!r)}
+              <button onClick={swRunning?swPause:swStart}
                 style={{padding:'11px 36px',borderRadius:8,
                   background:swRunning?C.card2:C.accent,
                   border:`1px solid ${swRunning?C.border:C.accent}`,
@@ -2248,14 +2617,13 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions}) {
               {swSecs>=60&&(
                 <button onClick={saveStopwatch}
                   style={{padding:'11px 20px',borderRadius:8,
-                    background:'rgba(74,222,128,0.10)',
-                    border:'1px solid #4ade8040',color:'#4ade80',
-                    fontSize:14,fontWeight:700,fontFamily:font,cursor:'pointer',transition:'all 0.15s'}}>
+                    background:'rgba(74,222,128,0.10)',border:'1px solid #4ade8040',
+                    color:'#4ade80',fontSize:14,fontWeight:700,fontFamily:font,cursor:'pointer',transition:'all 0.15s'}}>
                   Save Session
                 </button>
               )}
               {swSecs>0&&!swRunning&&(
-                <button onClick={()=>setSwSecs(0)}
+                <button onClick={swReset}
                   style={{padding:'11px 16px',borderRadius:8,background:'transparent',
                     border:`1px solid ${C.border}`,color:C.muted,fontSize:14,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
                   Reset
@@ -2282,7 +2650,7 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions}) {
             <div style={{fontSize:13,fontWeight:700,color:C.text}}>This week</div>
           </div>
           <div style={{padding:'14px 18px'}}>
-            <div style={{display:'flex',gap:28,flexWrap:'wrap',marginBottom:bySubject.length>0?16:0}}>
+            <div style={{display:'flex',gap:28,flexWrap:'wrap',marginBottom:16}}>
               <div>
                 <div style={{fontSize:22,fontWeight:800,color:C.text}}>{fmtDur(weekSecs)}</div>
                 <div style={{fontSize:11,color:C.muted,marginTop:1}}>total focused</div>
@@ -2298,24 +2666,65 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions}) {
                 </div>
               )}
             </div>
-            {bySubject.length>0&&(
+            {bySubjectToday.length>0&&(
               <>
-                <div style={{fontSize:11,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:10}}>Today by subject</div>
-                {bySubject.map(s=>{
-                  const maxSecs=Math.max(...bySubject.map(x=>x.secs));
-                  return (
-                    <div key={s.id} style={{marginBottom:10}}>
-                      <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
-                        <span style={{fontSize:12,color:C.text,fontWeight:500}}>{s.name}</span>
-                        <span style={{fontSize:11,color:C.muted}}>{fmtDur(s.secs)}</span>
+                <div style={{fontSize:11,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:10}}>Today — tap to explore</div>
+                <div style={{display:'flex',gap:16,alignItems:'flex-start',flexWrap:'wrap'}}>
+                  <DonutChart slices={bySubjectToday} selected={pieSelected} onSelect={setPieSelected} C={C} size={140}/>
+                  <div style={{flex:1,minWidth:120}}>
+                    {bySubjectToday.map(s=>(
+                      <button key={s.id} onClick={()=>setPieSelected(pieSelected===s.id?null:s.id)}
+                        style={{display:'flex',alignItems:'center',gap:8,width:'100%',
+                          background:'transparent',border:'none',cursor:'pointer',
+                          padding:'4px 0',textAlign:'left',
+                          opacity:pieSelected&&pieSelected!==s.id?0.4:1,
+                          transition:'opacity 0.2s'}}>
+                        <div style={{width:8,height:8,borderRadius:'50%',background:s.color,flexShrink:0}}/>
+                        <span style={{fontSize:12,color:C.text,flex:1,fontFamily:font}}>{s.name}</span>
+                        <span style={{fontSize:11,color:C.muted,fontFamily:font}}>{fmtDur(s.secs)}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {/* Detail panel when segment selected */}
+                {selDetail&&selSubjectObj&&(
+                  <div style={{marginTop:14,background:C.card2,borderRadius:10,
+                    padding:'12px 14px',border:`1px solid ${selSubjectObj.color}33`}}>
+                    <div style={{display:'flex',justifyContent:'space-between',marginBottom:10}}>
+                      <span style={{fontSize:13,fontWeight:700,color:selSubjectObj.color}}>{selSubjectObj.name}</span>
+                      <button onClick={()=>setPieSelected(null)}
+                        style={{background:'transparent',border:'none',color:C.muted,cursor:'pointer',fontSize:14,padding:'0 4px'}}>✕</button>
+                    </div>
+                    <div style={{display:'flex',gap:16,marginBottom:12,flexWrap:'wrap'}}>
+                      <div>
+                        <div style={{fontSize:16,fontWeight:800,color:C.text}}>{fmtDur(selDetail.totalSecs)}</div>
+                        <div style={{fontSize:10,color:C.muted}}>all time</div>
                       </div>
-                      <div style={{height:5,borderRadius:3,background:C.card2}}>
-                        <div style={{height:'100%',borderRadius:3,background:s.color,
-                          width:`${(s.secs/maxSecs)*100}%`,transition:'width 0.4s'}}/>
+                      <div>
+                        <div style={{fontSize:16,fontWeight:800,color:C.text}}>{fmtDur(selDetail.weekSubSecs)}</div>
+                        <div style={{fontSize:10,color:C.muted}}>this week</div>
+                      </div>
+                      <div>
+                        <div style={{fontSize:16,fontWeight:800,color:C.text}}>{selDetail.allSess.length}</div>
+                        <div style={{fontSize:10,color:C.muted}}>sessions</div>
                       </div>
                     </div>
-                  );
-                })}
+                    <div style={{fontSize:10,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Last 7 days</div>
+                    <div style={{display:'flex',gap:4,alignItems:'flex-end',height:44}}>
+                      {selDetail.days.map((d,i)=>(
+                        <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3}}>
+                          <div style={{width:'100%',borderRadius:3,
+                            background:d.secs>0?selSubjectObj.color:C.border,
+                            height:d.secs>0?Math.max(4,Math.round((d.secs/selDetail.maxDay)*36)):4,
+                            opacity:d.isToday?1:0.65,transition:'height 0.4s'}}/>
+                          <div style={{fontSize:8,color:d.isToday?selSubjectObj.color:C.muted,fontWeight:d.isToday?700:400}}>
+                            {d.label}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -3192,6 +3601,15 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
   const [quickLogOpen,setQuickLogOpen] = useState(false);
   const [moreOpen,    setMoreOpen]     = useState(false);
   const [pendingAchievement,setPendingAchievement] = useState(null);
+  const [toasts, setToasts] = useState([]);
+  const [showTour, setShowTour] = useState(()=>!ls.get('rbp_tour_v1',false));
+  const addToast = (msg,type='info') => {
+    const id=Date.now()+Math.random();
+    setToasts(prev=>[...prev,{id,msg,type}]);
+    setTimeout(()=>setToasts(prev=>prev.filter(t=>t.id!==id)),4200);
+  };
+  const dismissToast = id => setToasts(prev=>prev.filter(t=>t.id!==id));
+  const doneTour = () => { ls.set('rbp_tour_v1',true); setShowTour(false); };
 
   const uid      = user?.id??'anon';
   const [scores,   setScores]    = useState(()=>ls.get(`rbp_scores_${uid}`,[]));
@@ -3329,7 +3747,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
     {id:'account',label:'Account'},
   ];
 
-  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes};
+  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast};
 
   return (
     <div style={{minHeight:'100vh',background:C.bg,fontFamily:font,color:C.text}}>
@@ -3533,6 +3951,8 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
       {pendingAchievement&&(
         <AchievementToast achievement={pendingAchievement} onDismiss={()=>setPendingAchievement(null)}/>
       )}
+      <ToastBar toasts={toasts} dismiss={dismissToast} isMobile={isMobile}/>
+      {showTour&&<Onboarding onDone={doneTour} setView={setView} C={C} font={font}/>}
       {(()=>{
         const streak = getStudyStreak(scores);
         if (!streak) return null;
