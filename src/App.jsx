@@ -1219,7 +1219,7 @@ function getCompanionMessage({mood,sessions,scores,subjects,examSched,name}) {
   return `${tod}. Even one paper a week builds real momentum over time. Let's get to work.`;
 }
 
-function CompanionCard({sessions,scores,subjects,examSched,C,font}) {
+function CompanionCard({sessions,scores,subjects,examSched,C,font,isPro=false,onUpgrade}) {
   ensureAnimStyles();
   const [companion,setCompanion] = useState(()=>ls.get('rbp_companion',{name:'Alex',skin:0,hair:0,hairStyle:0}));
   const [editing,setEditing]     = useState(false);
@@ -1308,12 +1308,22 @@ function CompanionCard({sessions,scores,subjects,examSched,C,font}) {
                   padding:'2px 6px',borderRadius:5}}>Edit</button>
             </div>
             <p style={{fontSize:13,color:C.muted,lineHeight:1.6,margin:'0 0 10px'}}>{message}</p>
-            <button onClick={()=>setChatOpen(true)}
-              style={{padding:'6px 14px',background:C.accentSoft,
-                border:`1px solid ${C.accent}44`,borderRadius:7,
-                color:C.accent,fontSize:12,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
-              Chat with {companion.name}
-            </button>
+            {isPro?(
+              <button onClick={()=>setChatOpen(true)}
+                style={{padding:'6px 14px',background:C.accentSoft,
+                  border:`1px solid ${C.accent}44`,borderRadius:7,
+                  color:C.accent,fontSize:12,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
+                Chat with {companion.name}
+              </button>
+            ):(
+              <button onClick={onUpgrade}
+                style={{padding:'6px 14px',background:'transparent',
+                  border:`1px solid ${C.border}`,borderRadius:7,
+                  color:C.muted,fontSize:12,fontWeight:600,fontFamily:font,cursor:'pointer',
+                  display:'flex',alignItems:'center',gap:5}}>
+                <span style={{fontSize:10}}>🔒</span> Chat · Pro feature
+              </button>
+            )}
           </>
         )}
       </div>
@@ -1904,7 +1914,7 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
 }
 
 // ── Analytics ──────────────────────────────────────────────────────────────
-function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, onQuickLog, targets, setTargets, sessions=[], rag={}}) {
+function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, onQuickLog, targets, setTargets, sessions=[], rag={}, isPro=false, onUpgrade}) {
   const SUBJ_COLORS  = Object.fromEntries(subjects.map(s=>[s.name,s.color]));
   const GRADE_BOUNDS = Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
 
@@ -2030,7 +2040,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
       )}
 
       {/* ── Companion card ──────────────────────────────────────────────── */}
-      <CompanionCard sessions={sessions} scores={scores} subjects={subjects} examSched={examSched} C={C} font={font}/>
+      <CompanionCard sessions={sessions} scores={scores} subjects={subjects} examSched={examSched} C={C} font={font} isPro={isPro} onUpgrade={()=>{ if(typeof onUpgrade==='function') onUpgrade(); }}/>
 
       {/* ── Battle readiness gauge ───────────────────────────────────────── */}
       <div style={{background:C.surface,border:`1px solid ${br.labelColor}30`,borderRadius:12,
@@ -3198,7 +3208,7 @@ function Resources({subjects,uid,C,font,rag,setRag,ragNotes,setRagNotes}) {
 }
 
 // ── Account ────────────────────────────────────────────────────────────────
-function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,font,examSched,scores=[],rag={}}) {
+function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,font,examSched,scores=[],rag={},isPro=false,stripeCustomerId=null}) {
   const [analyticsConsent, setAnalyticsConsent] = useState(()=>ls.get(`rbp_analytics_${uid}`,true));
   const [emailSending, setEmailSending] = useState(false);
   const [emailState, setEmailState] = useState('idle'); // 'idle'|'sent'|'error'
@@ -3206,6 +3216,10 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
   const [digestSending, setDigestSending] = useState(false);
   const [digestState, setDigestState] = useState('idle'); // 'idle'|'sent'|'error'
   const [digestMsg, setDigestMsg] = useState('');
+  const [upgrading, setUpgrading] = useState(false);
+  const [upgradeError, setUpgradeError] = useState('');
+  const [portalLoading, setPortalLoading] = useState(false);
+  const upgraded = typeof window!=='undefined' && new URLSearchParams(window.location.search).get('upgraded')==='1';
 
   const sendSchedule = async () => {
     if (!user?.email) return;
@@ -3259,8 +3273,108 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
     }
   };
 
+  const handleUpgrade = async () => {
+    if (!user?.email) return;
+    setUpgrading(true); setUpgradeError('');
+    try {
+      const r = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({userId:uid, email:user.email, customerId:stripeCustomerId||undefined}),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Failed');
+      window.location.href = d.url;
+    } catch(err) {
+      setUpgradeError(err.message);
+      setUpgrading(false);
+    }
+  };
+
+  const handleManageBilling = async () => {
+    if (!stripeCustomerId) return;
+    setPortalLoading(true);
+    try {
+      const r = await fetch('/api/billing-portal', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({customerId:stripeCustomerId}),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Failed');
+      window.location.href = d.url;
+    } catch(err) {
+      setUpgradeError(err.message);
+      setPortalLoading(false);
+    }
+  };
+
   return (
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
+
+      {upgraded&&!isPro&&(
+        <div style={{background:'rgba(74,222,128,0.07)',border:'1px solid rgba(74,222,128,0.2)',
+          borderRadius:10,padding:'14px 18px',display:'flex',alignItems:'flex-start',gap:10}}>
+          <span style={{fontSize:18,lineHeight:1,flexShrink:0}}>🎉</span>
+          <div>
+            <div style={{fontSize:13,fontWeight:700,color:C.success,marginBottom:3}}>Payment received!</div>
+            <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>Your Pro access is activating — refresh the page in a moment to unlock all Pro features.</div>
+          </div>
+        </div>
+      )}
+
+      <div style={{background:isPro?'linear-gradient(135deg,rgba(194,124,96,0.08),rgba(251,191,36,0.06))':C.card,
+        border:`1px solid ${isPro?C.accent+'55':C.border}`,borderRadius:10,padding:'18px 20px'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:isPro?12:0}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5}}>
+            Battle Plan {isPro?<span style={{color:C.accent}}>Pro</span>:'Free'}
+          </div>
+          {isPro&&(
+            <div style={{fontSize:10,fontWeight:800,color:'#fbbf24',background:'rgba(251,191,36,0.12)',
+              border:'1px solid rgba(251,191,36,0.25)',borderRadius:4,padding:'2px 8px',letterSpacing:0.5}}>
+              PRO ✓
+            </div>
+          )}
+        </div>
+        {isPro?(
+          <>
+            <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginBottom:12}}>
+              You have access to all Pro features — email reports, companion chat, and priority updates.
+            </div>
+            <button onClick={handleManageBilling} disabled={portalLoading||!stripeCustomerId}
+              style={{padding:'9px 16px',background:'transparent',border:`1px solid ${C.border}`,
+                borderRadius:8,color:C.muted,fontSize:12,fontWeight:600,fontFamily:font,
+                cursor:portalLoading||!stripeCustomerId?'not-allowed':'pointer'}}>
+              {portalLoading?'Opening…':'Manage subscription'}
+            </button>
+          </>
+        ):(
+          <>
+            <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginTop:10,marginBottom:14}}>
+              Upgrade to Pro to unlock email reports, companion chat, and more — supporting ongoing development.
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:14}}>
+              {['Email exam schedule & weekly digest','Companion chat','Priority feature access'].map(f=>(
+                <div key={f} style={{display:'flex',alignItems:'center',gap:7,fontSize:12,color:C.muted}}>
+                  <span style={{color:C.accent,fontSize:11}}>✓</span>{f}
+                </div>
+              ))}
+            </div>
+            {upgradeError&&(
+              <div style={{fontSize:12,color:C.danger,marginBottom:10,lineHeight:1.5}}>{upgradeError}</div>
+            )}
+            <button onClick={handleUpgrade} disabled={upgrading||!user}
+              style={{width:'100%',padding:'11px',
+                background:upgrading?C.card2:C.accent,
+                border:`1px solid ${upgrading?C.border:C.accent}`,borderRadius:8,
+                color:upgrading?C.muted:'#fff',fontSize:14,fontWeight:700,fontFamily:font,
+                cursor:upgrading||!user?'not-allowed':'pointer',transition:'background 0.15s'}}>
+              {upgrading?'Redirecting to checkout…':'Upgrade to Pro — £4.99/mo'}
+            </button>
+          </>
+        )}
+      </div>
+
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
         <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Account</div>
         <div style={{fontSize:14,color:C.text,fontWeight:600,marginBottom:4}}>{user?.email??'Signed in'}</div>
@@ -3324,66 +3438,92 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       </div>
 
       {user && (
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Exam schedule email</div>
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px',position:'relative'}}>
+        <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:8}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5}}>Exam schedule email</div>
+          {!isPro&&<span style={{fontSize:10,fontWeight:700,color:C.accent,background:C.accentSoft,border:`1px solid ${C.accent}44`,borderRadius:4,padding:'1px 6px',letterSpacing:0.3}}>PRO</span>}
+        </div>
         <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginBottom:12}}>
           Send your full exam timetable to <span style={{color:C.text,fontWeight:500}}>{user.email}</span>.
         </div>
-        {emailState==='sent'&&(
-          <div style={{background:'rgba(74,222,128,0.07)',border:'1px solid rgba(74,222,128,0.2)',
-            borderRadius:8,padding:'10px 14px',marginBottom:12,fontSize:13,color:C.success}}>
-            Sent — check your inbox.
-          </div>
+        {!isPro?(
+          <button onClick={handleUpgrade} disabled={upgrading}
+            style={{width:'100%',padding:'10px',background:C.accentSoft,border:`1px solid ${C.accent}44`,
+              borderRadius:8,color:C.accent,fontSize:13,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
+            {upgrading?'Redirecting…':'Unlock with Pro'}
+          </button>
+        ):(
+          <>
+            {emailState==='sent'&&(
+              <div style={{background:'rgba(74,222,128,0.07)',border:'1px solid rgba(74,222,128,0.2)',
+                borderRadius:8,padding:'10px 14px',marginBottom:12,fontSize:13,color:C.success}}>
+                Sent — check your inbox.
+              </div>
+            )}
+            {emailState==='error'&&(
+              <div style={{background:'rgba(239,68,68,0.07)',border:'1px solid rgba(239,68,68,0.2)',
+                borderRadius:8,padding:'10px 14px',marginBottom:12,fontSize:13,color:C.danger,lineHeight:1.6}}>
+                {emailMsg?.includes('Sender not verified')
+                  ? <>Domain not verified. Go to <b>resend.com/domains</b>, add <b>beattheexam.org</b>, add the DNS records, then set <b>RESEND_FROM</b> in Vercel env vars.</>
+                  : (emailMsg||'Email service not available yet.')}
+              </div>
+            )}
+            <button onClick={sendSchedule} disabled={emailSending||emailState==='sent'}
+              style={{width:'100%',padding:'10px',
+                background:emailState==='sent'?C.card2:C.accentSoft,
+                border:`1px solid ${emailState==='sent'?C.border:C.accent}`,
+                borderRadius:8,color:emailState==='sent'?C.muted:C.accent,
+                fontSize:13,fontWeight:600,fontFamily:font,
+                cursor:emailSending||emailState==='sent'?'not-allowed':'pointer',
+                transition:'background 0.15s'}}>
+              {emailSending?'Sending…':emailState==='sent'?'Sent ✓':'Email me my schedule'}
+            </button>
+          </>
         )}
-        {emailState==='error'&&(
-          <div style={{background:'rgba(239,68,68,0.07)',border:'1px solid rgba(239,68,68,0.2)',
-            borderRadius:8,padding:'10px 14px',marginBottom:12,fontSize:13,color:C.danger,lineHeight:1.6}}>
-            {emailMsg?.includes('Sender not verified')
-              ? <>Domain not verified. Go to <b>resend.com/domains</b>, add <b>beattheexam.org</b>, add the DNS records, then set <b>RESEND_FROM</b> in Vercel env vars.</>
-              : (emailMsg||'Email service not available yet.')}
-          </div>
-        )}
-        <button onClick={sendSchedule} disabled={emailSending||emailState==='sent'}
-          style={{width:'100%',padding:'10px',
-            background:emailState==='sent'?C.card2:C.accentSoft,
-            border:`1px solid ${emailState==='sent'?C.border:C.accent}`,
-            borderRadius:8,color:emailState==='sent'?C.muted:C.accent,
-            fontSize:13,fontWeight:600,fontFamily:font,
-            cursor:emailSending||emailState==='sent'?'not-allowed':'pointer',
-            transition:'background 0.15s'}}>
-          {emailSending?'Sending…':emailState==='sent'?'Sent ✓':'Email me my schedule'}
-        </button>
       </div>
       )}
 
       {user && (
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Weekly progress digest</div>
+        <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:8}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5}}>Weekly progress digest</div>
+          {!isPro&&<span style={{fontSize:10,fontWeight:700,color:C.accent,background:C.accentSoft,border:`1px solid ${C.accent}44`,borderRadius:4,padding:'1px 6px',letterSpacing:0.3}}>PRO</span>}
+        </div>
         <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginBottom:12}}>
           Get a summary of this week's papers, scores, readiness, and RAG status sent to <span style={{color:C.text,fontWeight:500}}>{user.email}</span>.
         </div>
-        {digestState==='sent'&&(
-          <div style={{background:'rgba(74,222,128,0.07)',border:'1px solid rgba(74,222,128,0.2)',
-            borderRadius:8,padding:'10px 14px',marginBottom:12,fontSize:13,color:C.success}}>
-            Digest sent — check your inbox.
-          </div>
+        {!isPro?(
+          <button onClick={handleUpgrade} disabled={upgrading}
+            style={{width:'100%',padding:'11px',background:C.accentSoft,border:`1px solid ${C.accent}44`,
+              borderRadius:8,color:C.accent,fontSize:13,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
+            {upgrading?'Redirecting…':'Unlock with Pro'}
+          </button>
+        ):(
+          <>
+            {digestState==='sent'&&(
+              <div style={{background:'rgba(74,222,128,0.07)',border:'1px solid rgba(74,222,128,0.2)',
+                borderRadius:8,padding:'10px 14px',marginBottom:12,fontSize:13,color:C.success}}>
+                Digest sent — check your inbox.
+              </div>
+            )}
+            {digestState==='error'&&(
+              <div style={{background:'rgba(239,68,68,0.07)',border:'1px solid rgba(239,68,68,0.2)',
+                borderRadius:8,padding:'10px 14px',marginBottom:12,fontSize:13,color:C.danger}}>
+                {digestMsg||'Failed to send. Try again.'}
+              </div>
+            )}
+            <button onClick={sendDigest} disabled={digestSending||digestState==='sent'}
+              style={{width:'100%',padding:'11px',
+                background:digestState==='sent'?C.card2:C.accentSoft,
+                border:`1px solid ${digestState==='sent'?C.border:C.accent}`,
+                borderRadius:8,color:digestState==='sent'?C.muted:C.accent,
+                fontSize:13,fontWeight:600,fontFamily:font,
+                cursor:digestSending||digestState==='sent'?'not-allowed':'pointer',
+                transition:'background 0.15s'}}>
+              {digestSending?'Sending…':digestState==='sent'?'Sent ✓':'Email me weekly digest'}
+            </button>
+          </>
         )}
-        {digestState==='error'&&(
-          <div style={{background:'rgba(239,68,68,0.07)',border:'1px solid rgba(239,68,68,0.2)',
-            borderRadius:8,padding:'10px 14px',marginBottom:12,fontSize:13,color:C.danger}}>
-            {digestMsg||'Failed to send. Try again.'}
-          </div>
-        )}
-        <button onClick={sendDigest} disabled={digestSending||digestState==='sent'}
-          style={{width:'100%',padding:'11px',
-            background:digestState==='sent'?C.card2:C.accentSoft,
-            border:`1px solid ${digestState==='sent'?C.border:C.accent}`,
-            borderRadius:8,color:digestState==='sent'?C.muted:C.accent,
-            fontSize:13,fontWeight:600,fontFamily:font,
-            cursor:digestSending||digestState==='sent'?'not-allowed':'pointer',
-            transition:'background 0.15s'}}>
-          {digestSending?'Sending…':digestState==='sent'?'Sent ✓':'Email me weekly digest'}
-        </button>
       </div>
       )}
 
@@ -3781,7 +3921,7 @@ function QuickLog({subjects,scores,setScores,uid,C,font,onClose,onSaved}){
 }
 
 // ── Main shell ─────────────────────────────────────────────────────────────
-function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_SCHEDULE}) {
+function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_SCHEDULE,isPro=false,stripeCustomerId=null}) {
   const [dark,setDark]     = useState(()=>ls.get('rbp_dark',false));
   const [view,setView]     = useState('analytics');
   const [isMobile,setIsMobile] = useState(()=>window.innerWidth<768);
@@ -3938,7 +4078,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
     {id:'account',label:'Account'},
   ];
 
-  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast};
+  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId};
 
   return (
     <div style={{minHeight:'100vh',background:C.bg,fontFamily:font,color:C.text}}>
@@ -4051,7 +4191,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
       <main style={isWide
         ?{marginLeft:216,padding:'32px 40px',minHeight:'100vh'}
         :{maxWidth:740,margin:'0 auto',padding:`${54+20}px 16px ${isMobile?82:32}px`}}>
-        {view==='analytics'    && <Analytics    {...vp} onQuickLog={()=>setQuickLogOpen(true)}/>}
+        {view==='analytics'    && <Analytics    {...vp} onQuickLog={()=>setQuickLogOpen(true)} onUpgrade={()=>setView('account')}/>}
         {view==='tracker'      && <Tracker      {...vp} setScores={setScores} setErrors={setErrors} uid={uid}/>}
         {view==='exams'        && <Exams        {...vp}/>}
         {view==='plan'         && <Schedule     {...vp}/>}
@@ -4059,7 +4199,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
         {view==='timer'        && <StudyTimer    subjects={subjects} uid={uid} C={C} font={font} sessions={sessions} setSessions={setSessions}/>}
         {view==='resources'    && <Resources    {...vp}/>}
         {view==='account'      && <Account      {...vp} user={user} selection={selection}
-                                    dark={dark} setDark={setDark} onSignOut={onSignOut} onResetSubjects={onResetSubjects}/>}
+                                    dark={dark} setDark={setDark} onSignOut={onSignOut} onResetSubjects={onResetSubjects} isPro={isPro} stripeCustomerId={stripeCustomerId}/>}
       </main>
 
       {isMobile&&(
@@ -4213,10 +4353,12 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
 
 // ── App root ───────────────────────────────────────────────────────────────
 export default function App() {
-  const [phase,setPhase]         = useState('loading');
-  const [user,setUser]           = useState(null);
-  const [selection,setSelection] = useState([]);
-  const [examSched,setExamSched] = useState(EXAM_SCHEDULE);
+  const [phase,setPhase]           = useState('loading');
+  const [user,setUser]             = useState(null);
+  const [selection,setSelection]   = useState([]);
+  const [examSched,setExamSched]   = useState(EXAM_SCHEDULE);
+  const [isPro,setIsPro]           = useState(false);
+  const [stripeCustomerId,setStripeCustomerId] = useState(null);
 
   const dark = ls.get('rbp_dark',false);
   const C    = dark?T.dark:T.light;
@@ -4237,8 +4379,10 @@ export default function App() {
       if (alive) setUser(u);
       try {
         await supabase.from('user_profiles').upsert({id:uid,email:u.email},{onConflict:'id',ignoreDuplicates:true});
-        const {data}=await supabase.from('user_profiles').select('subjects').eq('id',uid).single();
+        const {data}=await supabase.from('user_profiles').select('subjects,subscription_status,stripe_customer_id').eq('id',uid).single();
         if (!alive) return;
+        if (data?.subscription_status) setIsPro(data.subscription_status==='pro'||data.subscription_status==='trialing');
+        if (data?.stripe_customer_id) setStripeCustomerId(data.stripe_customer_id);
         let sel=[];
         try { if (data?.subjects) sel=JSON.parse(data.subjects); } catch {}
         if (Array.isArray(sel)&&sel.length>0) {
@@ -4299,7 +4443,7 @@ export default function App() {
   if (phase==='onboarding') return <ErrorBoundary><SubjectPicker user={user} onComplete={handleSubjectsDone}/></ErrorBoundary>;
   return (
     <ErrorBoundary>
-      <RevisionPlan user={user} selection={selection} onSignOut={handleSignOut} onResetSubjects={handleResetSubjects} examSched={examSched}/>
+      <RevisionPlan user={user} selection={selection} onSignOut={handleSignOut} onResetSubjects={handleResetSubjects} examSched={examSched} isPro={isPro} stripeCustomerId={stripeCustomerId}/>
     </ErrorBoundary>
   );
 }
