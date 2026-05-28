@@ -575,78 +575,127 @@ function AnalyticsDashboard({users}) {
   );
 }
 
-// ── Query Explorer (read-only) ─────────────────────────────────────────────
+// ── Query Explorer (preset-only, no eval) ─────────────────────────────────
 function QueryExplorer({users}) {
-  const [query,setQuery]=useState('');
   const [result,setResult]=useState(null);
-  const [running,setRunning]=useState(false);
-  const [err,setErr]=useState('');
   const [activePreset,setActivePreset]=useState(null);
 
   const PRESETS=[
-    {label:'Top 10 by papers',fn:u=>[...u].sort((a,b)=>b.totalScores-a.totalScores).slice(0,10).map(u=>({email:u.email,papers:u.totalScores,avg:`${u.avgScore}%`,readiness:u.readiness}))},
-    {label:'Active this week',fn:u=>u.filter(x=>Date.now()-new Date(x.lastActive)<604800000).map(x=>({email:x.email,last_active:timeSince(x.lastActive),papers:x.totalScores}))},
-    {label:'Pro subscribers',fn:u=>u.filter(x=>x.subscription_status==='active').map(x=>({email:x.email,name:x.display_name,joined:fmtDate(x.created_at)}))},
-    {label:'Zero papers (dormant)',fn:u=>u.filter(x=>x.totalScores===0).map(x=>({email:x.email,joined:fmtDate(x.created_at),last_seen:timeSince(x.lastActive)}))},
-    {label:'Subject breakdown',fn:u=>{const m={};u.forEach(x=>(x.subjectList||[]).forEach(s=>m[s]=(m[s]||0)+1));return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([s,n])=>({subject:s,users:n}));}},
-    {label:'Errors by type (all users)',fn:u=>{const m={};u.forEach(x=>Object.values(x.errors||{}).flat().forEach(e=>m[e.type]=(m[e.type]||0)+1));return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([type,count])=>({type,count}));}},
+    {
+      label:'Top 10 by papers',
+      desc:'Highest paper count users',
+      fn:u=>[...u].sort((a,b)=>b.totalScores-a.totalScores).slice(0,10)
+        .map(u=>({email:u.email,name:u.display_name||'—',papers:u.totalScores,avg:`${u.avgScore}%`,readiness:u.readiness})),
+    },
+    {
+      label:'Active this week',
+      desc:'Users seen in last 7 days',
+      fn:u=>u.filter(x=>Date.now()-new Date(x.lastActive)<604800000)
+        .sort((a,b)=>new Date(b.lastActive)-new Date(a.lastActive))
+        .map(x=>({email:x.email,last_active:timeSince(x.lastActive),papers:x.totalScores,exam_level:x.exam_level||'—'})),
+    },
+    {
+      label:'Pro subscribers',
+      desc:'All active paying users',
+      fn:u=>u.filter(x=>x.subscription_status==='active')
+        .map(x=>({email:x.email,name:x.display_name||'—',joined:fmtDate(x.created_at),papers:x.totalScores})),
+    },
+    {
+      label:'Dormant (0 papers)',
+      desc:'Signed up but never logged a paper',
+      fn:u=>u.filter(x=>x.totalScores===0)
+        .sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))
+        .map(x=>({email:x.email,joined:fmtDate(x.created_at),last_seen:timeSince(x.lastActive),exam_level:x.exam_level||'—'})),
+    },
+    {
+      label:'Subject breakdown',
+      desc:'How many users per subject',
+      fn:u=>{const m={};u.forEach(x=>(x.subjectList||[]).forEach(s=>m[s]=(m[s]||0)+1));
+        return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([s,n])=>({subject:s,users:n,pct:`${u.length?Math.round(n/u.length*100):0}%`}));},
+    },
+    {
+      label:'Error type analysis',
+      desc:'Most common error types across all users',
+      fn:u=>{const m={};u.forEach(x=>Object.values(x.errors||{}).flat().forEach(e=>{if(e.type)m[e.type]=(m[e.type]||0)+1;}));
+        return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,20).map(([type,count])=>({type,count}));},
+    },
+    {
+      label:'GCSE vs A-Level split',
+      desc:'Exam level breakdown',
+      fn:u=>{
+        const gcse=u.filter(x=>x.exam_level==='gcse').length;
+        const alevel=u.filter(x=>x.exam_level==='alevel'||!x.exam_level).length;
+        return [{level:'A-Level',users:alevel,pct:`${u.length?Math.round(alevel/u.length*100):0}%`},{level:'GCSE',users:gcse,pct:`${u.length?Math.round(gcse/u.length*100):0}%`}];
+      },
+    },
+    {
+      label:'School leaderboard',
+      desc:'Avg score per school (≥2 opted-in users)',
+      fn:u=>{
+        const m={};
+        u.filter(x=>x.school_opt_in&&x.school_name).forEach(x=>{
+          const k=x.school_name.trim();
+          if(!m[k])m[k]={total:0,count:0};
+          m[k].total+=x.avgScore||0; m[k].count++;
+        });
+        return Object.entries(m).filter(([,v])=>v.count>=2)
+          .map(([school,v])=>({school,students:v.count,avg_score:Math.round(v.total/v.count)}))
+          .sort((a,b)=>b.avg_score-a.avg_score);
+      },
+    },
   ];
 
   const runPreset=p=>{
-    setActivePreset(p.label); setErr(''); setRunning(true);
-    try { setResult(p.fn(users)); } catch(e) { setErr(e.message); }
-    setRunning(false);
-  };
-
-  const runCustom=()=>{
-    setErr(''); setRunning(true); setActivePreset(null);
-    try {
-      // Safe eval: only allow users array manipulation
-      // eslint-disable-next-line no-new-func
-      const fn=new Function('users','fmtDate','timeSince',`"use strict"; return (${query})`);
-      const r=fn(users,fmtDate,timeSince);
-      if (Array.isArray(r)) setResult(r.slice(0,100));
-      else setResult([r]);
-    } catch(e) { setErr(e.message); }
-    setRunning(false);
+    setActivePreset(p.label);
+    setResult(p.fn(users));
   };
 
   const cols=result?.length>0?Object.keys(result[0]):[];
 
+  const exportJson=()=>{
+    if (!result) return;
+    const blob=new Blob([JSON.stringify(result,null,2)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${activePreset?.replace(/\s+/g,'-').toLowerCase()??'query'}.json`;a.click();
+  };
+
+  const exportCsv=()=>{
+    if (!result||!cols.length) return;
+    const rows=[cols.join(','),...result.map(r=>cols.map(c=>JSON.stringify(r[c]??'')).join(','))];
+    const blob=new Blob([rows.join('\n')],{type:'text/csv'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${activePreset?.replace(/\s+/g,'-').toLowerCase()??'query'}.csv`;a.click();
+  };
+
   return (
     <div>
       <div style={{...card,padding:20,marginBottom:14}}>
-        <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:16,fontWeight:700}}>PRESET QUERIES</div>
-        <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+        <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:4,fontWeight:700}}>DATA QUERIES</div>
+        <div style={{fontSize:10,color:DIM,marginBottom:16,lineHeight:1.6}}>
+          Read-only queries over the loaded user dataset. No eval — all queries are safe predefined functions.
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',gap:6}}>
           {PRESETS.map(p=>(
             <button key={p.label} onClick={()=>runPreset(p)} style={{
-              ...btn(activePreset===p.label?'#00E676':'#FF3D00',activePreset===p.label),
-              fontSize:10,padding:'6px 12px'
-            }}>{p.label}</button>
+              background:activePreset===p.label?'rgba(255,61,0,0.12)':'rgba(255,255,255,0.03)',
+              border:`1px solid ${activePreset===p.label?'rgba(255,61,0,0.4)':'rgba(255,255,255,0.08)'}`,
+              borderRadius:6,padding:'10px 14px',cursor:'pointer',textAlign:'left',transition:'all 0.15s',
+            }}>
+              <div style={{fontSize:11,fontWeight:700,color:activePreset===p.label?'#FF3D00':'#ccc',marginBottom:3}}>{p.label}</div>
+              <div style={{fontSize:9,color:DIM}}>{p.desc}</div>
+            </button>
           ))}
         </div>
       </div>
 
-      <div style={{...card,padding:20,marginBottom:14}}>
-        <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:10,fontWeight:700}}>CUSTOM QUERY</div>
-        <div style={{fontSize:10,color:DIM,marginBottom:10,lineHeight:1.7}}>
-          JavaScript expression operating on the <code style={{color:'#888'}}>users</code> array.
-          Read-only — no writes or network calls. Returns up to 100 rows.<br/>
-          Example: <code style={{color:'#aaa'}}>users.filter(u=&gt;u.totalScores&gt;5).map(u=&gt;(&#123;email:u.email,papers:u.totalScores&#125;))</code>
-        </div>
-        <textarea value={query} onChange={e=>setQuery(e.target.value)} style={{...iS,height:80,resize:'vertical',marginBottom:10,fontSize:11}} placeholder="users.filter(u => ...).map(u => ({...}))"/>
-        <button onClick={runCustom} disabled={running||!query.trim()} style={{...btn('#FF3D00',true),padding:'8px 20px'}}>RUN QUERY</button>
-        {err&&<div style={{color:'#FF9100',fontSize:11,marginTop:8}}>{err}</div>}
-      </div>
-
       {result&&(
         <div style={{...card,overflow:'hidden'}}>
-          <div style={{padding:'12px 16px',borderBottom:'1px solid rgba(255,61,0,0.08)',fontSize:9,color:SEC,letterSpacing:2,fontWeight:700}}>
-            RESULTS — {result.length} row{result.length!==1?'s':''}
-            <button onClick={()=>{
-              const blob=new Blob([JSON.stringify(result,null,2)],{type:'application/json'});
-              const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='query-result.json';a.click();
-            }} style={{...btn('#00E676'),marginLeft:12,fontSize:9,padding:'3px 8px'}}>↓ JSON</button>
+          <div style={{padding:'12px 16px',borderBottom:'1px solid rgba(255,61,0,0.08)',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <div style={{fontSize:9,color:SEC,letterSpacing:2,fontWeight:700}}>
+              {activePreset} — {result.length} row{result.length!==1?'s':''}
+            </div>
+            <div style={{display:'flex',gap:6}}>
+              <button onClick={exportCsv} style={{...btn('#00E676'),fontSize:9,padding:'4px 10px'}}>↓ CSV</button>
+              <button onClick={exportJson} style={{...btn('#40C4FF'),fontSize:9,padding:'4px 10px'}}>↓ JSON</button>
+            </div>
           </div>
           {result.length===0?(
             <div style={{padding:24,color:DIM,fontSize:12,textAlign:'center'}}>No results.</div>
@@ -660,12 +709,13 @@ function QueryExplorer({users}) {
                 </thead>
                 <tbody>
                   {result.slice(0,100).map((row,i)=>(
-                    <tr key={i} style={{borderBottom:'1px solid rgba(255,255,255,0.03)'}}>
-                      {cols.map(c=><td key={c} style={{padding:'8px 14px',color:'#bbb',maxWidth:260,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{String(row[c]??'—')}</td>)}
+                    <tr key={i} style={{borderBottom:'1px solid rgba(255,255,255,0.03)',transition:'background 0.1s'}}>
+                      {cols.map(c=><td key={c} style={{padding:'8px 14px',color:'#bbb',maxWidth:280,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{String(row[c]??'—')}</td>)}
                     </tr>
                   ))}
                 </tbody>
               </table>
+              {result.length>100&&<div style={{padding:'10px 16px',fontSize:10,color:DIM}}>Showing first 100 of {result.length} rows — export to see all.</div>}
             </div>
           )}
         </div>

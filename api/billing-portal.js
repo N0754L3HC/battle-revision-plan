@@ -1,15 +1,39 @@
 import Stripe from 'stripe';
+import { createClient } from '@supabase/supabase-js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const APP_URL = process.env.APP_URL ?? 'https://beattheexam.org';
 
+const admin = createClient(
+  process.env.SUPABASE_URL ?? '',
+  process.env.SUPABASE_SERVICE_KEY ?? ''
+);
+
+async function getAuthUser(req) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return null;
+  const { data: { user }, error } = await admin.auth.getUser(token);
+  return error ? null : user;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   if (!process.env.STRIPE_SECRET_KEY) return res.status(503).json({ error: 'Payments not configured' });
+  if (!process.env.SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'Not configured' });
+
+  const user = await getAuthUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
   const { customerId } = req.body ?? {};
   if (!customerId || typeof customerId !== 'string') {
     return res.status(400).json({ error: 'Missing customerId' });
+  }
+
+  // Verify the customerId belongs to the authenticated user — prevent portal hijacking
+  const { data: profile } = await admin.from('user_profiles')
+    .select('stripe_customer_id').eq('id', user.id).single();
+  if (!profile?.stripe_customer_id || profile.stripe_customer_id !== customerId) {
+    return res.status(403).json({ error: 'Forbidden' });
   }
 
   try {
