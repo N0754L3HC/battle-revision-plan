@@ -1,7 +1,23 @@
 import { Resend } from 'resend';
+import { createClient } from '@supabase/supabase-js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = process.env.RESEND_FROM ?? 'Battle Plan <onboarding@resend.dev>';
+
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL ?? '',
+  process.env.SUPABASE_SERVICE_KEY ?? ''
+);
+
+async function getAuthUser(req) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return null;
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  return error ? null : user;
+}
+
+// Escape HTML entities to prevent injection in email body
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
 
 // Max 10 schedule emails per IP per hour
 const rl = new Map();
@@ -37,10 +53,10 @@ function buildHtml(exams) {
       <div style="background:#ffffff;border:1px solid #e5e1db;border-radius:10px;padding:16px 20px;margin-bottom:8px;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;">
           <div style="flex:1;">
-            <div style="font-size:11px;font-weight:700;color:#b5735a;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">${e.board} &middot; ${e.time} &middot; ${e.duration}</div>
-            <div style="font-size:15px;font-weight:700;color:#18170f;margin-bottom:3px;">${e.subject}</div>
-            <div style="font-size:13px;color:#574f48;margin-bottom:3px;">${e.paper}</div>
-            <div style="font-size:11px;color:#9b938b;">${e.code} &middot; ${fmtDate(e.date)}</div>
+            <div style="font-size:11px;font-weight:700;color:#b5735a;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">${esc(e.board)} &middot; ${esc(e.time)} &middot; ${esc(e.duration)}</div>
+            <div style="font-size:15px;font-weight:700;color:#18170f;margin-bottom:3px;">${esc(e.subject)}</div>
+            <div style="font-size:13px;color:#574f48;margin-bottom:3px;">${esc(e.paper)}</div>
+            <div style="font-size:11px;color:#9b938b;">${esc(e.code)} &middot; ${fmtDate(e.date)}</div>
           </div>
           ${countdown ? `<div style="flex-shrink:0;margin-left:16px;text-align:center;background:${urgentColor}18;border:1px solid ${urgentColor}44;border-radius:8px;padding:8px 12px;">
             <div style="font-size:18px;font-weight:800;color:${urgentColor};line-height:1;">${countdown === 'Today' || countdown === 'Tomorrow' ? countdown : countdown.replace(' days', '')}</div>
@@ -94,7 +110,16 @@ export default async function handler(req, res) {
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ?? req.socket?.remoteAddress ?? 'unknown';
   if (!rateLimit(ip)) return res.status(429).json({ error: 'Too many requests — try again later' });
 
+  // Require authentication — prevents abuse of email-sending endpoint
+  const user = await getAuthUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
   const { email, exams } = req.body ?? {};
+
+  // Email must match the authenticated user's address
+  if (email && email.toLowerCase() !== user.email?.toLowerCase()) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
 
   // Validate email
   if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {

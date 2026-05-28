@@ -1,8 +1,14 @@
 import Stripe from 'stripe';
+import { createClient } from '@supabase/supabase-js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const PRO_PRICE_ID = process.env.STRIPE_PRO_PRICE_ID;
 const APP_URL = process.env.APP_URL ?? 'https://beattheexam.org';
+
+const admin = createClient(
+  process.env.SUPABASE_URL ?? '',
+  process.env.SUPABASE_SERVICE_KEY ?? ''
+);
 
 const rl = new Map();
 function rateLimit(ip) {
@@ -13,18 +19,44 @@ function rateLimit(ip) {
   entry.count++; rl.set(ip, entry); return true;
 }
 
+async function getAuthUser(req) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return null;
+  const { data: { user }, error } = await admin.auth.getUser(token);
+  return error ? null : user;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   if (!process.env.STRIPE_SECRET_KEY || !PRO_PRICE_ID) {
     return res.status(503).json({ error: 'Payments not configured' });
   }
+  if (!process.env.SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'Not configured' });
 
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ?? req.socket?.remoteAddress ?? 'unknown';
   if (!rateLimit(ip)) return res.status(429).json({ error: 'Too many requests' });
 
-  const { userId, email, customerId } = req.body ?? {};
-  if (!userId || typeof userId !== 'string') return res.status(400).json({ error: 'Missing userId' });
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Invalid email' });
+  // Require auth — userId and email come from the verified JWT, not the request body
+  const user = await getAuthUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  const userId = user.id;
+  const email  = user.email;
+  if (!email) return res.status(400).json({ error: 'Account has no email' });
+
+  // customerId may optionally be provided but must match the authenticated user's profile
+  const { customerId: bodyCustomerId } = req.body ?? {};
+  let customerId = null;
+
+  if (bodyCustomerId) {
+    const { data: profile } = await admin.from('user_profiles')
+      .select('stripe_customer_id').eq('id', userId).single();
+    // Reject if the claimed customerId doesn't match what we have on record
+    if (profile?.stripe_customer_id && profile.stripe_customer_id !== bodyCustomerId) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    customerId = profile?.stripe_customer_id ?? null;
+  }
 
   try {
     const params = {

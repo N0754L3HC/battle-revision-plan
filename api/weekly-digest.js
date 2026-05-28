@@ -1,7 +1,22 @@
 import { Resend } from 'resend';
+import { createClient } from '@supabase/supabase-js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = process.env.RESEND_FROM ?? 'Battle Plan <onboarding@resend.dev>';
+
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL ?? '',
+  process.env.SUPABASE_SERVICE_KEY ?? ''
+);
+
+async function getAuthUser(req) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return null;
+  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  return error ? null : user;
+}
+
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
 
 // Simple in-process rate limit: max 5 digest emails per IP per hour
 const rl = new Map();
@@ -45,13 +60,15 @@ function buildHtml({ scores = [], subjects = [], rag = {} }) {
 
   const subjectRows = subjectStats.map(s => {
     const latestGrade = s.week.length ? s.week[s.week.length - 1].grade : null;
+    // Validate color is a hex/rgb value before interpolating into HTML style
+    const safeColor = /^#[0-9a-fA-F]{3,8}$/.test(s.color ?? '') ? s.color : '#888888';
     return `
       <div style="background:#ffffff;border:1px solid #e5e1db;border-radius:10px;padding:14px 18px;margin-bottom:8px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
           <div style="display:flex;align-items:center;gap:10px;">
-            <div style="width:10px;height:10px;border-radius:50%;background:${s.color};flex-shrink:0;"></div>
-            <span style="font-size:14px;font-weight:700;color:#18170f;">${s.name}</span>
-            <span style="font-size:11px;color:#9b938b;">${s.board}</span>
+            <div style="width:10px;height:10px;border-radius:50%;background:${safeColor};flex-shrink:0;"></div>
+            <span style="font-size:14px;font-weight:700;color:#18170f;">${esc(s.name)}</span>
+            <span style="font-size:11px;color:#9b938b;">${esc(s.board)}</span>
           </div>
           ${latestGrade ? `<div style="font-size:22px;font-weight:900;color:${gradeBg(latestGrade)};">${latestGrade}</div>` : ''}
         </div>
@@ -119,10 +136,19 @@ export default async function handler(req, res) {
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ?? req.socket?.remoteAddress ?? 'unknown';
   if (!rateLimit(ip)) return res.status(429).json({ error: 'Too many requests — try again later' });
 
+  // Require authentication
+  const user = await getAuthUser(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
   const { email, scores = [], subjects = [], rag = {} } = req.body ?? {};
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ error: 'Invalid email address' });
+  }
+
+  // Email must match the authenticated user
+  if (email.toLowerCase() !== user.email?.toLowerCase()) {
+    return res.status(403).json({ error: 'Forbidden' });
   }
 
   try {
