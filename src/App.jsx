@@ -2009,6 +2009,182 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
   );
 }
 
+// ── Share readiness card ────────────────────────────────────────────────────
+function ShareReadinessCard({br, subjects, scores, C, font}) {
+  const canvasRef = useRef(null);
+  const [generated, setGenerated] = useState(false);
+  const [sharing, setSharing] = useState(false);
+
+  const subjectAvg = name => {
+    const ss=scores.filter(x=>x.subject===name);
+    return ss.length ? Math.round(ss.reduce((a,x)=>a+x.pct,0)/ss.length) : null;
+  };
+
+  const drawCard = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W=600, H=315;
+    canvas.width=W; canvas.height=H;
+
+    // Background
+    ctx.fillStyle='#0c0e13';
+    ctx.fillRect(0,0,W,H);
+
+    // Accent gradient
+    const grd=ctx.createLinearGradient(0,0,W*0.6,H);
+    grd.addColorStop(0,'rgba(194,124,96,0.09)');
+    grd.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=grd;
+    ctx.fillRect(0,0,W,H);
+
+    // Left accent bar
+    ctx.fillStyle='#c27c60';
+    ctx.fillRect(0,0,3,H);
+
+    // App badge
+    ctx.fillStyle='#c27c60';
+    ctx.font="bold 15px 'Courier New',monospace";
+    ctx.textAlign='left';
+    ctx.fillText('A*',22,38);
+    ctx.fillStyle='#e4dfd8';
+    ctx.font="700 13px system-ui,sans-serif";
+    ctx.fillText('Battle Plan',40,38);
+    ctx.fillStyle='#4e4a47';
+    ctx.font="400 11px system-ui,sans-serif";
+    ctx.fillText('A-Level Revision Tracker',40,54);
+
+    // Big score
+    ctx.fillStyle=br.labelColor;
+    ctx.font="900 100px system-ui,sans-serif";
+    ctx.textAlign='left';
+    const scoreStr=`${br.total}`;
+    ctx.fillText(scoreStr,20,190);
+    const sw=ctx.measureText(scoreStr).width;
+    ctx.font="700 28px system-ui,sans-serif";
+    ctx.fillStyle=br.labelColor+'99';
+    ctx.fillText('%',22+sw,165);
+
+    // Label
+    ctx.fillStyle='#857f79';
+    ctx.font="600 12px system-ui,sans-serif";
+    ctx.textAlign='left';
+    ctx.fillText('BATTLE READINESS',22,212);
+    ctx.fillStyle=br.labelColor;
+    ctx.font="700 12px system-ui,sans-serif";
+    ctx.fillText('· '+br.label.toUpperCase(),22+ctx.measureText('BATTLE READINESS').width+6,212);
+
+    // Subject list (right column)
+    const subList=subjects.slice(0,5);
+    let sy=72;
+    for (const s of subList) {
+      const avg=subjectAvg(s.name);
+      ctx.fillStyle=s.color;
+      ctx.beginPath();
+      ctx.arc(W-170,sy,4,0,Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle='#9b938b';
+      ctx.font="500 12px system-ui,sans-serif";
+      ctx.textAlign='left';
+      const label=s.name.length>18?s.name.slice(0,17)+'…':s.name;
+      ctx.fillText(label,W-160,sy+4);
+      if (avg!==null) {
+        ctx.fillStyle='#e4dfd8';
+        ctx.font="700 12px system-ui,sans-serif";
+        ctx.textAlign='right';
+        ctx.fillText(`${avg}%`,W-20,sy+4);
+      }
+      sy+=26;
+    }
+
+    // Divider
+    ctx.strokeStyle='rgba(255,255,255,0.06)';
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(W-180,55);
+    ctx.lineTo(W-180,H-30);
+    ctx.stroke();
+
+    // URL branding
+    ctx.fillStyle='#4e4a47';
+    ctx.font="500 11px system-ui,sans-serif";
+    ctx.textAlign='right';
+    ctx.fillText('beattheexam.org',W-20,H-16);
+
+    setGenerated(true);
+  };
+
+  const download = () => {
+    const canvas=canvasRef.current;
+    if (!canvas) return;
+    const link=document.createElement('a');
+    link.download='battle-readiness.png';
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+  };
+
+  const share = async () => {
+    const canvas=canvasRef.current;
+    if (!canvas||sharing) return;
+    setSharing(true);
+    try {
+      await new Promise(resolve=>canvas.toBlob(async blob=>{
+        try {
+          const file=new File([blob],'battle-readiness.png',{type:'image/png'});
+          if (navigator.canShare?.({files:[file]})) {
+            await navigator.share({files:[file],title:'My Battle Readiness',text:`I'm ${br.total}% battle-ready for A-Levels — check out Battle Plan!`});
+          } else {
+            await navigator.share({title:'My Battle Readiness',url:'https://beattheexam.org',text:`I'm ${br.total}% battle-ready for A-Levels — check out Battle Plan!`});
+          }
+        } catch {}
+        resolve();
+      },'image/png'));
+    } catch {}
+    setSharing(false);
+  };
+
+  const canWebShare=typeof navigator!=='undefined'&&typeof navigator.share==='function';
+
+  return (
+    <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:'14px 18px',marginBottom:12}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:8,marginBottom:generated?10:0}}>
+        <div>
+          <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:2}}>Share your readiness</div>
+          <div style={{fontSize:11,color:C.muted}}>Generate a card to share with friends</div>
+        </div>
+        <div style={{display:'flex',gap:7,flexWrap:'wrap'}}>
+          <button onClick={drawCard}
+            style={{padding:'7px 14px',background:C.accent,border:'none',borderRadius:8,
+              color:'#fff',fontSize:12,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
+            {generated?'Regenerate':'Generate card'}
+          </button>
+          {generated&&(
+            <>
+              <button onClick={download}
+                style={{padding:'7px 14px',background:'transparent',border:`1px solid ${C.border}`,
+                  borderRadius:8,color:C.muted,fontSize:12,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
+                Download PNG
+              </button>
+              {canWebShare&&(
+                <button onClick={share} disabled={sharing}
+                  style={{padding:'7px 14px',background:'transparent',border:`1px solid ${C.border}`,
+                    borderRadius:8,color:C.muted,fontSize:12,fontWeight:600,fontFamily:font,
+                    cursor:sharing?'not-allowed':'pointer'}}>
+                  {sharing?'…':'Share'}
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+      {generated&&(
+        <canvas ref={canvasRef} style={{width:'100%',borderRadius:8,display:'block'}}/>
+      )}
+      {!generated&&<canvas ref={canvasRef} style={{display:'none'}}/>}
+    </div>
+  );
+}
+
 // ── Analytics ──────────────────────────────────────────────────────────────
 function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, onQuickLog, targets, setTargets, sessions=[], rag={}, isPro=false, onUpgrade}) {
   const SUBJ_COLORS  = Object.fromEntries(subjects.map(s=>[s.name,s.color]));
@@ -2162,6 +2338,9 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
           ))}
         </div>
       </div>
+
+      {/* ── Share card ───────────────────────────────────────────────────── */}
+      {scores.length>0&&<ShareReadinessCard br={br} subjects={subjects} scores={scores} C={C} font={font}/>}
 
       {/* ── Per-subject cards ─────────────────────────────────────────────── */}
       <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:16}}>
@@ -3363,7 +3542,7 @@ function Resources({subjects,uid,C,font,rag,setRag,ragNotes,setRagNotes}) {
 }
 
 // ── Account ────────────────────────────────────────────────────────────────
-function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,font,examSched,scores=[],rag={},isPro=false,stripeCustomerId=null}) {
+function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,font,examSched,scores=[],rag={},isPro=false,stripeCustomerId=null,referralCode=null}) {
   const [analyticsConsent, setAnalyticsConsent] = useState(()=>ls.get(`rbp_analytics_${uid}`,true));
   const [emailSending, setEmailSending] = useState(false);
   const [emailState, setEmailState] = useState('idle'); // 'idle'|'sent'|'error'
@@ -3375,6 +3554,40 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
   const [upgradeError, setUpgradeError] = useState('');
   const [portalLoading, setPortalLoading] = useState(false);
   const upgraded = typeof window!=='undefined' && new URLSearchParams(window.location.search).get('upgraded')==='1';
+
+  const [schoolName, setSchoolName] = useState('');
+  const [schoolOptIn, setSchoolOptIn] = useState(false);
+  const [schoolSaving, setSchoolSaving] = useState(false);
+  const [referralCount, setReferralCount] = useState(null);
+  const [copySuccess, setCopySuccess] = useState(false);
+
+  useEffect(()=>{
+    if (!uid||uid==='anon') return;
+    supabase.from('user_profiles').select('school_name,school_opt_in').eq('id',uid).single()
+      .then(({data})=>{
+        if (data) { setSchoolName(data.school_name||''); setSchoolOptIn(!!data.school_opt_in); }
+      });
+    if (!referralCode) return;
+    supabase.auth.getSession().then(({data:{session}})=>{
+      if (!session) return;
+      fetch('/api/referral',{headers:{Authorization:`Bearer ${session.access_token}`}})
+        .then(r=>r.json()).then(d=>{ if (d.count!=null) setReferralCount(d.count); }).catch(()=>{});
+    });
+  },[uid,referralCode]);
+
+  const saveSchool = async (name, optIn) => {
+    setSchoolSaving(true);
+    await supabase.from('user_profiles').update({school_name:name||null,school_opt_in:optIn}).eq('id',uid);
+    setSchoolSaving(false);
+  };
+
+  const copyReferralLink = () => {
+    const link=`https://beattheexam.org?ref=${referralCode}`;
+    navigator.clipboard.writeText(link).then(()=>{
+      setCopySuccess(true);
+      setTimeout(()=>setCopySuccess(false),2000);
+    }).catch(()=>{});
+  };
 
   const sendSchedule = async () => {
     if (!user?.email) return;
@@ -3681,6 +3894,69 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
         )}
       </div>
       )}
+
+      {/* Referral */}
+      {referralCode&&(
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:10}}>Refer a friend</div>
+        <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginBottom:12}}>
+          Share Battle Plan with a friend. Send them your link — when they sign up, they'll be linked to you on the leaderboard automatically.
+        </div>
+        <div style={{display:'flex',gap:8,marginBottom:referralCount!==null?10:0}}>
+          <div style={{flex:1,background:C.card2,border:`1px solid ${C.border}`,borderRadius:8,
+            padding:'9px 12px',fontSize:12,color:C.muted,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',
+            fontFamily:"'JetBrains Mono',monospace"}}>
+            beattheexam.org?ref={referralCode}
+          </div>
+          <button onClick={copyReferralLink}
+            style={{flexShrink:0,padding:'9px 16px',background:copySuccess?'rgba(74,222,128,0.1)':C.accentSoft,
+              border:`1px solid ${copySuccess?'rgba(74,222,128,0.3)':C.accent}44`,borderRadius:8,
+              color:copySuccess?C.success:C.accent,fontSize:12,fontWeight:600,fontFamily:font,cursor:'pointer',
+              transition:'all 0.15s'}}>
+            {copySuccess?'Copied!':'Copy link'}
+          </button>
+        </div>
+        {referralCount!==null&&(
+          <div style={{fontSize:12,color:C.subtle}}>
+            {referralCount===0?'No referrals yet — share your link to get started.'
+              :`${referralCount} friend${referralCount!==1?'s':''} joined via your link`}
+          </div>
+        )}
+      </div>
+      )}
+
+      {/* School leaderboard opt-in */}
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:10}}>School leaderboard</div>
+        <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginBottom:12}}>
+          Enter your school name and opt in to appear on the anonymous school leaderboard in the Friends tab. Only your school's average score is visible — never individual data.
+        </div>
+        <input
+          value={schoolName}
+          onChange={e=>setSchoolName(e.target.value)}
+          placeholder="Your school name"
+          maxLength={80}
+          style={{width:'100%',boxSizing:'border-box',background:C.card2,border:`1px solid ${C.border}`,
+            borderRadius:8,padding:'10px 12px',color:C.text,fontSize:13,fontFamily:font,
+            outline:'none',marginBottom:10}}
+        />
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+          <div style={{fontSize:13,color:C.text}}>Show on school leaderboard</div>
+          <button onClick={()=>setSchoolOptIn(v=>!v)}
+            style={{flexShrink:0,width:44,height:24,borderRadius:12,padding:0,
+              background:schoolOptIn?C.accent:C.border,border:'none',cursor:'pointer',
+              position:'relative',transition:'background 0.2s'}}>
+            <div style={{position:'absolute',top:3,width:18,height:18,borderRadius:'50%',
+              background:'#fff',transition:'left 0.2s',left:schoolOptIn?23:3}}/>
+          </button>
+        </div>
+        <button onClick={()=>saveSchool(schoolName,schoolOptIn)} disabled={schoolSaving}
+          style={{width:'100%',padding:'10px',background:C.accentSoft,border:`1px solid ${C.accent}44`,
+            borderRadius:8,color:C.accent,fontSize:13,fontWeight:600,fontFamily:font,
+            cursor:schoolSaving?'not-allowed':'pointer'}}>
+          {schoolSaving?'Saving…':'Save school settings'}
+        </button>
+      </div>
 
       <button onClick={onSignOut}
         style={{width:'100%',padding:'12px',background:'transparent',
@@ -4076,7 +4352,7 @@ function QuickLog({subjects,scores,setScores,uid,C,font,onClose,onSaved}){
 }
 
 // ── Main shell ─────────────────────────────────────────────────────────────
-function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_SCHEDULE,isPro=false,stripeCustomerId=null}) {
+function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_SCHEDULE,isPro=false,stripeCustomerId=null,referralCode=null}) {
   const [dark,setDark]     = useState(()=>ls.get('rbp_dark',false));
   const [view,setView]     = useState('analytics');
   const [isMobile,setIsMobile] = useState(()=>window.innerWidth<768);
@@ -4238,7 +4514,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
     {id:'account',label:'Account'},
   ];
 
-  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId};
+  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode};
 
   return (
     <div style={{minHeight:'100vh',background:C.bg,fontFamily:font,color:C.text}}>
@@ -4520,6 +4796,7 @@ export default function App() {
   const [examSched,setExamSched]   = useState(EXAM_SCHEDULE);
   const [isPro,setIsPro]           = useState(false);
   const [stripeCustomerId,setStripeCustomerId] = useState(null);
+  const [referralCode,setReferralCode] = useState(null);
 
   const dark = ls.get('rbp_dark',false);
   const C    = dark?T.dark:T.light;
@@ -4527,6 +4804,9 @@ export default function App() {
 
   useEffect(()=>{
     if (!isSupabaseConfigured()) { setPhase('landing'); return; }
+    // Capture referral code from URL before auth
+    const refParam = new URLSearchParams(window.location.search).get('ref');
+    if (refParam) sessionStorage.setItem('rbp_ref', refParam.toUpperCase().trim());
     let alive=true;
 
     async function boot(session) {
@@ -4540,10 +4820,24 @@ export default function App() {
       if (alive) setUser(u);
       try {
         await supabase.from('user_profiles').upsert({id:uid,email:u.email},{onConflict:'id',ignoreDuplicates:true});
-        const {data}=await supabase.from('user_profiles').select('subjects,subscription_status,stripe_customer_id').eq('id',uid).single();
+        const {data}=await supabase.from('user_profiles').select('subjects,subscription_status,stripe_customer_id,referral_code').eq('id',uid).single();
         if (!alive) return;
         if (data?.subscription_status) setIsPro(data.subscription_status==='pro'||data.subscription_status==='trialing');
         if (data?.stripe_customer_id) setStripeCustomerId(data.stripe_customer_id);
+        let rc=data?.referral_code;
+        if (!rc) {
+          rc=Math.random().toString(36).slice(2,8).toUpperCase();
+          await supabase.from('user_profiles').update({referral_code:rc}).eq('id',uid);
+        }
+        if (alive) setReferralCode(rc);
+        const pendingRef=sessionStorage.getItem('rbp_ref');
+        if (pendingRef && pendingRef!==rc) {
+          sessionStorage.removeItem('rbp_ref');
+          supabase.auth.getSession().then(({data:{session:s}})=>{
+            if (!s) return;
+            fetch('/api/referral',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${s.access_token}`},body:JSON.stringify({referrerCode:pendingRef})}).catch(()=>{});
+          });
+        }
         let sel=[];
         try { if (data?.subjects) sel=JSON.parse(data.subjects); } catch {}
         if (Array.isArray(sel)&&sel.length>0) {
@@ -4604,7 +4898,7 @@ export default function App() {
   if (phase==='onboarding') return <ErrorBoundary><SubjectPicker user={user} onComplete={handleSubjectsDone}/></ErrorBoundary>;
   return (
     <ErrorBoundary>
-      <RevisionPlan user={user} selection={selection} onSignOut={handleSignOut} onResetSubjects={handleResetSubjects} examSched={examSched} isPro={isPro} stripeCustomerId={stripeCustomerId}/>
+      <RevisionPlan user={user} selection={selection} onSignOut={handleSignOut} onResetSubjects={handleResetSubjects} examSched={examSched} isPro={isPro} stripeCustomerId={stripeCustomerId} referralCode={referralCode}/>
     </ErrorBoundary>
   );
 }

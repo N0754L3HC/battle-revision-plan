@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
 function scoreColor(s) {
@@ -18,6 +18,11 @@ export default function FriendsView({ user, scores = [], uid, C, font, addToast 
   const [displayName, setDisplayName] = useState(user?.email?.split('@')[0] || 'You');
   const [editName,  setEditName]  = useState(false);
   const [nameDraft, setNameDraft] = useState('');
+
+  const [schools, setSchools]     = useState(null);
+  const [schoolsLoading, setSchoolsLoading] = useState(false);
+  const [schoolsOpen, setSchoolsOpen] = useState(false);
+  const schoolsFetchedRef = useRef(false);
 
   const ownScore = scores.length
     ? Math.round(scores.reduce((s, x) => s + (x.pct ?? 0), 0) / scores.length)
@@ -52,7 +57,30 @@ export default function FriendsView({ user, scores = [], uid, C, font, addToast 
     setLoading(false);
   }, [apiFetch]);
 
+  const loadSchools = useCallback(async () => {
+    if (schoolsFetchedRef.current) return;
+    schoolsFetchedRef.current = true;
+    setSchoolsLoading(true);
+    try {
+      const token = await getToken();
+      const r = await fetch('/api/school-leaderboard', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const d = await r.json();
+      setSchools(d.schools ?? []);
+    } catch {
+      setSchools([]);
+    }
+    setSchoolsLoading(false);
+  }, []);
+
   useEffect(() => { loadFriends(); }, [loadFriends]);
+
+  const handleToggleSchools = () => {
+    const next = !schoolsOpen;
+    setSchoolsOpen(next);
+    if (next) loadSchools();
+  };
 
   useEffect(() => {
     if (!uid) return;
@@ -263,6 +291,60 @@ export default function FriendsView({ user, scores = [], uid, C, font, addToast 
                 {r.to_email}
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* School leaderboard */}
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '18px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            School leaderboard
+          </div>
+          <button onClick={handleToggleSchools}
+            style={{ fontSize: 11, color: C.muted, background: 'transparent',
+              border: `1px solid ${C.border}`, borderRadius: 5, padding: '4px 9px',
+              fontFamily: font, cursor: 'pointer' }}>
+            {schoolsOpen ? 'Hide' : 'Show'}
+          </button>
+        </div>
+
+        {schoolsOpen && (
+          <div style={{ marginTop: 14 }}>
+            {schoolsLoading ? (
+              <div style={{ fontSize: 13, color: C.subtle }}>Loading…</div>
+            ) : schools && schools.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {schools.map((s, i) => (
+                  <div key={s.school_name} style={{
+                    display: 'flex', alignItems: 'center', gap: 12, padding: '9px 12px',
+                    background: C.card2, border: `1px solid ${C.border}`, borderRadius: 8,
+                  }}>
+                    <div style={{ width: 24, textAlign: 'center', fontSize: 13, fontWeight: 800,
+                      color: i === 0 ? '#fbbf24' : i === 1 ? '#9ca3af' : i === 2 ? '#b5735a' : C.subtle, flexShrink: 0 }}>
+                      {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: C.text,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {s.school_name}
+                      </div>
+                      <div style={{ fontSize: 11, color: C.subtle, marginTop: 1 }}>
+                        {s.student_count} student{s.student_count !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: scoreColor(s.avg_score),
+                      minWidth: 52, textAlign: 'right', flexShrink: 0 }}>
+                      {s.avg_score}%
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: 12, color: C.subtle, lineHeight: 1.6 }}>
+                No schools yet — opt in under Account → School leaderboard. Requires at least 3 students from the same school.
+              </div>
+            )}
           </div>
         )}
       </div>
