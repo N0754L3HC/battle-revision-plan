@@ -1212,171 +1212,161 @@ const HAIR_STYLE_LABELS = ['Buzz','Bob','Long','Bun','Curly','Ponytail'];
 const ACCESSORY_LABELS  = ['None','Glasses','Cat-eye','Headband'];
 
 function CompanionAvatar({skin=0,hair=0,hairStyle=0,eyeColor=0,outfitColor=0,accessory=0,mood='neutral',pose='idle',size=80}) {
-  const ST   = SKIN_TONES[skin]      ?? SKIN_TONES[0];
-  const HC   = HAIR_COLORS[hair]     ?? HAIR_COLORS[0];
-  const EC   = EYE_COLORS[eyeColor]  ?? EYE_COLORS[0];
+  const ST   = SKIN_TONES[skin]           ?? SKIN_TONES[0];
+  const HC   = HAIR_COLORS[hair]          ?? HAIR_COLORS[0];
+  const EC   = EYE_COLORS[eyeColor]       ?? EYE_COLORS[0];
   const OC   = OUTFIT_COLORS[outfitColor] ?? OUTFIT_COLORS[0];
   const PANT = '#2c3a4e';
-  const SHOE = '#f2ede9';
+  const SHOE = '#1a1a2e';
 
-  const h   = Math.round(size * 1.3);
-  const lid = mood === 'excited' ? 22 : 19; // eyelid arc control-point y
+  const h = Math.round(size * 1.5);
+
+  const browL = mood==='worried' ? 'M22 29 Q33 25 44 30' : mood==='excited' ? 'M22 26 Q33 23 44 26' : 'M22 28 Q33 24 44 28';
+  const browR = mood==='worried' ? 'M56 30 Q67 25 78 29' : mood==='excited' ? 'M56 26 Q67 23 78 26' : 'M56 28 Q67 24 78 28';
 
   return (
-    <svg width={size} height={h} viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
+    <svg width={size} height={h} viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg">
 
-      {/* ── SHOES ── */}
-      <ellipse cx="36" cy="126" rx="13" ry="5.5" fill={SHOE}/>
-      <ellipse cx="64" cy="126" rx="13" ry="5.5" fill={SHOE}/>
-      <ellipse cx="40" cy="127" rx="8" ry="3.5" fill={SHOE} opacity="0.65"/>
-      <ellipse cx="68" cy="127" rx="8" ry="3.5" fill={SHOE} opacity="0.65"/>
+      {/* SHOES */}
+      <ellipse cx="34" cy="146" rx="14" ry="6"   fill={SHOE}/>
+      <ellipse cx="66" cy="146" rx="14" ry="6"   fill={SHOE}/>
+      <ellipse cx="37" cy="145" rx="9"  ry="3.5" fill="white" opacity="0.12"/>
+      <ellipse cx="69" cy="145" rx="9"  ry="3.5" fill="white" opacity="0.12"/>
 
-      {/* ── LEGS ── */}
-      <rect x="27" y="98" width="18" height="32" rx="9" fill={PANT}/>
-      <rect x="55" y="98" width="18" height="32" rx="9" fill={PANT}/>
+      {/* LEGS */}
+      <rect x="27" y="112" width="16" height="36" rx="8" fill={PANT}/>
+      <rect x="57" y="112" width="16" height="36" rx="8" fill={PANT}/>
 
-      {/* ── BODY / TORSO ── */}
-      <path d="M24 62 Q24 58 50 56 Q76 58 76 62 L80 102 Q68 108 50 108 Q32 108 20 102 Z" fill={OC}/>
+      {/* TORSO */}
+      <path d="M18 76 Q18 72 50 68 Q82 72 82 76 L84 114 Q68 122 50 122 Q32 122 16 114 Z" fill={OC}/>
 
-      {/* ── LEFT ARM (always hanging) ── */}
-      <rect x="12" y="62" width="12" height="36" rx="6" fill={OC}/>
-      <ellipse cx="18" cy="101" rx="7" ry="7.5" fill={ST}/>
+      {/* LEFT ARM */}
+      <path d="M18 78 Q8 88 10 114" stroke={OC} strokeWidth="15" strokeLinecap="round" fill="none"/>
+      <circle cx="10" cy="117" r="8" fill={ST}/>
 
-      {/* ── RIGHT ARM ── */}
+      {/* RIGHT ARM */}
       {pose==='wave'?(
         <>
-          {/* Sleeve going up */}
-          <path d="M74 68 Q86 54 84 38" stroke={OC} strokeWidth="13" strokeLinecap="round" fill="none"/>
-          {/* Skin forearm */}
-          <path d="M84 38 Q86 26 82 20" stroke={ST} strokeWidth="11" strokeLinecap="round" fill="none"/>
-          {/* Hand */}
-          <ellipse cx="81" cy="18" rx="8" ry="8" fill={ST}/>
-          {/* Wave fingers */}
-          <line x1="75" y1="12" x2="76" y2="8"  stroke={ST} strokeWidth="2.5" strokeLinecap="round"/>
-          <line x1="81" y1="10" x2="81" y2="6"  stroke={ST} strokeWidth="2.5" strokeLinecap="round"/>
-          <line x1="87" y1="12" x2="88" y2="8"  stroke={ST} strokeWidth="2.5" strokeLinecap="round"/>
+          <path d="M82 78 Q92 62 90 36" stroke={OC} strokeWidth="15" strokeLinecap="round" fill="none"/>
+          <path d="M90 36 Q92 22 88 14" stroke={ST} strokeWidth="12" strokeLinecap="round" fill="none"/>
+          <circle cx="87" cy="11" r="9" fill={ST}/>
+          <line x1="80" y1="5"  x2="81" y2="2"  stroke={ST} strokeWidth="3.5" strokeLinecap="round"/>
+          <line x1="87" y1="2"  x2="87" y2="-1" stroke={ST} strokeWidth="3.5" strokeLinecap="round"/>
+          <line x1="94" y1="5"  x2="95" y2="2"  stroke={ST} strokeWidth="3.5" strokeLinecap="round"/>
         </>
       ):(
         <>
-          <rect x="76" y="62" width="12" height="36" rx="6" fill={OC}/>
-          <ellipse cx="82" cy="101" rx="7" ry="7.5" fill={ST}/>
+          <path d="M82 78 Q92 88 90 114" stroke={OC} strokeWidth="15" strokeLinecap="round" fill="none"/>
+          <circle cx="90" cy="117" r="8" fill={ST}/>
         </>
       )}
 
-      {/* ── NECK ── */}
-      <rect x="43" y="51" width="14" height="13" rx="5" fill={ST}/>
+      {/* NECK */}
+      <rect x="44" y="68" width="12" height="12" rx="5" fill={ST}/>
 
-      {/* ── EARS ── */}
-      <ellipse cx="28" cy="30" rx="5.5" ry="6.5" fill={ST}/>
-      <ellipse cx="72" cy="30" rx="5.5" ry="6.5" fill={ST}/>
-      <ellipse cx="28" cy="30" rx="3"   ry="4"   fill={ST} opacity="0.5"/>
-      <ellipse cx="72" cy="30" rx="3"   ry="4"   fill={ST} opacity="0.5"/>
+      {/* EARS — behind head */}
+      <ellipse cx="23" cy="44" rx="6.5" ry="7.5" fill={ST}/>
+      <ellipse cx="77" cy="44" rx="6.5" ry="7.5" fill={ST}/>
+      <ellipse cx="23" cy="44" rx="3.5" ry="4.5" fill="#e8a880" opacity="0.4"/>
+      <ellipse cx="77" cy="44" rx="3.5" ry="4.5" fill="#e8a880" opacity="0.4"/>
 
-      {/* ── HEAD ── */}
-      <ellipse cx="50" cy="28" rx="22" ry="24" fill={ST}/>
+      {/* HEAD — large chibi/Bitmoji circle */}
+      <ellipse cx="50" cy="42" rx="28" ry="32" fill={ST}/>
 
-      {/* ── HAIR ── */}
+      {/* HAIR */}
       {hairStyle===0&&(
-        <path d="M28 28 Q28 4 50 2 Q72 4 72 28 Q70 5 50 4 Q30 5 28 28Z" fill={HC}/>
+        <path d="M22 42 Q22 10 50 8 Q78 10 78 42 Q76 12 50 11 Q24 12 22 42Z" fill={HC}/>
       )}
       {hairStyle===1&&(<>
-        <path d="M28 28 Q28 4 50 2 Q72 4 72 28 Q70 5 50 4 Q30 5 28 28Z" fill={HC}/>
-        <rect x="21" y="34" width="9" height="30" rx="4.5" fill={HC}/>
-        <rect x="70" y="34" width="9" height="30" rx="4.5" fill={HC}/>
+        <path d="M22 42 Q22 10 50 8 Q78 10 78 42 Q76 12 50 11 Q24 12 22 42Z" fill={HC}/>
+        <rect x="15" y="48" width="10" height="30" rx="5" fill={HC}/>
+        <rect x="75" y="48" width="10" height="30" rx="5" fill={HC}/>
       </>)}
       {hairStyle===2&&(<>
-        <path d="M28 28 Q28 4 50 2 Q72 4 72 28 Q70 5 50 4 Q30 5 28 28Z" fill={HC}/>
-        <path d="M22 34 L16 112 Q20 116 24 112 L28 34Z" fill={HC}/>
-        <path d="M78 34 L84 112 Q80 116 76 112 L72 34Z" fill={HC}/>
+        <path d="M22 42 Q22 10 50 8 Q78 10 78 42 Q76 12 50 11 Q24 12 22 42Z" fill={HC}/>
+        <path d="M16 48 L10 130 Q14 134 18 130 L22 48Z" fill={HC}/>
+        <path d="M84 48 L90 130 Q86 134 82 130 L78 48Z" fill={HC}/>
       </>)}
       {hairStyle===3&&(<>
-        <path d="M30 30 Q30 6 50 4 Q70 6 70 30 Q68 7 50 6 Q32 7 30 30Z" fill={HC}/>
-        <circle cx="50" cy="-3" r="9" fill={HC}/>
-        <ellipse cx="50" cy="4"  rx="6" ry="2.5" fill={HC}/>
+        <path d="M24 44 Q24 12 50 10 Q76 12 76 44 Q74 13 50 12 Q26 13 24 44Z" fill={HC}/>
+        <circle cx="50" cy="3"  r="12" fill={HC}/>
+        <ellipse cx="50" cy="9" rx="9" ry="3.5" fill={HC}/>
       </>)}
       {hairStyle===4&&(<>
-        <ellipse cx="50" cy="12" rx="26" ry="18" fill={HC}/>
-        <circle cx="27" cy="24" r="10" fill={HC}/>
-        <circle cx="73" cy="24" r="10" fill={HC}/>
-        <circle cx="50" cy="0"  r="8"  fill={HC}/>
-        <circle cx="35" cy="4"  r="7"  fill={HC}/>
-        <circle cx="65" cy="4"  r="7"  fill={HC}/>
+        <ellipse cx="50" cy="18" rx="32" ry="22" fill={HC}/>
+        <circle cx="22" cy="34" r="13" fill={HC}/>
+        <circle cx="78" cy="34" r="13" fill={HC}/>
+        <circle cx="34" cy="8"  r="10" fill={HC}/>
+        <circle cx="50" cy="4"  r="10" fill={HC}/>
+        <circle cx="66" cy="8"  r="10" fill={HC}/>
       </>)}
       {hairStyle===5&&(<>
-        <path d="M30 30 Q30 6 50 4 Q70 6 70 30 Q68 7 50 6 Q32 7 30 30Z" fill={HC}/>
-        <path d="M66 6 Q82 14 78 56 Q74 70 70 66 Q76 48 72 30 Q68 14 66 6Z" fill={HC}/>
+        <path d="M24 44 Q24 12 50 10 Q76 12 76 44 Q74 13 50 12 Q26 13 24 44Z" fill={HC}/>
+        <path d="M71 12 Q88 22 84 68 Q80 82 76 78 Q82 60 78 38 Q74 20 71 12Z" fill={HC}/>
       </>)}
 
-      {/* ── EYES ── */}
-      <ellipse cx="36" cy="28" rx="9"   ry="9.5" fill="white"/>
-      <path    d={`M27 28 Q36 ${lid} 45 28`}     fill={ST}/>
-      <circle  cx="36" cy="30" r="6"             fill={EC}/>
-      <circle  cx="36" cy="30" r="3.8"           fill="#0a0a0a"/>
-      <circle  cx="38" cy="28" r="1.9"           fill="white"/>
-      <circle  cx="34.5" cy="32" r="0.9"         fill="white" opacity="0.5"/>
+      {/* EYES — Bitmoji style: large whites + thick curved upper lash */}
+      <ellipse cx="33" cy="42" rx="11" ry="11.5" fill="white"/>
+      <path d="M22 40 Q33 28 44 40" stroke="#1a0a00" strokeWidth="5.5" fill="none" strokeLinecap="round"/>
+      <path d="M44 40 Q47 36 45.5 32" stroke="#1a0a00" strokeWidth="3" fill="none" strokeLinecap="round"/>
+      <circle cx="33" cy="43" r="7.5"  fill={EC}/>
+      <circle cx="33" cy="43" r="4.8"  fill="#0a0a0a"/>
+      <circle cx="35.5" cy="40.5" r="2.4" fill="white"/>
+      <circle cx="31"   cy="45"   r="1.1" fill="white" opacity="0.4"/>
 
-      <ellipse cx="64" cy="28" rx="9"   ry="9.5" fill="white"/>
-      <path    d={`M55 28 Q64 ${lid} 73 28`}     fill={ST}/>
-      <circle  cx="64" cy="30" r="6"             fill={EC}/>
-      <circle  cx="64" cy="30" r="3.8"           fill="#0a0a0a"/>
-      <circle  cx="66" cy="28" r="1.9"           fill="white"/>
-      <circle  cx="62.5" cy="32" r="0.9"         fill="white" opacity="0.5"/>
+      <ellipse cx="67" cy="42" rx="11" ry="11.5" fill="white"/>
+      <path d="M56 40 Q67 28 78 40" stroke="#1a0a00" strokeWidth="5.5" fill="none" strokeLinecap="round"/>
+      <path d="M78 40 Q81 36 79.5 32" stroke="#1a0a00" strokeWidth="3" fill="none" strokeLinecap="round"/>
+      <circle cx="67" cy="43" r="7.5"  fill={EC}/>
+      <circle cx="67" cy="43" r="4.8"  fill="#0a0a0a"/>
+      <circle cx="69.5" cy="40.5" r="2.4" fill="white"/>
+      <circle cx="65"   cy="45"   r="1.1" fill="white" opacity="0.4"/>
 
-      {/* ── EYEBROWS ── */}
-      {mood==='worried'?(
-        <>
-          <path d="M28 18 Q36 14 44 19" stroke={HC} strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-          <path d="M56 19 Q64 14 72 18" stroke={HC} strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-        </>
-      ):(
-        <>
-          <path d="M28 19 Q36 15 44 19" stroke={HC} strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-          <path d="M56 19 Q64 15 72 19" stroke={HC} strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-        </>
-      )}
+      {/* EYEBROWS */}
+      <path d={browL} stroke={HC} strokeWidth="3.5" fill="none" strokeLinecap="round"/>
+      <path d={browR} stroke={HC} strokeWidth="3.5" fill="none" strokeLinecap="round"/>
 
-      {/* ── NOSE ── */}
-      <circle cx="46" cy="38" r="1.3" fill={ST} opacity="0.4"/>
-      <circle cx="54" cy="38" r="1.3" fill={ST} opacity="0.4"/>
+      {/* NOSE */}
+      <path d="M46 55 Q50 58 54 55" stroke={ST} strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.5"/>
 
-      {/* ── CHEEK BLUSH ── */}
-      <ellipse cx="21" cy="40" rx="7"  ry="4.5" fill="#f9a8d4" opacity="0.22"/>
-      <ellipse cx="79" cy="40" rx="7"  ry="4.5" fill="#f9a8d4" opacity="0.22"/>
+      {/* CHEEK BLUSH */}
+      <ellipse cx="17" cy="54" rx="8.5" ry="5" fill="#f9a8d4" opacity="0.22"/>
+      <ellipse cx="83" cy="54" rx="8.5" ry="5" fill="#f9a8d4" opacity="0.22"/>
 
-      {/* ── MOUTH ── */}
+      {/* MOUTH */}
       {mood==='excited'&&(<>
-        <path d="M34 48 Q50 64 66 48 Q56 60 50 61 Q44 60 34 48Z" fill="#c93060"/>
-        <path d="M34 48 Q50 62 66 48" fill="white" opacity="0.85"/>
-        <line x1="50" y1="48" x2="50" y2="60" stroke="#f0c0cc" strokeWidth="0.8"/>
+        <path d="M30 62 Q50 82 70 62 Q58 78 50 79 Q42 78 30 62Z" fill="#c93060"/>
+        <path d="M30 62 Q50 80 70 62" fill="white" opacity="0.8"/>
+        <line x1="50" y1="62" x2="50" y2="78" stroke="#f0c0cc" strokeWidth="1"/>
       </>)}
       {mood==='happy'&&(<>
-        <path d="M37 48 Q50 60 63 48 Q54 57 50 58 Q46 57 37 48Z" fill="#c93060"/>
-        <path d="M37 48 Q50 58 63 48" fill="white" opacity="0.85"/>
+        <path d="M34 62 Q50 74 66 62 Q56 72 50 73 Q44 72 34 62Z" fill="#c93060"/>
+        <path d="M34 62 Q50 72 66 62" fill="white" opacity="0.8"/>
       </>)}
       {mood==='worried'&&(
-        <path d="M39 52 Q50 46 61 52" stroke="#996060" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+        <path d="M36 68 Q50 62 64 68" stroke="#996060" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
       )}
       {mood==='neutral'&&(
-        <path d="M39 51 Q50 58 61 51 Q52 56 50 56.5 Q48 56 39 51Z" fill="#c04060" opacity="0.8"/>
+        <path d="M36 65 Q50 72 64 65 Q54 70 50 70.5 Q46 70 36 65Z" fill="#c04060" opacity="0.85"/>
       )}
 
-      {/* ── ACCESSORIES ── */}
+      {/* ACCESSORIES */}
       {accessory===1&&(<>
-        <circle cx="36" cy="29" r="11"   fill="none" stroke="#1a1a1a" strokeWidth="2"/>
-        <circle cx="64" cy="29" r="11"   fill="none" stroke="#1a1a1a" strokeWidth="2"/>
-        <line x1="47" y1="29" x2="53" y2="29"      stroke="#1a1a1a" strokeWidth="2"/>
-        <line x1="14" y1="28" x2="25"  y2="29"     stroke="#1a1a1a" strokeWidth="1.8"/>
-        <line x1="86" y1="28" x2="75"  y2="29"     stroke="#1a1a1a" strokeWidth="1.8"/>
+        <circle cx="33" cy="43" r="13.5" fill="none" stroke="#1a1a1a" strokeWidth="2.2"/>
+        <circle cx="67" cy="43" r="13.5" fill="none" stroke="#1a1a1a" strokeWidth="2.2"/>
+        <line x1="46.5" y1="43" x2="53.5" y2="43" stroke="#1a1a1a" strokeWidth="2"/>
+        <line x1="8"    y1="41" x2="19.5" y2="43" stroke="#1a1a1a" strokeWidth="1.8"/>
+        <line x1="92"   y1="41" x2="80.5" y2="43" stroke="#1a1a1a" strokeWidth="1.8"/>
       </>)}
       {accessory===2&&(<>
-        <path d="M25 24 Q36 21 47 27 Q47 37 36 39 Q25 37 25 24Z" fill="none" stroke="#1a1a1a" strokeWidth="2"/>
-        <path d="M53 24 Q64 21 75 27 Q75 37 64 39 Q53 37 53 24Z" fill="none" stroke="#1a1a1a" strokeWidth="2"/>
-        <line x1="47" y1="27" x2="53" y2="27"      stroke="#1a1a1a" strokeWidth="1.8"/>
-        <line x1="14" y1="26" x2="25"  y2="24"     stroke="#1a1a1a" strokeWidth="1.8"/>
-        <line x1="86" y1="26" x2="75"  y2="24"     stroke="#1a1a1a" strokeWidth="1.8"/>
+        <path d="M19 37 Q33 31 47 39 Q47 52 33 55 Q19 52 19 37Z" fill="none" stroke="#1a1a1a" strokeWidth="2.2"/>
+        <path d="M53 37 Q67 31 81 39 Q81 52 67 55 Q53 52 53 37Z" fill="none" stroke="#1a1a1a" strokeWidth="2.2"/>
+        <line x1="47" y1="39" x2="53" y2="39" stroke="#1a1a1a" strokeWidth="2"/>
+        <line x1="7"  y1="35" x2="19" y2="37" stroke="#1a1a1a" strokeWidth="2"/>
+        <line x1="93" y1="35" x2="81" y2="37" stroke="#1a1a1a" strokeWidth="2"/>
       </>)}
       {accessory===3&&(
-        <path d="M28 16 Q50 8 72 16" fill="none" stroke="#e03870" strokeWidth="6" strokeLinecap="round"/>
+        <path d="M22 26 Q50 16 78 26" fill="none" stroke="#e03870" strokeWidth="7" strokeLinecap="round"/>
       )}
     </svg>
   );
@@ -4553,6 +4543,10 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
   const [ragNotes, setRagNotes]  = useState(()=>ls.get(`rbp_rag_notes_${uid}`,{}));
   const [sessions, setSessions]  = useState(()=>ls.get(`rbp_sessions_${uid}`,[]));
 
+  const C    = dark?T.dark:T.light;
+  const font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+  const subjects = subjectsFromSelection(selection);
+
   // ── Companion state (lifted from CompanionCard to here so sidebar can access) ──
   const [companion,setCompanion] = useState(()=>{
     const s=ls.get('rbp_companion',{name:'Alex',skin:0,hair:0,hairStyle:0});
@@ -4576,10 +4570,6 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
   const saveCompanion = (c) => { setCompanion(c); ls.set('rbp_companion',c); };
 
   useEffect(()=>ls.set(`rbp_rag_notes_${uid}`,ragNotes),[ragNotes]);
-
-  const C    = dark?T.dark:T.light;
-  const font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
-  const subjects = subjectsFromSelection(selection);
 
   const defaultTargets = Object.fromEntries(subjects.map(s=>[s.name,'A*']));
   const [targets,setTargets] = useState(()=>{
