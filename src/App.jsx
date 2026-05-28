@@ -1938,100 +1938,197 @@ const SPEC_TOPICS = {
   business:['Business Objectives & Strategy','Financial Statements & Ratios','Investment Appraisal','Marketing Strategies & Mix','Operations Management','HR Strategies (motivation, org. structure)','Corporate Strategy (Ansoff, Porter)','External Influences (PESTLE)','Globalisation & Business','Case Study Analysis Skills'],
 };
 
-// ── Resources → Spec Tracker ───────────────────────────────────────────────
-function Resources({subjects,uid,C,font}) {
-  const key = `rbp_spec_${uid}`;
-  const [checked,  setChecked]  = useState(()=>ls.get(key,{}));
-  const [expanded, setExpanded] = useState(subjects[0]?.id??'');
+// ── RAG Tracker (Resources) ────────────────────────────────────────────────
+const RAG = [
+  {k:'red',   label:'Need Work',     color:'#ef4444', bg:'rgba(239,68,68,0.08)',  border:'rgba(239,68,68,0.28)' },
+  {k:'amber', label:'Getting There', color:'#f97316', bg:'rgba(249,115,22,0.08)', border:'rgba(249,115,22,0.28)'},
+  {k:'green', label:'Confident',     color:'#22c55e', bg:'rgba(34,197,94,0.08)',  border:'rgba(34,197,94,0.28)' },
+];
 
-  const toggle = (sid,i) => {
+function Resources({subjects,uid,C,font}) {
+  const key = `rbp_rag_${uid}`;
+  const [rag,      setRag]      = useState(()=>ls.get(key,{}));
+  const [view,     setView]     = useState('status'); // 'status' | 'subject'
+  const [openSubj, setOpenSubj] = useState({});
+
+  const setStatus = (sid,i,st) => {
     const k=`${sid}_${i}`;
-    const next={...checked,[k]:!checked[k]};
-    setChecked(next); ls.set(key,next);
+    const next={...rag};
+    if(next[k]===st) delete next[k]; else next[k]=st;
+    setRag(next); ls.set(key,next);
   };
-  const pct = sid => {
-    const topics=SPEC_TOPICS[sid]||[];
-    if(!topics.length) return 0;
-    return Math.round(topics.filter((_,i)=>checked[`${sid}_${i}`]).length/topics.length*100);
+
+  const allTopics = subjects.flatMap(s=>
+    (SPEC_TOPICS[s.id]||[]).map((topic,i)=>({topic,i,s,status:rag[`${s.id}_${i}`]||null}))
+  );
+  const counts = {
+    red:   allTopics.filter(t=>t.status==='red').length,
+    amber: allTopics.filter(t=>t.status==='amber').length,
+    green: allTopics.filter(t=>t.status==='green').length,
+    unset: allTopics.filter(t=>!t.status).length,
   };
-  const allTopics = subjects.flatMap(s=>(SPEC_TOPICS[s.id]||[]).map((_,i)=>({s,i})));
-  const totalDone = allTopics.filter(({s,i})=>checked[`${s.id}_${i}`]).length;
-  const totalPct  = allTopics.length?Math.round(totalDone/allTopics.length*100):0;
+  const total = allTopics.length;
+
+  const TopicRow = ({topic,i,s,showSubject}) => {
+    const st = rag[`${s.id}_${i}`]||null;
+    const ragCfg = RAG.find(r=>r.k===st);
+    return (
+      <div style={{display:'flex',alignItems:'center',gap:10,padding:'8px 14px',
+        background:ragCfg?ragCfg.bg:'transparent',
+        borderBottom:`1px solid ${C.border}`}}>
+        <div style={{width:3,alignSelf:'stretch',minHeight:20,borderRadius:2,background:s.color,flexShrink:0}}/>
+        <div style={{flex:1,minWidth:0}}>
+          {showSubject&&<div style={{fontSize:10,fontWeight:700,color:s.color,textTransform:'uppercase',letterSpacing:0.4,marginBottom:1}}>{s.name}</div>}
+          <div style={{fontSize:13,color:C.text,lineHeight:1.4}}>{topic}</div>
+        </div>
+        <div style={{display:'flex',gap:3,flexShrink:0}}>
+          {RAG.map(r=>(
+            <button key={r.k} onClick={()=>setStatus(s.id,i,r.k)}
+              title={r.label}
+              style={{width:26,height:26,borderRadius:6,cursor:'pointer',
+                border:`2px solid ${st===r.k?r.color:C.border}`,
+                background:st===r.k?r.color:'transparent',
+                color:st===r.k?'#fff':C.muted,
+                fontSize:10,fontWeight:800,fontFamily:font,
+                transition:'background 0.12s,border-color 0.12s'}}>
+              {r.k[0].toUpperCase()}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div>
-      <div style={{marginBottom:20}}>
+      <div style={{marginBottom:16}}>
         <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>Resources</div>
-        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Spec Tracker</h1>
-        <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>Tick off every topic as you revise it. Progress saves automatically.</p>
+        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>RAG Tracker</h1>
+        <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>Rate every spec topic Red, Amber, or Green so you know exactly where to focus.</p>
       </div>
 
-      {/* Overall progress */}
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:'14px 18px',marginBottom:14}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
-          <div style={{fontSize:13,fontWeight:700,color:C.text}}>Overall spec coverage</div>
-          <div style={{fontSize:22,fontWeight:900,color:totalPct===100?'#22c55e':C.accent}}>{totalPct}%</div>
-        </div>
-        <div style={{height:6,borderRadius:3,background:C.border,overflow:'hidden'}}>
-          <div style={{height:'100%',width:`${totalPct}%`,
-            background:totalPct===100?'#22c55e':C.accent,
-            borderRadius:3,transition:'width 0.5s ease'}}/>
-        </div>
-        <div style={{fontSize:12,color:C.muted,marginTop:6}}>{totalDone} of {allTopics.length} topics covered</div>
-      </div>
-
-      {/* Per-subject checklists */}
-      {subjects.map(s=>{
-        const topics=SPEC_TOPICS[s.id]||[];
-        const p=pct(s.id);
-        const isOpen=expanded===s.id;
-        return (
-          <div key={s.id} style={{marginBottom:8,background:C.surface,
-            border:`1px solid ${C.border}`,borderLeft:`3px solid ${s.color}`,
-            borderRadius:10,overflow:'hidden'}}>
-            <div onClick={()=>setExpanded(isOpen?'':s.id)}
-              style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',cursor:'pointer'}}>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:5}}>
-                  <div style={{fontSize:13,fontWeight:700,color:C.text}}>{s.name}</div>
-                  <span style={{fontSize:12,fontWeight:700,color:p===100?'#22c55e':s.color}}>{p}%</span>
-                </div>
-                <div style={{height:4,borderRadius:2,background:C.border,overflow:'hidden'}}>
-                  <div style={{height:'100%',width:`${p}%`,background:p===100?'#22c55e':s.color,
-                    borderRadius:2,transition:'width 0.4s ease'}}/>
-                </div>
-              </div>
-              <div style={{fontSize:13,color:C.muted,marginLeft:8,
-                transition:'transform 0.2s',transform:isOpen?'rotate(180deg)':'none'}}>▾</div>
+      {/* Summary bar */}
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:'14px 18px',marginBottom:12}}>
+        <div style={{display:'flex',gap:16,marginBottom:10,flexWrap:'wrap'}}>
+          {[...RAG,{k:'unset',label:'Unrated',color:C.muted,bg:'transparent',border:C.border}].map(r=>(
+            <div key={r.k} style={{display:'flex',alignItems:'center',gap:6}}>
+              <div style={{width:10,height:10,borderRadius:'50%',background:r.color,flexShrink:0}}/>
+              <span style={{fontSize:12,color:r.color,fontWeight:700}}>{counts[r.k]}</span>
+              <span style={{fontSize:12,color:C.muted}}>{r.label}</span>
             </div>
-            {isOpen&&(
-              <div style={{borderTop:`1px solid ${C.border}`}}>
-                {topics.length===0?(
-                  <div style={{padding:'12px 16px',fontSize:13,color:C.muted}}>No topics defined yet.</div>
-                ):topics.map((topic,i)=>{
-                  const done=!!checked[`${s.id}_${i}`];
-                  return (
-                    <div key={i} onClick={()=>toggle(s.id,i)}
-                      style={{display:'flex',alignItems:'center',gap:12,padding:'9px 16px',
-                        cursor:'pointer',background:done?`${s.color}08`:'transparent'}}>
-                      <div style={{width:18,height:18,borderRadius:4,flexShrink:0,
-                        background:done?s.color:C.card2,
-                        border:`2px solid ${done?s.color:C.border}`,
-                        display:'flex',alignItems:'center',justifyContent:'center',
-                        transition:'background 0.15s,border-color 0.15s'}}>
-                        {done&&<span style={{fontSize:11,color:'#fff',fontWeight:900,lineHeight:1}}>✓</span>}
-                      </div>
-                      <span style={{fontSize:13,color:done?C.text:C.muted,fontWeight:done?600:400}}>
-                        {topic}
-                      </span>
-                    </div>
-                  );
-                })}
+          ))}
+        </div>
+        {/* Stacked proportion bar */}
+        <div style={{height:8,borderRadius:4,background:C.border,overflow:'hidden',display:'flex'}}>
+          {RAG.map(r=>{
+            const w = total?Math.round((counts[r.k]/total)*100):0;
+            return w>0?(
+              <div key={r.k} style={{height:'100%',width:`${w}%`,background:r.color,transition:'width 0.4s ease'}}/>
+            ):null;
+          })}
+        </div>
+        <div style={{fontSize:11,color:C.muted,marginTop:5}}>
+          {total-counts.unset} of {total} topics rated
+        </div>
+      </div>
+
+      {/* View toggle */}
+      <div style={{display:'flex',gap:4,marginBottom:14}}>
+        {[{v:'status',l:'By Status'},{v:'subject',l:'By Subject'}].map(({v,l})=>(
+          <button key={v} onClick={()=>setView(v)}
+            style={{padding:'6px 14px',borderRadius:7,border:`1px solid ${view===v?C.accent:C.border}`,
+              background:view===v?C.accentSoft:'transparent',
+              color:view===v?C.accent:C.muted,
+              fontSize:12,fontWeight:view===v?700:400,fontFamily:font,cursor:'pointer'}}>
+            {l}
+          </button>
+        ))}
+      </div>
+
+      {view==='status' ? (
+        /* ── Grouped by RAG status ─────────────────────────────────────── */
+        <div>
+          {RAG.map(r=>{
+            const items = allTopics.filter(t=>t.status===r.k);
+            return (
+              <div key={r.k} style={{marginBottom:14}}>
+                <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:6}}>
+                  <div style={{width:10,height:10,borderRadius:'50%',background:r.color}}/>
+                  <span style={{fontSize:11,fontWeight:700,color:r.color,textTransform:'uppercase',letterSpacing:0.5}}>{r.label}</span>
+                  <span style={{fontSize:11,color:C.muted}}>({items.length})</span>
+                </div>
+                {items.length===0?(
+                  <div style={{fontSize:13,color:C.muted,padding:'10px 14px',
+                    background:C.surface,border:`1px solid ${C.border}`,borderRadius:10}}>
+                    No topics here yet — rate them below.
+                  </div>
+                ):(
+                  <div style={{background:C.surface,border:`1px solid ${r.border}`,borderRadius:10,overflow:'hidden'}}>
+                    {items.map(({topic,i,s})=>(
+                      <TopicRow key={`${s.id}_${i}`} topic={topic} i={i} s={s} showSubject={true}/>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        );
-      })}
+            );
+          })}
+          {/* Unrated section */}
+          {counts.unset>0&&(
+            <div style={{marginBottom:14}}>
+              <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:6}}>
+                <div style={{width:10,height:10,borderRadius:'50%',background:C.border}}/>
+                <span style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5}}>Not Yet Rated</span>
+                <span style={{fontSize:11,color:C.muted}}>({counts.unset})</span>
+              </div>
+              <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,overflow:'hidden'}}>
+                {allTopics.filter(t=>!t.status).map(({topic,i,s})=>(
+                  <TopicRow key={`${s.id}_${i}`} topic={topic} i={i} s={s} showSubject={true}/>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* ── Grouped by subject ────────────────────────────────────────── */
+        <div>
+          {subjects.map(s=>{
+            const topics=SPEC_TOPICS[s.id]||[];
+            const isOpen=!!openSubj[s.id];
+            const subjCounts={red:0,amber:0,green:0};
+            topics.forEach((_,i)=>{const st=rag[`${s.id}_${i}`]; if(st)subjCounts[st]++;});
+            return (
+              <div key={s.id} style={{marginBottom:8,background:C.surface,
+                border:`1px solid ${C.border}`,borderLeft:`3px solid ${s.color}`,
+                borderRadius:10,overflow:'hidden'}}>
+                <div onClick={()=>setOpenSubj(p=>({...p,[s.id]:!p[s.id]}))}
+                  style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',cursor:'pointer'}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:5}}>{s.name}</div>
+                    <div style={{display:'flex',gap:10}}>
+                      {RAG.map(r=>(
+                        <div key={r.k} style={{display:'flex',alignItems:'center',gap:4}}>
+                          <div style={{width:7,height:7,borderRadius:'50%',background:r.color}}/>
+                          <span style={{fontSize:11,color:r.color,fontWeight:700}}>{subjCounts[r.k]}</span>
+                        </div>
+                      ))}
+                      <span style={{fontSize:11,color:C.muted}}>{topics.length-Object.values(subjCounts).reduce((a,b)=>a+b,0)} unrated</span>
+                    </div>
+                  </div>
+                  <div style={{fontSize:13,color:C.muted,transition:'transform 0.2s',
+                    transform:isOpen?'rotate(180deg)':'none'}}>▾</div>
+                </div>
+                {isOpen&&(
+                  <div style={{borderTop:`1px solid ${C.border}`}}>
+                    {topics.map((topic,i)=>(
+                      <TopicRow key={i} topic={topic} i={i} s={s} showSubject={false}/>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
