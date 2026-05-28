@@ -470,7 +470,6 @@ const STUDY_TIPS = [
   ]},
 ];
 
-// ── Flashcard decks ────────────────────────────────────────────────────────
 const FLASHCARD_DECKS = {
   maths: [
     {q:'What is the quadratic formula?', a:'x = (-b ± √(b²-4ac)) / 2a\nFor ax² + bx + c = 0'},
@@ -1350,169 +1349,6 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
   );
 }
 
-// ── Flashcards component ───────────────────────────────────────────────────
-function Flashcards({subjects, uid, C, font}) {
-  const subjectIds = subjects.map(s=>s.id);
-  const availableSubjects = subjects.filter(s=>FLASHCARD_DECKS[s.id]);
-  const [selectedSubject, setSelectedSubject] = useState(availableSubjects[0]?.id??'maths');
-  const [cardIdx, setCardIdx] = useState(0);
-  const [flipped, setFlipped] = useState(false);
-  const [, forceUpdate] = useState(0);
-
-  const srKey = `rbp_sr_${uid}`;
-  const getSR = () => ls.get(srKey, {});
-  const setSR = (v) => ls.set(srKey, v);
-
-  const deck = FLASHCARD_DECKS[selectedSubject] || [];
-  const now = Date.now();
-
-  const dueDeck = deck.map((card,i)=>{
-    const k = `${selectedSubject}_${i}`;
-    const entry = getSR()[k];
-    const isDue = !entry || entry.nextMs <= now;
-    return {card, i, isDue, entry};
-  }).filter(x=>x.isDue);
-
-  const totalDue = dueDeck.length;
-  const current = dueDeck[cardIdx % Math.max(1, dueDeck.length)];
-
-  const handleResult = (result) => {
-    if (!current) return;
-    const k = `${selectedSubject}_${current.i}`;
-    const sr = getSR();
-    const entry = sr[k] || {level:0, nextMs:0};
-    const INTERVALS = [0, 86400000, 3*86400000, 7*86400000, 14*86400000];
-    let newLevel, nextMs;
-    if (result === 'missed') {
-      newLevel = 0;
-      nextMs = now;
-    } else if (result === 'nearly') {
-      newLevel = 1;
-      nextMs = now + INTERVALS[1];
-    } else {
-      newLevel = Math.min(4, entry.level+1);
-      nextMs = now + INTERVALS[newLevel];
-    }
-    sr[k] = {level:newLevel, nextMs};
-    setSR(sr);
-    setFlipped(false);
-    if (result === 'missed') {
-      setCardIdx(p=>p); // stay, but force refresh
-    } else {
-      setCardIdx(p=>p+1);
-    }
-    forceUpdate(n=>n+1);
-  };
-
-  const subjectColor = subjects.find(s=>s.id===selectedSubject)?.color || C.accent;
-
-  // Count next due
-  const nextDueMs = deck.map((_,i)=>{
-    const k=`${selectedSubject}_${i}`;
-    const e=getSR()[k];
-    return e&&e.nextMs>now ? e.nextMs : null;
-  }).filter(Boolean).sort((a,b)=>a-b)[0];
-
-  const nextDueIn = nextDueMs ? Math.ceil((nextDueMs-now)/3600000) : null;
-
-  return (
-    <div>
-      <div style={{marginBottom:20}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>Spaced repetition</div>
-        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Flashcards</h1>
-        <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>{totalDue} card{totalDue!==1?'s':''} due today</p>
-      </div>
-
-      {/* Subject picker */}
-      <div style={{marginBottom:16}}>
-        <select value={selectedSubject}
-          onChange={e=>{setSelectedSubject(e.target.value);setCardIdx(0);setFlipped(false);forceUpdate(n=>n+1);}}
-          style={{width:'100%',background:C.card2,border:`1px solid ${C.border}`,borderRadius:10,
-            padding:'11px 14px',color:C.text,fontSize:14,fontWeight:600,fontFamily:font,
-            outline:'none',cursor:'pointer',appearance:'none',WebkitAppearance:'none'}}>
-          {availableSubjects.map(s=>(
-            <option key={s.id} value={s.id}>{s.name}</option>
-          ))}
-        </select>
-      </div>
-
-      {totalDue === 0 ? (
-        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:16,
-          padding:'48px 24px',textAlign:'center'}}>
-          <div style={{fontSize:36,marginBottom:16}}>🎉</div>
-          <div style={{fontSize:18,fontWeight:700,color:C.text,marginBottom:8}}>All caught up!</div>
-          <div style={{fontSize:13,color:C.muted}}>
-            {nextDueIn!==null ? `Next card due in ${nextDueIn < 24 ? nextDueIn+'h' : Math.ceil(nextDueIn/24)+'d'}. Come back then!` : 'Come back tomorrow.'}
-          </div>
-        </div>
-      ) : current ? (
-        <div>
-          {/* Card */}
-          <div onClick={()=>setFlipped(f=>!f)}
-            style={{cursor:'pointer',perspective:1000,marginBottom:16,minHeight:200}}>
-            <div style={{position:'relative',minHeight:200,
-              transformStyle:'preserve-3d',
-              transform:flipped?'rotateY(180deg)':'rotateY(0deg)',
-              transition:'transform 0.5s ease'}}>
-              {/* Front */}
-              <div style={{position:'absolute',inset:0,backfaceVisibility:'hidden',
-                WebkitBackfaceVisibility:'hidden',
-                background:C.surface,border:`2px solid ${subjectColor}44`,
-                borderRadius:16,padding:'28px 24px',
-                display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center'}}>
-                <div style={{fontSize:11,fontWeight:700,color:subjectColor,textTransform:'uppercase',
-                  letterSpacing:0.5,marginBottom:16}}>Question · tap to flip</div>
-                <div style={{fontSize:17,fontWeight:600,color:C.text,textAlign:'center',lineHeight:1.6}}>
-                  {current.card.q}
-                </div>
-              </div>
-              {/* Back */}
-              <div style={{position:'absolute',inset:0,backfaceVisibility:'hidden',
-                WebkitBackfaceVisibility:'hidden',
-                transform:'rotateY(180deg)',
-                background:C.surface,border:`2px solid ${subjectColor}88`,
-                borderRadius:16,padding:'24px',
-                display:'flex',flexDirection:'column',justifyContent:'center'}}>
-                <div style={{fontSize:11,fontWeight:700,color:subjectColor,textTransform:'uppercase',
-                  letterSpacing:0.5,marginBottom:12}}>Answer</div>
-                <div style={{fontSize:14,color:C.text,lineHeight:1.8,whiteSpace:'pre-line'}}>
-                  {current.card.a}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Result buttons */}
-          {flipped && (
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
-              <button onClick={()=>handleResult('missed')}
-                style={{padding:'12px',background:'rgba(239,68,68,0.10)',border:'1px solid rgba(239,68,68,0.3)',
-                  borderRadius:10,color:'#ef4444',fontSize:13,fontWeight:700,fontFamily:font,cursor:'pointer'}}>
-                Missed
-              </button>
-              <button onClick={()=>handleResult('nearly')}
-                style={{padding:'12px',background:'rgba(249,115,22,0.10)',border:'1px solid rgba(249,115,22,0.3)',
-                  borderRadius:10,color:'#f97316',fontSize:13,fontWeight:700,fontFamily:font,cursor:'pointer'}}>
-                Nearly
-              </button>
-              <button onClick={()=>handleResult('got')}
-                style={{padding:'12px',background:'rgba(34,197,94,0.10)',border:'1px solid rgba(34,197,94,0.3)',
-                  borderRadius:10,color:'#22c55e',fontSize:13,fontWeight:700,fontFamily:font,cursor:'pointer'}}>
-                Got it!
-              </button>
-            </div>
-          )}
-          {!flipped && (
-            <div style={{textAlign:'center',fontSize:12,color:C.muted}}>
-              Card {(cardIdx%Math.max(1,totalDue))+1} of {totalDue} due
-            </div>
-          )}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 // ── Analytics ──────────────────────────────────────────────────────────────
 function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, onQuickLog}) {
   const SUBJ_COLORS  = Object.fromEntries(subjects.map(s=>[s.name,s.color]));
@@ -1520,14 +1356,11 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
 
   const defaultTargets = Object.fromEntries(subjects.map(s=>[s.name,'A*']));
   const [targets,     setTargets]     = useState(()=>ls.get(`rbp_targets_${uid}`, defaultTargets));
-  const [dismissed,   setDismissed]   = useState(()=>ls.get(`rbp_notifs_${uid}`, []));
   const [chartSubject,setChartSubject] = useState(subjects[0]?.name??'');
 
   useEffect(()=>ls.set(`rbp_targets_${uid}`, targets),  [targets]);
-  useEffect(()=>ls.set(`rbp_notifs_${uid}`, dismissed),  [dismissed]);
 
   const br = calcBattleReadiness(scores, errors);
-  const notifications = getNotifications(scores, errors, subjects, examSched).filter(n=>!dismissed.includes(n.id));
 
   const subjectAvg = name => {
     const ss=scores.filter(x=>x.subject===name);
@@ -1536,29 +1369,6 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
 
   return (
     <div>
-      <MissionBoard subjects={subjects} scores={scores} C={C} font={font} examSched={examSched} onQuickLog={onQuickLog}/>
-      {/* Dismissable notifications */}
-      {notifications.length>0&&(
-        <div style={{marginBottom:16}}>
-          {notifications.slice(0,3).map(n=>(
-            <div key={n.id} style={{display:'flex',alignItems:'flex-start',gap:10,padding:'10px 14px',
-              marginBottom:5,borderRadius:8,background:`${NOTIF_COLOR[n.type]}18`,
-              border:`1px solid ${NOTIF_COLOR[n.type]}40`}}>
-              <div style={{width:6,height:6,borderRadius:'50%',background:NOTIF_COLOR[n.type],flexShrink:0,marginTop:5}}/>
-              <div style={{flex:1}}>
-                <div style={{fontSize:13,fontWeight:600,color:NOTIF_COLOR[n.type]}}>{n.title}</div>
-                <div style={{fontSize:12,color:C.muted,marginTop:2}}>{n.body}</div>
-              </div>
-              <button onClick={()=>setDismissed(p=>[...p,n.id])}
-                style={{background:'transparent',border:'none',color:C.muted,cursor:'pointer',
-                  fontSize:18,padding:0,lineHeight:1,flexShrink:0}}>×</button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <StreakBanner scores={scores} C={C}/>
-
       <div style={{marginBottom:20}}>
         <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>Analytics</div>
         <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Performance Dashboard</h1>
@@ -1684,76 +1494,6 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
           ))}
         </div>
       </div>
-
-      {/* Predicted trajectory */}
-      {subjects.length>0&&(
-        <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:18,marginBottom:12}}>
-          <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Predicted trajectory</div>
-          <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-            {subjects.map(s=>{
-              const pred = predictedGrade(scores, s.name, GRADE_BOUNDS);
-              if (!pred) return (
-                <div key={s.name} style={{fontSize:12,padding:'5px 12px',borderRadius:20,
-                  background:C.card2,color:C.muted,border:`1px solid ${C.border}`}}>
-                  {s.name}: Need 2+ papers
-                </div>
-              );
-              const trendIcon = pred.trend==='up'?'▲':pred.trend==='down'?'▼':'→';
-              const trendColor = pred.trend==='up'?'#22c55e':pred.trend==='down'?'#ef4444':C.muted;
-              return (
-                <div key={s.name} style={{fontSize:12,padding:'5px 12px',borderRadius:20,
-                  background:`${s.color}14`,border:`1px solid ${s.color}33`,
-                  display:'flex',alignItems:'center',gap:6}}>
-                  <span style={{color:s.color,fontWeight:600}}>{s.name}</span>
-                  <span style={{fontSize:14,fontWeight:800,color:gradeColor(pred.grade)}}>{pred.grade}</span>
-                  <span style={{fontSize:11,color:trendColor}}>{trendIcon}</span>
-                  <span style={{fontSize:11,color:C.muted}}>{pred.pct}%</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Weak topics heatmap */}
-      {(()=>{
-        const subjectsWithErrors = subjects.filter(s=>errors.some(e=>e.subject===s.name));
-        if (!subjectsWithErrors.length) return null;
-        return (
-          <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:18,marginBottom:12}}>
-            <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Weak topics</div>
-            <div style={{display:'flex',flexDirection:'column',gap:14}}>
-              {subjectsWithErrors.map(s=>{
-                const subErrors = errors.filter(e=>e.subject===s.name);
-                const topicCounts = {};
-                subErrors.forEach(e=>{
-                  const t=e.topic||'Unknown';
-                  topicCounts[t]=(topicCounts[t]||0)+1;
-                });
-                const top3 = Object.entries(topicCounts).sort((a,b)=>b[1]-a[1]).slice(0,3);
-                return (
-                  <div key={s.name}>
-                    <div style={{fontSize:12,fontWeight:700,color:s.color,textTransform:'uppercase',letterSpacing:0.3,marginBottom:6}}>{s.name}</div>
-                    <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                      {top3.map(([topic,count])=>(
-                        <div key={topic} style={{fontSize:12,padding:'4px 10px',borderRadius:6,
-                          background:`${s.color}18`,border:`1px solid ${s.color}30`,
-                          display:'flex',alignItems:'center',gap:5}}>
-                          <span style={{color:C.text,fontWeight:500}}>{topic}</span>
-                          <span style={{fontSize:11,fontWeight:700,color:s.color,
-                            background:`${s.color}25`,padding:'1px 5px',borderRadius:4}}>
-                            ×{count}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })()}
 
       <InsuranceEligibilityCard scores={scores} uid={uid} C={C} font={font}/>
     </div>
@@ -2696,7 +2436,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
   },[]);
 
   useEffect(()=>{
-    if (isMobile&&!['analytics','tracker','exams','cards','achievements'].includes(view)) setView('analytics');
+    if (isMobile&&!['analytics','tracker','exams','achievements'].includes(view)) setView('analytics');
   },[isMobile]);
 
   // Supabase sync — load on mount, push on change
@@ -2778,7 +2518,6 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
     {id:'tracker',label:'Tracker'},
     {id:'exams',label:'Exams'},
     {id:'plan',label:'Plan'},
-    {id:'cards',label:'Cards'},
     {id:'achievements',label:'Achievements'},
     {id:'tips',label:'Tips & Routine'},
     {id:'resources',label:'Resources'},
@@ -2843,8 +2582,7 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
         {view==='tracker'      && <Tracker      {...vp} setScores={setScores} setErrors={setErrors} uid={uid}/>}
         {view==='exams'        && <Exams        {...vp}/>}
         {view==='plan'         && <Schedule     {...vp}/>}
-        {view==='cards'        && <Flashcards   subjects={subjects} uid={uid} C={C} font={font}/>}
-        {view==='achievements' && <AchievementsView {...vp} unlockedIds={unlockedIds}/>}
+{view==='achievements' && <AchievementsView {...vp} unlockedIds={unlockedIds}/>}
         {view==='tips'         && <Tips         {...vp}/>}
         {view==='resources'    && <Resources    {...vp}/>}
         {view==='account'      && <Account      {...vp} user={user} selection={selection}
@@ -2854,8 +2592,8 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
       {isMobile&&(
         <nav style={{position:'fixed',bottom:0,left:0,right:0,zIndex:100,
           background:C.nav,backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
-          borderTop:`1px solid ${C.border}`,display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr 1fr',height:56}}>
-          {[{id:'analytics',label:'Home'},{id:'tracker',label:'Tracker'},{id:'exams',label:'Exams'},{id:'cards',label:'Cards'},{id:'achievements',label:'Awards'}]
+          borderTop:`1px solid ${C.border}`,display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',height:56}}>
+          {[{id:'analytics',label:'Home'},{id:'tracker',label:'Tracker'},{id:'exams',label:'Exams'},{id:'achievements',label:'Awards'}]
             .map(n=>(
             <button key={n.id} onClick={()=>setView(n.id)}
               style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
@@ -2883,6 +2621,26 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
       {pendingAchievement&&(
         <AchievementToast achievement={pendingAchievement} onDismiss={()=>setPendingAchievement(null)}/>
       )}
+      {(()=>{
+        const streak = getStudyStreak(scores);
+        if (!streak) return null;
+        const gold = streak >= 7;
+        return (
+          <div style={{position:'fixed',top:62,right:16,zIndex:95,
+            display:'flex',alignItems:'center',gap:6,
+            padding:'6px 12px',borderRadius:20,
+            background: gold ? 'rgba(251,191,36,0.18)' : C.surface,
+            border:`1px solid ${gold?'rgba(251,191,36,0.5)':C.border}`,
+            boxShadow: gold ? '0 0 16px rgba(251,191,36,0.25)' : '0 2px 8px rgba(0,0,0,0.12)',
+            backdropFilter:'blur(8px)',WebkitBackdropFilter:'blur(8px)',
+            cursor:'default',userSelect:'none'}}>
+            <span style={{fontSize:18,lineHeight:1}}>🔥</span>
+            <span style={{fontSize:14,fontWeight:800,color: gold ? '#fbbf24' : C.text,fontFamily:'inherit'}}>
+              {streak}
+            </span>
+          </div>
+        );
+      })()}
       <button
         onClick={()=>setQuickLogOpen(true)}
         aria-label="Log a paper"
