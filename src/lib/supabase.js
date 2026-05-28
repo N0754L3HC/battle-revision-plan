@@ -12,8 +12,10 @@ if (!configured) {
   console.warn('[Supabase] Missing or invalid env vars — running in local-only mode.');
 }
 
+const AUTH_OPTS = { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true };
+
 export const supabase = configured
-  ? createClient(url, key)
-  : createClient('https://placeholder.supabase.co', 'placeholder-key-placeholder-key-placeholder-key');
+  ? createClient(url, key, { auth: AUTH_OPTS })
+  : createClient('https://placeholder.supabase.co', 'placeholder-key-placeholder-key-placeholder-key', { auth: AUTH_OPTS });
 
 export const isSupabaseConfigured = () => configured;

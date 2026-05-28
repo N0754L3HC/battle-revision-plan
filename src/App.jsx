@@ -5816,10 +5816,12 @@ export default function App() {
       }
     }
 
-    supabase.auth.getSession().then(({data:{session}})=>boot(session));
+    let booted=false;
     const {data:{subscription}}=supabase.auth.onAuthStateChange((event,session)=>{
-      if (event==='SIGNED_OUT') { if (alive) { setUser(null); setSelection([]); setPhase('landing'); } }
-      else if (event==='SIGNED_IN') boot(session);
+      if (event==='INITIAL_SESSION'||event==='SIGNED_IN'||event==='TOKEN_REFRESHED') {
+        if (!booted||event==='SIGNED_IN') { booted=true; boot(session); }
+      }
+      if (event==='SIGNED_OUT') { booted=false; if (alive) { setUser(null); setSelection([]); setPhase('landing'); } }
     });
     return ()=>{ alive=false; subscription.unsubscribe(); };
   },[]);
