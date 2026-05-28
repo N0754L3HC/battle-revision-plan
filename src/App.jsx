@@ -28,17 +28,17 @@ class ErrorBoundary extends React.Component {
 // ── Theme ──────────────────────────────────────────────────────────────────
 const T = {
   light: {
-    bg:      '#bfbab2',
-    surface: '#d6d1ca',
-    nav:     'rgba(191,186,178,0.97)',
-    border:  'rgba(0,0,0,0.14)',
-    card:    '#dedad3',
-    card2:   'rgba(0,0,0,0.07)',
+    bg:      '#f0ece6',
+    surface: '#ffffff',
+    nav:     'rgba(248,245,241,0.97)',
+    border:  'rgba(0,0,0,0.09)',
+    card:    '#faf8f5',
+    card2:   'rgba(0,0,0,0.04)',
     text:    '#18170f',
     muted:   '#574f48',
-    subtle:  '#7e7870',
+    subtle:  '#9b938b',
     accent:  '#b5735a',
-    accentSoft: 'rgba(181,115,90,0.13)',
+    accentSoft: 'rgba(181,115,90,0.10)',
     success: '#15803d', warn: '#b45309', danger: '#b91c1c',
   },
   dark: {
