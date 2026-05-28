@@ -1357,6 +1357,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
   const defaultTargets = Object.fromEntries(subjects.map(s=>[s.name,'A*']));
   const [targets,     setTargets]     = useState(()=>ls.get(`rbp_targets_${uid}`, defaultTargets));
   const [chartSubject,setChartSubject] = useState(subjects[0]?.name??'');
+  const [tipIdx,      setTipIdx]      = useState(null);
 
   useEffect(()=>ls.set(`rbp_targets_${uid}`, targets),  [targets]);
 
@@ -1472,22 +1473,52 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
             Upcoming exams
           </div>
           <div style={{display:'flex',gap:8,overflowX:'auto',paddingBottom:4}}>
-            {allUpcoming.slice(0,10).map((e,i)=>(
-              <div key={i} style={{
-                background:urgencyBg(e.days),
-                border:`1px solid ${urgencyBorder(e.days)}`,
-                borderRadius:10,padding:'8px 11px',
-                minWidth:70,maxWidth:80,textAlign:'center',flexShrink:0,
-              }}>
-                <div style={{fontSize:e.days===0?14:22,fontWeight:900,color:urgencyCol(e.days),lineHeight:1}}>
-                  {e.days===0?'TODAY':e.days}
+            {allUpcoming.slice(0,10).map((e,i)=>{
+              const active = tipIdx===i;
+              return (
+                <div key={i}
+                  onMouseEnter={()=>setTipIdx(i)}
+                  onMouseLeave={()=>setTipIdx(null)}
+                  onClick={()=>setTipIdx(active?null:i)}
+                  style={{
+                    background: active ? urgencyBg(e.days).replace('0.08','0.16').replace('0.06','0.12') : urgencyBg(e.days),
+                    border:`1px solid ${active ? urgencyCol(e.days)+'66' : urgencyBorder(e.days)}`,
+                    borderRadius:10,padding:'8px 11px',
+                    minWidth:70,maxWidth:80,textAlign:'center',flexShrink:0,
+                    cursor:'pointer',transition:'border-color 0.15s,background 0.15s',
+                    outline: active ? `2px solid ${urgencyCol(e.days)}44` : 'none',
+                  }}>
+                  <div style={{fontSize:e.days===0?14:22,fontWeight:900,color:urgencyCol(e.days),lineHeight:1}}>
+                    {e.days===0?'TODAY':e.days}
+                  </div>
+                  {e.days!==0&&<div style={{fontSize:9,color:C.muted,marginBottom:3}}>days</div>}
+                  <div style={{fontSize:11,fontWeight:700,color:e.subjectColor,marginTop:e.days===0?4:0}}>{shortSubj(e.subjectName)}</div>
+                  <div style={{fontSize:10,color:C.muted}}>{shortPaper(e.paper)}</div>
                 </div>
-                {e.days!==0&&<div style={{fontSize:9,color:C.muted,marginBottom:3}}>days</div>}
-                <div style={{fontSize:11,fontWeight:700,color:e.subjectColor,marginTop:e.days===0?4:0}}>{shortSubj(e.subjectName)}</div>
-                <div style={{fontSize:10,color:C.muted}}>{shortPaper(e.paper)}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
+          {/* Detail panel */}
+          {tipIdx!=null&&allUpcoming[tipIdx]&&(()=>{
+            const e = allUpcoming[tipIdx];
+            const dateStr = new Date(e.date).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+            return (
+              <div style={{marginTop:8,padding:'10px 14px',borderRadius:8,
+                background:urgencyBg(e.days),border:`1px solid ${urgencyBorder(e.days)}`,
+                display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
+                <div style={{width:3,alignSelf:'stretch',borderRadius:2,background:e.subjectColor,flexShrink:0}}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:700,color:C.text}}>{e.paper}</div>
+                  <div style={{fontSize:12,color:C.muted,marginTop:2}}>
+                    {e.subjectName} · {e.board} {e.code} · {dateStr}
+                  </div>
+                </div>
+                <div style={{fontSize:12,color:C.muted,flexShrink:0}}>
+                  {e.time} · {e.duration}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 
