@@ -986,6 +986,8 @@ const ANIM_CSS=`
 @keyframes rbp-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @keyframes rbp-slide-up{0%{transform:translateY(16px);opacity:0}100%{transform:translateY(0);opacity:1}}
 @keyframes rbp-fade-in{0%{opacity:0}100%{opacity:1}}
+@keyframes rbp-slide-right{0%{transform:translateX(-14px);opacity:0}100%{transform:translateX(0);opacity:1}}
+@keyframes rbp-bounce-in{0%{transform:scale(0.7);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
 `;
 function ensureAnimStyles(){if(!document.getElementById('rbp-anims')){const s=document.createElement('style');s.id='rbp-anims';s.textContent=ANIM_CSS;document.head.appendChild(s);}}
 
@@ -1209,146 +1211,172 @@ const OUTFIT_COLORS = ['#4a90d9','#e87c3e','#5cb85c','#9b59b6','#e74c3c','#2c3e5
 const HAIR_STYLE_LABELS = ['Buzz','Bob','Long','Bun','Curly','Ponytail'];
 const ACCESSORY_LABELS  = ['None','Glasses','Cat-eye','Headband'];
 
-function CompanionAvatar({skin=0,hair=0,hairStyle=0,eyeColor=0,outfitColor=0,accessory=0,mood='neutral',size=80}) {
-  const ST = SKIN_TONES[skin]  ?? SKIN_TONES[0];
-  const HC = HAIR_COLORS[hair] ?? HAIR_COLORS[0];
-  const EC = EYE_COLORS[eyeColor] ?? EYE_COLORS[0];
-  const OC = OUTFIT_COLORS[outfitColor] ?? OUTFIT_COLORS[0];
-  // Slightly darken outfit for collar/shadow
-  const OC2 = OC + 'cc';
+function CompanionAvatar({skin=0,hair=0,hairStyle=0,eyeColor=0,outfitColor=0,accessory=0,mood='neutral',pose='idle',size=80}) {
+  const ST   = SKIN_TONES[skin]      ?? SKIN_TONES[0];
+  const HC   = HAIR_COLORS[hair]     ?? HAIR_COLORS[0];
+  const EC   = EYE_COLORS[eyeColor]  ?? EYE_COLORS[0];
+  const OC   = OUTFIT_COLORS[outfitColor] ?? OUTFIT_COLORS[0];
+  const PANT = '#2c3a4e';
+  const SHOE = '#f2ede9';
 
-  // Excited eyes squint slightly
-  const lidY = mood === 'excited' ? 45 : 42;
+  const h   = Math.round(size * 1.3);
+  const lid = mood === 'excited' ? 22 : 19; // eyelid arc control-point y
 
   return (
-    <svg width={size} height={Math.round(size*1.15)} viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg">
+    <svg width={size} height={h} viewBox="0 0 100 130" xmlns="http://www.w3.org/2000/svg">
 
-      {/* ── OUTFIT / SHOULDERS ── */}
-      <path d="M29 87 Q22 85 19 91 L15 115 L85 115 L81 91 Q78 85 71 87 L61 80 Q56 77 50 77 Q44 77 39 80Z" fill={OC}/>
-      {/* Collar detail */}
-      <path d="M43 80 Q50 86 57 80 Q53 78 50 78 Q47 78 43 80Z" fill={OC2}/>
+      {/* ── SHOES ── */}
+      <ellipse cx="36" cy="126" rx="13" ry="5.5" fill={SHOE}/>
+      <ellipse cx="64" cy="126" rx="13" ry="5.5" fill={SHOE}/>
+      <ellipse cx="40" cy="127" rx="8" ry="3.5" fill={SHOE} opacity="0.65"/>
+      <ellipse cx="68" cy="127" rx="8" ry="3.5" fill={SHOE} opacity="0.65"/>
+
+      {/* ── LEGS ── */}
+      <rect x="27" y="98" width="18" height="32" rx="9" fill={PANT}/>
+      <rect x="55" y="98" width="18" height="32" rx="9" fill={PANT}/>
+
+      {/* ── BODY / TORSO ── */}
+      <path d="M24 62 Q24 58 50 56 Q76 58 76 62 L80 102 Q68 108 50 108 Q32 108 20 102 Z" fill={OC}/>
+
+      {/* ── LEFT ARM (always hanging) ── */}
+      <rect x="12" y="62" width="12" height="36" rx="6" fill={OC}/>
+      <ellipse cx="18" cy="101" rx="7" ry="7.5" fill={ST}/>
+
+      {/* ── RIGHT ARM ── */}
+      {pose==='wave'?(
+        <>
+          {/* Sleeve going up */}
+          <path d="M74 68 Q86 54 84 38" stroke={OC} strokeWidth="13" strokeLinecap="round" fill="none"/>
+          {/* Skin forearm */}
+          <path d="M84 38 Q86 26 82 20" stroke={ST} strokeWidth="11" strokeLinecap="round" fill="none"/>
+          {/* Hand */}
+          <ellipse cx="81" cy="18" rx="8" ry="8" fill={ST}/>
+          {/* Wave fingers */}
+          <line x1="75" y1="12" x2="76" y2="8"  stroke={ST} strokeWidth="2.5" strokeLinecap="round"/>
+          <line x1="81" y1="10" x2="81" y2="6"  stroke={ST} strokeWidth="2.5" strokeLinecap="round"/>
+          <line x1="87" y1="12" x2="88" y2="8"  stroke={ST} strokeWidth="2.5" strokeLinecap="round"/>
+        </>
+      ):(
+        <>
+          <rect x="76" y="62" width="12" height="36" rx="6" fill={OC}/>
+          <ellipse cx="82" cy="101" rx="7" ry="7.5" fill={ST}/>
+        </>
+      )}
 
       {/* ── NECK ── */}
-      <rect x="43" y="76" width="14" height="12" rx="5" fill={ST}/>
+      <rect x="43" y="51" width="14" height="13" rx="5" fill={ST}/>
 
       {/* ── EARS ── */}
-      <ellipse cx="20" cy="50" rx="5.5" ry="6.5" fill={ST}/>
-      <ellipse cx="80" cy="50" rx="5.5" ry="6.5" fill={ST}/>
-      <ellipse cx="20" cy="50" rx="3.2" ry="4" fill={ST} opacity="0.55"/>
-      <ellipse cx="80" cy="50" rx="3.2" ry="4" fill={ST} opacity="0.55"/>
+      <ellipse cx="28" cy="30" rx="5.5" ry="6.5" fill={ST}/>
+      <ellipse cx="72" cy="30" rx="5.5" ry="6.5" fill={ST}/>
+      <ellipse cx="28" cy="30" rx="3"   ry="4"   fill={ST} opacity="0.5"/>
+      <ellipse cx="72" cy="30" rx="3"   ry="4"   fill={ST} opacity="0.5"/>
 
       {/* ── HEAD ── */}
-      <ellipse cx="50" cy="48" rx="30" ry="32" fill={ST}/>
+      <ellipse cx="50" cy="28" rx="22" ry="24" fill={ST}/>
 
-      {/* ── HAIR (drawn behind eyes but in front of head) ── */}
+      {/* ── HAIR ── */}
       {hairStyle===0&&(
-        <path d="M21 48 Q21 16 50 13 Q79 16 79 48 Q77 18 50 16 Q23 18 21 48Z" fill={HC}/>
+        <path d="M28 28 Q28 4 50 2 Q72 4 72 28 Q70 5 50 4 Q30 5 28 28Z" fill={HC}/>
       )}
       {hairStyle===1&&(<>
-        <path d="M21 48 Q21 16 50 13 Q79 16 79 48 Q77 18 50 16 Q23 18 21 48Z" fill={HC}/>
-        <path d="M19 57 L14 92 Q18 95 22 92 L23 57Z" fill={HC}/>
-        <path d="M81 57 L86 92 Q82 95 78 92 L77 57Z" fill={HC}/>
+        <path d="M28 28 Q28 4 50 2 Q72 4 72 28 Q70 5 50 4 Q30 5 28 28Z" fill={HC}/>
+        <rect x="21" y="34" width="9" height="30" rx="4.5" fill={HC}/>
+        <rect x="70" y="34" width="9" height="30" rx="4.5" fill={HC}/>
       </>)}
       {hairStyle===2&&(<>
-        <path d="M21 48 Q21 16 50 13 Q79 16 79 48 Q77 18 50 16 Q23 18 21 48Z" fill={HC}/>
-        <path d="M18 54 L11 115 Q16 115 20 113 L23 54Z" fill={HC}/>
-        <path d="M82 54 L89 115 Q84 115 80 113 L77 54Z" fill={HC}/>
+        <path d="M28 28 Q28 4 50 2 Q72 4 72 28 Q70 5 50 4 Q30 5 28 28Z" fill={HC}/>
+        <path d="M22 34 L16 112 Q20 116 24 112 L28 34Z" fill={HC}/>
+        <path d="M78 34 L84 112 Q80 116 76 112 L72 34Z" fill={HC}/>
       </>)}
       {hairStyle===3&&(<>
-        <path d="M23 51 Q23 19 50 17 Q77 19 77 51 Q75 21 50 20 Q25 21 23 51Z" fill={HC}/>
-        <circle cx="50" cy="7" r="10" fill={HC}/>
-        <ellipse cx="50" cy="15" rx="7" ry="3" fill={HC}/>
-        {/* hair tie */}
-        <ellipse cx="50" cy="15" rx="5" ry="2" fill={HC} opacity="0.6"/>
+        <path d="M30 30 Q30 6 50 4 Q70 6 70 30 Q68 7 50 6 Q32 7 30 30Z" fill={HC}/>
+        <circle cx="50" cy="-3" r="9" fill={HC}/>
+        <ellipse cx="50" cy="4"  rx="6" ry="2.5" fill={HC}/>
       </>)}
       {hairStyle===4&&(<>
-        <ellipse cx="50" cy="27" rx="32" ry="20" fill={HC}/>
-        <circle cx="22" cy="39" r="10" fill={HC}/>
-        <circle cx="78" cy="39" r="10" fill={HC}/>
-        <circle cx="50" cy="12" r="9"  fill={HC}/>
-        <circle cx="33" cy="16" r="8"  fill={HC}/>
-        <circle cx="67" cy="16" r="8"  fill={HC}/>
+        <ellipse cx="50" cy="12" rx="26" ry="18" fill={HC}/>
+        <circle cx="27" cy="24" r="10" fill={HC}/>
+        <circle cx="73" cy="24" r="10" fill={HC}/>
+        <circle cx="50" cy="0"  r="8"  fill={HC}/>
+        <circle cx="35" cy="4"  r="7"  fill={HC}/>
+        <circle cx="65" cy="4"  r="7"  fill={HC}/>
       </>)}
       {hairStyle===5&&(<>
-        <path d="M23 51 Q23 19 50 17 Q77 19 77 51 Q75 21 50 20 Q25 21 23 51Z" fill={HC}/>
-        {/* ponytail to the right */}
-        <path d="M67 20 Q85 30 80 70 Q74 86 70 82 Q76 62 72 44 Q68 30 67 20Z" fill={HC}/>
+        <path d="M30 30 Q30 6 50 4 Q70 6 70 30 Q68 7 50 6 Q32 7 30 30Z" fill={HC}/>
+        <path d="M66 6 Q82 14 78 56 Q74 70 70 66 Q76 48 72 30 Q68 14 66 6Z" fill={HC}/>
       </>)}
 
-      {/* ── EYES (white + iris + pupil + highlight) ── */}
-      {/* Left eye */}
-      <ellipse cx="36" cy="47" rx="9" ry="9.5" fill="white"/>
-      <path d={`M27 47 Q36 ${lidY} 45 47`} fill={ST}/>
-      <circle cx="36" cy="49" r="6" fill={EC}/>
-      <circle cx="36" cy="49" r="3.8" fill="#0a0a0a"/>
-      <circle cx="38" cy="47" r="1.9" fill="white"/>
-      <circle cx="34.5" cy="51" r="0.9" fill="white" opacity="0.55"/>
-      {/* Right eye */}
-      <ellipse cx="64" cy="47" rx="9" ry="9.5" fill="white"/>
-      <path d={`M55 47 Q64 ${lidY} 73 47`} fill={ST}/>
-      <circle cx="64" cy="49" r="6" fill={EC}/>
-      <circle cx="64" cy="49" r="3.8" fill="#0a0a0a"/>
-      <circle cx="66" cy="47" r="1.9" fill="white"/>
-      <circle cx="62.5" cy="51" r="0.9" fill="white" opacity="0.55"/>
+      {/* ── EYES ── */}
+      <ellipse cx="36" cy="28" rx="9"   ry="9.5" fill="white"/>
+      <path    d={`M27 28 Q36 ${lid} 45 28`}     fill={ST}/>
+      <circle  cx="36" cy="30" r="6"             fill={EC}/>
+      <circle  cx="36" cy="30" r="3.8"           fill="#0a0a0a"/>
+      <circle  cx="38" cy="28" r="1.9"           fill="white"/>
+      <circle  cx="34.5" cy="32" r="0.9"         fill="white" opacity="0.5"/>
+
+      <ellipse cx="64" cy="28" rx="9"   ry="9.5" fill="white"/>
+      <path    d={`M55 28 Q64 ${lid} 73 28`}     fill={ST}/>
+      <circle  cx="64" cy="30" r="6"             fill={EC}/>
+      <circle  cx="64" cy="30" r="3.8"           fill="#0a0a0a"/>
+      <circle  cx="66" cy="28" r="1.9"           fill="white"/>
+      <circle  cx="62.5" cy="32" r="0.9"         fill="white" opacity="0.5"/>
 
       {/* ── EYEBROWS ── */}
       {mood==='worried'?(
         <>
-          <path d="M28 36 Q36 32 44 37" stroke={HC} strokeWidth="2.8" fill="none" strokeLinecap="round"/>
-          <path d="M56 37 Q64 32 72 36" stroke={HC} strokeWidth="2.8" fill="none" strokeLinecap="round"/>
+          <path d="M28 18 Q36 14 44 19" stroke={HC} strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+          <path d="M56 19 Q64 14 72 18" stroke={HC} strokeWidth="2.5" fill="none" strokeLinecap="round"/>
         </>
       ):(
         <>
-          <path d="M28 37 Q36 33 44 37" stroke={HC} strokeWidth="2.8" fill="none" strokeLinecap="round"/>
-          <path d="M56 37 Q64 33 72 37" stroke={HC} strokeWidth="2.8" fill="none" strokeLinecap="round"/>
+          <path d="M28 19 Q36 15 44 19" stroke={HC} strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+          <path d="M56 19 Q64 15 72 19" stroke={HC} strokeWidth="2.5" fill="none" strokeLinecap="round"/>
         </>
       )}
 
       {/* ── NOSE ── */}
-      <circle cx="46" cy="58" r="1.4" fill={ST} opacity="0.42"/>
-      <circle cx="54" cy="58" r="1.4" fill={ST} opacity="0.42"/>
+      <circle cx="46" cy="38" r="1.3" fill={ST} opacity="0.4"/>
+      <circle cx="54" cy="38" r="1.3" fill={ST} opacity="0.4"/>
 
       {/* ── CHEEK BLUSH ── */}
-      <ellipse cx="21" cy="60" rx="8" ry="5" fill="#f9a8d4" opacity="0.22"/>
-      <ellipse cx="79" cy="60" rx="8" ry="5" fill="#f9a8d4" opacity="0.22"/>
+      <ellipse cx="21" cy="40" rx="7"  ry="4.5" fill="#f9a8d4" opacity="0.22"/>
+      <ellipse cx="79" cy="40" rx="7"  ry="4.5" fill="#f9a8d4" opacity="0.22"/>
 
       {/* ── MOUTH ── */}
       {mood==='excited'&&(<>
-        <path d="M34 67 Q50 84 66 67 Q56 78 50 79 Q44 78 34 67Z" fill="#c93060"/>
-        <path d="M34 67 Q50 82 66 67" fill="white" opacity="0.85"/>
-        <line x1="50" y1="67" x2="50" y2="78" stroke="#f0c0cc" strokeWidth="0.8"/>
+        <path d="M34 48 Q50 64 66 48 Q56 60 50 61 Q44 60 34 48Z" fill="#c93060"/>
+        <path d="M34 48 Q50 62 66 48" fill="white" opacity="0.85"/>
+        <line x1="50" y1="48" x2="50" y2="60" stroke="#f0c0cc" strokeWidth="0.8"/>
       </>)}
       {mood==='happy'&&(<>
-        <path d="M38 67 Q50 80 62 67 Q54 76 50 77 Q46 76 38 67Z" fill="#c93060"/>
-        <path d="M38 67 Q50 78 62 67" fill="white" opacity="0.85"/>
+        <path d="M37 48 Q50 60 63 48 Q54 57 50 58 Q46 57 37 48Z" fill="#c93060"/>
+        <path d="M37 48 Q50 58 63 48" fill="white" opacity="0.85"/>
       </>)}
       {mood==='worried'&&(
-        <path d="M40 73 Q50 67 60 73" stroke="#996060" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+        <path d="M39 52 Q50 46 61 52" stroke="#996060" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
       )}
       {mood==='neutral'&&(
-        <path d="M40 70 Q50 77 60 70 Q52 75 50 75.5 Q48 75 40 70Z" fill="#c04060" opacity="0.8"/>
+        <path d="M39 51 Q50 58 61 51 Q52 56 50 56.5 Q48 56 39 51Z" fill="#c04060" opacity="0.8"/>
       )}
 
       {/* ── ACCESSORIES ── */}
       {accessory===1&&(<>
-        {/* Round glasses */}
-        <circle cx="36" cy="48" r="11.5" fill="none" stroke="#1a1a1a" strokeWidth="2.2"/>
-        <circle cx="64" cy="48" r="11.5" fill="none" stroke="#1a1a1a" strokeWidth="2.2"/>
-        <line x1="47.5" y1="48" x2="52.5" y2="48" stroke="#1a1a1a" strokeWidth="2"/>
-        <line x1="14" y1="47" x2="24.5" y2="48" stroke="#1a1a1a" strokeWidth="1.8"/>
-        <line x1="86" y1="47" x2="75.5" y2="48" stroke="#1a1a1a" strokeWidth="1.8"/>
+        <circle cx="36" cy="29" r="11"   fill="none" stroke="#1a1a1a" strokeWidth="2"/>
+        <circle cx="64" cy="29" r="11"   fill="none" stroke="#1a1a1a" strokeWidth="2"/>
+        <line x1="47" y1="29" x2="53" y2="29"      stroke="#1a1a1a" strokeWidth="2"/>
+        <line x1="14" y1="28" x2="25"  y2="29"     stroke="#1a1a1a" strokeWidth="1.8"/>
+        <line x1="86" y1="28" x2="75"  y2="29"     stroke="#1a1a1a" strokeWidth="1.8"/>
       </>)}
       {accessory===2&&(<>
-        {/* Cat-eye glasses */}
-        <path d="M24.5 43 Q36 40 47.5 46 Q47.5 56 36 58 Q24.5 56 24.5 43Z" fill="none" stroke="#1a1a1a" strokeWidth="2.2"/>
-        <path d="M52.5 43 Q64 40 75.5 46 Q75.5 56 64 58 Q52.5 56 52.5 43Z" fill="none" stroke="#1a1a1a" strokeWidth="2.2"/>
-        <line x1="47.5" y1="46" x2="52.5" y2="46" stroke="#1a1a1a" strokeWidth="1.8"/>
-        <line x1="14" y1="45" x2="24.5" y2="43" stroke="#1a1a1a" strokeWidth="1.8"/>
-        <line x1="86" y1="45" x2="75.5" y2="43" stroke="#1a1a1a" strokeWidth="1.8"/>
+        <path d="M25 24 Q36 21 47 27 Q47 37 36 39 Q25 37 25 24Z" fill="none" stroke="#1a1a1a" strokeWidth="2"/>
+        <path d="M53 24 Q64 21 75 27 Q75 37 64 39 Q53 37 53 24Z" fill="none" stroke="#1a1a1a" strokeWidth="2"/>
+        <line x1="47" y1="27" x2="53" y2="27"      stroke="#1a1a1a" strokeWidth="1.8"/>
+        <line x1="14" y1="26" x2="25"  y2="24"     stroke="#1a1a1a" strokeWidth="1.8"/>
+        <line x1="86" y1="26" x2="75"  y2="24"     stroke="#1a1a1a" strokeWidth="1.8"/>
       </>)}
       {accessory===3&&(
-        /* Headband */
-        <path d="M20 37 Q50 23 80 37" fill="none" stroke="#e03870" strokeWidth="7" strokeLinecap="round"/>
+        <path d="M28 16 Q50 8 72 16" fill="none" stroke="#e03870" strokeWidth="6" strokeLinecap="round"/>
       )}
     </svg>
   );
@@ -2460,9 +2488,6 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
           );
         })()
       )}
-
-      {/* ── Companion card ──────────────────────────────────────────────── */}
-      <CompanionCard sessions={sessions} scores={scores} subjects={subjects} examSched={examSched} C={C} font={font} isPro={isPro} onUpgrade={()=>{ if(typeof onUpgrade==='function') onUpgrade(); }}/>
 
       {/* ── Battle readiness gauge ───────────────────────────────────────── */}
       <div style={{background:C.surface,border:`1px solid ${br.labelColor}30`,borderRadius:12,
@@ -4528,6 +4553,28 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
   const [ragNotes, setRagNotes]  = useState(()=>ls.get(`rbp_rag_notes_${uid}`,{}));
   const [sessions, setSessions]  = useState(()=>ls.get(`rbp_sessions_${uid}`,[]));
 
+  // ── Companion state (lifted from CompanionCard to here so sidebar can access) ──
+  const [companion,setCompanion] = useState(()=>{
+    const s=ls.get('rbp_companion',{name:'Alex',skin:0,hair:0,hairStyle:0});
+    return {eyeColor:0,outfitColor:0,accessory:0,...s};
+  });
+  const [showBubble,    setShowBubble]   = useState(false);
+  const [customising,   setCustomising]  = useState(false);
+  const [companionDraft,setCompanionDraft] = useState(companion.name);
+  const [companionChat, setCompanionChat]= useState(false);
+
+  const mood    = getCompanionMood({sessions,scores,examSched,subjects});
+  const message = getCompanionMessage({mood,sessions,scores,subjects,examSched,name:companion.name});
+
+  useEffect(()=>{
+    ensureAnimStyles();
+    const t1=setTimeout(()=>setShowBubble(true),700);
+    const t2=setTimeout(()=>setShowBubble(false),7000);
+    return ()=>{ clearTimeout(t1); clearTimeout(t2); };
+  },[]);
+
+  const saveCompanion = (c) => { setCompanion(c); ls.set('rbp_companion',c); };
+
   useEffect(()=>ls.set(`rbp_rag_notes_${uid}`,ragNotes),[ragNotes]);
 
   const C    = dark?T.dark:T.light;
@@ -4675,9 +4722,22 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
         <div style={{maxWidth:740,margin:'0 auto',height:'100%',padding:'0 16px',
           display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
-            <div style={{width:26,height:26,borderRadius:7,background:C.accent,display:'flex',
-              alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:900,color:'#fff',
-              fontFamily:"'JetBrains Mono',monospace"}}>A*</div>
+            {/* Mini avatar in mobile/medium nav */}
+            <div style={{position:'relative',cursor:'pointer',flexShrink:0}}
+              onClick={()=>setShowBubble(v=>!v)}>
+              <div style={{width:36,height:36,borderRadius:'50%',overflow:'hidden',
+                border:`2px solid ${C.accent}`,background:C.surface,
+                display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <CompanionAvatar
+                  skin={companion.skin} hair={companion.hair} hairStyle={companion.hairStyle}
+                  eyeColor={companion.eyeColor??0} outfitColor={companion.outfitColor??0}
+                  accessory={companion.accessory??0} mood={mood}
+                  pose={showBubble?'wave':'idle'} size={32}/>
+              </div>
+              <div style={{position:'absolute',bottom:-1,right:-1,width:9,height:9,borderRadius:'50%',
+                background:{happy:'#22c55e',excited:'#fbbf24',worried:'#f97316',neutral:C.accent}[mood]||C.accent,
+                border:`2px solid ${C.nav}`}}/>
+            </div>
             {!isMobile&&<span style={{fontSize:14,fontWeight:700,color:C.text,letterSpacing:0.2}}>Battle Plan</span>}
           </div>
           {!isMobile&&(
@@ -4718,16 +4778,86 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
         </div>
       </nav>
       )}
+      {/* ── Speech bubble (desktop: right of sidebar, mobile: top-centre) ── */}
+      {showBubble&&(
+        <div style={{
+          position:'fixed',
+          ...(isWide?{left:228,top:24}:{top:64,left:'50%',transform:'translateX(-50%)'}),
+          zIndex:150,maxWidth:260,
+          background:C.surface,
+          border:`1px solid ${C.border}`,borderRadius:16,padding:'14px 16px 12px',
+          boxShadow:'0 8px 32px rgba(0,0,0,0.18)',
+          animation:'rbp-slide-right 0.3s ease',
+          pointerEvents:'auto',
+        }}>
+          {/* Tail pointing left (desktop only) */}
+          {isWide&&(
+            <div style={{position:'absolute',left:-9,top:22,width:0,height:0,
+              borderTop:'9px solid transparent',borderBottom:'9px solid transparent',
+              borderRight:`9px solid ${C.border}`}}/>
+          )}
+          {isWide&&(
+            <div style={{position:'absolute',left:-7,top:23,width:0,height:0,
+              borderTop:'8px solid transparent',borderBottom:'8px solid transparent',
+              borderRight:`8px solid ${C.surface}`}}/>
+          )}
+          <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:6}}>
+            <span style={{fontSize:12,fontWeight:700,color:C.text}}>{companion.name}</span>
+            <span style={{fontSize:10,fontWeight:700,color:{happy:'#22c55e',excited:'#fbbf24',worried:'#f97316',neutral:C.accent}[mood]||C.accent,
+              background:'rgba(0,0,0,0.06)',borderRadius:4,padding:'1px 6px'}}>
+              {{happy:'Happy',excited:'Pumped',worried:'Worried',neutral:'Ready'}[mood]||'Ready'}
+            </span>
+            <button onClick={()=>setShowBubble(false)}
+              style={{marginLeft:'auto',background:'transparent',border:'none',color:C.subtle,
+                cursor:'pointer',fontSize:14,lineHeight:1,padding:'0 2px'}}>✕</button>
+          </div>
+          <p style={{fontSize:13,color:C.muted,lineHeight:1.65,margin:'0 0 10px'}}>{message}</p>
+          {isPro&&(
+            <button onClick={()=>{setShowBubble(false);setCompanionChat(true);}}
+              style={{padding:'6px 14px',background:C.accentSoft,border:`1px solid ${C.accent}44`,
+                borderRadius:8,color:C.accent,fontSize:12,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
+              Chat →
+            </button>
+          )}
+        </div>
+      )}
+
       {isWide&&(
       <aside style={{position:'fixed',left:0,top:0,bottom:0,width:216,zIndex:100,
         background:C.nav,backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
         borderRight:`1px solid ${C.border}`,display:'flex',flexDirection:'column'}}>
-        <div style={{padding:'22px 20px 18px',borderBottom:`1px solid ${C.border}`}}>
-          <div style={{display:'flex',alignItems:'center',gap:10}}>
-            <div style={{width:32,height:32,borderRadius:9,background:C.accent,display:'flex',
-              alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:900,color:'#fff',
-              fontFamily:"'JetBrains Mono',monospace"}}>A*</div>
-            <span style={{fontSize:15,fontWeight:700,color:C.text,letterSpacing:0.1}}>Battle Plan</span>
+
+        {/* Avatar section */}
+        <div style={{padding:'18px 16px 14px',borderBottom:`1px solid ${C.border}`,
+          display:'flex',flexDirection:'column',alignItems:'center',gap:6,cursor:'pointer'}}
+          onClick={()=>setShowBubble(v=>!v)}>
+          <div style={{position:'relative'}}>
+            <CompanionAvatar
+              skin={companion.skin} hair={companion.hair} hairStyle={companion.hairStyle}
+              eyeColor={companion.eyeColor??0} outfitColor={companion.outfitColor??0}
+              accessory={companion.accessory??0} mood={mood}
+              pose={showBubble?'wave':'idle'} size={72}/>
+            {/* Mood dot */}
+            <div style={{position:'absolute',bottom:8,right:-2,width:11,height:11,borderRadius:'50%',
+              background:{happy:'#22c55e',excited:'#fbbf24',worried:'#f97316',neutral:C.accent}[mood]||C.accent,
+              border:`2px solid ${C.nav}`}}/>
+          </div>
+          <div style={{fontSize:13,fontWeight:700,color:C.text,letterSpacing:0.1}}>{companion.name}</div>
+          <div style={{display:'flex',gap:5}}>
+            <button onClick={e=>{e.stopPropagation();setCompanionDraft(companion.name);setCustomising(true);}}
+              style={{fontSize:10,color:C.muted,background:'transparent',
+                border:`1px solid ${C.border}`,borderRadius:5,padding:'3px 8px',
+                fontFamily:font,cursor:'pointer',fontWeight:500}}>
+              Customise
+            </button>
+            {isPro&&(
+              <button onClick={e=>{e.stopPropagation();setCompanionChat(true);}}
+                style={{fontSize:10,color:C.accent,background:C.accentSoft,
+                  border:`1px solid ${C.accent}44`,borderRadius:5,padding:'3px 8px',
+                  fontFamily:font,cursor:'pointer',fontWeight:600}}>
+                Chat
+              </button>
+            )}
           </div>
         </div>
         <div style={{flex:1,overflowY:'auto',padding:'8px 10px'}}>
@@ -4934,6 +5064,31 @@ function RevisionPlan({user,selection,onSignOut,onResetSubjects,examSched=EXAM_S
         onMouseLeave={e=>{e.currentTarget.style.transform='scale(1)';e.currentTarget.style.boxShadow=`0 4px 20px ${C.accent}55`;}}>
         +
       </button>
+
+      {/* Companion modals */}
+      {customising&&(
+        <CompanionCustomiser
+          companion={companion}
+          draft={companionDraft}
+          setDraft={setCompanionDraft}
+          setCompanion={setCompanion}
+          onSave={()=>{
+            const c={...companion,name:companionDraft.trim()||'Alex'};
+            saveCompanion(c); setCustomising(false);
+          }}
+          onCancel={()=>{
+            const saved=ls.get('rbp_companion',{name:'Alex',skin:0,hair:0,hairStyle:0});
+            setCompanion({eyeColor:0,outfitColor:0,accessory:0,...saved});
+            setCompanionDraft(saved.name||'Alex');
+            setCustomising(false);
+          }}
+          C={C} font={font}/>
+      )}
+      {companionChat&&(
+        <CompanionChat companion={companion} subjects={subjects} scores={scores}
+          sessions={sessions} examSched={examSched} C={C} font={font}
+          onClose={()=>setCompanionChat(false)}/>
+      )}
     </div>
   );
 }
