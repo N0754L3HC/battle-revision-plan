@@ -356,7 +356,7 @@ function BroadcastPanel({users}) {
 }
 
 // ── Full Analytics Dashboard ───────────────────────────────────────────────
-function AnalyticsDashboard({users}) {
+function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
   const now=Date.now();
   const D1=86400000,D7=D1*7,D14=D1*14,D30=D1*30,D60=D1*60;
 
@@ -571,6 +571,86 @@ function AnalyticsDashboard({users}) {
           <div style={{fontSize:10,color:DIM,lineHeight:1.7}}>D7 ≥40% good · D30 ≥25% good · D30 ≥10% median</div>
         </Sec>
       </div>
+
+      {/* ── GROWTH ENGINES ───────────────────────────────────────────── */}
+      <div style={{fontSize:9,color:'#FF3D00',letterSpacing:3,fontWeight:800,marginBottom:10,marginTop:14,opacity:0.6}}>GROWTH ENGINES</div>
+      {(()=>{
+        const refByCode={};
+        for (const r of referrals) refByCode[r.referrer_code]=(refByCode[r.referrer_code]||0)+1;
+        const totalRefs=referrals.length;
+        const referredUsers=new Set(referrals.map(r=>r.referred_user_id)).size;
+        const usersByCode=Object.fromEntries(users.filter(u=>u.referral_code).map(u=>[u.referral_code,u]));
+        const topReferrers=Object.entries(refByCode)
+          .map(([code,c])=>({code,count:c,user:usersByCode[code]}))
+          .sort((a,b)=>b.count-a.count).slice(0,8);
+        const activeReferralPro=users.filter(u=>u.referral_pro_until && new Date(u.referral_pro_until).getTime()>now).length;
+        const schoolMap={};
+        for (const u of users) {
+          if (!u.school_name || !u.school_opt_in) continue;
+          const n=u.school_name.trim(); if (!n) continue;
+          if (!schoolMap[n]) schoolMap[n]={count:0,total:0};
+          schoolMap[n].count++; schoolMap[n].total+=u.leaderboard_score??0;
+        }
+        const topSchools=Object.entries(schoolMap)
+          .map(([n,v])=>({name:n,count:v.count,avg:Math.round(v.total/v.count)}))
+          .sort((a,b)=>b.count-a.count).slice(0,8);
+        const totalGroups=groups.length;
+        const totalMemberships=groupMembers.length;
+        const avgGroupSize=totalGroups?(totalMemberships/totalGroups).toFixed(1):0;
+        const lvlCount=users.reduce((acc,u)=>{const k=u.exam_level||'(unset)';acc[k]=(acc[k]||0)+1;return acc;},{});
+        return (
+        <>
+          <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:10}}>
+            <Kpi v={totalRefs} l="Total Referrals" c='#fbbf24' sub={`${referredUsers} unique users referred`}/>
+            <Kpi v={topReferrers.length} l="Active Referrers" c='#fbbf24' sub={`avg ${topReferrers.length?(totalRefs/topReferrers.length).toFixed(1):0}/referrer`}/>
+            <Kpi v={activeReferralPro} l="Referral Pro Grants" c='#FFD600' sub="users with active Pro week"/>
+            <Kpi v={totalGroups} l="Study Groups" c='#40C4FF' sub={`${totalMemberships} memberships · avg ${avgGroupSize}/grp`}/>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:10}}>
+            {topReferrers.length>0&&(
+              <Sec title="TOP REFERRERS">
+                {topReferrers.map((r,i)=>(
+                  <div key={r.code} style={{display:'flex',gap:10,alignItems:'center',padding:'6px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12}}>
+                    <span style={{width:16,textAlign:'center',fontSize:11,color:i<3?'#FFD600':DIM,fontWeight:800}}>{i+1}</span>
+                    <span style={{flex:1,color:'#ddd',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.user?.display_name||r.user?.email||r.code}</span>
+                    <span style={{fontWeight:700,color:'#fbbf24'}}>{r.count}</span>
+                  </div>
+                ))}
+              </Sec>
+            )}
+            {topSchools.length>0&&(
+              <Sec title="TOP SCHOOLS (OPT-IN)">
+                {topSchools.map((s,i)=>(
+                  <div key={s.name} style={{display:'flex',gap:10,alignItems:'center',padding:'6px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12}}>
+                    <span style={{width:16,textAlign:'center',fontSize:11,color:i<3?'#FFD600':DIM,fontWeight:800}}>{i+1}</span>
+                    <span style={{flex:1,color:'#ddd',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s.name}</span>
+                    <span style={{fontSize:10,color:DIM,marginRight:5}}>{s.count}u</span>
+                    <span style={{fontWeight:700,color:s.avg>=80?'#00E676':s.avg>=60?'#FFD600':'#FF9100'}}>{s.avg}%</span>
+                  </div>
+                ))}
+              </Sec>
+            )}
+            <Sec title="EXAM LEVEL MIX">
+              {Object.entries(lvlCount).sort((a,b)=>b[1]-a[1]).map(([k,n])=>{
+                const pct=total?Math.round(n/total*100):0;
+                const c=k==='alevel'?'#40C4FF':k==='aslevel'?'#FF9100':k==='gcse'?'#00E676':'#555';
+                return (
+                  <div key={k} style={{marginBottom:10}}>
+                    <div style={{display:'flex',justifyContent:'space-between',fontSize:11,marginBottom:3}}>
+                      <span style={{color:'#aaa',textTransform:'uppercase',letterSpacing:0.5}}>{k}</span>
+                      <span style={{color:'#fff',fontWeight:700}}>{n} <span style={{color:DIM,fontWeight:400,fontSize:10}}>({pct}%)</span></span>
+                    </div>
+                    <div style={{height:4,background:'rgba(255,255,255,0.05)',borderRadius:2,overflow:'hidden'}}>
+                      <div style={{height:'100%',width:`${pct}%`,background:c}}/>
+                    </div>
+                  </div>
+                );
+              })}
+            </Sec>
+          </div>
+        </>
+        );
+      })()}
     </div>
   );
 }
@@ -995,6 +1075,9 @@ function ResourcesPanel() {
 // ── Dashboard ──────────────────────────────────────────────────────────────
 function Dashboard({adminUser,adminProfile,onLogout}) {
   const [users,setUsers]=useState([]);
+  const [referrals,setReferrals]=useState([]);
+  const [groups,setGroups]=useState([]);
+  const [groupMembers,setGroupMembers]=useState([]);
   const [loading,setLoading]=useState(true);
   const [search,setSearch]=useState('');
   const [sort,setSort]=useState({col:'created_at',dir:-1});
@@ -1007,10 +1090,22 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
 
   const loadData=useCallback(async()=>{
     setLoading(true);
-    const [{data:profiles},{data:userData}]=await Promise.all([
+    const [
+      {data:profiles},
+      {data:userData},
+      {data:refRows},
+      {data:groupRows},
+      {data:memberRows},
+    ]=await Promise.all([
       supabase.from('user_profiles').select('*').order('created_at',{ascending:false}),
       supabase.from('user_data').select('*'),
+      supabase.from('referrals').select('referrer_code,referred_user_id,created_at'),
+      supabase.from('study_groups').select('id,name,created_by,created_at'),
+      supabase.from('group_members').select('group_id,user_id'),
     ]);
+    setReferrals(refRows||[]);
+    setGroups(groupRows||[]);
+    setGroupMembers(memberRows||[]);
     if (!profiles) { setLoading(false); return; }
     const merged=profiles.map(p=>{
       const rows=(userData||[]).filter(d=>d.user_id===p.id);
@@ -1273,7 +1368,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
           )}
 
           {/* ANALYTICS */}
-          {tab==='analytics'&&<AnalyticsDashboard users={users}/>}
+          {tab==='analytics'&&<AnalyticsDashboard users={users} referrals={referrals} groups={groups} groupMembers={groupMembers}/>}
 
           {/* QUERY */}
           {tab==='query'&&<QueryExplorer users={users}/>}
