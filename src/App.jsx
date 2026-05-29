@@ -2143,9 +2143,8 @@ function EligChip({ ok, label, C }) {
   );
 }
 
-function InsuranceEligibilityCard({ scores, uid, C, font }) {
+function InsuranceEligibilityCard({ scores, uid, C, font, noted=false, setNoted=()=>{} }) {
   const [expanded, setExpanded] = useState(false);
-  const [noted, setNoted]       = useState(()=>ls.get(`rbp_ins_noted_${uid}`, false));
 
   if (scores.length < 2) return null;
 
@@ -2216,7 +2215,7 @@ function InsuranceEligibilityCard({ scores, uid, C, font }) {
                 background:'rgba(34,197,94,0.08)', color:'#22c55e', fontWeight:600}}>{t}</span>
             ))}
           </div>
-          <button onClick={()=>{setNoted(true); ls.set(`rbp_ins_noted_${uid}`,true); setExpanded(false);}}
+          <button onClick={()=>{setNoted(true); setExpanded(false);}}
             style={{background:'#22c55e', border:'none', color:'#fff',
               padding:'9px 18px', borderRadius:7, fontSize:13, fontWeight:600,
               fontFamily:font, cursor:'pointer'}}>
@@ -2684,7 +2683,7 @@ function ShareReadinessCard({br, subjects, scores, C, font}) {
 }
 
 // ── Analytics ──────────────────────────────────────────────────────────────
-function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, onQuickLog, targets, setTargets, sessions=[], rag={}, isPro=false, onUpgrade, isGcse=false}) {
+function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, onQuickLog, targets, setTargets, sessions=[], rag={}, isPro=false, onUpgrade, isGcse=false, insNoted=false, setInsNoted=()=>{}}) {
   const SUBJ_COLORS  = Object.fromEntries(subjects.map(s=>[s.name,s.color]));
   const GRADE_BOUNDS = Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
 
@@ -2948,7 +2947,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
         </div>
       </div>
 
-      <InsuranceEligibilityCard scores={scores} uid={uid} C={C} font={font}/>
+      <InsuranceEligibilityCard scores={scores} uid={uid} C={C} font={font} noted={insNoted} setNoted={setInsNoted}/>
     </div>
   );
 }
@@ -4178,8 +4177,7 @@ function Resources({subjects,uid,C,font,rag,setRag,ragNotes,setRagNotes}) {
 }
 
 // ── Account ────────────────────────────────────────────────────────────────
-function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,font,examSched,scores=[],rag={},isPro=false,stripeCustomerId=null,referralCode=null}) {
-  const [analyticsConsent, setAnalyticsConsent] = useState(()=>ls.get(`rbp_analytics_${uid}`,true));
+function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,font,examSched,scores=[],rag={},isPro=false,stripeCustomerId=null,referralCode=null,analyticsConsent=true,setAnalyticsConsent=()=>{}}) {
   const [emailSending, setEmailSending] = useState(false);
   const [emailState, setEmailState] = useState('idle'); // 'idle'|'sent'|'error'
   const [emailMsg, setEmailMsg] = useState('');
@@ -4269,7 +4267,6 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
 
   const toggleConsent = async (v) => {
     setAnalyticsConsent(v);
-    ls.set(`rbp_analytics_${uid}`, v);
     if (isSupabaseConfigured()) {
       await supabase.from('analytics_consent')
         .upsert({user_id:uid, opted_in:v, updated_at:new Date().toISOString()},
@@ -5159,8 +5156,12 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
 
   // ── Companion state (lifted from CompanionCard to here so sidebar can access) ──
   const [companion,setCompanion] = useState(()=>{
-    const s=ls.get('rbp_companion',{name:'Alex',skin:0,hair:0,hairStyle:0});
-    return {eyeColor:0,outfitColor:0,accessory:0,...s};
+    const defaults={name:'Alex',skin:0,hair:0,hairStyle:0,eyeColor:0,outfitColor:0,accessory:0};
+    const scoped=ls.get(`rbp_companion_${uid}`,null);
+    if (scoped) return {...defaults,...scoped};
+    const legacy=ls.get('rbp_companion',null);
+    if (legacy) { ls.set(`rbp_companion_${uid}`,legacy); return {...defaults,...legacy}; }
+    return defaults;
   });
   const [showBubble,    setShowBubble]   = useState(false);
   const [customising,   setCustomising]  = useState(false);
@@ -5177,7 +5178,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
     return ()=>{ clearTimeout(t1); clearTimeout(t2); };
   },[]);
 
-  const saveCompanion = (c) => { setCompanion(c); ls.set('rbp_companion',c); };
+  const saveCompanion = (c) => { setCompanion(c); ls.set(`rbp_companion_${uid}`,c); };
 
   useEffect(()=>ls.set(`rbp_rag_notes_${uid}`,ragNotes),[ragNotes]);
 
@@ -5207,6 +5208,9 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   const saveTimetable = (t) => { setTimetable(t); ls.set(`rbp_timetable_${uid}`,t); };
   const [sidebarOpen, setSidebarOpen] = useState(()=>ls.get('rbp_sidebar_open',true));
   const toggleSidebar = () => { const v=!sidebarOpen; setSidebarOpen(v); ls.set('rbp_sidebar_open',v); };
+  const [unlockedAch, setUnlockedAch] = useState(()=>ls.get(`rbp_ach_${uid}`,[]));
+  const [analyticsConsent, setAnalyticsConsent] = useState(()=>ls.get(`rbp_analytics_${uid}`,true));
+  const [insNoted, setInsNoted] = useState(()=>ls.get(`rbp_ins_noted_${uid}`,false));
   useEffect(()=>{
     if (!user?.id||!isSupabaseConfigured()) { setSyncLoaded(true); return; }
     const lS=ls.get(`rbp_scores_${uid}`,[]);
@@ -5216,9 +5220,11 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
     const lSess=ls.get(`rbp_sessions_${uid}`,[]);
     const lRN=ls.get(`rbp_rag_notes_${uid}`,{});
     const lTT=ls.get(`rbp_timetable_${uid}`,{});
-    supabase.from('user_data').select('scores,errors,rag,targets,sessions,rag_notes,timetable').eq('user_id',user.id).eq('profile','me').single()
+    const lComp=ls.get(`rbp_companion_${uid}`,null);
+    const lAch=ls.get(`rbp_ach_${uid}`,[]);
+    supabase.from('user_data').select('scores,errors,rag,targets,sessions,rag_notes,timetable,companion,achievements').eq('user_id',user.id).eq('profile','me').single()
       .then(({data})=>{
-        let fS=lS,fE=lE,fR=lR,fT=lT,fSess=lSess,fRN=lRN,fTT=lTT;
+        let fS=lS,fE=lE,fR=lR,fT=lT,fSess=lSess,fRN=lRN,fTT=lTT,fComp=lComp,fAch=lAch;
         if (data) {
           const sIds=new Set(lS.map(s=>s.id));
           fS=[...lS,...(data.scores||[]).filter(s=>!sIds.has(s.id))];
@@ -5232,6 +5238,8 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
           }
           if (data.rag_notes&&Object.keys(data.rag_notes).length>0) fRN={...data.rag_notes,...lRN};
           if (data.timetable&&Object.keys(data.timetable).length>0&&!Object.keys(lTT).length) fTT=data.timetable;
+          if (data.companion&&Object.keys(data.companion).length>0) fComp={...(lComp||{}),...data.companion};
+          if (Array.isArray(data.achievements)&&data.achievements.length>0) fAch=[...new Set([...(lAch||[]),...data.achievements])];
           setScores(fS);   ls.set(`rbp_scores_${uid}`,fS);
           setErrors(fE);   ls.set(`rbp_errors_${uid}`,fE);
           setRag(fR);      ls.set(`rbp_rag_${uid}`,fR);
@@ -5239,9 +5247,11 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
           setSessions(fSess); ls.set(`rbp_sessions_${uid}`,fSess);
           setRagNotes(fRN);   ls.set(`rbp_rag_notes_${uid}`,fRN);
           setTimetable(fTT);  ls.set(`rbp_timetable_${uid}`,fTT);
+          if (fComp) { setCompanion(c=>({...c,...fComp})); ls.set(`rbp_companion_${uid}`,fComp); }
+          setUnlockedAch(fAch); ls.set(`rbp_ach_${uid}`,fAch);
         }
         supabase.from('user_data').upsert(
-          {user_id:user.id,profile:'me',scores:fS,errors:fE,rag:fR,targets:fT,sessions:fSess,rag_notes:fRN,timetable:fTT,updated_at:new Date().toISOString()},
+          {user_id:user.id,profile:'me',scores:fS,errors:fE,rag:fR,targets:fT,sessions:fSess,rag_notes:fRN,timetable:fTT,companion:fComp||companion,achievements:fAch,updated_at:new Date().toISOString()},
           {onConflict:'user_id,profile'}
         ).then(()=>{});
         setSyncLoaded(true);
@@ -5254,7 +5264,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
     syncRef.current=setTimeout(()=>{
       const lbScore = scores.length ? Math.round(scores.reduce((s,x)=>s+(x.pct??0),0)/scores.length) : 0;
       supabase.from('user_data').upsert(
-        {user_id:user.id,profile:'me',scores,errors,rag,targets,sessions,rag_notes:ragNotes,timetable,updated_at:new Date().toISOString()},
+        {user_id:user.id,profile:'me',scores,errors,rag,targets,sessions,rag_notes:ragNotes,timetable,companion,achievements:unlockedAch,updated_at:new Date().toISOString()},
         {onConflict:'user_id,profile'}
       ).then(({error})=>{
         if(error) addToast('Auto-save failed — your data is safe locally','warn');
@@ -5264,7 +5274,42 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
         .eq('id',user.id);
     },2000);
     return ()=>clearTimeout(syncRef.current);
-  },[scores,errors,rag,targets,sessions,ragNotes,timetable,syncLoaded]);
+  },[scores,errors,rag,targets,sessions,ragNotes,timetable,companion,unlockedAch,syncLoaded]);
+
+  // Settings sync — load once from user_profiles.user_settings, then debounced push on changes
+  const settingsSyncRef = useRef(null);
+  const settingsLoadedRef = useRef(false);
+  useEffect(()=>{
+    if (!user?.id||!isSupabaseConfigured()) { settingsLoadedRef.current = true; return; }
+    supabase.from('user_profiles').select('user_settings').eq('id',user.id).single()
+      .then(({data})=>{
+        const s = data?.user_settings;
+        if (s && typeof s === 'object') {
+          if (typeof s.dark === 'boolean') { setDark(s.dark); ls.set('rbp_dark',s.dark); }
+          if (typeof s.tour_done === 'boolean') { setShowTour(!s.tour_done); if (s.tour_done) ls.set('rbp_tour_v1',true); }
+          if (typeof s.sidebar_open === 'boolean') { setSidebarOpen(s.sidebar_open); ls.set('rbp_sidebar_open',s.sidebar_open); }
+          if (typeof s.analytics_consent === 'boolean') setAnalyticsConsent(s.analytics_consent);
+          if (typeof s.ins_noted === 'boolean') setInsNoted(s.ins_noted);
+        }
+      })
+      .finally(()=>{ settingsLoadedRef.current = true; });
+  },[user?.id]);
+  useEffect(()=>{
+    if (!user?.id||!isSupabaseConfigured()||!syncLoaded) return;
+    // Skip until initial remote load completes — don't push stale local values over remote
+    if (!settingsLoadedRef.current) return;
+    clearTimeout(settingsSyncRef.current);
+    settingsSyncRef.current = setTimeout(()=>{
+      supabase.from('user_profiles').update({user_settings:{
+        dark, tour_done:!showTour, sidebar_open:sidebarOpen, analytics_consent:analyticsConsent, ins_noted:insNoted,
+      }}).eq('id',user.id);
+    }, 1500);
+    return ()=>clearTimeout(settingsSyncRef.current);
+  },[dark,showTour,sidebarOpen,analyticsConsent,insNoted,syncLoaded]);
+
+  // Mirror analytics_consent + ins_noted to localStorage (matches the existing dark/tour/sidebar pattern)
+  useEffect(()=>ls.set(`rbp_analytics_${uid}`,analyticsConsent),[analyticsConsent,uid]);
+  useEffect(()=>ls.set(`rbp_ins_noted_${uid}`,insNoted),[insNoted,uid]);
 
   // Browser push notifications
   useEffect(()=>{
@@ -5290,21 +5335,20 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   },[scores]);
 
   // Achievement tracking
-  const prevUnlockedRef = useRef(()=>new Set(ls.get(`rbp_ach_${uid}`,[]) ));
   useEffect(()=>{
     if(!scores.length) return;
     const current=computeUnlockedAchievements(scores,errors,subjects);
-    const prev=ls.get(`rbp_ach_${uid}`,[]);
-    const prevSet=new Set(prev);
+    const prevSet=new Set(unlockedAch);
     const newlyUnlocked=current.filter(id=>!prevSet.has(id));
     if(newlyUnlocked.length>0){
+      setUnlockedAch(current);
       ls.set(`rbp_ach_${uid}`,current);
       const a=ACHIEVEMENTS.find(x=>x.id===newlyUnlocked[0]);
       if(a&&!pendingAchievement) setPendingAchievement(a);
     }
   },[scores,errors]);
 
-  const unlockedIds=ls.get(`rbp_ach_${uid}`,[]);
+  const unlockedIds=unlockedAch;
 
   const DESKTOP_NAV=[
     {id:'analytics',    label:'Analytics',    Icon:BarChart3},
@@ -5320,7 +5364,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   ];
   const sidebarW = sidebarOpen ? (isMobile ? 54 : 210) : 0;
 
-  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse};
+  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse,analyticsConsent,setAnalyticsConsent,insNoted,setInsNoted};
 
   return (
     <div style={{minHeight:'100vh',background:C.bg,fontFamily:font,color:C.text}}>
@@ -5617,7 +5661,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
             saveCompanion(c); setCustomising(false);
           }}
           onCancel={()=>{
-            const saved=ls.get('rbp_companion',{name:'Alex',skin:0,hair:0,hairStyle:0});
+            const saved=ls.get(`rbp_companion_${uid}`,{name:'Alex',skin:0,hair:0,hairStyle:0});
             setCompanion({eyeColor:0,outfitColor:0,accessory:0,...saved});
             setCompanionDraft(saved.name||'Alex');
             setCustomising(false);
