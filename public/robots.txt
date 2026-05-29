@@ -1,0 +1,24 @@
+# Battle Plan — beattheexam.org
+# Public marketing pages: indexable. App + API: blocked.
+
+User-agent: *
+Allow: /$
+Allow: /index.html
+Allow: /favicon.svg
+Allow: /pwa-icon.svg
+Allow: /og.png
+Allow: /og.svg
+Allow: /apple-touch-icon.png
+Allow: /manifest.webmanifest
+
+# Block crawl of auth-gated app, admin, invite links, account, API
+Disallow: /api/
+Disallow: /admin
+Disallow: /admin.html
+Disallow: /account
+Disallow: /j/
+
+# Crawl-delay for politeness (most engines ignore this — defence is rate-limit-side)
+Crawl-delay: 5
+
+Sitemap: https://beattheexam.org/sitemap.xml
