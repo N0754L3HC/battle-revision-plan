@@ -104,10 +104,18 @@ export default async function handler(req, res) {
     const name = req.body?.name?.trim();
     if (!name || name.length < 2 || name.length > 40) return res.status(400).json({ error: 'Name must be 2–40 chars' });
 
-    // Check how many groups this user already owns
+    // Check how many groups this user already owns. Free: 3; Pro/admin: 10.
     const { count } = await admin.from('study_groups')
       .select('id', { count: 'exact', head: true }).eq('created_by', uid);
-    if (count >= 5) return res.status(400).json({ error: 'Max 5 groups per user' });
+    const { data: prof } = await admin.from('user_profiles')
+      .select('subscription_status,referral_pro_until,is_admin').eq('id', uid).single();
+    const isPro = prof?.is_admin
+      || ['pro','trialing','active'].includes(prof?.subscription_status)
+      || (prof?.referral_pro_until && new Date(prof.referral_pro_until).getTime() > Date.now());
+    const cap = isPro ? 10 : 3;
+    if (count >= cap) return res.status(400).json({
+      error: isPro ? `Max ${cap} groups per user` : `Free accounts can create up to 3 groups. Upgrade to Pro for more.`
+    });
 
     let invite_code = randomCode();
     // Ensure uniqueness

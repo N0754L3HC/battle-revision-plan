@@ -1319,46 +1319,89 @@ function getHistoricalThreshold(grade,paperKey){
 
 // ── Achievements ───────────────────────────────────────────────────────────
 const ACHIEVEMENTS=[
-  {id:'first_paper',  title:'First Paper',     desc:'Log your first past paper',              Icon:FileText,     tier:'bronze'  },
-  {id:'three_papers', title:'Getting Going',   desc:'Log 3 past papers',                      Icon:BookOpen,     tier:'bronze'  },
-  {id:'ten_papers',   title:'Grinder',         desc:'Log 10 papers',                          Icon:TrendingUp,   tier:'silver'  },
-  {id:'twenty_five',  title:'Marathon Runner', desc:'Log 25 papers',                          Icon:Zap,          tier:'gold'    },
-  {id:'first_a_star', title:'A* Club',         desc:'Score an A* on any paper',               Icon:Star,         tier:'gold'    },
-  {id:'five_a_stars', title:'Star Collector',  desc:'Score A* on 5 papers',                   Icon:Trophy,       tier:'platinum'},
-  {id:'improvement',  title:'Level Up',        desc:'Improve your grade on a retried paper',  Icon:ArrowUpRight, tier:'bronze'  },
-  {id:'all_subjects', title:'Versatile',       desc:'Log a paper in every subject',           Icon:Target,       tier:'silver'  },
-  {id:'battle_ready', title:'Battle Ready',    desc:'Reach 80+ Battle Readiness',             Icon:Shield,       tier:'gold'    },
-  {id:'perfect',      title:'Perfect Score',   desc:'Score 100% on a paper',                  Icon:CheckCircle,  tier:'platinum'},
-  {id:'week_streak',  title:'Week Warrior',    desc:'Log papers on 7 different days',         Icon:Calendar,     tier:'silver'  },
-  {id:'error_hunter', title:'Error Hunter',    desc:'Log 10 errors in the error tracker',     Icon:Search,       tier:'bronze'  },
+  {id:'first_paper',     title:'First Paper',     desc:'Log your first past paper',                       Icon:FileText,     tier:'bronze'  },
+  {id:'three_papers',    title:'Getting Going',   desc:'Log 3 past papers',                               Icon:BookOpen,     tier:'bronze'  },
+  {id:'ten_papers',      title:'Grinder',         desc:'Log 10 papers',                                   Icon:TrendingUp,   tier:'silver'  },
+  {id:'twenty_five',     title:'Marathon Runner', desc:'Log 25 papers',                                   Icon:Zap,          tier:'gold'    },
+  {id:'fifty_papers',    title:'Half Century',    desc:'Log 50 papers',                                   Icon:Zap,          tier:'gold'    },
+  {id:'hundred_papers',  title:'Centurion',       desc:'Log 100 papers',                                  Icon:Trophy,       tier:'platinum'},
+  {id:'first_a_star',    title:'A* Club',         desc:'Score an A* on any paper',                        Icon:Star,         tier:'gold'    },
+  {id:'five_a_stars',    title:'Star Collector',  desc:'Score A* on 5 papers',                            Icon:Trophy,       tier:'platinum'},
+  {id:'improvement',     title:'Level Up',        desc:'Improve your grade on a retried paper',           Icon:ArrowUpRight, tier:'bronze'  },
+  {id:'big_comeback',    title:'Comeback Kid',    desc:'Improve a retried paper by 20% or more',          Icon:ArrowUpRight, tier:'silver'  },
+  {id:'all_subjects',    title:'Versatile',       desc:'Log a paper in every subject',                    Icon:Target,       tier:'silver'  },
+  {id:'subject_master',  title:'Subject Master',  desc:'Score A* on 3 papers in one subject',             Icon:Target,       tier:'gold'    },
+  {id:'battle_ready',    title:'Battle Ready',    desc:'Reach 80+ Battle Readiness',                      Icon:Shield,       tier:'gold'    },
+  {id:'perfect',         title:'Perfect Score',   desc:'Score 100% on a paper',                           Icon:CheckCircle,  tier:'platinum'},
+  {id:'week_streak',     title:'Week Warrior',    desc:'Log papers on 7 different days',                  Icon:Calendar,     tier:'silver'  },
+  {id:'fortnight',       title:'Fortnight Focus', desc:'Log papers on 14 different days',                 Icon:Calendar,     tier:'gold'    },
+  {id:'month_streak',    title:'Iron Discipline', desc:'Log papers on 30 different days',                 Icon:Calendar,     tier:'platinum'},
+  {id:'error_hunter',    title:'Error Hunter',    desc:'Log 10 errors in the error tracker',              Icon:Search,       tier:'bronze'  },
+  {id:'coin_collector',  title:'Coin Collector',  desc:'Earn 500 coins from study sessions and papers',   Icon:Star,         tier:'silver'  },
+  {id:'mascot_stylist',  title:'Mascot Stylist',  desc:'Own 5 different items from the capybara shop',    Icon:Star,         tier:'gold'    },
+  {id:'plan_maker',      title:'Plan Maker',      desc:'Add 10 items to your study plan',                 Icon:ClipboardList,tier:'bronze'  },
+  {id:'exam_eve',        title:'Eve of Battle',   desc:'Log a paper within 24h of an upcoming exam',      Icon:Shield,       tier:'gold'    },
 ];
 const TIER_COLOR={bronze:'#cd7f32',silver:'#9ca3af',gold:'#fbbf24',platinum:'#a78bfa'};
 
-function computeUnlockedAchievements(scores,errors,subjects){
+function computeUnlockedAchievements(scores,errors,subjects,extras={}){
   const gb=Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
   const grades=scores.map(s=>getSubjectGrade(s.pct,s.subject,gb));
   const byPaper={};
-  let hasImprovement=false;
+  let hasImprovement=false, hasBigComeback=false;
   for(const s of [...scores].reverse()){
     if(byPaper[s.paper]===undefined) byPaper[s.paper]=s.pct;
-    else if(s.pct>byPaper[s.paper]) hasImprovement=true;
+    else {
+      if(s.pct>byPaper[s.paper]) hasImprovement=true;
+      if(s.pct-byPaper[s.paper]>=20) hasBigComeback=true;
+    }
   }
   const days=new Set(scores.map(s=>new Date(s.ts||s.id).toDateString())).size;
   const br=calcBattleReadiness(scores,errors);
+  // Subject Master: A* on 3 papers within one subject
+  const aStarBySubject={};
+  scores.forEach((s,i)=>{ if(grades[i]==='A*') aStarBySubject[s.subject]=(aStarBySubject[s.subject]||0)+1; });
+  const subjectMaster=Object.values(aStarBySubject).some(c=>c>=3);
+  // Exam eve: paper logged within 24h of an upcoming exam date in examSched
+  const examEve=(()=>{
+    const sched=extras.examSched;
+    if(!sched) return false;
+    const upcoming=subjects.flatMap(s=>getSubjectExams(sched,s.id,s.boardId));
+    return scores.some(p=>{
+      const pt=new Date(p.ts||p.id).getTime();
+      return upcoming.some(e=>{
+        const et=new Date(e.date).getTime();
+        return et>=pt && et-pt<=86400000;
+      });
+    });
+  })();
+  const coinsEarned = extras.coinsEarned||0;
+  const ownedItems = extras.ownedItems||1; // start with 3 default-owned items (coats[0]+scarves[0]+hats[0])
+  const groupsCreatedByMe = extras.groupsCreatedByMe||0;
   return ACHIEVEMENTS.filter(a=>{
     switch(a.id){
-      case 'first_paper':  return scores.length>=1;
-      case 'three_papers': return scores.length>=3;
-      case 'ten_papers':   return scores.length>=10;
-      case 'twenty_five':  return scores.length>=25;
-      case 'first_a_star': return grades.includes('A*');
-      case 'five_a_stars': return grades.filter(g=>g==='A*').length>=5;
-      case 'improvement':  return hasImprovement;
-      case 'all_subjects': return subjects.every(sub=>scores.some(s=>s.subject===sub.name));
-      case 'battle_ready': return br.total>=80;
-      case 'perfect':      return scores.some(s=>s.pct>=100);
-      case 'week_streak':  return days>=7;
-      case 'error_hunter': return errors.length>=10;
+      case 'first_paper':     return scores.length>=1;
+      case 'three_papers':    return scores.length>=3;
+      case 'ten_papers':      return scores.length>=10;
+      case 'twenty_five':     return scores.length>=25;
+      case 'fifty_papers':    return scores.length>=50;
+      case 'hundred_papers':  return scores.length>=100;
+      case 'first_a_star':    return grades.includes('A*');
+      case 'five_a_stars':    return grades.filter(g=>g==='A*').length>=5;
+      case 'improvement':     return hasImprovement;
+      case 'big_comeback':    return hasBigComeback;
+      case 'all_subjects':    return subjects.every(sub=>scores.some(s=>s.subject===sub.name));
+      case 'subject_master':  return subjectMaster;
+      case 'battle_ready':    return br.total>=80;
+      case 'perfect':         return scores.some(s=>s.pct>=100);
+      case 'week_streak':     return days>=7;
+      case 'fortnight':       return days>=14;
+      case 'month_streak':    return days>=30;
+      case 'error_hunter':    return errors.length>=10;
+      case 'coin_collector':  return coinsEarned>=500;
+      case 'mascot_stylist':  return ownedItems>=5;
+      case 'plan_maker':      return (extras.myPlanCount||0)>=10;
+      case 'exam_eve':        return examEve;
       default: return false;
     }
   }).map(a=>a.id);
@@ -1509,6 +1552,51 @@ const HAT_LABELS    = ['None','Glasses','Grad cap','Beanie','Headphones','Crown'
 
 // Legacy constants kept so any out-of-tree imports don't break (unused by capybara avatar)
 const SKIN_TONES = CAPY_COATS;
+
+// ── In-game shop ────────────────────────────────────────────────────────────
+// idx maps to CAPY_COATS / OUTFIT_COLORS / HAT_LABELS positions.
+// pro=true means the item requires Pro to PURCHASE (you keep it after).
+const SHOP_COATS = [
+  {idx:0, name:'Natural',   price:0,   pro:false},
+  {idx:1, name:'Light',     price:50,  pro:false},
+  {idx:5, name:'Grey',      price:60,  pro:false},
+  {idx:6, name:'Sandy',     price:80,  pro:false},
+  {idx:3, name:'Dark',      price:100, pro:false},
+  {idx:2, name:'Golden',    price:200, pro:true },
+  {idx:4, name:'Chocolate', price:250, pro:true },
+];
+const SHOP_SCARVES = [
+  {idx:0, name:'Blue',   price:0,   pro:false},
+  {idx:1, name:'Orange', price:40,  pro:false},
+  {idx:2, name:'Green',  price:50,  pro:false},
+  {idx:3, name:'Purple', price:60,  pro:false},
+  {idx:4, name:'Red',    price:70,  pro:false},
+  {idx:5, name:'Navy',   price:80,  pro:false},
+  {idx:6, name:'Pink',   price:100, pro:true },
+  {idx:7, name:'Cyan',   price:120, pro:true },
+  {idx:8, name:'Gold',   price:150, pro:true },
+];
+const SHOP_HATS = [
+  {idx:0, name:'None',       price:0,   pro:false},
+  {idx:1, name:'Glasses',    price:50,  pro:false},
+  {idx:3, name:'Beanie',     price:80,  pro:false},
+  {idx:6, name:'Flower',     price:100, pro:false},
+  {idx:2, name:'Grad cap',   price:150, pro:true },
+  {idx:4, name:'Headphones', price:200, pro:true },
+  {idx:5, name:'Crown',      price:300, pro:true },
+];
+
+function computeCoins(scores=[], sessions=[], spent=0) {
+  const sessionMin = sessions.reduce((sum, s) => sum + Math.max(0, (s.duration || s.durationSec || 0) / 60), 0);
+  const earned = Math.floor(scores.length * 5 + sessionMin);
+  return { earned, spent, available: Math.max(0, earned - spent) };
+}
+
+function defaultOwned() { return { coats:[0], scarves:[0], hats:[0] }; }
+function totalOwnedItems(owned) {
+  if (!owned) return 0;
+  return (owned.coats?.length||0) + (owned.scarves?.length||0) + (owned.hats?.length||0);
+}
 
 function CompanionAvatar({skin=0,outfitColor=0,accessory=0,mood='neutral',pose='idle',size=80}) {
   const COAT  = CAPY_COATS[skin]          ?? CAPY_COATS[0];
@@ -1721,6 +1809,54 @@ function getCompanionMood({sessions,scores,examSched,subjects}) {
   return 'neutral';
 }
 
+// Generate the mascot's contextual notifications from current state.
+// Each has a stable ID so we can persist dismissed-set across visits.
+function generateMascotNotifications({scores=[], sessions=[], subjects=[], examSched, coinsEarned=0, dismissed=[]}) {
+  const out = [];
+  const dset = new Set(dismissed);
+  const now = Date.now();
+  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+
+  // High score celebration on the most recent strong paper
+  const recentScores = scores.filter(s => (s.ts||s.id) > now - 7*86400000);
+  const topRecent = recentScores.slice().sort((a,b)=>b.pct-a.pct)[0];
+  if (topRecent && topRecent.pct >= 80) {
+    const id = `score_${topRecent.id || topRecent.ts}`;
+    if (!dset.has(id)) out.push({id, kind:'celebrate',
+      msg:`${Math.round(topRecent.pct)}% on ${topRecent.paper||topRecent.subject}. That's the work paying off.`});
+  }
+
+  // Exam within 7 days
+  const nextExam = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId))
+    .map(e=>({...e, days: Math.ceil((new Date(e.date).getTime()-now)/86400000)}))
+    .filter(e=>e.days>=0 && e.days<=7).sort((a,b)=>a.days-b.days)[0];
+  if (nextExam) {
+    const id = `exam_${nextExam.code||nextExam.paper}_${nextExam.date}`;
+    if (!dset.has(id)) out.push({id, kind:'warn',
+      msg:`${(nextExam.paper||'Exam').split(':')[0]} is ${nextExam.days===0?'today':nextExam.days===1?'tomorrow':`in ${nextExam.days} days`}. Drill weak topics.`});
+  }
+
+  // Activity gap warning
+  const todaySess = sessions.filter(s=>s.ts>=todayStart.getTime());
+  const lastSessTs = sessions.length ? Math.max(...sessions.map(s=>s.ts||0)) : 0;
+  const daysSinceSession = lastSessTs ? Math.floor((now-lastSessTs)/86400000) : 999;
+  if (lastSessTs && daysSinceSession >= 3 && todaySess.length===0) {
+    const id = `gap_${todayStart.toISOString().slice(0,10)}`;
+    if (!dset.has(id)) out.push({id, kind:'warn',
+      msg:`Haven't seen you in ${daysSinceSession} days. Even 20 focused minutes today rebuilds momentum.`});
+  }
+
+  // Coin milestone (only highest unhit, descending)
+  for (const milestone of [500, 250, 100]) {
+    if (coinsEarned >= milestone) {
+      const id = `coins_${milestone}`;
+      if (!dset.has(id)) { out.push({id, kind:'info', msg:`${milestone}+ coins earned. Customise me in the shop.`}); break; }
+    }
+  }
+
+  return out.slice(0, 3); // cap at 3 visible
+}
+
 function getCompanionMessage({mood,sessions,scores,subjects,examSched,name}) {
   const hour = new Date().getHours();
   const tod = hour<12?'Morning':hour<17?'Afternoon':'Evening';
@@ -1741,49 +1877,76 @@ function getCompanionMessage({mood,sessions,scores,subjects,examSched,name}) {
   return `${tod}. Even one paper a week builds real momentum over time. Let's get to work.`;
 }
 
-function CompanionCustomiser({companion,draft,setDraft,setCompanion,onSave,onCancel,C,font}) {
-  const Swatch = ({colors,field,size=22})=>(
-    <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
-      {colors.map((c,i)=>(
-        <button key={i} onClick={()=>setCompanion(p=>({...p,[field]:i}))}
-          style={{width:size,height:size,borderRadius:'50%',background:c,cursor:'pointer',padding:0,
-            border:`2.5px solid ${companion[field]===i?C.accent:'transparent'}`,
-            boxShadow:companion[field]===i?`0 0 0 1.5px ${C.accent}55`:'none',
-            transition:'border 0.1s,box-shadow 0.1s',flexShrink:0}}/>
-      ))}
-    </div>
-  );
-  const ChipRow = ({items,field})=>(
-    <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
-      {items.map((lbl,i)=>(
-        <button key={i} onClick={()=>setCompanion(p=>({...p,[field]:i}))}
-          style={{padding:'4px 10px',borderRadius:6,fontSize:11,fontFamily:font,cursor:'pointer',
-            background:companion[field]===i?C.accentSoft:'transparent',
-            border:`1px solid ${companion[field]===i?C.accent:C.border}`,
-            color:companion[field]===i?C.accent:C.muted,
-            fontWeight:companion[field]===i?600:400,transition:'all 0.1s'}}>
-          {lbl}
-        </button>
-      ))}
-    </div>
-  );
-  const Row = ({label,children})=>(
-    <div style={{display:'flex',alignItems:'center',gap:12,minHeight:32}}>
-      <div style={{fontSize:11,fontWeight:600,color:C.subtle,width:52,flexShrink:0,textAlign:'right'}}>{label}</div>
-      {children}
-    </div>
-  );
+function CompanionCustomiser({companion,draft,setDraft,setCompanion,onSave,onCancel,C,font,coins=0,isPro=false,addToast=()=>{}}) {
+  const owned = companion.owned || defaultOwned();
+  const isOwned = (cat, idx) => (owned[cat]||[]).includes(idx);
+
+  const buyItem = (cat, item) => {
+    if (isOwned(cat, item.idx)) return; // already owned, no-op
+    if (item.pro && !isPro) { addToast('This item is Pro-only — upgrade to unlock','info'); return; }
+    if (coins < item.price) { addToast(`You need ${item.price - coins} more coin${item.price-coins===1?'':'s'}`,'info'); return; }
+    setCompanion(p => ({
+      ...p,
+      spent_coins: (p.spent_coins||0) + item.price,
+      owned: {
+        ...(p.owned||defaultOwned()),
+        [cat]: [...new Set([...((p.owned||defaultOwned())[cat]||[]), item.idx])],
+      },
+    }));
+    addToast(`Bought ${item.name} (-${item.price} 🪙)`,'success');
+  };
+  const wearItem = (field, idx) => setCompanion(p => ({...p,[field]:idx}));
+
+  const ShopTile = ({cat, item, field, swatchColor, label}) => {
+    const owned = isOwned(cat, item.idx);
+    const worn = companion[field] === item.idx;
+    const canAfford = coins >= item.price;
+    const locked = item.pro && !isPro;
+    const onClick = owned ? () => wearItem(field, item.idx) : () => buyItem(cat, item);
+    return (
+      <button onClick={onClick}
+        style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,
+          padding:'8px 6px',borderRadius:10,minWidth:62,
+          background: worn ? C.accentSoft : C.card2,
+          border:`1.5px solid ${worn ? C.accent : C.border}`,
+          cursor:'pointer',fontFamily:font,position:'relative',
+          opacity: owned || (canAfford && !locked) ? 1 : 0.55}}>
+        {swatchColor ? (
+          <div style={{width:24,height:24,borderRadius:'50%',background:swatchColor,
+            border:`1px solid ${C.border}`}}/>
+        ) : (
+          <div style={{fontSize:11,fontWeight:700,color:C.text,height:24,
+            display:'flex',alignItems:'center'}}>{label||item.name}</div>
+        )}
+        <div style={{fontSize:9,color:C.muted,fontWeight:600,letterSpacing:0.2}}>
+          {owned ? (worn ? 'WEARING' : 'OWNED')
+            : locked ? 'PRO'
+            : `${item.price}🪙`}
+        </div>
+        {locked && !owned && (
+          <Lock size={9} strokeWidth={2.5} style={{position:'absolute',top:4,right:4,color:C.accent}}/>
+        )}
+      </button>
+    );
+  };
+
   return (
     <div style={{position:'fixed',inset:0,zIndex:320,background:'rgba(0,0,0,0.55)',
       display:'flex',alignItems:'center',justifyContent:'center',padding:'16px',
       backdropFilter:'blur(4px)',WebkitBackdropFilter:'blur(4px)'}}
       onClick={e=>{if(e.target===e.currentTarget)onCancel();}}>
-      <div style={{background:C.surface,borderRadius:20,width:'100%',maxWidth:520,
+      <div style={{background:C.surface,borderRadius:20,width:'100%',maxWidth:560,
         boxShadow:'0 24px 80px rgba(0,0,0,0.45)',overflow:'hidden',maxHeight:'92vh',display:'flex',flexDirection:'column'}}>
 
         {/* Header */}
         <div style={{padding:'20px 22px 0',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-          <div style={{fontSize:15,fontWeight:700,color:C.text}}>Customise your character</div>
+          <div>
+            <div style={{fontSize:15,fontWeight:700,color:C.text}}>Customise & shop</div>
+            <div style={{fontSize:11,color:C.muted,marginTop:2}}>
+              <span style={{color:C.accent,fontWeight:700}}>{coins} 🪙</span> available
+              {' · '}Earn 1 coin per minute studied + 5 per paper
+            </div>
+          </div>
           <button onClick={onCancel}
             style={{background:'transparent',border:'none',color:C.muted,cursor:'pointer',
               fontSize:20,lineHeight:1,padding:'2px 4px',borderRadius:6}}>✕</button>
@@ -1793,10 +1956,9 @@ function CompanionCustomiser({companion,draft,setDraft,setCompanion,onSave,onCan
 
           {/* Avatar preview */}
           <div style={{padding:'24px 20px',display:'flex',flexDirection:'column',alignItems:'center',
-            gap:12,borderRight:`1px solid ${C.border}`,flexShrink:0,width:140}}>
+            gap:12,borderRight:`1px solid ${C.border}`,flexShrink:0,width:150}}>
             <CompanionAvatar
-              skin={companion.skin} hair={companion.hair} hairStyle={companion.hairStyle}
-              eyeColor={companion.eyeColor??0} outfitColor={companion.outfitColor??0}
+              skin={companion.skin} outfitColor={companion.outfitColor??0}
               accessory={companion.accessory??0} mood="happy" size={100}/>
             <input value={draft} onChange={e=>setDraft(e.target.value)} maxLength={16}
               placeholder="Name" autoFocus onKeyDown={e=>e.key==='Enter'&&onSave()}
@@ -1805,11 +1967,35 @@ function CompanionCustomiser({companion,draft,setDraft,setCompanion,onSave,onCan
                 width:'100%',boxSizing:'border-box',textAlign:'center',fontWeight:600}}/>
           </div>
 
-          {/* Options */}
-          <div style={{padding:'20px 20px',display:'flex',flexDirection:'column',gap:14,flex:1,overflow:'auto'}}>
-            <Row label="Coat"><Swatch colors={CAPY_COATS} field="skin"/></Row>
-            <Row label="Scarf"><Swatch colors={OUTFIT_COLORS} field="outfitColor"/></Row>
-            <Row label="Hat"><ChipRow items={HAT_LABELS} field="accessory"/></Row>
+          {/* Shop tiles */}
+          <div style={{padding:'18px 18px',display:'flex',flexDirection:'column',gap:14,flex:1,overflow:'auto'}}>
+            <div>
+              <div style={{fontSize:10,fontWeight:700,color:C.subtle,letterSpacing:0.5,
+                textTransform:'uppercase',marginBottom:6}}>Coat</div>
+              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                {SHOP_COATS.map(it=>(
+                  <ShopTile key={it.idx} cat="coats" item={it} field="skin" swatchColor={CAPY_COATS[it.idx]}/>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div style={{fontSize:10,fontWeight:700,color:C.subtle,letterSpacing:0.5,
+                textTransform:'uppercase',marginBottom:6}}>Scarf</div>
+              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                {SHOP_SCARVES.map(it=>(
+                  <ShopTile key={it.idx} cat="scarves" item={it} field="outfitColor" swatchColor={OUTFIT_COLORS[it.idx]}/>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div style={{fontSize:10,fontWeight:700,color:C.subtle,letterSpacing:0.5,
+                textTransform:'uppercase',marginBottom:6}}>Hat</div>
+              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                {SHOP_HATS.map(it=>(
+                  <ShopTile key={it.idx} cat="hats" item={it} field="accessory" label={it.name}/>
+                ))}
+              </div>
+            </div>
 
             <div style={{display:'flex',gap:8,marginTop:4}}>
               <button onClick={onSave}
@@ -1905,7 +2091,10 @@ function CompanionCard({sessions,scores,subjects,examSched,C,font,isPro=false,on
         <CompanionCustomiser
           companion={companion} draft={draft} setDraft={setDraft}
           setCompanion={setCompanion} onSave={save} onCancel={cancel}
-          C={C} font={font}/>
+          C={C} font={font}
+          coins={computeCoins(scores, sessions, companion?.spent_coins||0).available}
+          isPro={isPro}
+          addToast={(msg,type)=>{}}/>
       )}
       {chatOpen&&(
         <CompanionChat companion={companion} subjects={subjects} scores={scores}
@@ -2424,11 +2613,40 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
   const dayKey = day.date.toISOString().slice(0,10);
   const dayItems = myPlan.filter(p=>p.date===dayKey);
 
-  const addItem = (subjectId, subjectName, color, topic) => {
+  const addItem = (subjectId, subjectName, color, topic, durationMin, note) => {
     const id = `plan_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
-    setMyPlan(prev=>[...prev,{id,date:dayKey,subjectId,subjectName,color,topic:topic||'',done:false}]);
+    setMyPlan(prev=>[...prev,{
+      id, date:dayKey, subjectId, subjectName, color,
+      topic: topic||'',
+      duration_min: durationMin||null,
+      note: note||'',
+      done: false,
+    }]);
   };
   const toggleDone = (id) => setMyPlan(prev=>prev.map(p=>p.id===id?{...p,done:!p.done}:p));
+  const [showAdd, setShowAdd] = useState(false);
+  const [draftSubject, setDraftSubject] = useState('');
+  const [draftTopic, setDraftTopic] = useState('');
+  const [draftNote, setDraftNote] = useState('');
+  const [draftDuration, setDraftDuration] = useState('30');
+  const openAdd = () => {
+    setDraftSubject(subjects[0]?.id || '');
+    setDraftTopic(''); setDraftNote(''); setDraftDuration('30');
+    setShowAdd(true);
+  };
+  const submitAdd = () => {
+    const subj = subjects.find(s=>s.id===draftSubject);
+    const dur = parseInt(draftDuration,10)||null;
+    addItem(
+      draftSubject || 'custom',
+      subj?.name || (draftSubject ? draftSubject : 'Custom task'),
+      subj?.color || '#9ca3af',
+      draftTopic,
+      dur,
+      draftNote,
+    );
+    setShowAdd(false);
+  };
   const removeItem = (id) => setMyPlan(prev=>prev.filter(p=>p.id!==id));
   const dateLabel = dayIdx===0 ? 'Today'
     : dayIdx===1 ? 'Tomorrow'
@@ -2530,10 +2748,15 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
                             justifyContent:'center',fontSize:11,color:'#fff',fontWeight:900,lineHeight:1}}>
                           {p.done?'✓':''}
                         </button>
-                        <div style={{flex:1,fontSize:13,color:C.text,
+                        <div style={{flex:1,minWidth:0,fontSize:13,color:C.text,
                           textDecoration:p.done?'line-through':'none'}}>
                           <span style={{fontWeight:600}}>{p.subjectName}</span>
                           {p.topic&&<span style={{color:C.muted,marginLeft:6,fontSize:12}}>· {p.topic}</span>}
+                          {p.duration_min&&<span style={{color:C.subtle,marginLeft:6,fontSize:11}}>· {p.duration_min}m</span>}
+                          {p.note&&(
+                            <div style={{fontSize:11,color:C.muted,marginTop:3,lineHeight:1.4,
+                              whiteSpace:'pre-wrap',wordBreak:'break-word'}}>{p.note}</div>
+                          )}
                         </div>
                         <button onClick={()=>removeItem(p.id)}
                           style={{background:'transparent',border:'none',color:C.subtle,
@@ -2544,8 +2767,16 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
                 </div>
               )}
 
-              <div style={{fontSize:11,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>
-                Suggested focus
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+                <div style={{fontSize:11,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5}}>
+                  Suggested focus
+                </div>
+                <button onClick={openAdd}
+                  style={{fontSize:11,fontWeight:700,fontFamily:font,
+                    padding:'5px 11px',background:C.accentSoft,color:C.accent,
+                    border:`1px solid ${C.accent}55`,borderRadius:6,cursor:'pointer'}}>
+                  + Add task
+                </button>
               </div>
               <div style={{display:'flex',flexDirection:'column',gap:8}}>
                 {day.slots.map((s,j)=>{
@@ -2611,6 +2842,94 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
           )}
         </div>
       </div>
+
+      {/* Add-task modal */}
+      {showAdd&&(
+        <div style={{position:'fixed',inset:0,zIndex:300,background:'rgba(0,0,0,0.55)',
+          display:'flex',alignItems:'center',justifyContent:'center',padding:16,
+          backdropFilter:'blur(4px)',WebkitBackdropFilter:'blur(4px)'}}
+          onClick={e=>{if(e.target===e.currentTarget)setShowAdd(false);}}>
+          <div style={{background:C.surface,borderRadius:14,width:'100%',maxWidth:420,
+            boxShadow:'0 24px 80px rgba(0,0,0,0.45)',padding:'22px 24px'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
+              <div style={{fontSize:15,fontWeight:700,color:C.text}}>Add task to plan</div>
+              <button onClick={()=>setShowAdd(false)}
+                style={{background:'transparent',border:'none',color:C.muted,
+                  cursor:'pointer',fontSize:20,lineHeight:1}}>✕</button>
+            </div>
+            <div style={{fontSize:11,color:C.muted,marginBottom:14}}>For {dateLabel}</div>
+
+            <div style={{display:'flex',flexDirection:'column',gap:11}}>
+              <div>
+                <label style={{fontSize:11,fontWeight:700,color:C.subtle,letterSpacing:0.4,
+                  textTransform:'uppercase',display:'block',marginBottom:5}}>
+                  Subject
+                </label>
+                <select value={draftSubject} onChange={e=>setDraftSubject(e.target.value)}
+                  style={{width:'100%',boxSizing:'border-box',padding:'9px 11px',
+                    background:C.card2,border:`1px solid ${C.border}`,borderRadius:7,
+                    color:C.text,fontSize:13,fontFamily:font,outline:'none'}}>
+                  {subjects.map(s=>(<option key={s.id} value={s.id}>{s.name}</option>))}
+                  <option value="custom">Custom (not a subject)</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{fontSize:11,fontWeight:700,color:C.subtle,letterSpacing:0.4,
+                  textTransform:'uppercase',display:'block',marginBottom:5}}>
+                  Topic <span style={{color:C.subtle,fontWeight:400}}>(optional)</span>
+                </label>
+                <input value={draftTopic} onChange={e=>setDraftTopic(e.target.value)}
+                  placeholder="e.g. Differentiation rules"
+                  maxLength={60}
+                  style={{width:'100%',boxSizing:'border-box',padding:'9px 11px',
+                    background:C.card2,border:`1px solid ${C.border}`,borderRadius:7,
+                    color:C.text,fontSize:13,fontFamily:font,outline:'none'}}/>
+              </div>
+
+              <div>
+                <label style={{fontSize:11,fontWeight:700,color:C.subtle,letterSpacing:0.4,
+                  textTransform:'uppercase',display:'block',marginBottom:5}}>
+                  Duration (minutes)
+                </label>
+                <input value={draftDuration} onChange={e=>setDraftDuration(e.target.value.replace(/[^0-9]/g,''))}
+                  inputMode="numeric" maxLength={3} placeholder="30"
+                  style={{width:'100%',boxSizing:'border-box',padding:'9px 11px',
+                    background:C.card2,border:`1px solid ${C.border}`,borderRadius:7,
+                    color:C.text,fontSize:13,fontFamily:font,outline:'none'}}/>
+              </div>
+
+              <div>
+                <label style={{fontSize:11,fontWeight:700,color:C.subtle,letterSpacing:0.4,
+                  textTransform:'uppercase',display:'block',marginBottom:5}}>
+                  Note <span style={{color:C.subtle,fontWeight:400}}>(optional)</span>
+                </label>
+                <textarea value={draftNote} onChange={e=>setDraftNote(e.target.value)}
+                  placeholder="Anything to remember…"
+                  maxLength={200} rows={3}
+                  style={{width:'100%',boxSizing:'border-box',padding:'9px 11px',
+                    background:C.card2,border:`1px solid ${C.border}`,borderRadius:7,
+                    color:C.text,fontSize:13,fontFamily:font,outline:'none',resize:'vertical'}}/>
+              </div>
+
+              <div style={{display:'flex',gap:8,marginTop:6}}>
+                <button onClick={submitAdd}
+                  style={{flex:1,padding:'10px',background:C.accent,border:'none',
+                    borderRadius:8,color:'#fff',fontSize:13,fontWeight:700,
+                    fontFamily:font,cursor:'pointer'}}>
+                  Add to plan
+                </button>
+                <button onClick={()=>setShowAdd(false)}
+                  style={{padding:'10px 16px',background:'transparent',
+                    border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,
+                    fontSize:13,fontFamily:font,cursor:'pointer'}}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -4691,9 +5010,32 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
     }
   };
 
+  const [accountTab, setAccountTab] = useState('settings');
+  const TABS = [
+    ['settings','Settings'],
+    ['data','Data & Privacy'],
+  ];
+
   return (
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
 
+      {/* Sub-tab nav */}
+      <div style={{display:'flex',gap:0,background:C.card2,borderRadius:9,padding:3,
+        border:`1px solid ${C.border}`,overflow:'auto',scrollbarWidth:'none',msOverflowStyle:'none'}}>
+        {TABS.map(([id,label])=>(
+          <button key={id} onClick={()=>setAccountTab(id)}
+            style={{padding:'8px 14px',borderRadius:7,border:'none',flexShrink:0,
+              background:accountTab===id?C.surface:'transparent',
+              color:accountTab===id?C.text:C.muted,
+              fontSize:12,fontWeight:accountTab===id?700:500,fontFamily:font,cursor:'pointer',
+              boxShadow:accountTab===id?'0 1px 3px rgba(0,0,0,0.12)':'none',
+              transition:'all 0.15s',whiteSpace:'nowrap'}}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {accountTab==='settings'&&<>
       {upgraded&&!isPro&&(
         <div style={{background:'rgba(74,222,128,0.07)',border:'1px solid rgba(74,222,128,0.2)',
           borderRadius:10,padding:'14px 18px',display:'flex',alignItems:'flex-start',gap:10}}>
@@ -5003,7 +5345,9 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
           {schoolSaving?'Saving…':'Save school settings'}
         </button>
       </div>
+      </>}
 
+      {accountTab==='data'&&<>
       {/* Your data — GDPR Article 20 (portability) + Article 17 (erasure) */}
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
         <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:6}}>
@@ -5118,6 +5462,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
           Built in the UK · Data stored in EU under UK GDPR
         </div>
       </div>
+      </>}
 
       {showTerms && <TermsOfService onClose={()=>setShowTerms(false)}/>}
     </div>
@@ -5736,6 +6081,18 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
 
   const saveCompanion = (c) => { setCompanion(c); ls.set(`rbp_companion_${uid}`,c); };
 
+  // Mascot notifications — generated from state, dismissed-set persisted on companion
+  const mascotNots = generateMascotNotifications({
+    scores, sessions, subjects, examSched,
+    coinsEarned: computeCoins(scores, sessions, companion?.spent_coins||0).earned,
+    dismissed: companion?.mascot_dismissed || [],
+  });
+  const dismissMascotNot = (id) => {
+    saveCompanion({...companion,
+      mascot_dismissed: [...new Set([...(companion?.mascot_dismissed||[]), id])].slice(-50),
+    });
+  };
+
   useEffect(()=>ls.set(`rbp_rag_notes_${uid}`,ragNotes),[ragNotes]);
 
   const defaultTargets = Object.fromEntries(subjects.map(s=>[s.name, isGcse ? '9' : isAS ? 'A' : 'A*']));
@@ -5910,8 +6267,15 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
 
   // Achievement tracking
   useEffect(()=>{
-    if(!scores.length) return;
-    const current=computeUnlockedAchievements(scores,errors,subjects);
+    if(!scores.length && !sessions.length && !myPlan.length) return;
+    const coinsState = computeCoins(scores, sessions, companion?.spent_coins||0);
+    const extras = {
+      examSched,
+      coinsEarned: coinsState.earned,
+      ownedItems: totalOwnedItems(companion?.owned || defaultOwned()),
+      myPlanCount: myPlan.length,
+    };
+    const current=computeUnlockedAchievements(scores,errors,subjects,extras);
     const prevSet=new Set(unlockedAch);
     const newlyUnlocked=current.filter(id=>!prevSet.has(id));
     if(newlyUnlocked.length>0){
@@ -5920,7 +6284,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
       const a=ACHIEVEMENTS.find(x=>x.id===newlyUnlocked[0]);
       if(a&&!pendingAchievement) setPendingAchievement(a);
     }
-  },[scores,errors]);
+  },[scores,errors,sessions,myPlan,companion]);
 
   const unlockedIds=unlockedAch;
 
@@ -5972,6 +6336,33 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
                 cursor:'pointer',fontSize:14,lineHeight:1,padding:'0 2px'}}>✕</button>
           </div>
           <p style={{fontSize:13,color:C.muted,lineHeight:1.65,margin:'0 0 10px'}}>{message}</p>
+
+          {mascotNots.length>0&&(
+            <div style={{margin:'0 0 10px',padding:'8px 10px',background:C.card2,
+              borderRadius:8,border:`1px solid ${C.border}`,display:'flex',flexDirection:'column',gap:6}}>
+              <div style={{fontSize:9,fontWeight:800,letterSpacing:0.5,color:C.subtle,
+                textTransform:'uppercase'}}>
+                📬 From {companion.name} ({mascotNots.length})
+              </div>
+              {mascotNots.map(n=>{
+                const kc = n.kind==='celebrate' ? '#22c55e'
+                  : n.kind==='warn' ? '#f97316' : C.accent;
+                return (
+                  <div key={n.id} style={{display:'flex',alignItems:'flex-start',gap:6,
+                    padding:'6px 8px',background:`${kc}10`,borderRadius:6,
+                    borderLeft:`3px solid ${kc}`}}>
+                    <div style={{flex:1,fontSize:12,color:C.text,lineHeight:1.45}}>{n.msg}</div>
+                    <button onClick={()=>dismissMascotNot(n.id)}
+                      style={{background:'transparent',border:'none',color:C.subtle,
+                        cursor:'pointer',fontSize:13,lineHeight:1,padding:'0 2px',flexShrink:0}}>
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {isPro&&(
             <button onClick={()=>{setShowBubble(false);setCompanionChat(true);}}
               style={{padding:'6px 14px',background:C.accentSoft,border:`1px solid ${C.accent}44`,
@@ -6022,6 +6413,14 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
                 <div style={{position:'absolute',bottom:-1,right:-1,width:8,height:8,borderRadius:'50%',
                   background:{happy:'#22c55e',excited:'#fbbf24',worried:'#f97316',neutral:C.accent,sleepy:'#64748b'}[mood]||C.accent,
                   border:`2px solid ${C.nav}`}}/>
+                {mascotNots.length>0&&(
+                  <div style={{position:'absolute',top:-2,right:-2,minWidth:14,height:14,
+                    borderRadius:7,background:'#ef4444',color:'#fff',fontSize:9,fontWeight:800,
+                    display:'flex',alignItems:'center',justifyContent:'center',padding:'0 3px',
+                    border:`2px solid ${C.nav}`,lineHeight:1}}>
+                    {mascotNots.length}
+                  </div>
+                )}
               </div>
               <button onClick={e=>{e.stopPropagation();setCompanionDraft(companion.name);setCustomising(true);}}
                 style={{padding:'1px 0',background:'transparent',border:'none',
@@ -6073,6 +6472,14 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
                 <div style={{position:'absolute',bottom:8,right:-2,width:11,height:11,borderRadius:'50%',
                   background:{happy:'#22c55e',excited:'#fbbf24',worried:'#f97316',neutral:C.accent,sleepy:'#64748b'}[mood]||C.accent,
                   border:`2px solid ${C.nav}`}}/>
+                {mascotNots.length>0&&(
+                  <div style={{position:'absolute',top:-2,right:-4,minWidth:16,height:16,
+                    borderRadius:8,background:'#ef4444',color:'#fff',fontSize:10,fontWeight:800,
+                    display:'flex',alignItems:'center',justifyContent:'center',padding:'0 4px',
+                    border:`2px solid ${C.nav}`,lineHeight:1}}>
+                    {mascotNots.length}
+                  </div>
+                )}
               </div>
               <div style={{display:'flex',alignItems:'center',gap:5}}>
                 <div style={{fontSize:13,fontWeight:700,color:C.text,letterSpacing:0.1}}>{companion.name}</div>
@@ -6235,16 +6642,19 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
           setDraft={setCompanionDraft}
           setCompanion={setCompanion}
           onSave={()=>{
-            const c={...companion,name:companionDraft.trim()||'Alex'};
+            const c={...companion,name:companionDraft.trim()||'Caps'};
             saveCompanion(c); setCustomising(false);
           }}
           onCancel={()=>{
-            const saved=ls.get(`rbp_companion_${uid}`,{name:'Alex',skin:0,hair:0,hairStyle:0});
-            setCompanion({eyeColor:0,outfitColor:0,accessory:0,...saved});
-            setCompanionDraft(saved.name||'Alex');
+            const saved=ls.get(`rbp_companion_${uid}`,{name:'Caps',skin:0,outfitColor:0,accessory:0});
+            setCompanion({skin:0,outfitColor:0,accessory:0,...saved});
+            setCompanionDraft(saved.name||'Caps');
             setCustomising(false);
           }}
-          C={C} font={font}/>
+          C={C} font={font}
+          coins={computeCoins(scores, sessions, companion?.spent_coins||0).available}
+          isPro={isPro}
+          addToast={addToast}/>
       )}
       {companionChat&&(
         <CompanionChat companion={companion} subjects={subjects} scores={scores}
@@ -6403,11 +6813,12 @@ export default function App() {
         // Row is created by handle_new_user trigger on auth.users insert.
         // Heartbeat just bumps last_seen_at (email is server-controlled).
         await supabase.from('user_profiles').update({last_seen_at:new Date().toISOString()}).eq('id',uid);
-        const {data}=await supabase.from('user_profiles').select('subjects,subscription_status,stripe_customer_id,referral_code,exam_level,referral_pro_until').eq('id',uid).single();
+        const {data}=await supabase.from('user_profiles').select('subjects,subscription_status,stripe_customer_id,referral_code,exam_level,referral_pro_until,is_admin').eq('id',uid).single();
         if (!alive) return;
         const stripePro = data?.subscription_status==='pro'||data?.subscription_status==='trialing'||data?.subscription_status==='active';
         const referralPro = data?.referral_pro_until && new Date(data.referral_pro_until).getTime() > Date.now();
-        if (stripePro || referralPro) setIsPro(true);
+        // Admins always get Pro for free.
+        if (stripePro || referralPro || data?.is_admin) setIsPro(true);
         if (data?.stripe_customer_id) setStripeCustomerId(data.stripe_customer_id);
         // referral_code is auto-assigned by the column DEFAULT on insert.
         // If still null on an existing row, re-read after a short pause —
