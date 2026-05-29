@@ -2098,7 +2098,8 @@ function CompanionCard({sessions,scores,subjects,examSched,C,font,isPro=false,on
       )}
       {chatOpen&&(
         <CompanionChat companion={companion} subjects={subjects} scores={scores}
-          sessions={sessions} examSched={examSched} C={C} font={font}
+          sessions={sessions} examSched={examSched} rag={{}} examLevel="alevel"
+          C={C} font={font}
           onClose={()=>setChatOpen(false)}/>
       )}
     </>
@@ -2149,23 +2150,67 @@ function getCharacterReply(input, {subjects, scores, sessions, examSched}) {
   return fallbacks[Math.floor(Math.random()*fallbacks.length)];
 }
 
-function CompanionChat({companion,subjects,scores,sessions,examSched,C,font,onClose}) {
+function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},examLevel='alevel',C,font,onClose}) {
   ensureAnimStyles();
   const [messages,setMessages] = useState([{
     from:'char',
     text:`Hey, I'm ${companion.name}. What's on your mind? You can ask me anything — how you're doing, what to focus on, or just vent if you need to.`
   }]);
   const [input,setInput] = useState('');
+  const [sending,setSending] = useState(false);
   const listRef = useRef(null);
   const mood = getCompanionMood({sessions,scores,examSched,subjects});
   useEffect(()=>{
     if(listRef.current) listRef.current.scrollTop=listRef.current.scrollHeight;
-  },[messages]);
-  const send = () => {
-    const text=input.trim(); if(!text) return;
-    const reply=getCharacterReply(text,{subjects,scores,sessions,examSched});
-    setMessages(prev=>[...prev,{from:'user',text},...(reply?[{from:'char',text:reply}]:[])]);
+  },[messages,sending]);
+
+  const send = async () => {
+    const text=input.trim();
+    if(!text||sending) return;
+    if (text.length > 800) return; // ui caps input length; defensive
+    const nextHistory = [...messages, {from:'user', text}];
+    setMessages(nextHistory);
     setInput('');
+    setSending(true);
+
+    // Build minimal context — no PII, just stats Caps needs for grounded replies
+    const nextExam = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId))
+      .map(e=>({...e, t: new Date(e.date).getTime()}))
+      .filter(e=>e.t>=Date.now()).sort((a,b)=>a.t-b.t)[0] || null;
+    const ctx = {
+      subjects: subjects.map(s=>({name:s.name})),
+      scores: scores.slice(-3).map(s=>({subject:s.subject, pct:s.pct, grade:s.grade})),
+      rag,
+      examLevel,
+      nextExam: nextExam ? {paper:nextExam.paper, subject:nextExam.subjectName, date:nextExam.date} : null,
+    };
+
+    let replyText = null;
+    try {
+      const {data:{session}} = await supabase.auth.getSession();
+      if (session) {
+        const r = await fetch('/api/mascot-chat', {
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`},
+          body: JSON.stringify({ messages: nextHistory.slice(-8), context: ctx }),
+        });
+        if (r.ok) {
+          const d = await r.json();
+          if (d.reply) replyText = d.reply;
+        } else if (r.status === 429) {
+          const d = await r.json().catch(()=>({}));
+          replyText = d.error || "I need a breather — too many messages this hour. Try again in a bit.";
+        } else if (r.status === 402) {
+          replyText = "Mascot chat is a Pro feature. Upgrade in Account → Settings to unlock me properly.";
+        }
+      }
+    } catch {/* fall through to local fallback */}
+
+    // Fallback to local rule-based reply on any failure
+    if (!replyText) replyText = getCharacterReply(text, {subjects, scores, sessions, examSched});
+
+    setMessages(prev => [...prev, {from:'char', text: replyText}]);
+    setSending(false);
   };
   return (
     <div style={{position:'fixed',inset:0,zIndex:400,background:'rgba(0,0,0,0.72)',
@@ -2193,22 +2238,43 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,C,font,onCl
                 padding:'10px 14px',
                 background:m.from==='user'?C.accent:C.card2,
                 color:m.from==='user'?'#fff':C.text,
-                fontSize:13,lineHeight:1.6}}>
+                fontSize:13,lineHeight:1.6,whiteSpace:'pre-wrap'}}>
                 {m.text}
               </div>
             </div>
           ))}
+          {sending&&(
+            <div style={{display:'flex',justifyContent:'flex-start'}}>
+              <div style={{borderRadius:'14px 14px 14px 4px',padding:'10px 14px',
+                background:C.card2,color:C.subtle,fontSize:13,fontStyle:'italic'}}>
+                {companion.name} is typing…
+              </div>
+            </div>
+          )}
         </div>
-        <div style={{display:'flex',gap:8,padding:'12px 16px',
+        <div style={{padding:'4px 16px 0',fontSize:10,color:C.subtle,textAlign:'center',lineHeight:1.4}}>
+          {companion.name} can make mistakes. Don't share personal info. If you're struggling, talk to someone real (Samaritans 116 123).
+        </div>
+        <div style={{display:'flex',gap:8,padding:'10px 16px 12px',
           borderTop:`1px solid ${C.border}`,flexShrink:0}}>
-          <input value={input} onChange={e=>setInput(e.target.value)}
-            onKeyDown={e=>e.key==='Enter'&&send()}
-            placeholder={`Message ${companion.name}...`}
+          <input value={input} onChange={e=>setInput(e.target.value.slice(0,800))}
+            onKeyDown={e=>e.key==='Enter'&&!sending&&send()}
+            placeholder={sending?'Sending…':`Message ${companion.name}...`}
+            maxLength={800}
+            disabled={sending}
             style={{flex:1,background:C.card2,border:`1px solid ${C.border}`,borderRadius:10,
-              padding:'10px 14px',color:C.text,fontSize:13,fontFamily:font,outline:'none'}}/>
-          <button onClick={send}
-            style={{padding:'10px 18px',background:C.accent,border:'none',borderRadius:10,
-              color:'#fff',fontSize:13,fontWeight:700,fontFamily:font,cursor:'pointer'}}>Send</button>
+              padding:'10px 14px',color:C.text,fontSize:13,fontFamily:font,outline:'none',
+              opacity:sending?0.6:1}}/>
+          <button onClick={send} disabled={sending||!input.trim()}
+            style={{padding:'10px 18px',
+              background:sending||!input.trim()?C.card2:C.accent,
+              border:sending||!input.trim()?`1px solid ${C.border}`:'none',
+              borderRadius:10,
+              color:sending||!input.trim()?C.subtle:'#fff',
+              fontSize:13,fontWeight:700,fontFamily:font,
+              cursor:sending||!input.trim()?'not-allowed':'pointer'}}>
+            Send
+          </button>
         </div>
       </div>
     </div>
@@ -6658,7 +6724,8 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
       )}
       {companionChat&&(
         <CompanionChat companion={companion} subjects={subjects} scores={scores}
-          sessions={sessions} examSched={examSched} C={C} font={font}
+          sessions={sessions} examSched={examSched} rag={rag} examLevel={examLevel}
+          C={C} font={font}
           onClose={()=>setCompanionChat(false)}/>
       )}
     </div>
