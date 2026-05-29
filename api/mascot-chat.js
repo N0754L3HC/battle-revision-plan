@@ -1,9 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 
-const admin = createClient(
-  process.env.SUPABASE_URL ?? '',
-  process.env.SUPABASE_SERVICE_KEY ?? ''
-);
+// Lazy init so missing env vars surface as a clean 503 rather than a
+// synchronous module-load crash with a generic 500.
+let _admin = null;
+function getAdmin() {
+  if (_admin) return _admin;
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY;
+  if (!url || !key) return null;
+  _admin = createClient(url, key);
+  return _admin;
+}
 
 const ipBucket = new Map();
 const userBucket = new Map();
@@ -17,7 +24,7 @@ function take(map, key, cap) {
 const rateLimitIp   = ip  => take(ipBucket,   ip,  60);
 const rateLimitUser = uid => take(userBucket, uid, 15); // 15 turns per user per hour
 
-async function getAuthUser(req) {
+async function getAuthUser(req, admin) {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) return null;
   const { data: { user }, error } = await admin.auth.getUser(token);
@@ -158,12 +165,15 @@ async function callGemini({systemPrompt, contents}) {
 // ─── Handler ───────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  if (!process.env.SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'Not configured' });
+
+  const admin = getAdmin();
+  if (!admin) return res.status(503).json({ error: 'Server not configured — SUPABASE_URL or SUPABASE_SERVICE_KEY missing in env' });
+  if (!process.env.GEMINI_API_KEY) return res.status(503).json({ error: 'Chat not configured — GEMINI_API_KEY missing in env' });
 
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ?? req.socket?.remoteAddress ?? 'unknown';
   if (!rateLimitIp(ip)) return res.status(429).json({ error: 'Too many requests' });
 
-  const user = await getAuthUser(req);
+  const user = await getAuthUser(req, admin);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
   const uid = user.id;
   if (!rateLimitUser(uid)) return res.status(429).json({ error: 'Slow down — 15 messages per hour limit reached. Try again later.' });

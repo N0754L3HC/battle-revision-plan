@@ -2202,6 +2202,12 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
           replyText = d.error || "I need a breather — too many messages this hour. Try again in a bit.";
         } else if (r.status === 402) {
           replyText = "Mascot chat is a Pro feature. Upgrade in Account → Settings to unlock me properly.";
+        } else if (r.status === 503) {
+          const d = await r.json().catch(()=>({}));
+          replyText = `Chat is offline: ${d.error || 'server not configured'}. Falling back to basic replies.`;
+        } else {
+          const d = await r.json().catch(()=>({}));
+          replyText = d.error ? `Chat error: ${d.error}. Falling back to basic replies.` : null;
         }
       }
     } catch {/* fall through to local fallback */}
