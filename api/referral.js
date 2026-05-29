@@ -54,15 +54,18 @@ export default async function handler(req, res) {
     const { referrerCode } = req.body ?? {};
     if (!referrerCode || typeof referrerCode !== 'string')
       return res.status(400).json({ error: 'Missing referrerCode' });
+    const code = referrerCode.trim().toUpperCase();
+    if (!/^[A-Z0-9]{4,8}$/.test(code))
+      return res.status(400).json({ error: 'Invalid referral code format' });
 
     // Verify referrer code exists and is not the same user
     const { data: referrer } = await admin.from('user_profiles')
-      .select('id').eq('referral_code', referrerCode).maybeSingle();
+      .select('id').eq('referral_code', code).maybeSingle();
     if (!referrer) return res.status(404).json({ error: 'Invalid referral code' });
     if (referrer.id === uid) return res.status(400).json({ error: 'Cannot refer yourself' });
 
     const { error } = await admin.from('referrals').insert({
-      referrer_code: referrerCode,
+      referrer_code: code,
       referred_user_id: uid,
     });
     if (error) {
@@ -75,7 +78,7 @@ export default async function handler(req, res) {
     // this prevents burner-account farming.
     const { data: allRefs } = await admin.from('referrals')
       .select('referred_user_id')
-      .eq('referrer_code', referrerCode);
+      .eq('referrer_code', code);
     const refUserIds = (allRefs ?? []).map(r => r.referred_user_id);
     let verifiedCount = 0;
     if (refUserIds.length) {

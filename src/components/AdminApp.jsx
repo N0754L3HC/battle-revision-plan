@@ -2,6 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
 // ── Constants ──────────────────────────────────────────────────────────────
+// Admin status is enforced server-side via user_profiles.is_admin (set via SQL).
+// This list is informational only — used in the access-denied screen.
+const ADMIN_EMAILS = ['51r4h100@gmail.com'];
 const mono = "'JetBrains Mono','SF Mono','Fira Code',monospace";
 const GC = { 'A*':'#00E676', A:'#69F0AE', B:'#FFD600', C:'#FF9100', D:'#FF6D00', E:'#FF3D00', U:'#555' };
 const SC = { maths:'#3b82f6','further-maths':'#E040FB',cs:'#00E676',chemistry:'#FF4081',physics:'#40C4FF',economics:'#FFD600',biology:'#84cc16',history:'#fb923c',psychology:'#a78bfa',geography:'#22d3ee' };
@@ -1131,7 +1134,10 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
 
   const toggleAdmin=async(u)=>{
     const next=!u.is_admin;
-    await supabase.from('user_profiles').update({is_admin:next}).eq('id',u.id);
+    // is_admin column is server-controlled (revoked from authenticated UPDATE).
+    // set_admin RPC re-verifies the caller is admin before applying the change.
+    const {error}=await supabase.rpc('set_admin',{p_target:u.id,p_value:next});
+    if (error) { alert(`Failed: ${error.message}`); return; }
     setUsers(prev=>prev.map(x=>x.id===u.id?{...x,is_admin:next}:x));
     setSelected(prev=>prev?.id===u.id?{...prev,is_admin:next}:prev);
   };
@@ -1456,11 +1462,12 @@ export default function AdminApp() {
       const email=session.user.email;
       const {data:prof}=await supabase.from('user_profiles').select('*').eq('id',session.user.id).single();
       if (!alive) return;
-      const isAdmin=prof?.is_admin||ADMIN_EMAILS.includes(email);
+      // Admin status comes from the DB column only (server-controlled).
+      // First admin must be set via SQL (bootstrap one-time).
+      const isAdmin=!!prof?.is_admin;
       if (isAdmin) {
-        if (!prof?.is_admin) await supabase.from('user_profiles').update({is_admin:true}).eq('id',session.user.id);
         setAdminUser(session.user);
-        setAdminProfile({...prof,is_admin:true});
+        setAdminProfile(prof);
         setPhase('authed');
       } else {
         await supabase.auth.signOut();

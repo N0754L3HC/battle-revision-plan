@@ -110,8 +110,10 @@ export default async function handler(req, res) {
 
   // ── join ──────────────────────────────────────────────────────────────────
   if (action === 'join') {
-    const code = req.body?.invite_code?.trim().toUpperCase();
-    if (!code) return res.status(400).json({ error: 'Missing invite code' });
+    const raw = req.body?.invite_code;
+    if (!raw || typeof raw !== 'string') return res.status(400).json({ error: 'Missing invite code' });
+    const code = raw.trim().toUpperCase();
+    if (!/^[A-Z0-9]{4,8}$/.test(code)) return res.status(400).json({ error: 'Invalid invite code format' });
 
     const { data: group } = await admin.from('study_groups')
       .select('*').eq('invite_code', code).maybeSingle();
