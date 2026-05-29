@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import AuthGate from './components/AuthGate';
 import SubjectPicker from './components/SubjectPicker';
-import FriendsView from './components/FriendsView';
+import SquadsView from './components/SquadsView';
 import { subjectsFromSelection, GCSE_CATALOG } from './data/subjects';
 import { BarChart3, PenLine, CalendarDays, ClipboardList, Trophy, Users, Timer, BookOpen, User, Sun, Moon, Lock, Pencil, GraduationCap, FileText, TrendingUp, Zap, Star, ArrowUpRight, Target, Shield, CheckCircle, Calendar, Search, Grid3x3, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
@@ -4916,7 +4916,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
         <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:10}}>School leaderboard</div>
         <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginBottom:12}}>
-          Enter your school name and opt in to appear on the anonymous school leaderboard in the Friends tab. Only your school's average score is visible — never individual data.
+          Enter your school name and opt in to appear on the anonymous school leaderboard in the Squads tab. Only your school's average score is visible — never individual data.
         </div>
         <input
           value={schoolName}
@@ -5755,7 +5755,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
     {id:'plan',         label:'Plan',         Icon:ClipboardList},
     {id:'timetable',    label:'Timetable',    Icon:Grid3x3},
     {id:'achievements', label:'Achievements', Icon:Trophy},
-    {id:'friends',      label:'Friends',      Icon:Users},
+    {id:'squads',       label:'Squads',       Icon:Users},
     {id:'timer',        label:'Timer',        Icon:Timer},
     {id:'resources',    label:'Resources',    Icon:BookOpen},
     {id:'account',      label:'Account',      Icon:User},
@@ -5964,7 +5964,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
         {view==='plan'         && <Schedule     {...vp}/>}
         {view==='timetable'    && <TimetableView timetable={timetable} onSave={saveTimetable} C={C} font={font}/>}
         {view==='achievements' && <AchievementsView {...vp} unlockedIds={unlockedIds}/>}
-        {view==='friends'      && <FriendsView   user={user} scores={scores} uid={uid} C={C} font={font} addToast={addToast}/>}
+        {view==='squads'       && <SquadsView    user={user} scores={scores} uid={uid} C={C} font={font} addToast={addToast}/>}
         {view==='timer'        && <StudyTimer    subjects={subjects} uid={uid} C={C} font={font} sessions={sessions} setSessions={setSessions} scores={scores} errors={errors} rag={rag}/>}
         {view==='resources'    && <Resources    {...vp}/>}
         {view==='account'      && <Account      {...vp} user={user} selection={selection}
@@ -6202,6 +6202,12 @@ export default function App() {
     // Capture referral code from URL before auth
     const refParam = new URLSearchParams(window.location.search).get('ref');
     if (refParam) sessionStorage.setItem('rbp_ref', refParam.toUpperCase().trim());
+    // Capture squad invite from /j/CODE path before auth; SquadsView consumes it after sign-in
+    const joinMatch = window.location.pathname.match(/^\/j\/([A-Z0-9]{4,8})$/i);
+    if (joinMatch) {
+      sessionStorage.setItem('rbp_join_code', joinMatch[1].toUpperCase());
+      window.history.replaceState({}, '', '/');
+    }
     let alive=true;
 
     async function boot(session) {
