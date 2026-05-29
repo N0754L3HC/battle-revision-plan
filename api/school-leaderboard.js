@@ -31,39 +31,53 @@ export default async function handler(req, res) {
   const user = await getAuthUser(req);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-  // Aggregate opted-in users by school — minimum 3 users per school
-  const { data, error } = await admin.rpc('school_leaderboard');
-  if (error) {
-    // Fallback: raw query if RPC doesn't exist yet
-    const { data: rows, error: qErr } = await admin
-      .from('user_profiles')
-      .select('school_name, leaderboard_score')
-      .eq('school_opt_in', true)
-      .not('school_name', 'is', null);
+  const yearFilter = typeof req.query?.year === 'string' && /^Y(10|11|12|13)$/.test(req.query.year)
+    ? req.query.year : null;
 
-    if (qErr) return res.status(500).json({ error: 'Query failed' });
+  let q = admin
+    .from('user_profiles')
+    .select('school_name, year_group, leaderboard_score, leaderboard_snapshot_week')
+    .eq('school_opt_in', true)
+    .not('school_name', 'is', null);
+  if (yearFilter) q = q.eq('year_group', yearFilter);
 
-    const grouped = {};
-    for (const row of rows ?? []) {
-      const name = row.school_name.trim();
-      if (!name) continue;
-      if (!grouped[name]) grouped[name] = { total: 0, count: 0 };
-      grouped[name].total += row.leaderboard_score ?? 0;
-      grouped[name].count++;
+  const { data: rows, error: qErr } = await q;
+  if (qErr) return res.status(500).json({ error: 'Query failed' });
+
+  const grouped = {};
+  let allTotal = 0, allCount = 0;
+  for (const row of rows ?? []) {
+    const name = row.school_name.trim();
+    if (!name) continue;
+    if (!grouped[name]) grouped[name] = { total: 0, count: 0, lastWeekTotal: 0, lastWeekCount: 0 };
+    grouped[name].total += row.leaderboard_score ?? 0;
+    grouped[name].count++;
+    allTotal += row.leaderboard_score ?? 0;
+    allCount++;
+    const lw = row.leaderboard_snapshot_week?.score;
+    if (typeof lw === 'number') {
+      grouped[name].lastWeekTotal += lw;
+      grouped[name].lastWeekCount++;
     }
-
-    const schools = Object.entries(grouped)
-      .filter(([, v]) => v.count >= 3)
-      .map(([name, v]) => ({
-        school_name: name,
-        avg_score: Math.round(v.total / v.count),
-        student_count: v.count,
-      }))
-      .sort((a, b) => b.avg_score - a.avg_score)
-      .slice(0, 20);
-
-    return res.status(200).json({ schools });
   }
 
-  return res.status(200).json({ schools: data ?? [] });
+  const nationalAvg = allCount ? Math.round(allTotal / allCount) : null;
+
+  const schools = Object.entries(grouped)
+    .filter(([, v]) => v.count >= 3)
+    .map(([name, v]) => {
+      const avg = Math.round(v.total / v.count);
+      const lastWeekAvg = v.lastWeekCount >= 3 ? Math.round(v.lastWeekTotal / v.lastWeekCount) : null;
+      const weeklyDiff = lastWeekAvg != null ? avg - lastWeekAvg : null;
+      return {
+        school_name: name,
+        avg_score: avg,
+        student_count: v.count,
+        weekly_diff: weeklyDiff,
+      };
+    })
+    .sort((a, b) => b.avg_score - a.avg_score)
+    .slice(0, 20);
+
+  return res.status(200).json({ schools, national_avg: nationalAvg, year_filter: yearFilter });
 }

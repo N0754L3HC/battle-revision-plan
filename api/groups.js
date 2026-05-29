@@ -52,8 +52,9 @@ export default async function handler(req, res) {
     const allMemberIds = [...new Set(allMembers.map(m => m.user_id))];
     let profiles = [];
     if (allMemberIds.length) {
+      // Only select non-PII fields. Never expose member emails to other members.
       const { data: p = [] } = await admin.from('user_profiles')
-        .select('id,display_name,email,leaderboard_score,papers_count')
+        .select('id,display_name,leaderboard_score,papers_count')
         .in('id', allMemberIds);
       profiles = p;
     }
@@ -64,7 +65,7 @@ export default async function handler(req, res) {
         const p = profiles.find(p => p.id === mid) ?? {};
         return {
           user_id: mid,
-          display_name: p.display_name || p.email?.split('@')[0] || 'Member',
+          display_name: p.display_name || 'Member',
           leaderboard_score: Math.round(p.leaderboard_score ?? 0),
           papers_count: p.papers_count ?? 0,
           is_me: mid === uid,

@@ -2663,7 +2663,13 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
 }
 
 // ── Share readiness card ────────────────────────────────────────────────────
-function ShareReadinessCard({br, subjects, scores, C, font}) {
+const SHARE_THEMES = {
+  dark:  { bg:'#0d0f16', glow1:'rgba(194,124,96,0.2)', glow2:'rgba(90,110,200,0.07)', text:'rgba(255,255,255,0.48)', mute:'rgba(255,255,255,0.22)', divider:'rgba(255,255,255,0.07)', track:'rgba(255,255,255,0.07)' },
+  light: { bg:'#f5f1ea', glow1:'rgba(194,124,96,0.18)', glow2:'rgba(60,80,180,0.05)',  text:'rgba(30,30,30,0.70)',   mute:'rgba(30,30,30,0.38)',   divider:'rgba(0,0,0,0.10)',   track:'rgba(0,0,0,0.08)' },
+  glow:  { bg:'#0a0820', glow1:'rgba(180,90,255,0.30)', glow2:'rgba(0,200,255,0.18)',  text:'rgba(255,255,255,0.62)', mute:'rgba(255,255,255,0.32)', divider:'rgba(255,255,255,0.10)', track:'rgba(255,255,255,0.10)' },
+};
+
+function ShareReadinessCard({br, subjects, scores, C, font, shareTheme='dark', setShareTheme=()=>{}, shareAspect='landscape', setShareAspect=()=>{}}) {
   const canvasRef = useRef(null);
   const [generated,  setGenerated]  = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -2682,114 +2688,186 @@ function ShareReadinessCard({br, subjects, scores, C, font}) {
       const canvas = canvasRef.current;
       if (!canvas) { setGenerating(false); return; }
       const ctx = canvas.getContext('2d');
-      const W=600, H=315, DEG=Math.PI/180;
+      const DEG=Math.PI/180;
+      const story = shareAspect==='story';
+      const W = story ? 1080 : 600;
+      const H = story ? 1920 : 315;
+      const P = SHARE_THEMES[shareTheme] || SHARE_THEMES.dark;
       canvas.width=W; canvas.height=H;
 
       // ── BACKGROUND ──
-      ctx.fillStyle='#0d0f16';
+      ctx.fillStyle=P.bg;
       ctx.fillRect(0,0,W,H);
       const bgG=ctx.createRadialGradient(0,H,0,0,H,W*0.9);
-      bgG.addColorStop(0,'rgba(194,124,96,0.2)');
+      bgG.addColorStop(0,P.glow1);
       bgG.addColorStop(1,'rgba(0,0,0,0)');
       ctx.fillStyle=bgG; ctx.fillRect(0,0,W,H);
       const bgG2=ctx.createRadialGradient(W,0,0,W,0,W*0.55);
-      bgG2.addColorStop(0,'rgba(90,110,200,0.07)');
+      bgG2.addColorStop(0,P.glow2);
       bgG2.addColorStop(1,'rgba(0,0,0,0)');
       ctx.fillStyle=bgG2; ctx.fillRect(0,0,W,H);
 
-      // Left accent bar
-      const barG=ctx.createLinearGradient(0,0,0,H);
+      // Accent bar
+      const barG=story
+        ? ctx.createLinearGradient(0,0,W,0)
+        : ctx.createLinearGradient(0,0,0,H);
       barG.addColorStop(0,br.labelColor+'ff');
       barG.addColorStop(1,br.labelColor+'33');
-      ctx.fillStyle=barG; ctx.fillRect(0,0,4,H);
+      ctx.fillStyle=barG;
+      if (story) ctx.fillRect(0,0,W,8);
+      else ctx.fillRect(0,0,4,H);
 
-      // ── GAUGE ──
-      const GX=118, GY=158, GR=74;
-      const startA=210*DEG, sweepA=240*DEG;
       const pct=Math.min(Math.max(br.total,0),100)/100;
 
-      // Glow
-      ctx.beginPath();
-      ctx.arc(GX,GY,GR+2,startA,startA+sweepA*pct);
-      ctx.strokeStyle=br.labelColor+'20'; ctx.lineWidth=22; ctx.lineCap='round'; ctx.stroke();
-      // Track
-      ctx.beginPath();
-      ctx.arc(GX,GY,GR,startA,startA+sweepA);
-      ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=13; ctx.lineCap='round'; ctx.stroke();
-      // Progress
-      ctx.beginPath();
-      ctx.arc(GX,GY,GR,startA,startA+sweepA*pct);
-      ctx.strokeStyle=br.labelColor; ctx.lineWidth=13; ctx.lineCap='round'; ctx.stroke();
+      if (story) {
+        // ── STORY LAYOUT: 1080x1920 ──
+        // Top: brand
+        ctx.textAlign='center';
+        ctx.fillStyle=br.labelColor;
+        ctx.font="800 56px system-ui,-apple-system,sans-serif";
+        ctx.fillText('Battle Plan',W/2,160);
+        ctx.fillStyle=P.mute;
+        ctx.font="500 22px system-ui,-apple-system,sans-serif";
+        ctx.fillText('A* REVISION TRACKER  ·  BEATTHEEXAM.ORG',W/2,200);
 
-      // Score number
-      ctx.textAlign='center';
-      ctx.font="900 68px system-ui,-apple-system,sans-serif";
-      ctx.fillStyle=br.labelColor;
-      ctx.fillText(`${br.total}`,GX,GY+12);
-      const sW=ctx.measureText(`${br.total}`).width;
-      ctx.font="700 20px system-ui,-apple-system,sans-serif";
-      ctx.textAlign='left'; ctx.fillStyle=br.labelColor+'88';
-      ctx.fillText('%',GX+sW/2+3,GY-18);
+        // Big circular gauge
+        const GX=W/2, GY=560, GR=240;
+        const startA=210*DEG, sweepA=240*DEG;
+        ctx.beginPath(); ctx.arc(GX,GY,GR+6,startA,startA+sweepA*pct);
+        ctx.strokeStyle=br.labelColor+'22'; ctx.lineWidth=72; ctx.lineCap='round'; ctx.stroke();
+        ctx.beginPath(); ctx.arc(GX,GY,GR,startA,startA+sweepA);
+        ctx.strokeStyle=P.track; ctx.lineWidth=42; ctx.lineCap='round'; ctx.stroke();
+        ctx.beginPath(); ctx.arc(GX,GY,GR,startA,startA+sweepA*pct);
+        ctx.strokeStyle=br.labelColor; ctx.lineWidth=42; ctx.lineCap='round'; ctx.stroke();
 
-      // Readiness label
-      ctx.textAlign='center';
-      ctx.fillStyle='rgba(255,255,255,0.3)';
-      ctx.font="600 9px system-ui,-apple-system,sans-serif";
-      ctx.fillText('BATTLE READINESS',GX,GY+42);
-      ctx.fillStyle=br.labelColor;
-      ctx.font="800 13px system-ui,-apple-system,sans-serif";
-      ctx.fillText(br.label.toUpperCase(),GX,GY+59);
+        ctx.textAlign='center';
+        ctx.fillStyle=br.labelColor;
+        ctx.font="900 220px system-ui,-apple-system,sans-serif";
+        ctx.fillText(`${br.total}`,GX,GY+50);
+        ctx.font="800 64px system-ui,-apple-system,sans-serif";
+        ctx.fillStyle=br.labelColor+'cc';
+        ctx.fillText('%',GX+ctx.measureText(`${br.total}`).width/2+50,GY-80);
 
-      // ── DIVIDER ──
-      ctx.strokeStyle='rgba(255,255,255,0.07)';
-      ctx.lineWidth=1; ctx.setLineDash([]);
-      ctx.beginPath(); ctx.moveTo(228,22); ctx.lineTo(228,H-22); ctx.stroke();
+        ctx.fillStyle=P.mute;
+        ctx.font="700 26px system-ui,-apple-system,sans-serif";
+        ctx.fillText('BATTLE READINESS',GX,GY+170);
+        ctx.fillStyle=br.labelColor;
+        ctx.font="900 50px system-ui,-apple-system,sans-serif";
+        ctx.fillText(br.label.toUpperCase(),GX,GY+230);
 
-      // ── RIGHT: header ──
-      ctx.textAlign='left';
-      ctx.fillStyle=br.labelColor;
-      ctx.font="800 16px system-ui,-apple-system,sans-serif";
-      ctx.fillText('Battle Plan',246,44);
-      ctx.fillStyle='rgba(255,255,255,0.22)';
-      ctx.font="500 9px system-ui,-apple-system,sans-serif";
-      ctx.fillText('A-LEVEL REVISION TRACKER  ·  BEATTHEEXAM.ORG',246,59);
+        // Divider
+        ctx.strokeStyle=P.divider; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.moveTo(120,1020); ctx.lineTo(W-120,1020); ctx.stroke();
 
-      ctx.strokeStyle='rgba(255,255,255,0.06)';
-      ctx.lineWidth=1;
-      ctx.beginPath(); ctx.moveTo(246,68); ctx.lineTo(W-18,68); ctx.stroke();
-
-      // ── SUBJECT LIST ──
-      const subList=subjects.filter(s=>subjectAvg(s.name)!==null).slice(0,4);
-      let sy=84;
-      for (const s of subList) {
-        const avg=subjectAvg(s.name);
-        ctx.fillStyle=s.color;
-        ctx.beginPath(); ctx.arc(252,sy,5,0,Math.PI*2); ctx.fill();
-        ctx.fillStyle='rgba(255,255,255,0.48)';
-        ctx.font="500 11px system-ui,-apple-system,sans-serif";
+        // Subject list (up to 5)
         ctx.textAlign='left';
-        ctx.fillText(s.name.length>23?s.name.slice(0,22)+'…':s.name,264,sy+4);
-        ctx.fillStyle=s.color;
-        ctx.font="700 12px system-ui,-apple-system,sans-serif";
-        ctx.textAlign='right';
-        ctx.fillText(`${avg}%`,W-20,sy+4);
-        // Bar
-        const bx=264,by=sy+10,bw=W-20-264-46,bh=4;
-        ctx.fillStyle='rgba(255,255,255,0.06)'; ctx.fillRect(bx,by,bw,bh);
-        ctx.fillStyle=s.color+'bb'; ctx.fillRect(bx,by,bw*avg/100,bh);
-        sy+=34;
-      }
+        ctx.fillStyle=P.mute;
+        ctx.font="700 24px system-ui,-apple-system,sans-serif";
+        ctx.fillText('SUBJECTS',120,1080);
 
-      // ── BOTTOM ──
-      ctx.strokeStyle='rgba(255,255,255,0.05)';
-      ctx.lineWidth=1;
-      ctx.beginPath(); ctx.moveTo(0,H-24); ctx.lineTo(W,H-24); ctx.stroke();
-      ctx.fillStyle='rgba(255,255,255,0.18)';
-      ctx.font="500 9px system-ui,-apple-system,sans-serif";
-      ctx.textAlign='left';
-      ctx.fillText('Tracked with Battle Plan',8,H-8);
-      ctx.textAlign='right';
-      ctx.fillText('beattheexam.org',W-8,H-8);
+        const subList=subjects.filter(s=>subjectAvg(s.name)!==null).slice(0,5);
+        let sy=1160;
+        for (const s of subList) {
+          const avg=subjectAvg(s.name);
+          ctx.fillStyle=s.color;
+          ctx.beginPath(); ctx.arc(140,sy,12,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle=P.text;
+          ctx.font="600 32px system-ui,-apple-system,sans-serif";
+          ctx.textAlign='left';
+          ctx.fillText(s.name.length>22?s.name.slice(0,21)+'…':s.name,170,sy+10);
+          ctx.fillStyle=s.color;
+          ctx.font="800 34px system-ui,-apple-system,sans-serif";
+          ctx.textAlign='right';
+          ctx.fillText(`${avg}%`,W-120,sy+10);
+          const bx=170,by=sy+28,bw=W-120-170,bh=10;
+          ctx.fillStyle=P.track; ctx.fillRect(bx,by,bw,bh);
+          ctx.fillStyle=s.color+'cc'; ctx.fillRect(bx,by,bw*avg/100,bh);
+          sy+=104;
+        }
+
+        // CTA
+        ctx.textAlign='center';
+        ctx.fillStyle=br.labelColor+'22';
+        ctx.fillRect(W/2-280,H-220,560,100);
+        ctx.fillStyle=br.labelColor;
+        ctx.font="800 38px system-ui,-apple-system,sans-serif";
+        ctx.fillText('Track yours: beattheexam.org',W/2,H-156);
+
+        ctx.fillStyle=P.mute;
+        ctx.font="500 22px system-ui,-apple-system,sans-serif";
+        ctx.fillText('Tracked with Battle Plan',W/2,H-50);
+      } else {
+        // ── LANDSCAPE LAYOUT: 600x315 ──
+        const GX=118, GY=158, GR=74;
+        const startA=210*DEG, sweepA=240*DEG;
+
+        ctx.beginPath(); ctx.arc(GX,GY,GR+2,startA,startA+sweepA*pct);
+        ctx.strokeStyle=br.labelColor+'20'; ctx.lineWidth=22; ctx.lineCap='round'; ctx.stroke();
+        ctx.beginPath(); ctx.arc(GX,GY,GR,startA,startA+sweepA);
+        ctx.strokeStyle=P.track; ctx.lineWidth=13; ctx.lineCap='round'; ctx.stroke();
+        ctx.beginPath(); ctx.arc(GX,GY,GR,startA,startA+sweepA*pct);
+        ctx.strokeStyle=br.labelColor; ctx.lineWidth=13; ctx.lineCap='round'; ctx.stroke();
+
+        ctx.textAlign='center';
+        ctx.font="900 68px system-ui,-apple-system,sans-serif";
+        ctx.fillStyle=br.labelColor;
+        ctx.fillText(`${br.total}`,GX,GY+12);
+        const sW=ctx.measureText(`${br.total}`).width;
+        ctx.font="700 20px system-ui,-apple-system,sans-serif";
+        ctx.textAlign='left'; ctx.fillStyle=br.labelColor+'88';
+        ctx.fillText('%',GX+sW/2+3,GY-18);
+
+        ctx.textAlign='center';
+        ctx.fillStyle=P.mute;
+        ctx.font="600 9px system-ui,-apple-system,sans-serif";
+        ctx.fillText('BATTLE READINESS',GX,GY+42);
+        ctx.fillStyle=br.labelColor;
+        ctx.font="800 13px system-ui,-apple-system,sans-serif";
+        ctx.fillText(br.label.toUpperCase(),GX,GY+59);
+
+        ctx.strokeStyle=P.divider; ctx.lineWidth=1; ctx.setLineDash([]);
+        ctx.beginPath(); ctx.moveTo(228,22); ctx.lineTo(228,H-22); ctx.stroke();
+
+        ctx.textAlign='left';
+        ctx.fillStyle=br.labelColor;
+        ctx.font="800 16px system-ui,-apple-system,sans-serif";
+        ctx.fillText('Battle Plan',246,44);
+        ctx.fillStyle=P.mute;
+        ctx.font="500 9px system-ui,-apple-system,sans-serif";
+        ctx.fillText('A* REVISION TRACKER  ·  BEATTHEEXAM.ORG',246,59);
+
+        ctx.strokeStyle=P.divider;
+        ctx.beginPath(); ctx.moveTo(246,68); ctx.lineTo(W-18,68); ctx.stroke();
+
+        const subList=subjects.filter(s=>subjectAvg(s.name)!==null).slice(0,4);
+        let sy=84;
+        for (const s of subList) {
+          const avg=subjectAvg(s.name);
+          ctx.fillStyle=s.color;
+          ctx.beginPath(); ctx.arc(252,sy,5,0,Math.PI*2); ctx.fill();
+          ctx.fillStyle=P.text;
+          ctx.font="500 11px system-ui,-apple-system,sans-serif";
+          ctx.textAlign='left';
+          ctx.fillText(s.name.length>23?s.name.slice(0,22)+'…':s.name,264,sy+4);
+          ctx.fillStyle=s.color;
+          ctx.font="700 12px system-ui,-apple-system,sans-serif";
+          ctx.textAlign='right';
+          ctx.fillText(`${avg}%`,W-20,sy+4);
+          const bx=264,by=sy+10,bw=W-20-264-46,bh=4;
+          ctx.fillStyle=P.track; ctx.fillRect(bx,by,bw,bh);
+          ctx.fillStyle=s.color+'bb'; ctx.fillRect(bx,by,bw*avg/100,bh);
+          sy+=34;
+        }
+
+        ctx.strokeStyle=P.divider;
+        ctx.beginPath(); ctx.moveTo(0,H-24); ctx.lineTo(W,H-24); ctx.stroke();
+        ctx.fillStyle=P.mute;
+        ctx.font="500 9px system-ui,-apple-system,sans-serif";
+        ctx.textAlign='left';
+        ctx.fillText('Tracked with Battle Plan',8,H-8);
+        ctx.textAlign='right';
+        ctx.fillText('beattheexam.org',W-8,H-8);
+      }
 
       setGenerating(false);
       setGenerated(true);
@@ -2841,6 +2919,30 @@ function ShareReadinessCard({br, subjects, scores, C, font}) {
           <div style={{fontSize:11,color:C.muted}}>Generate a shareable readiness card</div>
         </div>
         <div style={{display:'flex',gap:7,flexWrap:'wrap',alignItems:'center'}}>
+          {/* Theme picker */}
+          <div style={{display:'flex',gap:3,padding:2,background:C.card2,border:`1px solid ${C.border}`,borderRadius:8}}>
+            {['dark','light','glow'].map(t=>(
+              <button key={t} onClick={()=>{setShareTheme(t); if(generated) setTimeout(drawCard,0);}}
+                style={{padding:'4px 9px',border:'none',borderRadius:6,cursor:'pointer',
+                  fontSize:10,fontWeight:700,fontFamily:font,textTransform:'uppercase',letterSpacing:0.5,
+                  background:shareTheme===t?C.accent:'transparent',
+                  color:shareTheme===t?'#fff':C.muted}}>
+                {t}
+              </button>
+            ))}
+          </div>
+          {/* Aspect toggle */}
+          <div style={{display:'flex',gap:3,padding:2,background:C.card2,border:`1px solid ${C.border}`,borderRadius:8}}>
+            {[['landscape','Post'],['story','Story']].map(([k,l])=>(
+              <button key={k} onClick={()=>{setShareAspect(k); if(generated) setTimeout(drawCard,0);}}
+                style={{padding:'4px 9px',border:'none',borderRadius:6,cursor:'pointer',
+                  fontSize:10,fontWeight:700,fontFamily:font,letterSpacing:0.3,
+                  background:shareAspect===k?C.accent:'transparent',
+                  color:shareAspect===k?'#fff':C.muted}}>
+                {l}
+              </button>
+            ))}
+          </div>
           <button onClick={drawCard} disabled={generating}
             style={{padding:'7px 16px',background:C.accent,border:'none',borderRadius:8,
               color:'#fff',fontSize:12,fontWeight:600,fontFamily:font,
@@ -2875,7 +2977,7 @@ function ShareReadinessCard({br, subjects, scores, C, font}) {
 }
 
 // ── Analytics ──────────────────────────────────────────────────────────────
-function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, onQuickLog, targets, setTargets, sessions=[], rag={}, isPro=false, onUpgrade, isGcse=false, insNoted=false, setInsNoted=()=>{}}) {
+function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, onQuickLog, targets, setTargets, sessions=[], rag={}, isPro=false, onUpgrade, isGcse=false, isAS=false, insNoted=false, setInsNoted=()=>{}, shareTheme='dark', setShareTheme=()=>{}, shareAspect='landscape', setShareAspect=()=>{}}) {
   const SUBJ_COLORS  = Object.fromEntries(subjects.map(s=>[s.name,s.color]));
   const GRADE_BOUNDS = Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
 
@@ -3026,7 +3128,9 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
       </div>
 
       {/* ── Share card ───────────────────────────────────────────────────── */}
-      {scores.length>0&&<ShareReadinessCard br={br} subjects={subjects} scores={scores} C={C} font={font}/>}
+      {scores.length>0&&<ShareReadinessCard br={br} subjects={subjects} scores={scores} C={C} font={font}
+        shareTheme={shareTheme} setShareTheme={setShareTheme}
+        shareAspect={shareAspect} setShareAspect={setShareAspect}/>}
 
       {/* ── Per-subject cards ─────────────────────────────────────────────── */}
       <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:16}}>
@@ -3079,7 +3183,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
                     <select value={target} onChange={e=>setTargets(p=>({...p,[s.name]:e.target.value}))}
                       style={{background:'transparent',border:'none',color:gradeColor(target),
                         fontSize:13,fontWeight:700,fontFamily:'inherit',cursor:'pointer',outline:'none',marginLeft:4}}>
-                      {(isGcse?['9','8','7','6','5']:['A*','A','B','C']).map(g=><option key={g} value={g}>{g}</option>)}
+                      {(isGcse?['9','8','7','6','5']:isAS?['A','B','C','D']:['A*','A','B','C']).map(g=><option key={g} value={g}>{g}</option>)}
                     </select>
                   </div>
                   <div style={{display:'flex',alignItems:'center',gap:6,justifyContent:'flex-end'}}>
@@ -3129,9 +3233,9 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
         <TrendChart scores={scores} subject={chartSubject}
           subjectColors={SUBJ_COLORS} gradeBoundaries={GRADE_BOUNDS}
           bgColor={C.bg} textColor={C.muted}
-          targetGrade={targets[chartSubject]||(isGcse?'9':'A*')}/>
+          targetGrade={targets[chartSubject]||(isGcse?'9':isAS?'A':'A*')}/>
         <div style={{display:'flex',gap:12,marginTop:8,flexWrap:'wrap'}}>
-          {Object.entries(GRADE_BOUNDS[chartSubject]||{}).filter(([g])=>isGcse?['9','8','7'].includes(g):['A*','A','B'].includes(g)).map(([g,v])=>(
+          {Object.entries(GRADE_BOUNDS[chartSubject]||{}).filter(([g])=>isGcse?['9','8','7'].includes(g):isAS?['A','B','C'].includes(g):['A*','A','B'].includes(g)).map(([g,v])=>(
             <div key={g} style={{display:'flex',alignItems:'center',gap:4}}>
               <div style={{width:16,height:2,background:gradeColor(g),opacity:0.5,borderRadius:1}}/>
               <span style={{fontSize:12,color:gradeColor(g)}}>{g} ≥{v}%</span>
@@ -4441,7 +4545,7 @@ function Resources({subjects,uid,C,font,rag,setRag,ragNotes,setRagNotes}) {
 }
 
 // ── Account ────────────────────────────────────────────────────────────────
-function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,font,examSched,scores=[],rag={},isPro=false,stripeCustomerId=null,referralCode=null,analyticsConsent=true,setAnalyticsConsent=()=>{}}) {
+function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,font,examSched,scores=[],rag={},isPro=false,stripeCustomerId=null,referralCode=null,analyticsConsent=true,setAnalyticsConsent=()=>{},yearGroup='',setYearGroup=()=>{}}) {
   const [emailSending, setEmailSending] = useState(false);
   const [emailState, setEmailState] = useState('idle'); // 'idle'|'sent'|'error'
   const [emailMsg, setEmailMsg] = useState('');
@@ -4457,27 +4561,42 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
   const [schoolOptIn, setSchoolOptIn] = useState(false);
   const [schoolSaving, setSchoolSaving] = useState(false);
   const [referralCount, setReferralCount] = useState(null);
+  const [referralProUntil, setReferralProUntil] = useState(null);
   const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(()=>{
     if (!uid||uid==='anon') return;
-    supabase.from('user_profiles').select('school_name,school_opt_in').eq('id',uid).single()
+    supabase.from('user_profiles').select('school_name,school_opt_in,year_group').eq('id',uid).single()
       .then(({data})=>{
-        if (data) { setSchoolName(data.school_name||''); setSchoolOptIn(!!data.school_opt_in); }
+        if (data) {
+          setSchoolName(data.school_name||'');
+          setSchoolOptIn(!!data.school_opt_in);
+          if (data.year_group && !yearGroup) setYearGroup(data.year_group);
+        }
       });
     if (!referralCode) return;
     supabase.auth.getSession().then(({data:{session}})=>{
       if (!session) return;
       fetch('/api/referral',{headers:{Authorization:`Bearer ${session.access_token}`}})
-        .then(r=>r.json()).then(d=>{ if (d.count!=null) setReferralCount(d.count); }).catch(()=>{});
+        .then(r=>r.json()).then(d=>{
+          if (d.count!=null) setReferralCount(d.count);
+          if (d.referral_pro_until) setReferralProUntil(d.referral_pro_until);
+        }).catch(()=>{});
     });
   },[uid,referralCode]);
 
-  const saveSchool = async (name, optIn) => {
+  const saveSchool = async (name, optIn, yg) => {
     setSchoolSaving(true);
-    await supabase.from('user_profiles').update({school_name:name||null,school_opt_in:optIn}).eq('id',uid);
+    await supabase.from('user_profiles').update({school_name:name||null,school_opt_in:optIn,year_group:yg||null}).eq('id',uid);
     setSchoolSaving(false);
   };
+
+  const referralProDays = (()=>{
+    if (!referralProUntil) return 0;
+    const ms = new Date(referralProUntil).getTime() - Date.now();
+    return ms > 0 ? Math.ceil(ms / 86400000) : 0;
+  })();
+  const refsToNextReward = referralCount==null ? null : (3 - (referralCount % 3));
 
   const copyReferralLink = () => {
     const link=`https://beattheexam.org?ref=${referralCode}`;
@@ -4795,11 +4914,15 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       {/* Referral */}
       {referralCode&&(
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:10}}>Refer a friend</div>
-        <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginBottom:12}}>
-          Share Battle Plan with a friend. Send them your link — when they sign up, they'll be linked to you on the leaderboard automatically.
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5}}>Refer a friend</div>
+          <span style={{fontSize:10,fontWeight:700,color:'#fbbf24',background:'rgba(251,191,36,0.12)',border:'1px solid rgba(251,191,36,0.32)',borderRadius:4,padding:'1px 6px',letterSpacing:0.3}}>EARN PRO</span>
         </div>
-        <div style={{display:'flex',gap:8,marginBottom:referralCount!==null?10:0}}>
+        <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginBottom:12}}>
+          Every <strong style={{color:C.text}}>3 friends</strong> who sign up via your link earns you{' '}
+          <strong style={{color:C.text}}>1 free week of Pro</strong>. Stack them up.
+        </div>
+        <div style={{display:'flex',gap:8,marginBottom:10}}>
           <div style={{flex:1,background:C.card2,border:`1px solid ${C.border}`,borderRadius:8,
             padding:'9px 12px',fontSize:12,color:C.muted,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',
             fontFamily:"'JetBrains Mono',monospace"}}>
@@ -4813,11 +4936,26 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
             {copySuccess?'Copied!':'Copy link'}
           </button>
         </div>
-        {referralCount!==null&&(
-          <div style={{fontSize:12,color:C.subtle}}>
-            {referralCount===0?'No referrals yet — share your link to get started.'
-              :`${referralCount} friend${referralCount!==1?'s':''} joined via your link`}
+        {referralProDays>0&&(
+          <div style={{background:'rgba(251,191,36,0.07)',border:'1px solid rgba(251,191,36,0.28)',
+            borderRadius:8,padding:'8px 12px',marginBottom:10,fontSize:12,color:C.text}}>
+            <strong style={{color:'#fbbf24'}}>🎉 Pro active</strong> for the next <strong>{referralProDays} day{referralProDays!==1?'s':''}</strong> via referrals.
           </div>
+        )}
+        {referralCount!==null&&(
+          <>
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+              <div style={{fontSize:12,color:C.subtle,flex:1}}>
+                {referralCount===0?'No referrals yet — share your link to get started.'
+                  :`${referralCount} joined · ${refsToNextReward} more to unlock the next week`}
+              </div>
+              <div style={{fontSize:11,fontWeight:700,color:C.accent}}>{referralCount}/{Math.ceil((referralCount+1)/3)*3}</div>
+            </div>
+            <div style={{height:6,background:C.border,borderRadius:3,overflow:'hidden'}}>
+              <div style={{height:'100%',width:`${((referralCount%3)/3)*100}%`,background:C.accent,
+                borderRadius:3,transition:'width 0.4s'}}/>
+            </div>
+          </>
         )}
       </div>
       )}
@@ -4837,6 +4975,19 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
             borderRadius:8,padding:'10px 12px',color:C.text,fontSize:13,fontFamily:font,
             outline:'none',marginBottom:10}}
         />
+        <div style={{fontSize:11,color:C.subtle,marginBottom:6}}>Year group (optional — used for filtering)</div>
+        <div style={{display:'flex',gap:5,flexWrap:'wrap',marginBottom:12}}>
+          {['Y10','Y11','Y12','Y13'].map(y=>(
+            <button key={y} onClick={()=>setYearGroup(yearGroup===y?'':y)}
+              style={{padding:'5px 11px',borderRadius:6,
+                background:yearGroup===y?C.accentSoft:'transparent',
+                border:`1px solid ${yearGroup===y?C.accent:C.border}`,
+                color:yearGroup===y?C.accent:C.muted,
+                fontSize:11,fontWeight:yearGroup===y?700:500,fontFamily:font,cursor:'pointer'}}>
+              {y}
+            </button>
+          ))}
+        </div>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
           <div style={{fontSize:13,color:C.text}}>Show on school leaderboard</div>
           <button onClick={()=>setSchoolOptIn(v=>!v)}
@@ -4847,7 +4998,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
               background:'#fff',transition:'left 0.2s',left:schoolOptIn?23:3}}/>
           </button>
         </div>
-        <button onClick={()=>saveSchool(schoolName,schoolOptIn)} disabled={schoolSaving}
+        <button onClick={()=>saveSchool(schoolName,schoolOptIn,yearGroup)} disabled={schoolSaving}
           style={{width:'100%',padding:'10px',background:C.accentSoft,border:`1px solid ${C.accent}44`,
             borderRadius:8,color:C.accent,fontSize:13,fontWeight:600,fontFamily:font,
             cursor:schoolSaving?'not-allowed':'pointer'}}>
@@ -5416,7 +5567,17 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   const C    = dark?T.dark:T.light;
   const font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
   const isGcse = examLevel === 'gcse';
-  const subjects = subjectsFromSelection(selection, isGcse ? GCSE_CATALOG : null);
+  const isAS = examLevel === 'aslevel';
+  let subjects = subjectsFromSelection(selection, isGcse ? GCSE_CATALOG : null);
+  // AS-Level: drop A* and lower boundaries by ~5 points across the board
+  if (isAS) {
+    subjects = subjects.map(s=>{
+      const gb = s.gradeBoundaries||{};
+      const next = {};
+      for (const g of ['A','B','C','D','E']) if (g in gb) next[g] = Math.max(0, (gb[g]||0) - 5);
+      return {...s, gradeBoundaries: next};
+    });
+  }
 
   // ── Companion state (lifted from CompanionCard to here so sidebar can access) ──
   const [companion,setCompanion] = useState(()=>{
@@ -5446,7 +5607,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
 
   useEffect(()=>ls.set(`rbp_rag_notes_${uid}`,ragNotes),[ragNotes]);
 
-  const defaultTargets = Object.fromEntries(subjects.map(s=>[s.name, isGcse ? '9' : 'A*']));
+  const defaultTargets = Object.fromEntries(subjects.map(s=>[s.name, isGcse ? '9' : isAS ? 'A' : 'A*']));
   const [targets,setTargets] = useState(()=>{
     const stored=ls.get(`rbp_targets_${uid}`,{});
     return Object.keys(stored).length>0?stored:defaultTargets;
@@ -5475,6 +5636,11 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   const [unlockedAch, setUnlockedAch] = useState(()=>ls.get(`rbp_ach_${uid}`,[]));
   const [analyticsConsent, setAnalyticsConsent] = useState(()=>ls.get(`rbp_analytics_${uid}`,true));
   const [insNoted, setInsNoted] = useState(()=>ls.get(`rbp_ins_noted_${uid}`,false));
+  const [shareTheme, setShareTheme] = useState(()=>ls.get(`rbp_share_theme_${uid}`,'dark'));
+  const [shareAspect, setShareAspect] = useState(()=>ls.get(`rbp_share_aspect_${uid}`,'landscape'));
+  const [yearGroup, setYearGroup] = useState('');
+  useEffect(()=>ls.set(`rbp_share_theme_${uid}`,shareTheme),[shareTheme,uid]);
+  useEffect(()=>ls.set(`rbp_share_aspect_${uid}`,shareAspect),[shareAspect,uid]);
   const [myPlan, setMyPlan] = useState(()=>ls.get(`rbp_my_plan_${uid}`,[]));
   useEffect(()=>ls.set(`rbp_my_plan_${uid}`,myPlan),[myPlan,uid]);
   useEffect(()=>{
@@ -5541,9 +5707,14 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
       ).then(({error})=>{
         if(error) addToast('Auto-save failed — your data is safe locally','warn');
       });
-      supabase.from('user_profiles')
-        .update({leaderboard_score:lbScore,papers_count:scores.length,last_seen_at:new Date().toISOString()})
-        .eq('id',user.id);
+      const profileUpdate={leaderboard_score:lbScore,papers_count:scores.length,last_seen_at:new Date().toISOString()};
+      // Weekly snapshot for school leaderboard delta
+      const lastSnapTs = parseInt(ls.get(`rbp_last_snap_${uid}`,'0'),10) || 0;
+      if (Date.now() - lastSnapTs > 7*86400000) {
+        profileUpdate.leaderboard_snapshot_week = { ts: Date.now(), score: lbScore };
+        ls.set(`rbp_last_snap_${uid}`, String(Date.now()));
+      }
+      supabase.from('user_profiles').update(profileUpdate).eq('id',user.id);
     },2000);
     return ()=>clearTimeout(syncRef.current);
   },[scores,errors,rag,targets,sessions,ragNotes,timetable,companion,unlockedAch,myPlan,syncLoaded]);
@@ -5562,6 +5733,8 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
           if (typeof s.sidebar_open === 'boolean') { setSidebarOpen(s.sidebar_open); ls.set('rbp_sidebar_open',s.sidebar_open); }
           if (typeof s.analytics_consent === 'boolean') setAnalyticsConsent(s.analytics_consent);
           if (typeof s.ins_noted === 'boolean') setInsNoted(s.ins_noted);
+          if (typeof s.share_theme === 'string') setShareTheme(s.share_theme);
+          if (typeof s.share_aspect === 'string') setShareAspect(s.share_aspect);
         }
       })
       .finally(()=>{ settingsLoadedRef.current = true; });
@@ -5574,10 +5747,11 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
     settingsSyncRef.current = setTimeout(()=>{
       supabase.from('user_profiles').update({user_settings:{
         dark, tour_done:!showTour, sidebar_open:sidebarOpen, analytics_consent:analyticsConsent, ins_noted:insNoted,
+        share_theme: shareTheme, share_aspect: shareAspect,
       }}).eq('id',user.id);
     }, 1500);
     return ()=>clearTimeout(settingsSyncRef.current);
-  },[dark,showTour,sidebarOpen,analyticsConsent,insNoted,syncLoaded]);
+  },[dark,showTour,sidebarOpen,analyticsConsent,insNoted,shareTheme,shareAspect,syncLoaded]);
 
   // Mirror analytics_consent + ins_noted to localStorage (matches the existing dark/tour/sidebar pattern)
   useEffect(()=>ls.set(`rbp_analytics_${uid}`,analyticsConsent),[analyticsConsent,uid]);
@@ -5636,7 +5810,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   ];
   const sidebarW = sidebarOpen ? (isMobile ? 54 : 210) : 0;
 
-  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse,analyticsConsent,setAnalyticsConsent,insNoted,setInsNoted,myPlan,setMyPlan};
+  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse,isAS,analyticsConsent,setAnalyticsConsent,insNoted,setInsNoted,myPlan,setMyPlan,shareTheme,setShareTheme,shareAspect,setShareAspect,yearGroup,setYearGroup};
 
   return (
     <div style={{minHeight:'100vh',background:C.bg,fontFamily:font,color:C.text}}>
@@ -5965,11 +6139,19 @@ function LevelPicker({ onComplete }) {
       grades: ['A*', 'A', 'B', 'C'],
     },
     {
+      id: 'aslevel',
+      LvlIcon: GraduationCap,
+      title: 'AS-Levels',
+      subtitle: 'Year 12',
+      desc: 'Tracking AS-Level papers with A–E grade boundaries. Same A-Level subjects, year-1 content only.',
+      grades: ['A', 'B', 'C', 'D'],
+    },
+    {
       id: 'gcse',
       LvlIcon: BookOpen,
       title: 'GCSEs',
       subtitle: 'Years 10–11',
-      desc: 'Tracking GCSE papers with 9–1 grade boundaries. Subjects like Maths, English, Sciences, History.',
+      desc: 'Tracking GCSE papers with 9–1 grade boundaries. Triple Science means picking Biology, Chemistry, Physics separately.',
       grades: ['9', '8', '7', '6'],
     },
   ];
@@ -6081,9 +6263,11 @@ export default function App() {
       if (alive) setUser(u);
       try {
         await supabase.from('user_profiles').upsert({id:uid,email:u.email,last_seen_at:new Date().toISOString()},{onConflict:'id'});
-        const {data}=await supabase.from('user_profiles').select('subjects,subscription_status,stripe_customer_id,referral_code,exam_level').eq('id',uid).single();
+        const {data}=await supabase.from('user_profiles').select('subjects,subscription_status,stripe_customer_id,referral_code,exam_level,referral_pro_until').eq('id',uid).single();
         if (!alive) return;
-        if (data?.subscription_status) setIsPro(data.subscription_status==='pro'||data.subscription_status==='trialing');
+        const stripePro = data?.subscription_status==='pro'||data?.subscription_status==='trialing'||data?.subscription_status==='active';
+        const referralPro = data?.referral_pro_until && new Date(data.referral_pro_until).getTime() > Date.now();
+        if (stripePro || referralPro) setIsPro(true);
         if (data?.stripe_customer_id) setStripeCustomerId(data.stripe_customer_id);
         let rc=data?.referral_code;
         if (!rc) {

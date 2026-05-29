@@ -106,7 +106,7 @@ function FunnelRow({ label, count, base, color, prev }) {
   );
 }
 
-function AnalyticsDashboard({ users }) {
+function AnalyticsDashboard({ users, referrals=[], groups=[], groupMembers=[] }) {
   const now = Date.now();
   const D1=86400000, D7=D1*7, D14=D1*14, D30=D1*30, D60=D1*60;
 
@@ -323,6 +323,99 @@ function AnalyticsDashboard({ users }) {
           </div>
         </Sec>
       )}
+
+      {/* ── GROWTH ENGINES ───────────────────────────────────────────── */}
+      <div style={{fontSize:9,color:'#FF3D00',letterSpacing:3,fontWeight:800,marginBottom:10,marginTop:14,opacity:0.6}}>GROWTH ENGINES</div>
+
+      {(()=>{
+        // Referrals
+        const refByCode = {};
+        for (const r of referrals) refByCode[r.referrer_code] = (refByCode[r.referrer_code]||0) + 1;
+        const totalRefs = referrals.length;
+        const referredUsers = new Set(referrals.map(r=>r.referred_user_id)).size;
+        const usersByCode = Object.fromEntries(users.filter(u=>u.referral_code).map(u=>[u.referral_code, u]));
+        const topReferrers = Object.entries(refByCode)
+          .map(([code,c])=>({code,count:c,user:usersByCode[code]}))
+          .sort((a,b)=>b.count-a.count).slice(0,8);
+        const activeReferralPro = users.filter(u=>u.referral_pro_until && new Date(u.referral_pro_until).getTime() > now).length;
+        // Schools
+        const schoolMap = {};
+        for (const u of users) {
+          if (!u.school_name || !u.school_opt_in) continue;
+          const n = u.school_name.trim();
+          if (!n) continue;
+          if (!schoolMap[n]) schoolMap[n] = {count:0, total:0};
+          schoolMap[n].count++;
+          schoolMap[n].total += u.leaderboard_score ?? 0;
+        }
+        const topSchools = Object.entries(schoolMap)
+          .map(([n,v])=>({name:n,count:v.count,avg:Math.round(v.total/v.count)}))
+          .sort((a,b)=>b.count-a.count).slice(0,8);
+        // Groups
+        const totalGroups = groups.length;
+        const totalMemberships = groupMembers.length;
+        const avgGroupSize = totalGroups ? (totalMemberships/totalGroups).toFixed(1) : 0;
+        // Exam level split
+        const lvlCount = users.reduce((acc,u)=>{const k=u.exam_level||'(unset)';acc[k]=(acc[k]||0)+1;return acc;},{});
+        return (
+        <>
+          <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:10}}>
+            <KpiTile value={totalRefs} label="Total Referrals" accent='#fbbf24' sub={`${referredUsers} unique users referred`}/>
+            <KpiTile value={topReferrers.length} label="Active Referrers" accent='#fbbf24' sub={`avg ${topReferrers.length?(totalRefs/topReferrers.length).toFixed(1):0}/referrer`}/>
+            <KpiTile value={activeReferralPro} label="Referral Pro Grants" accent='#FFD600' sub="users with active Pro week"/>
+            <KpiTile value={totalGroups} label="Study Groups" accent='#40C4FF' sub={`${totalMemberships} memberships · avg ${avgGroupSize} per group`}/>
+          </div>
+
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:14,marginBottom:14}}>
+            {topReferrers.length>0&&(
+              <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:8,padding:'18px 20px'}}>
+                <div style={{fontSize:9,color:'#444',letterSpacing:2,fontWeight:700,marginBottom:14}}>TOP REFERRERS</div>
+                {topReferrers.map((r,i)=>(
+                  <div key={r.code} style={{display:'flex',gap:10,alignItems:'center',padding:'7px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+                    <span style={{width:18,textAlign:'center',fontSize:11,color:i<3?'#FFD600':'#444',fontWeight:800}}>{i+1}</span>
+                    <span style={{flex:1,fontSize:12,color:'#ddd',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.user?.display_name||r.user?.email||r.code}</span>
+                    <span style={{fontSize:12,fontWeight:700,color:'#fbbf24'}}>{r.count}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {topSchools.length>0&&(
+              <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:8,padding:'18px 20px'}}>
+                <div style={{fontSize:9,color:'#444',letterSpacing:2,fontWeight:700,marginBottom:14}}>TOP SCHOOLS (OPTED IN)</div>
+                {topSchools.map((s,i)=>(
+                  <div key={s.name} style={{display:'flex',gap:10,alignItems:'center',padding:'7px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+                    <span style={{width:18,textAlign:'center',fontSize:11,color:i<3?'#FFD600':'#444',fontWeight:800}}>{i+1}</span>
+                    <span style={{flex:1,fontSize:12,color:'#ddd',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s.name}</span>
+                    <span style={{fontSize:10,color:'#666',marginRight:6}}>{s.count}u</span>
+                    <span style={{fontSize:12,fontWeight:700,color:s.avg>=80?'#00E676':s.avg>=60?'#FFD600':'#FF9100'}}>{s.avg}%</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:8,padding:'18px 20px'}}>
+              <div style={{fontSize:9,color:'#444',letterSpacing:2,fontWeight:700,marginBottom:14}}>EXAM LEVEL MIX</div>
+              {Object.entries(lvlCount).sort((a,b)=>b[1]-a[1]).map(([k,n])=>{
+                const pct = total ? Math.round(n/total*100) : 0;
+                const c = k==='alevel'?'#40C4FF':k==='aslevel'?'#FF9100':k==='gcse'?'#00E676':'#555';
+                return (
+                  <div key={k} style={{marginBottom:11}}>
+                    <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:4}}>
+                      <span style={{color:'#888',textTransform:'uppercase'}}>{k}</span>
+                      <span style={{color:'#fff',fontWeight:700}}>{n} <span style={{color:'#444',fontWeight:400,fontSize:10}}>({pct}%)</span></span>
+                    </div>
+                    <div style={{height:6,background:'rgba(255,255,255,0.05)',borderRadius:3,overflow:'hidden'}}>
+                      <div style={{height:'100%',width:`${pct}%`,background:c,borderRadius:3,transition:'width 0.5s'}}/>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+        );
+      })()}
     </div>
   );
 }
@@ -465,6 +558,9 @@ function UserModal({ user, onClose, onToggleAdmin }) {
 
 export default function AdminPanel({ currentUser, onBack }) {
   const [users,      setUsers]      = useState([]);
+  const [referrals,  setReferrals]  = useState([]);
+  const [groups,     setGroups]     = useState([]);
+  const [groupMembers, setGroupMembers] = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [search,     setSearch]     = useState('');
   const [selected,   setSelected]   = useState(null);
@@ -475,8 +571,22 @@ export default function AdminPanel({ currentUser, onBack }) {
 
   const fetchUsers = async () => {
     setLoading(true);
-    const { data: profiles } = await supabase.from('user_profiles').select('*').order('created_at',{ascending:false});
-    const { data: userData  } = await supabase.from('user_data').select('*');
+    const [
+      { data: profiles },
+      { data: userData },
+      { data: refRows },
+      { data: groupRows },
+      { data: memberRows },
+    ] = await Promise.all([
+      supabase.from('user_profiles').select('*').order('created_at',{ascending:false}),
+      supabase.from('user_data').select('*'),
+      supabase.from('referrals').select('referrer_code,referred_user_id,created_at'),
+      supabase.from('study_groups').select('id,name,created_by,created_at'),
+      supabase.from('group_members').select('group_id,user_id'),
+    ]);
+    setReferrals(refRows || []);
+    setGroups(groupRows || []);
+    setGroupMembers(memberRows || []);
     if (!profiles) { setLoading(false); return; }
 
     const merged = profiles.map(p => {
@@ -562,7 +672,7 @@ export default function AdminPanel({ currentUser, onBack }) {
           {loading?(
             <div style={{color:'#444',fontSize:13,padding:24}}>Loading data…</div>
           ):tab==='analytics'?(
-            <AnalyticsDashboard users={users}/>
+            <AnalyticsDashboard users={users} referrals={referrals} groups={groups} groupMembers={groupMembers}/>
           ):(
             <>
               <input style={S.search} placeholder="Search by email or name…" value={search} onChange={e=>setSearch(e.target.value)}/>

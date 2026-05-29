@@ -31,19 +31,22 @@ export default async function handler(req, res) {
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
   const uid = user.id;
 
-  // GET: return referral code + count for the authenticated user
+  // GET: return referral code + count + Pro reward window for the authenticated user
   if (req.method === 'GET') {
     const { data: profile } = await admin.from('user_profiles')
-      .select('referral_code').eq('id', uid).single();
+      .select('referral_code, referral_pro_until').eq('id', uid).single();
 
     const code = profile?.referral_code ?? null;
-    if (!code) return res.status(200).json({ code: null, count: 0 });
+    const referral_pro_until = profile?.referral_pro_until ?? null;
+    if (!code) return res.status(200).json({ code: null, count: 0, referral_pro_until });
 
     const { count } = await admin.from('referrals')
       .select('id', { count: 'exact', head: true })
       .eq('referrer_code', code);
 
-    return res.status(200).json({ code, count: count ?? 0 });
+    const refCount = count ?? 0;
+    const nextMilestone = Math.ceil((refCount + 1) / 3) * 3;
+    return res.status(200).json({ code, count: refCount, referral_pro_until, nextMilestone });
   }
 
   // POST: record a referral when a new user signs up with a ref code
@@ -66,7 +69,33 @@ export default async function handler(req, res) {
       if (error.code === '23505') return res.status(200).json({ ok: true }); // already recorded
       return res.status(500).json({ error: 'Failed to record referral' });
     }
-    return res.status(200).json({ ok: true });
+
+    // Reward: every 3 *verified* referrals grants 7 days of Pro.
+    // A referral is "verified" only when the referred user has logged at least 1 paper —
+    // this prevents burner-account farming.
+    const { data: allRefs } = await admin.from('referrals')
+      .select('referred_user_id')
+      .eq('referrer_code', referrerCode);
+    const refUserIds = (allRefs ?? []).map(r => r.referred_user_id);
+    let verifiedCount = 0;
+    if (refUserIds.length) {
+      const { data: act } = await admin.from('user_profiles')
+        .select('id,papers_count')
+        .in('id', refUserIds);
+      verifiedCount = (act ?? []).filter(p => (p.papers_count ?? 0) > 0).length;
+    }
+    if (verifiedCount > 0 && verifiedCount % 3 === 0) {
+      const { data: prof } = await admin.from('user_profiles')
+        .select('referral_pro_until').eq('id', referrer.id).maybeSingle();
+      const now = Date.now();
+      const base = prof?.referral_pro_until ? Math.max(now, new Date(prof.referral_pro_until).getTime()) : now;
+      const next = new Date(base + 7 * 86400000).toISOString();
+      await admin.from('user_profiles')
+        .update({ referral_pro_until: next })
+        .eq('id', referrer.id);
+      return res.status(200).json({ ok: true, milestone: true, referral_pro_until: next, refCount: allRefs?.length ?? 0, verifiedCount });
+    }
+    return res.status(200).json({ ok: true, refCount: allRefs?.length ?? 0, verifiedCount });
   }
 
   return res.status(405).json({ error: 'Method not allowed' });

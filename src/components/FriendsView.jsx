@@ -211,7 +211,9 @@ export default function FriendsView({ user, scores = [], uid, C, font, addToast 
   const [schools, setSchools]     = useState(null);
   const [schoolsLoading, setSchoolsLoading] = useState(false);
   const [schoolsOpen, setSchoolsOpen] = useState(false);
-  const schoolsFetchedRef = useRef(false);
+  const [yearFilter, setYearFilter] = useState('');
+  const [nationalAvg, setNationalAvg] = useState(null);
+  const schoolsFetchedRef = useRef({});
 
   const ownScore = scores.length
     ? Math.round(scores.reduce((s, x) => s + (x.pct ?? 0), 0) / scores.length)
@@ -246,17 +248,20 @@ export default function FriendsView({ user, scores = [], uid, C, font, addToast 
     setLoading(false);
   }, [apiFetch]);
 
-  const loadSchools = useCallback(async () => {
-    if (schoolsFetchedRef.current) return;
-    schoolsFetchedRef.current = true;
+  const loadSchools = useCallback(async (yr='') => {
+    const cacheKey = yr || 'all';
+    if (schoolsFetchedRef.current[cacheKey]) return;
+    schoolsFetchedRef.current[cacheKey] = true;
     setSchoolsLoading(true);
     try {
       const token = await getToken();
-      const r = await fetch('/api/school-leaderboard', {
+      const url = yr ? `/api/school-leaderboard?year=${yr}` : '/api/school-leaderboard';
+      const r = await fetch(url, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       const d = await r.json();
       setSchools(d.schools ?? []);
+      if (d.national_avg!=null) setNationalAvg(d.national_avg);
     } catch {
       setSchools([]);
     }
@@ -268,7 +273,13 @@ export default function FriendsView({ user, scores = [], uid, C, font, addToast 
   const handleToggleSchools = () => {
     const next = !schoolsOpen;
     setSchoolsOpen(next);
-    if (next) loadSchools();
+    if (next) loadSchools(yearFilter);
+  };
+
+  const handleYearFilter = (yr) => {
+    setYearFilter(yr);
+    setSchools(null);
+    loadSchools(yr);
   };
 
   useEffect(() => {
@@ -523,11 +534,34 @@ export default function FriendsView({ user, scores = [], uid, C, font, addToast 
             </div>
             {schoolsOpen && (
               <div style={{ marginTop: 14 }}>
+                {/* Year-group filter chips */}
+                <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:12 }}>
+                  {[['','All years'],['Y10','Y10'],['Y11','Y11'],['Y12','Y12'],['Y13','Y13']].map(([k,l])=>(
+                    <button key={k} onClick={()=>handleYearFilter(k)}
+                      style={{ padding:'4px 10px', borderRadius:6,
+                        background: yearFilter===k ? C.accentSoft : 'transparent',
+                        border:`1px solid ${yearFilter===k?C.accent:C.border}`,
+                        color: yearFilter===k ? C.accent : C.muted,
+                        fontSize:11, fontWeight: yearFilter===k?700:500,
+                        fontFamily:font, cursor:'pointer' }}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+                {nationalAvg!=null && (
+                  <div style={{ fontSize:11, color:C.subtle, marginBottom:10 }}>
+                    National avg: <strong style={{ color: scoreColor(nationalAvg) }}>{nationalAvg}%</strong>
+                    {yearFilter && <> · filtered to {yearFilter}</>}
+                  </div>
+                )}
                 {schoolsLoading ? (
                   <div style={{ fontSize: 13, color: C.subtle }}>Loading…</div>
                 ) : schools && schools.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {schools.map((s, i) => (
+                    {schools.map((s, i) => {
+                      const wd = s.weekly_diff;
+                      const wColor = wd==null ? null : wd>0 ? '#22c55e' : wd<0 ? '#ef4444' : C.subtle;
+                      return (
                       <div key={s.school_name} style={{
                         display: 'flex', alignItems: 'center', gap: 12, padding: '9px 12px',
                         background: C.card2, border: `1px solid ${C.border}`, borderRadius: 8,
@@ -543,18 +577,30 @@ export default function FriendsView({ user, scores = [], uid, C, font, addToast 
                           </div>
                           <div style={{ fontSize: 11, color: C.subtle, marginTop: 1 }}>
                             {s.student_count} student{s.student_count !== 1 ? 's' : ''}
+                            {nationalAvg!=null && (
+                              <span style={{ marginLeft:6,
+                                color: s.avg_score>nationalAvg ? '#22c55e' : s.avg_score<nationalAvg ? '#ef4444' : C.subtle }}>
+                                {s.avg_score>nationalAvg?'+':''}{s.avg_score-nationalAvg} vs nat'l
+                              </span>
+                            )}
                           </div>
                         </div>
+                        {wd!=null && wd!==0 && (
+                          <div style={{ fontSize:11, fontWeight:700, color:wColor, flexShrink:0 }}>
+                            {wd>0?'▲':'▼'}{Math.abs(wd)}
+                          </div>
+                        )}
                         <div style={{ fontSize: 20, fontWeight: 800, color: scoreColor(s.avg_score),
                           minWidth: 52, textAlign: 'right', flexShrink: 0 }}>
                           {s.avg_score}%
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div style={{ fontSize: 12, color: C.subtle, lineHeight: 1.6 }}>
-                    No schools yet — opt in under Account → School leaderboard. Requires at least 3 students from the same school.
+                    No schools yet for this filter — opt in under Account → School leaderboard. Requires at least 3 students from the same school{yearFilter?` in ${yearFilter}`:''}.
                   </div>
                 )}
               </div>
