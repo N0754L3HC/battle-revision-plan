@@ -5,13 +5,24 @@ const admin = createClient(
   process.env.SUPABASE_SERVICE_KEY ?? ''
 );
 
-const rl = new Map();
-function rateLimit(ip) {
+// Per-IP and per-user limits (in-process; survives ~serverless lifetime).
+// Sliding-window-ish: refill every hour.
+const ipBucket = new Map();
+const userBucket = new Map();
+function takeBucket(map, key, cap) {
   const now = Date.now();
-  const entry = rl.get(ip) ?? { count: 0, reset: now + 3600000 };
+  const entry = map.get(key) ?? { count: 0, reset: now + 3600000 };
   if (now > entry.reset) { entry.count = 0; entry.reset = now + 3600000; }
-  if (entry.count >= 40) return false;
-  entry.count++; rl.set(ip, entry); return true;
+  if (entry.count >= cap) return false;
+  entry.count++; map.set(key, entry); return true;
+}
+const rateLimitIp   = ip  => takeBucket(ipBucket,   ip,  40);
+// Per-user: tighter limits to stop authenticated bot fan-out
+const rateLimitUser = uid => takeBucket(userBucket, uid, 60); // total /api/groups calls per user per hour
+// Specific per-user limits per action — narrower than the overall user budget
+function rateLimitAction(uid, action) {
+  const cap = action === 'create' ? 5 : action === 'join' ? 12 : 20;
+  return takeBucket(userBucket, `${uid}:${action}`, cap);
 }
 
 async function getAuthUser(req) {
@@ -29,11 +40,18 @@ export default async function handler(req, res) {
   if (!process.env.SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'Not configured' });
 
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ?? req.socket?.remoteAddress ?? 'unknown';
-  if (!rateLimit(ip)) return res.status(429).json({ error: 'Too many requests' });
+  if (!rateLimitIp(ip)) return res.status(429).json({ error: 'Too many requests' });
 
   const user = await getAuthUser(req);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
   const uid = user.id;
+  if (!rateLimitUser(uid)) return res.status(429).json({ error: 'Too many requests for this account' });
+  if (req.method === 'POST') {
+    const action = req.body?.action;
+    if (action && !rateLimitAction(uid, action)) {
+      return res.status(429).json({ error: `Slow down — too many "${action}" requests` });
+    }
+  }
 
   // ── GET: list groups the user belongs to, with member leaderboards ─────────
   if (req.method === 'GET') {

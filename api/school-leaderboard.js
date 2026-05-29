@@ -5,14 +5,17 @@ const admin = createClient(
   process.env.SUPABASE_SERVICE_KEY ?? ''
 );
 
-const rl = new Map();
-function rateLimit(ip) {
+const ipBucket = new Map();
+const userBucket = new Map();
+function take(map, key, cap) {
   const now = Date.now();
-  const entry = rl.get(ip) ?? { count: 0, reset: now + 3600000 };
+  const entry = map.get(key) ?? { count: 0, reset: now + 3600000 };
   if (now > entry.reset) { entry.count = 0; entry.reset = now + 3600000; }
-  if (entry.count >= 30) return false;
-  entry.count++; rl.set(ip, entry); return true;
+  if (entry.count >= cap) return false;
+  entry.count++; map.set(key, entry); return true;
 }
+const rateLimitIp   = ip  => take(ipBucket,   ip,  30);
+const rateLimitUser = uid => take(userBucket, uid, 60);
 
 async function getAuthUser(req) {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -26,10 +29,11 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ?? req.socket?.remoteAddress ?? 'unknown';
-  if (!rateLimit(ip)) return res.status(429).json({ error: 'Too many requests' });
+  if (!rateLimitIp(ip)) return res.status(429).json({ error: 'Too many requests' });
 
   const user = await getAuthUser(req);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  if (!rateLimitUser(user.id)) return res.status(429).json({ error: 'Too many requests for this account' });
 
   const yearFilter = typeof req.query?.year === 'string' && /^Y(10|11|12|13)$/.test(req.query.year)
     ? req.query.year : null;
