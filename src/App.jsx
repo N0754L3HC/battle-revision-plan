@@ -1183,8 +1183,9 @@ const PAPER_BANK = {
 };
 
 // ── Schedule generator ─────────────────────────────────────────────────────
-function generateSchedule(subjects, scores, errors, examSched, rag={}) {
+function generateSchedule(subjects, scores, errors, examSched, rag={}, targets={}) {
   const today = new Date(); today.setHours(0,0,0,0);
+  const GRADE_BOUNDS = Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries||{}]));
   const ranked = [...subjects].map(s => {
     const exs = getSubjectExams(examSched, s.id, s.boardId);
     const minDays = exs.length ? Math.min(...exs.map(e=>daysUntil(e.date))) : 999;
@@ -1195,7 +1196,19 @@ function generateSchedule(subjects, scores, errors, examSched, rag={}) {
     const topics = SPEC_TOPICS[s.id]||[];
     const redTopics = topics.filter((_,i)=>rag[`${s.id}_${i}`]==='red');
     const ragBoost = redTopics.length * 4;
-    return { name:s.name, color:s.color, priority: urgency+weakness+ragBoost, redTopics };
+    // Predicted vs target gap — if projected below target, boost priority
+    const targetGrade = targets[s.name] || (Object.keys(s.gradeBoundaries||{})[0]==='9' ? '9' : 'A*');
+    const targetPct = (s.gradeBoundaries||{})[targetGrade] || 80;
+    const pred = predictedGrade(scores, s.name, GRADE_BOUNDS);
+    let gapBoost = 0;
+    let predGrade = null;
+    if (pred) {
+      predGrade = pred.grade;
+      const gap = targetPct - pred.pct;
+      if (gap > 0) gapBoost = Math.min(30, gap * 0.8);
+      if (pred.trend === 'down') gapBoost += 6;
+    }
+    return { id:s.id, name:s.name, color:s.color, priority: urgency+weakness+ragBoost+gapBoost, redTopics, gapBoost: Math.round(gapBoost), predGrade, targetGrade };
   }).sort((a,b)=>b.priority-a.priority);
 
   const days = [];
@@ -1488,13 +1501,13 @@ function Onboarding({onDone,setView,C,font}) {
 }
 
 // ── Companion character ─────────────────────────────────────────────────────
-const SKIN_TONES   = ['#FDDBB4','#F0C185','#C68642','#8D5524','#4A2912'];
-const HAIR_COLORS  = ['#1a0a00','#3d1f0c','#7a4520','#c28a3a','#e8c86a','#c8c0b8','#cc2828','#4a2ee0'];
-const EYE_COLORS   = ['#4a2c17','#8b6914','#1a6b2a','#1a5090','#5a5f64'];
-const OUTFIT_COLORS = ['#4a90d9','#e87c3e','#5cb85c','#9b59b6','#e74c3c','#2c3e50'];
+const SKIN_TONES   = ['#FDDBB4','#F0C185','#D8A06B','#C68642','#8D5524','#5a3216','#4A2912'];
+const HAIR_COLORS  = ['#1a0a00','#3d1f0c','#7a4520','#c28a3a','#e8c86a','#c8c0b8','#cc2828','#4a2ee0','#d23b8a','#3aa6c2'];
+const EYE_COLORS   = ['#4a2c17','#8b6914','#1a6b2a','#1a5090','#5a5f64','#7042b0'];
+const OUTFIT_COLORS = ['#4a90d9','#e87c3e','#5cb85c','#9b59b6','#e74c3c','#2c3e50','#ec4899','#0ea5e9','#fbbf24'];
 
-const HAIR_STYLE_LABELS = ['Buzz','Bob','Long','Bun','Curly','Ponytail'];
-const ACCESSORY_LABELS  = ['None','Glasses','Cat-eye','Headband'];
+const HAIR_STYLE_LABELS = ['Buzz','Bob','Long','Bun','Curly','Ponytail','Wavy','Mohawk','Topknot'];
+const ACCESSORY_LABELS  = ['None','Glasses','Cat-eye','Headband','Beanie','Earrings','Freckles'];
 const GENDER_LABELS     = ['Male','Female','Non-binary','No preference'];
 
 function CompanionAvatar({skin=0,hair=0,hairStyle=0,eyeColor=0,outfitColor=0,accessory=0,mood='neutral',pose='idle',size=80}) {
@@ -1505,10 +1518,18 @@ function CompanionAvatar({skin=0,hair=0,hairStyle=0,eyeColor=0,outfitColor=0,acc
   const PANT = '#2c3a4e';
   const SHOE = '#1a1a2e';
 
+  // Outfit shading: darker tone for hoodie shadows
+  const OCdark = (()=>{
+    const n=parseInt(OC.slice(1),16); const r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+    const d=v=>Math.max(0,Math.round(v*0.78));
+    return `#${[d(r),d(g),d(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}`;
+  })();
+
   const h = Math.round(size * 1.5);
 
-  const browL = mood==='worried' ? 'M22 29 Q33 25 44 30' : mood==='excited' ? 'M22 26 Q33 23 44 26' : 'M22 28 Q33 24 44 28';
-  const browR = mood==='worried' ? 'M56 30 Q67 25 78 29' : mood==='excited' ? 'M56 26 Q67 23 78 26' : 'M56 28 Q67 24 78 28';
+  // Bigger, more expressive bitmoji-style brows
+  const browL = mood==='worried' ? 'M21 29 Q33 25 44 31' : mood==='excited' ? 'M21 25 Q33 21 44 25' : 'M21 27 Q33 23 44 28';
+  const browR = mood==='worried' ? 'M56 31 Q67 25 79 29' : mood==='excited' ? 'M56 25 Q67 21 79 25' : 'M56 28 Q67 23 79 27';
 
   return (
     <svg width={size} height={h} viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg">
@@ -1522,42 +1543,52 @@ function CompanionAvatar({skin=0,hair=0,hairStyle=0,eyeColor=0,outfitColor=0,acc
       {/* LEGS */}
       <rect x="27" y="112" width="16" height="36" rx="8" fill={PANT}/>
       <rect x="57" y="112" width="16" height="36" rx="8" fill={PANT}/>
+      <path d="M27 122 L43 122" stroke={PANT} strokeWidth="0.6" opacity="0.25"/>
 
-      {/* TORSO */}
-      <path d="M18 76 Q18 72 50 68 Q82 72 82 76 L84 114 Q68 122 50 122 Q32 122 16 114 Z" fill={OC}/>
+      {/* TORSO — hoodie style with bottom band + drawstring */}
+      <path d="M18 78 Q18 74 50 70 Q82 74 82 78 L86 116 Q68 124 50 124 Q32 124 14 116 Z" fill={OC}/>
+      <path d="M16 110 L84 110" stroke={OCdark} strokeWidth="2" opacity="0.5"/>
+      <path d="M50 72 Q44 84 47 96 M50 72 Q56 84 53 96" stroke={OCdark} strokeWidth="1.2" fill="none" opacity="0.55"/>
+      <line x1="48" y1="84" x2="48" y2="93" stroke={OCdark} strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
+      <line x1="52" y1="84" x2="52" y2="93" stroke={OCdark} strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
 
       {/* LEFT ARM */}
-      <path d="M18 78 Q8 88 10 114" stroke={OC} strokeWidth="15" strokeLinecap="round" fill="none"/>
-      <circle cx="10" cy="117" r="8" fill={ST}/>
+      <path d="M18 80 Q8 90 10 116" stroke={OC} strokeWidth="15" strokeLinecap="round" fill="none"/>
+      <circle cx="10" cy="118" r="8" fill={ST}/>
 
       {/* RIGHT ARM */}
       {pose==='wave'?(
         <>
-          <path d="M82 78 Q92 62 90 36" stroke={OC} strokeWidth="15" strokeLinecap="round" fill="none"/>
-          <path d="M90 36 Q92 22 88 14" stroke={ST} strokeWidth="12" strokeLinecap="round" fill="none"/>
-          <circle cx="87" cy="11" r="9" fill={ST}/>
-          <line x1="80" y1="5"  x2="81" y2="2"  stroke={ST} strokeWidth="3.5" strokeLinecap="round"/>
-          <line x1="87" y1="2"  x2="87" y2="-1" stroke={ST} strokeWidth="3.5" strokeLinecap="round"/>
-          <line x1="94" y1="5"  x2="95" y2="2"  stroke={ST} strokeWidth="3.5" strokeLinecap="round"/>
+          <path d="M82 80 Q92 64 90 38" stroke={OC} strokeWidth="15" strokeLinecap="round" fill="none"/>
+          <path d="M90 38 Q92 24 88 16" stroke={ST} strokeWidth="12" strokeLinecap="round" fill="none"/>
+          <circle cx="87" cy="13" r="9" fill={ST}/>
+          <line x1="80" y1="7"  x2="81" y2="4"  stroke={ST} strokeWidth="3.5" strokeLinecap="round"/>
+          <line x1="87" y1="4"  x2="87" y2="1"  stroke={ST} strokeWidth="3.5" strokeLinecap="round"/>
+          <line x1="94" y1="7"  x2="95" y2="4"  stroke={ST} strokeWidth="3.5" strokeLinecap="round"/>
         </>
       ):(
         <>
-          <path d="M82 78 Q92 88 90 114" stroke={OC} strokeWidth="15" strokeLinecap="round" fill="none"/>
-          <circle cx="90" cy="117" r="8" fill={ST}/>
+          <path d="M82 80 Q92 90 90 116" stroke={OC} strokeWidth="15" strokeLinecap="round" fill="none"/>
+          <circle cx="90" cy="118" r="8" fill={ST}/>
         </>
       )}
 
       {/* NECK */}
-      <rect x="44" y="68" width="12" height="12" rx="5" fill={ST}/>
+      <rect x="44" y="68" width="12" height="10" rx="5" fill={ST}/>
+      <path d="M42 76 Q50 79 58 76" stroke={ST} strokeWidth="0.6" opacity="0.4" fill="none"/>
 
-      {/* EARS — behind head */}
-      <ellipse cx="23" cy="44" rx="6.5" ry="7.5" fill={ST}/>
-      <ellipse cx="77" cy="44" rx="6.5" ry="7.5" fill={ST}/>
-      <ellipse cx="23" cy="44" rx="3.5" ry="4.5" fill="#e8a880" opacity="0.4"/>
-      <ellipse cx="77" cy="44" rx="3.5" ry="4.5" fill="#e8a880" opacity="0.4"/>
+      {/* EARS — behind head, bigger for bitmoji feel */}
+      <ellipse cx="21" cy="44" rx="6.5" ry="8" fill={ST}/>
+      <ellipse cx="79" cy="44" rx="6.5" ry="8" fill={ST}/>
+      <path d="M21 41 Q19 44 22 49" stroke="#a06040" strokeWidth="0.8" fill="none" opacity="0.55"/>
+      <path d="M79 41 Q81 44 78 49" stroke="#a06040" strokeWidth="0.8" fill="none" opacity="0.55"/>
 
-      {/* HEAD — large chibi/Bitmoji circle */}
-      <ellipse cx="50" cy="42" rx="28" ry="32" fill={ST}/>
+      {/* HEAD — oversized chibi/Bitmoji oval (bigger than before) */}
+      <ellipse cx="50" cy="40" rx="30" ry="34" fill={ST}/>
+      {/* Jaw shadow for depth */}
+      <ellipse cx="50" cy="68" rx="20" ry="6" fill="#000" opacity="0.05"/>
+      {/* Chin highlight */}
+      <ellipse cx="50" cy="62" rx="14" ry="4" fill="#fff" opacity="0.07"/>
 
       {/* HAIR */}
       {hairStyle===0&&(
@@ -1590,76 +1621,128 @@ function CompanionAvatar({skin=0,hair=0,hairStyle=0,eyeColor=0,outfitColor=0,acc
         <path d="M24 44 Q24 12 50 10 Q76 12 76 44 Q74 13 50 12 Q26 13 24 44Z" fill={HC}/>
         <path d="M71 12 Q88 22 84 68 Q80 82 76 78 Q82 60 78 38 Q74 20 71 12Z" fill={HC}/>
       </>)}
+      {/* Wavy — flowing side-parted with curls */}
+      {hairStyle===6&&(<>
+        <path d="M20 44 Q22 6 50 6 Q80 8 80 44 Q78 16 60 10 Q44 14 40 22 Q34 16 28 18 Q22 24 20 44Z" fill={HC}/>
+        <path d="M17 48 Q12 62 18 76 Q22 68 22 56 Z" fill={HC}/>
+        <path d="M83 48 Q88 62 82 76 Q78 68 78 56 Z" fill={HC}/>
+      </>)}
+      {/* Mohawk — central spike with shaved sides */}
+      {hairStyle===7&&(<>
+        <path d="M36 18 Q50 0 64 18 L60 44 Q50 36 40 44 Z" fill={HC}/>
+        <path d="M42 16 L42 4 M50 14 L50 0 M58 16 L58 4" stroke={HC} strokeWidth="3" strokeLinecap="round"/>
+        <path d="M22 36 Q22 24 28 18 L34 26 Q26 32 22 36Z" fill={HC} opacity="0.4"/>
+        <path d="M78 36 Q78 24 72 18 L66 26 Q74 32 78 36Z" fill={HC} opacity="0.4"/>
+      </>)}
+      {/* Topknot — slick back + bun on top */}
+      {hairStyle===8&&(<>
+        <path d="M22 44 Q22 14 50 12 Q78 14 78 44 Q76 18 50 18 Q24 18 22 44Z" fill={HC}/>
+        <ellipse cx="50" cy="8" rx="11" ry="9" fill={HC}/>
+        <ellipse cx="50" cy="6" rx="8" ry="3" fill={HC} opacity="0.6"/>
+      </>)}
 
-      {/* EYES — Bitmoji style: large whites, filled crescent upper lash, wing tip */}
+      {/* EYES — bigger, rounder bitmoji-style with bold lashes */}
       {/* Left eye */}
-      <ellipse cx="33" cy="42" rx="11" ry="11.5" fill="white"/>
-      <path d="M23.5 46.5 Q33 53.5 42.5 46.5" stroke="#2a1a0a" strokeWidth="1.4" fill="none" strokeLinecap="round" opacity="0.45"/>
-      <circle cx="33" cy="43" r="7.5"  fill={EC}/>
-      <circle cx="33" cy="43" r="4.8"  fill="#0a0a0a"/>
-      <circle cx="35.5" cy="40.5" r="2.4" fill="white"/>
-      <circle cx="30.5" cy="45.5" r="1"   fill="white" opacity="0.4"/>
-      <circle cx="22.5" cy="44"   r="2"   fill="#ffb3c0" opacity="0.55"/>
-      <path d="M22 43 Q33 29 44 43 Q33 35.5 22 43Z" fill="#1a0a00"/>
-      <path d="M44 43 Q47 38 46 33 Q46 38.5 45 43Z" fill="#1a0a00"/>
+      <ellipse cx="33" cy="41" rx="12.5" ry="13" fill="white"/>
+      <path d="M22 45 Q33 53 44 45" stroke="#2a1a0a" strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.35"/>
+      <circle cx="33" cy="42" r="8.5"  fill={EC}/>
+      <ellipse cx="33" cy="44" rx="6" ry="4" fill={EC} opacity="0.7"/>
+      <circle cx="33" cy="42" r="5.5"  fill="#0a0a0a"/>
+      <circle cx="35.8" cy="39" r="2.8" fill="white"/>
+      <circle cx="31"   cy="44" r="1.3" fill="white" opacity="0.55"/>
+      <path d="M21 42 Q33 27 45 42 Q33 33 21 42Z" fill="#0a0a00"/>
+      <path d="M45 42 Q49 36 47 30 Q48 38 46 42Z" fill="#0a0a00"/>
+      <line x1="22" y1="40" x2="20" y2="36" stroke="#0a0a00" strokeWidth="1.4" strokeLinecap="round"/>
+      <line x1="27" y1="34" x2="26" y2="30" stroke="#0a0a00" strokeWidth="1.4" strokeLinecap="round"/>
 
       {/* Right eye */}
-      <ellipse cx="67" cy="42" rx="11" ry="11.5" fill="white"/>
-      <path d="M57.5 46.5 Q67 53.5 76.5 46.5" stroke="#2a1a0a" strokeWidth="1.4" fill="none" strokeLinecap="round" opacity="0.45"/>
-      <circle cx="67" cy="43" r="7.5"  fill={EC}/>
-      <circle cx="67" cy="43" r="4.8"  fill="#0a0a0a"/>
-      <circle cx="69.5" cy="40.5" r="2.4" fill="white"/>
-      <circle cx="64.5" cy="45.5" r="1"   fill="white" opacity="0.4"/>
-      <circle cx="77.5" cy="44"   r="2"   fill="#ffb3c0" opacity="0.55"/>
-      <path d="M56 43 Q67 29 78 43 Q67 35.5 56 43Z" fill="#1a0a00"/>
-      <path d="M78 43 Q81 38 80 33 Q80 38.5 79 43Z" fill="#1a0a00"/>
+      <ellipse cx="67" cy="41" rx="12.5" ry="13" fill="white"/>
+      <path d="M56 45 Q67 53 78 45" stroke="#2a1a0a" strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.35"/>
+      <circle cx="67" cy="42" r="8.5"  fill={EC}/>
+      <ellipse cx="67" cy="44" rx="6" ry="4" fill={EC} opacity="0.7"/>
+      <circle cx="67" cy="42" r="5.5"  fill="#0a0a0a"/>
+      <circle cx="69.8" cy="39" r="2.8" fill="white"/>
+      <circle cx="65"   cy="44" r="1.3" fill="white" opacity="0.55"/>
+      <path d="M55 42 Q67 27 79 42 Q67 33 55 42Z" fill="#0a0a00"/>
+      <path d="M79 42 Q83 36 81 30 Q82 38 80 42Z" fill="#0a0a00"/>
+      <line x1="78" y1="40" x2="80" y2="36" stroke="#0a0a00" strokeWidth="1.4" strokeLinecap="round"/>
+      <line x1="73" y1="34" x2="74" y2="30" stroke="#0a0a00" strokeWidth="1.4" strokeLinecap="round"/>
 
-      {/* EYEBROWS */}
-      <path d={browL} stroke={HC} strokeWidth="3.5" fill="none" strokeLinecap="round"/>
-      <path d={browR} stroke={HC} strokeWidth="3.5" fill="none" strokeLinecap="round"/>
+      {/* EYEBROWS — thicker for bitmoji feel */}
+      <path d={browL} stroke={HC} strokeWidth="4" fill="none" strokeLinecap="round"/>
+      <path d={browR} stroke={HC} strokeWidth="4" fill="none" strokeLinecap="round"/>
 
-      {/* NOSE */}
-      <path d="M46 55 Q50 58 54 55" stroke={ST} strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.5"/>
+      {/* NOSE — tiny pair of dot-shadows + soft bridge */}
+      <ellipse cx="46" cy="55" rx="1.4" ry="0.9" fill="#a06040" opacity="0.6"/>
+      <ellipse cx="54" cy="55" rx="1.4" ry="0.9" fill="#a06040" opacity="0.6"/>
+      <path d="M48 47 Q50 53 48 56" stroke={ST} strokeWidth="0.8" fill="none" opacity="0.5"/>
 
-      {/* CHEEK BLUSH */}
-      <ellipse cx="17" cy="54" rx="8.5" ry="5" fill="#f9a8d4" opacity="0.22"/>
-      <ellipse cx="83" cy="54" rx="8.5" ry="5" fill="#f9a8d4" opacity="0.22"/>
+      {/* CHEEK BLUSH — rounder, warmer */}
+      <ellipse cx="20" cy="54" rx="9" ry="6" fill="#f9a8d4" opacity="0.32"/>
+      <ellipse cx="80" cy="54" rx="9" ry="6" fill="#f9a8d4" opacity="0.32"/>
 
       {/* MOUTH */}
       {mood==='excited'&&(<>
-        <path d="M30 62 Q50 82 70 62 Q58 78 50 79 Q42 78 30 62Z" fill="#c93060"/>
-        <path d="M30 62 Q50 80 70 62" fill="white" opacity="0.8"/>
-        <line x1="50" y1="62" x2="50" y2="78" stroke="#f0c0cc" strokeWidth="1"/>
+        <path d="M28 62 Q50 84 72 62 Q60 80 50 81 Q40 80 28 62Z" fill="#c93060"/>
+        <path d="M28 62 Q50 82 72 62" fill="white" opacity="0.85"/>
+        <line x1="50" y1="62" x2="50" y2="80" stroke="#f0c0cc" strokeWidth="1.2"/>
       </>)}
       {mood==='happy'&&(<>
-        <path d="M34 62 Q50 74 66 62 Q56 72 50 73 Q44 72 34 62Z" fill="#c93060"/>
-        <path d="M34 62 Q50 72 66 62" fill="white" opacity="0.8"/>
+        <path d="M33 63 Q50 76 67 63 Q57 74 50 75 Q43 74 33 63Z" fill="#c93060"/>
+        <path d="M33 63 Q50 74 67 63" fill="white" opacity="0.85"/>
       </>)}
-      {mood==='worried'&&(
-        <path d="M36 68 Q50 62 64 68" stroke="#996060" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-      )}
-      {mood==='neutral'&&(
-        <path d="M36 65 Q50 72 64 65 Q54 70 50 70.5 Q46 70 36 65Z" fill="#c04060" opacity="0.85"/>
-      )}
+      {mood==='worried'&&(<>
+        <path d="M36 70 Q50 63 64 70" stroke="#7a4040" strokeWidth="3" fill="none" strokeLinecap="round"/>
+      </>)}
+      {mood==='neutral'&&(<>
+        <path d="M38 64 Q50 71 62 64 Q53 69 50 69.5 Q47 69 38 64Z" fill="#b03060" opacity="0.9"/>
+        <path d="M38 64 Q50 65.5 62 64" stroke="#7a2040" strokeWidth="0.8" fill="none" opacity="0.6"/>
+      </>)}
 
       {/* ACCESSORIES */}
       {accessory===1&&(<>
-        <circle cx="33" cy="43" r="13.5" fill="none" stroke="#1a1a1a" strokeWidth="2.2"/>
-        <circle cx="67" cy="43" r="13.5" fill="none" stroke="#1a1a1a" strokeWidth="2.2"/>
-        <line x1="46.5" y1="43" x2="53.5" y2="43" stroke="#1a1a1a" strokeWidth="2"/>
-        <line x1="8"    y1="41" x2="19.5" y2="43" stroke="#1a1a1a" strokeWidth="1.8"/>
-        <line x1="92"   y1="41" x2="80.5" y2="43" stroke="#1a1a1a" strokeWidth="1.8"/>
+        <circle cx="33" cy="42" r="14.5" fill="none" stroke="#1a1a1a" strokeWidth="2.4"/>
+        <circle cx="67" cy="42" r="14.5" fill="none" stroke="#1a1a1a" strokeWidth="2.4"/>
+        <line x1="47.5" y1="42" x2="52.5" y2="42" stroke="#1a1a1a" strokeWidth="2"/>
+        <line x1="7"    y1="40" x2="18.5" y2="42" stroke="#1a1a1a" strokeWidth="1.8"/>
+        <line x1="93"   y1="40" x2="81.5" y2="42" stroke="#1a1a1a" strokeWidth="1.8"/>
       </>)}
       {accessory===2&&(<>
-        <path d="M19 37 Q33 31 47 39 Q47 52 33 55 Q19 52 19 37Z" fill="none" stroke="#1a1a1a" strokeWidth="2.2"/>
-        <path d="M53 37 Q67 31 81 39 Q81 52 67 55 Q53 52 53 37Z" fill="none" stroke="#1a1a1a" strokeWidth="2.2"/>
-        <line x1="47" y1="39" x2="53" y2="39" stroke="#1a1a1a" strokeWidth="2"/>
-        <line x1="7"  y1="35" x2="19" y2="37" stroke="#1a1a1a" strokeWidth="2"/>
-        <line x1="93" y1="35" x2="81" y2="37" stroke="#1a1a1a" strokeWidth="2"/>
+        <path d="M18 35 Q33 29 48 38 Q48 53 33 56 Q18 53 18 35Z" fill="none" stroke="#1a1a1a" strokeWidth="2.4"/>
+        <path d="M52 38 Q67 29 82 35 Q82 53 67 56 Q52 53 52 38Z" fill="none" stroke="#1a1a1a" strokeWidth="2.4"/>
+        <line x1="48" y1="39" x2="52" y2="39" stroke="#1a1a1a" strokeWidth="2"/>
+        <line x1="6"  y1="33" x2="18" y2="35" stroke="#1a1a1a" strokeWidth="2"/>
+        <line x1="94" y1="33" x2="82" y2="35" stroke="#1a1a1a" strokeWidth="2"/>
       </>)}
       {accessory===3&&(
-        <path d="M22 26 Q50 16 78 26" fill="none" stroke="#e03870" strokeWidth="7" strokeLinecap="round"/>
+        <path d="M20 24 Q50 12 80 24" fill="none" stroke="#e03870" strokeWidth="7" strokeLinecap="round"/>
       )}
+      {/* Beanie */}
+      {accessory===4&&(<>
+        <path d="M16 30 Q16 6 50 4 Q84 6 84 30 L82 40 Q50 36 18 40 Z" fill="#2c3a4e"/>
+        <path d="M14 38 Q50 30 86 38 L86 46 Q50 42 14 46 Z" fill="#1a2230"/>
+        <circle cx="50" cy="2" r="4.5" fill="#fbbf24"/>
+        <line x1="34" y1="34" x2="34" y2="40" stroke="#1a2230" strokeWidth="0.6"/>
+        <line x1="50" y1="34" x2="50" y2="40" stroke="#1a2230" strokeWidth="0.6"/>
+        <line x1="66" y1="34" x2="66" y2="40" stroke="#1a2230" strokeWidth="0.6"/>
+      </>)}
+      {/* Earrings */}
+      {accessory===5&&(<>
+        <circle cx="20" cy="52" r="2.2" fill="#fbbf24"/>
+        <circle cx="80" cy="52" r="2.2" fill="#fbbf24"/>
+        <circle cx="20" cy="52" r="0.9" fill="#fff" opacity="0.6"/>
+        <circle cx="80" cy="52" r="0.9" fill="#fff" opacity="0.6"/>
+      </>)}
+      {/* Freckles */}
+      {accessory===6&&(<>
+        <circle cx="38" cy="52" r="0.9" fill="#a06040" opacity="0.7"/>
+        <circle cx="42" cy="55" r="0.7" fill="#a06040" opacity="0.65"/>
+        <circle cx="36" cy="56" r="0.7" fill="#a06040" opacity="0.6"/>
+        <circle cx="58" cy="52" r="0.9" fill="#a06040" opacity="0.7"/>
+        <circle cx="62" cy="55" r="0.7" fill="#a06040" opacity="0.65"/>
+        <circle cx="64" cy="56" r="0.7" fill="#a06040" opacity="0.6"/>
+        <circle cx="50" cy="57" r="0.7" fill="#a06040" opacity="0.55"/>
+      </>)}
     </svg>
   );
 }
@@ -2234,7 +2317,7 @@ function InsuranceEligibilityCard({ scores, uid, C, font, noted=false, setNoted=
 }
 
 // ── Trend chart ────────────────────────────────────────────────────────────
-function TrendChart({scores, subject, subjectColors={}, gradeBoundaries={}, bgColor='#e8e4dd', textColor='#7a7268'}) {
+function TrendChart({scores, subject, subjectColors={}, gradeBoundaries={}, bgColor='#e8e4dd', textColor='#7a7268', targetGrade=null}) {
   const data=[...scores].filter(s=>s.subject===subject).reverse();
   if (data.length<2) return (
     <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:120,fontSize:14,color:textColor}}>
@@ -2242,16 +2325,35 @@ function TrendChart({scores, subject, subjectColors={}, gradeBoundaries={}, bgCo
     </div>
   );
   const W=480,H=110,PAD={t:10,r:16,b:28,l:36};
-  const pcts=data.map(d=>d.pct);
-  const minY=Math.max(0,Math.min(...pcts)-10);
-  const maxY=Math.min(100,Math.max(...pcts)+10);
-  const col=subjectColors[subject]||'#888';
   const bounds=gradeBoundaries[subject]||{};
-  const xScale=i=>PAD.l+(i/(data.length-1))*(W-PAD.l-PAD.r);
+  // Linear regression for projection
+  const n=data.length;
+  const xMean=(n-1)/2;
+  const yMean=data.reduce((a,d)=>a+d.pct,0)/n;
+  let num=0,den=0;
+  data.forEach((d,i)=>{ num+=(i-xMean)*(d.pct-yMean); den+=(i-xMean)**2; });
+  const slope = den===0 ? 0 : num/den;
+  const intercept = yMean - slope*xMean;
+  const projectN = 2; // project 2 future papers
+  const projPts = [];
+  for (let i=n; i<n+projectN; i++) {
+    projPts.push({i, pct:Math.max(0,Math.min(100, intercept+slope*i))});
+  }
+  const allPcts = [...data.map(d=>d.pct), ...projPts.map(p=>p.pct)];
+  const targetPct = targetGrade ? (bounds[targetGrade]||null) : null;
+  if (targetPct) allPcts.push(targetPct);
+  const minY=Math.max(0,Math.min(...allPcts)-10);
+  const maxY=Math.min(100,Math.max(...allPcts)+10);
+  const col=subjectColors[subject]||'#888';
+  const totalLen = n + projectN - 1;
+  const xScale=i=>PAD.l+(i/totalLen)*(W-PAD.l-PAD.r);
   const yScale=v=>PAD.t+(1-(v-minY)/(maxY-minY))*(H-PAD.t-PAD.b);
   const pts=data.map((d,i)=>([xScale(i),yScale(d.pct)]));
   const polyline=pts.map(p=>p.join(',')).join(' ');
   const areaPath=`M ${pts[0][0]},${yScale(minY)} L ${pts.map(p=>p.join(',')).join(' L ')} L ${pts[pts.length-1][0]},${yScale(minY)} Z`;
+  // Projection points (start from last actual)
+  const projLine = [pts[pts.length-1], ...projPts.map(p=>[xScale(p.i), yScale(p.pct)])];
+  const projPoly = projLine.map(p=>p.join(',')).join(' ');
   const topGrades = '9' in bounds ? ['9','8','7'] : ['A*','A','B'];
   const gradeLines=topGrades.map(g=>({g,y:yScale(bounds[g]||0),pct:bounds[g]||0})).filter(gl=>gl.pct>minY&&gl.pct<maxY);
   return (
@@ -2262,11 +2364,25 @@ function TrendChart({scores, subject, subjectColors={}, gradeBoundaries={}, bgCo
           <text x={W-PAD.r+2} y={gl.y+4} fill={gradeColor(gl.g)} fontSize="8" opacity="0.6">{gl.g}</text>
         </g>
       ))}
+      {targetPct&&(()=>{
+        const ty=yScale(targetPct);
+        return (
+          <g>
+            <line x1={PAD.l} y1={ty} x2={W-PAD.r} y2={ty} stroke={gradeColor(targetGrade)} strokeWidth="1.5" strokeDasharray="2 4" opacity="0.7"/>
+            <text x={PAD.l+2} y={ty-3} fill={gradeColor(targetGrade)} fontSize="8" fontWeight="700">Target {targetGrade}</text>
+          </g>
+        );
+      })()}
       {[minY,Math.round((minY+maxY)/2),maxY].map(v=>(
         <text key={v} x={PAD.l-4} y={yScale(v)+4} fill={textColor} fontSize="8" textAnchor="end">{Math.round(v)}%</text>
       ))}
       <path d={areaPath} fill={col} opacity="0.06"/>
       <polyline points={polyline} fill="none" stroke={col} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
+      {/* Projection line */}
+      <polyline points={projPoly} fill="none" stroke={col} strokeWidth="1.8" strokeDasharray="4 3" opacity="0.55" strokeLinejoin="round"/>
+      {projPts.map((p,i)=>(
+        <circle key={`pr_${i}`} cx={xScale(p.i)} cy={yScale(p.pct)} r="3" fill="none" stroke={col} strokeWidth="1.5" opacity="0.65"/>
+      ))}
       {pts.map((p,i)=>(
         <g key={i}>
           <circle cx={p[0]} cy={p[1]} r="4" fill={col} stroke={bgColor} strokeWidth="1.5"/>
@@ -2275,6 +2391,8 @@ function TrendChart({scores, subject, subjectColors={}, gradeBoundaries={}, bgCo
           </text>
         </g>
       ))}
+      {/* Projection label */}
+      <text x={xScale(totalLen)-2} y={H-PAD.b+10} fill={col} fontSize="7" textAnchor="end" opacity="0.75" fontWeight="700">Proj.</text>
     </svg>
   );
 }
@@ -2342,14 +2460,23 @@ function StreakBanner({scores, C}) {
 }
 
 // ── Schedule component ─────────────────────────────────────────────────────
-function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, rag={}}) {
+function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, rag={}, targets={}, myPlan=[], setMyPlan=()=>{}}) {
   const [dayIdx, setDayIdx] = useState(0);
-  const days = generateSchedule(subjects, scores, errors, examSched, rag);
+  const days = generateSchedule(subjects, scores, errors, examSched, rag, targets);
   const DAY_NAMES   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const stripRef = useRef(null);
 
   const day = days[dayIdx];
+  const dayKey = day.date.toISOString().slice(0,10);
+  const dayItems = myPlan.filter(p=>p.date===dayKey);
+
+  const addItem = (subjectId, subjectName, color, topic) => {
+    const id = `plan_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+    setMyPlan(prev=>[...prev,{id,date:dayKey,subjectId,subjectName,color,topic:topic||'',done:false}]);
+  };
+  const toggleDone = (id) => setMyPlan(prev=>prev.map(p=>p.id===id?{...p,done:!p.done}:p));
+  const removeItem = (id) => setMyPlan(prev=>prev.filter(p=>p.id!==id));
   const dateLabel = dayIdx===0 ? 'Today'
     : dayIdx===1 ? 'Tomorrow'
     : `${DAY_NAMES[day.date.getDay()]} ${day.date.getDate()} ${MONTH_NAMES[day.date.getMonth()]}`;
@@ -2431,35 +2558,100 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
             </div>
           ) : (
             <div>
+              {/* My plan for this day */}
+              {dayItems.length>0&&(
+                <div style={{marginBottom:18}}>
+                  <div style={{fontSize:11,fontWeight:700,color:C.accent,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>
+                    My plan ({dayItems.filter(p=>p.done).length}/{dayItems.length})
+                  </div>
+                  <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                    {dayItems.map(p=>(
+                      <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,
+                        padding:'9px 12px',background:`${p.color}10`,borderRadius:7,
+                        border:`1px solid ${p.color}33`,opacity:p.done?0.55:1,transition:'opacity 0.15s'}}>
+                        <button onClick={()=>toggleDone(p.id)}
+                          aria-label={p.done?'Mark not done':'Mark done'}
+                          style={{width:18,height:18,borderRadius:'50%',
+                            border:`2px solid ${p.color}`,background:p.done?p.color:'transparent',
+                            cursor:'pointer',padding:0,flexShrink:0,display:'flex',alignItems:'center',
+                            justifyContent:'center',fontSize:11,color:'#fff',fontWeight:900,lineHeight:1}}>
+                          {p.done?'✓':''}
+                        </button>
+                        <div style={{flex:1,fontSize:13,color:C.text,
+                          textDecoration:p.done?'line-through':'none'}}>
+                          <span style={{fontWeight:600}}>{p.subjectName}</span>
+                          {p.topic&&<span style={{color:C.muted,marginLeft:6,fontSize:12}}>· {p.topic}</span>}
+                        </div>
+                        <button onClick={()=>removeItem(p.id)}
+                          style={{background:'transparent',border:'none',color:C.subtle,
+                            cursor:'pointer',fontSize:14,padding:'0 4px',lineHeight:1}}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div style={{fontSize:11,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>
                 Suggested focus
               </div>
               <div style={{display:'flex',flexDirection:'column',gap:8}}>
-                {day.slots.map((s,j)=>(
+                {day.slots.map((s,j)=>{
+                  const alreadyAdded = dayItems.some(p=>p.subjectId===s.id && !p.topic);
+                  return (
                   <div key={j} style={{padding:'12px 14px',background:`${s.color}0d`,borderRadius:8,
                     border:`1px solid ${s.color}22`}}>
                     <div style={{display:'flex',alignItems:'center',gap:12}}>
                       <div style={{width:3,alignSelf:'stretch',borderRadius:2,background:s.color,flexShrink:0}}/>
-                      <div style={{fontSize:14,fontWeight:600,color:C.text}}>{s.name}</div>
+                      <div style={{flex:1,fontSize:14,fontWeight:600,color:C.text}}>{s.name}</div>
+                      <button onClick={()=>addItem(s.id,s.name,s.color,'')}
+                        disabled={alreadyAdded}
+                        style={{padding:'5px 11px',fontSize:11,fontWeight:700,fontFamily:font,
+                          background:alreadyAdded?'transparent':`${s.color}22`,
+                          color:alreadyAdded?C.subtle:s.color,
+                          border:`1px solid ${alreadyAdded?C.border:s.color+'66'}`,
+                          borderRadius:6,cursor:alreadyAdded?'default':'pointer',
+                          transition:'all 0.12s',whiteSpace:'nowrap'}}>
+                        {alreadyAdded?'✓ Added':'+ Add to plan'}
+                      </button>
                     </div>
                     {s.redTopics?.length>0&&(
                       <div style={{marginTop:7,marginLeft:15,display:'flex',flexDirection:'column',gap:3}}>
                         <div style={{fontSize:10,fontWeight:700,color:'#ef4444',textTransform:'uppercase',letterSpacing:0.4,marginBottom:2}}>
                           Weak spots to drill
                         </div>
-                        {s.redTopics.slice(0,2).map((t,k)=>(
+                        {s.redTopics.slice(0,2).map((t,k)=>{
+                          const topicAdded = dayItems.some(p=>p.subjectId===s.id && p.topic===t);
+                          return (
                           <div key={k} style={{fontSize:12,color:C.muted,display:'flex',alignItems:'center',gap:5}}>
-                            <span style={{color:'#ef4444',fontSize:9}}>●</span>{t}
+                            <span style={{color:'#ef4444',fontSize:9}}>●</span>
+                            <span style={{flex:1}}>{t}</span>
+                            <button onClick={()=>addItem(s.id,s.name,s.color,t)}
+                              disabled={topicAdded}
+                              style={{padding:'2px 8px',fontSize:10,fontWeight:600,fontFamily:font,
+                                background:topicAdded?'transparent':`${s.color}18`,
+                                color:topicAdded?C.subtle:s.color,
+                                border:`1px solid ${topicAdded?C.border:s.color+'44'}`,
+                                borderRadius:4,cursor:topicAdded?'default':'pointer',whiteSpace:'nowrap'}}>
+                              {topicAdded?'✓':'+ Plan'}
+                            </button>
                           </div>
-                        ))}
+                          );
+                        })}
+                      </div>
+                    )}
+                    {s.gapBoost>0&&(
+                      <div style={{marginTop:6,marginLeft:15,fontSize:11,color:'#f59e0b',display:'flex',alignItems:'center',gap:4}}>
+                        <span style={{fontSize:9}}>▲</span>
+                        On track for <strong style={{margin:'0 2px'}}>{s.predGrade}</strong>, target <strong style={{margin:'0 2px'}}>{s.targetGrade}</strong> — boosted priority
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
               {dayIdx===0&&(
                 <div style={{marginTop:14,fontSize:12,color:C.subtle,lineHeight:1.6}}>
-                  Priority order: exam urgency + weak scores + red RAG topics.
+                  Priority order: exam urgency + weak scores + red RAG topics + predicted vs target gap.
                 </div>
               )}
             </div>
@@ -2936,7 +3128,8 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
         </div>
         <TrendChart scores={scores} subject={chartSubject}
           subjectColors={SUBJ_COLORS} gradeBoundaries={GRADE_BOUNDS}
-          bgColor={C.bg} textColor={C.muted}/>
+          bgColor={C.bg} textColor={C.muted}
+          targetGrade={targets[chartSubject]||(isGcse?'9':'A*')}/>
         <div style={{display:'flex',gap:12,marginTop:8,flexWrap:'wrap'}}>
           {Object.entries(GRADE_BOUNDS[chartSubject]||{}).filter(([g])=>isGcse?['9','8','7'].includes(g):['A*','A','B'].includes(g)).map(([g,v])=>(
             <div key={g} style={{display:'flex',alignItems:'center',gap:4}}>
@@ -3335,7 +3528,7 @@ function DonutChart({slices,selected,onSelect,C,size=140}) {
 }
 
 // ── Study timer ────────────────────────────────────────────────────────────
-function StudyTimer({subjects,uid,C,font,sessions,setSessions}) {
+function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[],rag={}}) {
   const [timerMode,  setTimerMode]  = useState('pomodoro');
   const [selSubject, setSelSubject] = useState(subjects[0]?.id??'');
   const [workMins,   setWorkMins]   = useState(25);
@@ -3500,7 +3693,26 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions}) {
       });
     }
     const maxDay=Math.max(...days.map(d=>d.secs),1);
-    return {allSess,totalSecs,weekSubSecs,days,maxDay};
+    // Topic-level drill-in
+    const allTopics = SPEC_TOPICS[pieSelected] || [];
+    const weakTopics = allTopics
+      .map((topic,i)=>({topic, status: rag[`${pieSelected}_${i}`]||'none'}))
+      .filter(t=>t.status==='red'||t.status==='amber')
+      .sort((a,b)=>(a.status==='red'?-1:1)-(b.status==='red'?-1:1))
+      .slice(0,5);
+    // Recent papers logged for this subject
+    const recentPapers = scores
+      .filter(s=>s.subject===selSubjectObj.name)
+      .sort((a,b)=>(b.ts||b.id)-(a.ts||a.id))
+      .slice(0,3);
+    // Error patterns: top error types for this subject
+    const subjErrors = errors.filter(e=>e.subject===selSubjectObj.name || e.subjectId===pieSelected);
+    const errCounts = {};
+    subjErrors.forEach(e=>{ if(e.type) errCounts[e.type]=(errCounts[e.type]||0)+1; });
+    const topErrors = Object.entries(errCounts)
+      .sort((a,b)=>b[1]-a[1]).slice(0,3)
+      .map(([id,n])=>({label:(ERROR_TYPES.find(t=>t.id===id)?.label)||id, count:n}));
+    return {allSess,totalSecs,weekSubSecs,days,maxDay,weakTopics,recentPapers,topErrors};
   })() : null;
 
   const subjectPill = locked=>(
@@ -3842,6 +4054,58 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions}) {
                         </div>
                       ))}
                     </div>
+
+                    {/* Weak topics from RAG */}
+                    {selDetail.weakTopics.length>0&&(
+                      <div style={{marginTop:14}}>
+                        <div style={{fontSize:10,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:6}}>Drill these topics</div>
+                        <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                          {selDetail.weakTopics.map((t,i)=>(
+                            <div key={i} style={{display:'flex',alignItems:'center',gap:6,fontSize:11,color:C.text}}>
+                              <span style={{width:6,height:6,borderRadius:'50%',background:t.status==='red'?'#ef4444':'#f59e0b',flexShrink:0}}/>
+                              <span style={{flex:1}}>{t.topic}</span>
+                              <span style={{fontSize:9,fontWeight:700,color:t.status==='red'?'#ef4444':'#f59e0b',textTransform:'uppercase'}}>{t.status}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Recent papers logged */}
+                    {selDetail.recentPapers.length>0&&(
+                      <div style={{marginTop:14}}>
+                        <div style={{fontSize:10,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:6}}>Recent papers</div>
+                        <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                          {selDetail.recentPapers.map((p,i)=>(
+                            <div key={i} style={{display:'flex',alignItems:'center',gap:6,fontSize:11,color:C.muted}}>
+                              <span style={{flex:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.paper||'Paper'}</span>
+                              <span style={{fontSize:11,fontWeight:700,color:selSubjectObj.color}}>{p.grade||(p.pct+'%')}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Top error patterns */}
+                    {selDetail.topErrors.length>0&&(
+                      <div style={{marginTop:14}}>
+                        <div style={{fontSize:10,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:6}}>Top error patterns</div>
+                        <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                          {selDetail.topErrors.map((e,i)=>(
+                            <div key={i} style={{display:'flex',alignItems:'center',gap:6,fontSize:11,color:C.text}}>
+                              <span style={{flex:1}}>{e.label}</span>
+                              <span style={{fontSize:10,fontWeight:700,color:'#f97316',background:'#f9731622',padding:'1px 6px',borderRadius:4}}>×{e.count}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {selDetail.weakTopics.length===0&&selDetail.recentPapers.length===0&&selDetail.topErrors.length===0&&(
+                      <div style={{marginTop:12,fontSize:11,color:C.subtle,fontStyle:'italic'}}>
+                        Log papers and rate topics in Resources to see weak spots here.
+                      </div>
+                    )}
                   </div>
                 )}
               </>
@@ -5211,6 +5475,8 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   const [unlockedAch, setUnlockedAch] = useState(()=>ls.get(`rbp_ach_${uid}`,[]));
   const [analyticsConsent, setAnalyticsConsent] = useState(()=>ls.get(`rbp_analytics_${uid}`,true));
   const [insNoted, setInsNoted] = useState(()=>ls.get(`rbp_ins_noted_${uid}`,false));
+  const [myPlan, setMyPlan] = useState(()=>ls.get(`rbp_my_plan_${uid}`,[]));
+  useEffect(()=>ls.set(`rbp_my_plan_${uid}`,myPlan),[myPlan,uid]);
   useEffect(()=>{
     if (!user?.id||!isSupabaseConfigured()) { setSyncLoaded(true); return; }
     const lS=ls.get(`rbp_scores_${uid}`,[]);
@@ -5222,9 +5488,10 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
     const lTT=ls.get(`rbp_timetable_${uid}`,{});
     const lComp=ls.get(`rbp_companion_${uid}`,null);
     const lAch=ls.get(`rbp_ach_${uid}`,[]);
-    supabase.from('user_data').select('scores,errors,rag,targets,sessions,rag_notes,timetable,companion,achievements').eq('user_id',user.id).eq('profile','me').single()
+    const lPlan=ls.get(`rbp_my_plan_${uid}`,[]);
+    supabase.from('user_data').select('scores,errors,rag,targets,sessions,rag_notes,timetable,companion,achievements,my_plan').eq('user_id',user.id).eq('profile','me').single()
       .then(({data})=>{
-        let fS=lS,fE=lE,fR=lR,fT=lT,fSess=lSess,fRN=lRN,fTT=lTT,fComp=lComp,fAch=lAch;
+        let fS=lS,fE=lE,fR=lR,fT=lT,fSess=lSess,fRN=lRN,fTT=lTT,fComp=lComp,fAch=lAch,fPlan=lPlan;
         if (data) {
           const sIds=new Set(lS.map(s=>s.id));
           fS=[...lS,...(data.scores||[]).filter(s=>!sIds.has(s.id))];
@@ -5240,6 +5507,10 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
           if (data.timetable&&Object.keys(data.timetable).length>0&&!Object.keys(lTT).length) fTT=data.timetable;
           if (data.companion&&Object.keys(data.companion).length>0) fComp={...(lComp||{}),...data.companion};
           if (Array.isArray(data.achievements)&&data.achievements.length>0) fAch=[...new Set([...(lAch||[]),...data.achievements])];
+          if (Array.isArray(data.my_plan)) {
+            const ids=new Set(lPlan.map(p=>p.id));
+            fPlan=[...lPlan,...data.my_plan.filter(p=>!ids.has(p.id))];
+          }
           setScores(fS);   ls.set(`rbp_scores_${uid}`,fS);
           setErrors(fE);   ls.set(`rbp_errors_${uid}`,fE);
           setRag(fR);      ls.set(`rbp_rag_${uid}`,fR);
@@ -5249,9 +5520,10 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
           setTimetable(fTT);  ls.set(`rbp_timetable_${uid}`,fTT);
           if (fComp) { setCompanion(c=>({...c,...fComp})); ls.set(`rbp_companion_${uid}`,fComp); }
           setUnlockedAch(fAch); ls.set(`rbp_ach_${uid}`,fAch);
+          setMyPlan(fPlan); ls.set(`rbp_my_plan_${uid}`,fPlan);
         }
         supabase.from('user_data').upsert(
-          {user_id:user.id,profile:'me',scores:fS,errors:fE,rag:fR,targets:fT,sessions:fSess,rag_notes:fRN,timetable:fTT,companion:fComp||companion,achievements:fAch,updated_at:new Date().toISOString()},
+          {user_id:user.id,profile:'me',scores:fS,errors:fE,rag:fR,targets:fT,sessions:fSess,rag_notes:fRN,timetable:fTT,companion:fComp||companion,achievements:fAch,my_plan:fPlan,updated_at:new Date().toISOString()},
           {onConflict:'user_id,profile'}
         ).then(()=>{});
         setSyncLoaded(true);
@@ -5264,7 +5536,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
     syncRef.current=setTimeout(()=>{
       const lbScore = scores.length ? Math.round(scores.reduce((s,x)=>s+(x.pct??0),0)/scores.length) : 0;
       supabase.from('user_data').upsert(
-        {user_id:user.id,profile:'me',scores,errors,rag,targets,sessions,rag_notes:ragNotes,timetable,companion,achievements:unlockedAch,updated_at:new Date().toISOString()},
+        {user_id:user.id,profile:'me',scores,errors,rag,targets,sessions,rag_notes:ragNotes,timetable,companion,achievements:unlockedAch,my_plan:myPlan,updated_at:new Date().toISOString()},
         {onConflict:'user_id,profile'}
       ).then(({error})=>{
         if(error) addToast('Auto-save failed — your data is safe locally','warn');
@@ -5274,7 +5546,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
         .eq('id',user.id);
     },2000);
     return ()=>clearTimeout(syncRef.current);
-  },[scores,errors,rag,targets,sessions,ragNotes,timetable,companion,unlockedAch,syncLoaded]);
+  },[scores,errors,rag,targets,sessions,ragNotes,timetable,companion,unlockedAch,myPlan,syncLoaded]);
 
   // Settings sync — load once from user_profiles.user_settings, then debounced push on changes
   const settingsSyncRef = useRef(null);
@@ -5364,7 +5636,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   ];
   const sidebarW = sidebarOpen ? (isMobile ? 54 : 210) : 0;
 
-  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse,analyticsConsent,setAnalyticsConsent,insNoted,setInsNoted};
+  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse,analyticsConsent,setAnalyticsConsent,insNoted,setInsNoted,myPlan,setMyPlan};
 
   return (
     <div style={{minHeight:'100vh',background:C.bg,fontFamily:font,color:C.text}}>
@@ -5567,7 +5839,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
         {view==='timetable'    && <TimetableView timetable={timetable} onSave={saveTimetable} C={C} font={font}/>}
         {view==='achievements' && <AchievementsView {...vp} unlockedIds={unlockedIds}/>}
         {view==='friends'      && <FriendsView   user={user} scores={scores} uid={uid} C={C} font={font} addToast={addToast}/>}
-        {view==='timer'        && <StudyTimer    subjects={subjects} uid={uid} C={C} font={font} sessions={sessions} setSessions={setSessions}/>}
+        {view==='timer'        && <StudyTimer    subjects={subjects} uid={uid} C={C} font={font} sessions={sessions} setSessions={setSessions} scores={scores} errors={errors} rag={rag}/>}
         {view==='resources'    && <Resources    {...vp}/>}
         {view==='account'      && <Account      {...vp} user={user} selection={selection}
                                     dark={dark} setDark={setDark} onSignOut={onSignOut} onResetSubjects={onResetSubjects} isPro={isPro} stripeCustomerId={stripeCustomerId}/>}
