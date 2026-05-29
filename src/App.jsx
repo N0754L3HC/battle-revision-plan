@@ -5682,13 +5682,10 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
       ).then(({error})=>{
         if(error) addToast('Auto-save failed — your data is safe locally','warn');
       });
-      const profileUpdate={leaderboard_score:lbScore,papers_count:scores.length,last_seen_at:new Date().toISOString()};
-      // Weekly snapshot for school leaderboard delta
-      const lastSnapTs = parseInt(ls.get(`rbp_last_snap_${uid}`,'0'),10) || 0;
-      if (Date.now() - lastSnapTs > 7*86400000) {
-        profileUpdate.leaderboard_snapshot_week = { ts: Date.now(), score: lbScore };
-        ls.set(`rbp_last_snap_${uid}`, String(Date.now()));
-      }
+      // leaderboard_score + papers_count are computed server-side by the
+      // recompute_leaderboard_score trigger on user_data; we only touch
+      // safe columns here.
+      const profileUpdate={last_seen_at:new Date().toISOString()};
       supabase.from('user_profiles').update(profileUpdate).eq('id',user.id);
     },2000);
     return ()=>clearTimeout(syncRef.current);
@@ -6243,19 +6240,24 @@ export default function App() {
       const u=session.user; const uid=u.id;
       if (alive) setUser(u);
       try {
-        await supabase.from('user_profiles').upsert({id:uid,email:u.email,last_seen_at:new Date().toISOString()},{onConflict:'id'});
+        // Row is created by handle_new_user trigger on auth.users insert.
+        // Heartbeat just bumps last_seen_at (email is server-controlled).
+        await supabase.from('user_profiles').update({last_seen_at:new Date().toISOString()}).eq('id',uid);
         const {data}=await supabase.from('user_profiles').select('subjects,subscription_status,stripe_customer_id,referral_code,exam_level,referral_pro_until').eq('id',uid).single();
         if (!alive) return;
         const stripePro = data?.subscription_status==='pro'||data?.subscription_status==='trialing'||data?.subscription_status==='active';
         const referralPro = data?.referral_pro_until && new Date(data.referral_pro_until).getTime() > Date.now();
         if (stripePro || referralPro) setIsPro(true);
         if (data?.stripe_customer_id) setStripeCustomerId(data.stripe_customer_id);
+        // referral_code is auto-assigned by the column DEFAULT on insert.
+        // If still null on an existing row, re-read after a short pause —
+        // the row was likely created by handle_new_user mid-boot.
         let rc=data?.referral_code;
         if (!rc) {
-          rc=Math.random().toString(36).slice(2,8).toUpperCase();
-          await supabase.from('user_profiles').update({referral_code:rc}).eq('id',uid);
+          const {data:retry}=await supabase.from('user_profiles').select('referral_code').eq('id',uid).single();
+          rc = retry?.referral_code ?? null;
         }
-        if (alive) setReferralCode(rc);
+        if (alive && rc) setReferralCode(rc);
         const pendingRef=sessionStorage.getItem('rbp_ref');
         if (pendingRef && pendingRef!==rc) {
           sessionStorage.removeItem('rbp_ref');
