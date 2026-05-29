@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import AuthGate from './components/AuthGate';
 import SubjectPicker from './components/SubjectPicker';
-import SquadsView from './components/SquadsView';
+import GroupsView from './components/GroupsView';
 import { subjectsFromSelection, GCSE_CATALOG } from './data/subjects';
 import { BarChart3, PenLine, CalendarDays, ClipboardList, Trophy, Users, Timer, BookOpen, User, Sun, Moon, Lock, Pencil, GraduationCap, FileText, TrendingUp, Zap, Star, ArrowUpRight, Target, Shield, CheckCircle, Calendar, Search, Grid3x3, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
@@ -4916,7 +4916,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
         <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:10}}>School leaderboard</div>
         <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginBottom:12}}>
-          Enter your school name and opt in to appear on the anonymous school leaderboard in the Squads tab. Only your school's average score is visible — never individual data.
+          Enter your school name and opt in to appear on the anonymous school leaderboard in the Groups tab. Only your school's average score is visible — never individual data.
         </div>
         <input
           value={schoolName}
@@ -5509,6 +5509,29 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   const dismissToast = id => setToasts(prev=>prev.filter(t=>t.id!==id));
   const doneTour = () => { ls.set('rbp_tour_v1',true); setShowTour(false); };
 
+  // Magic-link auto-join: if /j/CODE was captured pre-auth, join the group now
+  useEffect(()=>{
+    const code = sessionStorage.getItem('rbp_join_code');
+    if (!code) return;
+    sessionStorage.removeItem('rbp_join_code');
+    (async()=>{
+      const {data:{session}} = await supabase.auth.getSession();
+      if (!session) return;
+      try {
+        const r = await fetch('/api/groups',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`},
+          body:JSON.stringify({action:'join',invite_code:code}),
+        });
+        const d = await r.json();
+        if (d.group) { addToast(`Joined "${d.group.name}"`,'success'); setView('groups'); }
+        else if (d.error==='Already in this group') { addToast('You\'re already in that group','info'); setView('groups'); }
+        else if (d.error) addToast(d.error,'error');
+      } catch { addToast('Could not join group','error'); }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
   const uid      = user?.id??'anon';
   const [scores,   setScores]    = useState(()=>ls.get(`rbp_scores_${uid}`,[]));
   const [errors,   setErrors]    = useState(()=>ls.get(`rbp_errors_${uid}`,[]));
@@ -5755,7 +5778,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
     {id:'plan',         label:'Plan',         Icon:ClipboardList},
     {id:'timetable',    label:'Timetable',    Icon:Grid3x3},
     {id:'achievements', label:'Achievements', Icon:Trophy},
-    {id:'squads',       label:'Squads',       Icon:Users},
+    {id:'groups',       label:'Groups',       Icon:Users},
     {id:'timer',        label:'Timer',        Icon:Timer},
     {id:'resources',    label:'Resources',    Icon:BookOpen},
     {id:'account',      label:'Account',      Icon:User},
@@ -5964,7 +5987,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
         {view==='plan'         && <Schedule     {...vp}/>}
         {view==='timetable'    && <TimetableView timetable={timetable} onSave={saveTimetable} C={C} font={font}/>}
         {view==='achievements' && <AchievementsView {...vp} unlockedIds={unlockedIds}/>}
-        {view==='squads'       && <SquadsView    user={user} scores={scores} uid={uid} C={C} font={font} addToast={addToast}/>}
+        {view==='groups'       && <GroupsView    user={user} scores={scores} uid={uid} C={C} font={font} addToast={addToast}/>}
         {view==='timer'        && <StudyTimer    subjects={subjects} uid={uid} C={C} font={font} sessions={sessions} setSessions={setSessions} scores={scores} errors={errors} rag={rag}/>}
         {view==='resources'    && <Resources    {...vp}/>}
         {view==='account'      && <Account      {...vp} user={user} selection={selection}
@@ -6202,7 +6225,7 @@ export default function App() {
     // Capture referral code from URL before auth
     const refParam = new URLSearchParams(window.location.search).get('ref');
     if (refParam) sessionStorage.setItem('rbp_ref', refParam.toUpperCase().trim());
-    // Capture squad invite from /j/CODE path before auth; SquadsView consumes it after sign-in
+    // Capture group invite from /j/CODE path before auth; consumed by useEffect in RevisionPlan post-auth
     const joinMatch = window.location.pathname.match(/^\/j\/([A-Z0-9]{4,8})$/i);
     if (joinMatch) {
       sessionStorage.setItem('rbp_join_code', joinMatch[1].toUpperCase());
