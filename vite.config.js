@@ -35,8 +35,8 @@ export default defineConfig({
   build: {
     minify: 'terser',
     terserOptions: {
-      mangle: { keep_fnames: true },
-      compress: { keep_fnames: true },
+      mangle: false,
+      compress: { keep_fnames: true, keep_classnames: true },
     },
     rollupOptions: {
       input: {
