@@ -34,6 +34,10 @@ export default defineConfig({
   ],
   build: {
     minify: 'terser',
+    terserOptions: {
+      mangle: { keep_fnames: true },
+      compress: { keep_fnames: true },
+    },
     rollupOptions: {
       input: {
         main:  resolve(__dirname, 'index.html'),
