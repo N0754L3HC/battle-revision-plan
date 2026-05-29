@@ -33,6 +33,7 @@ export default defineConfig({
     })
   ],
   build: {
+    minify: 'terser',
     rollupOptions: {
       input: {
         main:  resolve(__dirname, 'index.html'),
