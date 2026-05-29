@@ -5203,6 +5203,10 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   // Supabase sync — load on mount, push on change
   const syncRef        = useRef(null);
   const [syncLoaded,setSyncLoaded] = useState(false);
+  const [timetable, setTimetable] = useState(()=>ls.get(`rbp_timetable_${uid}`,{}));
+  const saveTimetable = (t) => { setTimetable(t); ls.set(`rbp_timetable_${uid}`,t); };
+  const [sidebarOpen, setSidebarOpen] = useState(()=>ls.get('rbp_sidebar_open',true));
+  const toggleSidebar = () => { const v=!sidebarOpen; setSidebarOpen(v); ls.set('rbp_sidebar_open',v); };
   useEffect(()=>{
     if (!user?.id||!isSupabaseConfigured()) { setSyncLoaded(true); return; }
     const lS=ls.get(`rbp_scores_${uid}`,[]);
@@ -5314,12 +5318,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
     {id:'resources',    label:'Resources',    Icon:BookOpen},
     {id:'account',      label:'Account',      Icon:User},
   ];
-  const [sidebarOpen, setSidebarOpen] = useState(()=>ls.get('rbp_sidebar_open',true));
-  const toggleSidebar = () => { const v=!sidebarOpen; setSidebarOpen(v); ls.set('rbp_sidebar_open',v); };
   const sidebarW = sidebarOpen ? (isMobile ? 54 : 210) : 0;
-
-  const [timetable, setTimetable] = useState(()=>ls.get(`rbp_timetable_${uid}`,{}));
-  const saveTimetable = (t) => { setTimetable(t); ls.set(`rbp_timetable_${uid}`,t); };
 
   const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse};
 
