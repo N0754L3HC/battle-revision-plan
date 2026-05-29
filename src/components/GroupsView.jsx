@@ -31,8 +31,6 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast }
   const [creating, setCreating]   = useState(false);
   const [joining, setJoining]     = useState(false);
   const [expanded, setExpanded]   = useState(null);
-  const [showCreate, setShowCreate] = useState(false);
-  const [showJoin, setShowJoin]   = useState(false);
 
   const [displayName, setDisplayName] = useState(user?.email?.split('@')[0] || 'You');
 
@@ -80,7 +78,7 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast }
     setCreating(true);
     const d = await apiFetch('POST', { action: 'create', name });
     if (d.group) {
-      setCreateName(''); setShowCreate(false);
+      setCreateName('');
       addToast(`Group "${d.group.name}" created`, 'success');
       load();
       setExpanded(d.group.id);
@@ -96,7 +94,7 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast }
     setJoining(true);
     const d = await apiFetch('POST', { action: 'join', invite_code: code });
     if (d.group) {
-      setJoinInput(''); setShowJoin(false);
+      setJoinInput('');
       addToast(`Joined "${d.group.name}"`, 'success');
       load();
     } else {
@@ -161,47 +159,6 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast }
     loadSchools(yr);
   };
 
-  // Compact button row used both in empty state and at top of populated list
-  const CreateJoinBar = ({ compact = false }) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      {(showCreate || !compact) && (
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input value={createName} onChange={e => setCreateName(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && !creating && handleCreate()}
-            placeholder={compact ? 'New group name' : 'e.g. Maths group, Form 12B'}
-            maxLength={40}
-            style={{ flex: 1, background: C.card2, border: `1px solid ${C.border}`, borderRadius: 8,
-              padding: '10px 12px', color: C.text, fontSize: 13, fontFamily: font, outline: 'none' }} />
-          <button onClick={handleCreate} disabled={creating || createName.trim().length < 2}
-            style={{ padding: '10px 18px', borderRadius: 8, fontFamily: font, fontSize: 13, fontWeight: 700,
-              cursor: creating || createName.trim().length < 2 ? 'not-allowed' : 'pointer',
-              background: creating || createName.trim().length < 2 ? C.card2 : C.accent,
-              border: `1px solid ${creating || createName.trim().length < 2 ? C.border : C.accent}`,
-              color: creating || createName.trim().length < 2 ? C.muted : '#fff' }}>
-            {creating ? '…' : 'Create'}
-          </button>
-        </div>
-      )}
-      {(showJoin || !compact) && (
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input value={joinInput} onChange={e => setJoinInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && !joining && handleJoin()}
-            placeholder="Paste invite link or code"
-            style={{ flex: 1, background: C.card2, border: `1px solid ${C.border}`, borderRadius: 8,
-              padding: '10px 12px', color: C.text, fontSize: 13, fontFamily: font, outline: 'none' }} />
-          <button onClick={handleJoin} disabled={joining || !extractCode(joinInput)}
-            style={{ padding: '10px 18px', borderRadius: 8, fontFamily: font, fontSize: 13, fontWeight: 700,
-              cursor: joining || !extractCode(joinInput) ? 'not-allowed' : 'pointer',
-              background: joining || !extractCode(joinInput) ? C.card2 : C.accent,
-              border: `1px solid ${joining || !extractCode(joinInput) ? C.border : C.accent}`,
-              color: joining || !extractCode(joinInput) ? C.muted : '#fff' }}>
-            {joining ? '…' : 'Join'}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
@@ -213,97 +170,76 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast }
         </div>
       </div>
 
+      {/* ─────── Always-visible action card: Create + Join ─────── */}
+      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: '18px 20px' }}>
+
+        {/* Create */}
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase',
+            letterSpacing: 0.5, marginBottom: 8 }}>
+            Start a new group
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input value={createName} onChange={e => setCreateName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && !creating && handleCreate()}
+              placeholder="e.g. Maths group, Form 12B"
+              maxLength={40}
+              style={{ flex: 1, background: C.card2, border: `1px solid ${C.border}`, borderRadius: 8,
+                padding: '11px 13px', color: C.text, fontSize: 13, fontFamily: font, outline: 'none' }} />
+            <button onClick={handleCreate} disabled={creating || createName.trim().length < 2}
+              style={{ padding: '11px 22px', borderRadius: 8, fontFamily: font, fontSize: 13, fontWeight: 700,
+                cursor: creating || createName.trim().length < 2 ? 'not-allowed' : 'pointer',
+                background: creating || createName.trim().length < 2 ? C.card2 : C.accent,
+                border: `1px solid ${creating || createName.trim().length < 2 ? C.border : C.accent}`,
+                color: creating || createName.trim().length < 2 ? C.muted : '#fff' }}>
+              {creating ? '…' : 'Create'}
+            </button>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '4px 0 14px' }}>
+          <div style={{ flex: 1, height: 1, background: C.border }} />
+          <div style={{ fontSize: 10, fontWeight: 700, color: C.subtle, letterSpacing: 1 }}>OR</div>
+          <div style={{ flex: 1, height: 1, background: C.border }} />
+        </div>
+
+        {/* Join */}
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase',
+            letterSpacing: 0.5, marginBottom: 8 }}>
+            Join with an invite link or code
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input value={joinInput} onChange={e => setJoinInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && !joining && handleJoin()}
+              placeholder="Paste invite link or code"
+              style={{ flex: 1, background: C.card2, border: `1px solid ${C.border}`, borderRadius: 8,
+                padding: '11px 13px', color: C.text, fontSize: 13, fontFamily: font, outline: 'none' }} />
+            <button onClick={handleJoin} disabled={joining || !extractCode(joinInput)}
+              style={{ padding: '11px 22px', borderRadius: 8, fontFamily: font, fontSize: 13, fontWeight: 700,
+                cursor: joining || !extractCode(joinInput) ? 'not-allowed' : 'pointer',
+                background: joining || !extractCode(joinInput) ? C.card2 : C.accent,
+                border: `1px solid ${joining || !extractCode(joinInput) ? C.border : C.accent}`,
+                color: joining || !extractCode(joinInput) ? C.muted : '#fff' }}>
+              {joining ? '…' : 'Join'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ─────── Your groups list ─────── */}
       {loading ? (
         <div style={{ fontSize: 13, color: C.subtle, padding: '4px 0' }}>Loading…</div>
       ) : groups.length === 0 ? (
-        /* ─────── Empty state — full create + join visible ─────── */
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: '20px' }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 12, textAlign: 'center' }}>
-            You're not in any groups yet
-          </div>
-
-          {/* Create a group */}
-          <div style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase',
-              letterSpacing: 0.5, marginBottom: 8 }}>
-              Start your own
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input value={createName} onChange={e => setCreateName(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && !creating && handleCreate()}
-                placeholder="e.g. Maths group, Form 12B"
-                maxLength={40}
-                style={{ flex: 1, background: C.card2, border: `1px solid ${C.border}`, borderRadius: 8,
-                  padding: '10px 12px', color: C.text, fontSize: 13, fontFamily: font, outline: 'none' }} />
-              <button onClick={handleCreate} disabled={creating || createName.trim().length < 2}
-                style={{ padding: '10px 22px', borderRadius: 8, fontFamily: font, fontSize: 13, fontWeight: 700,
-                  cursor: creating || createName.trim().length < 2 ? 'not-allowed' : 'pointer',
-                  background: creating || createName.trim().length < 2 ? C.card2 : C.accent,
-                  border: `1px solid ${creating || createName.trim().length < 2 ? C.border : C.accent}`,
-                  color: creating || createName.trim().length < 2 ? C.muted : '#fff' }}>
-                {creating ? '…' : 'Create'}
-              </button>
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '4px 0 14px' }}>
-            <div style={{ flex: 1, height: 1, background: C.border }} />
-            <div style={{ fontSize: 10, fontWeight: 700, color: C.subtle, letterSpacing: 1 }}>OR</div>
-            <div style={{ flex: 1, height: 1, background: C.border }} />
-          </div>
-
-          {/* Join with link */}
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase',
-              letterSpacing: 0.5, marginBottom: 8 }}>
-              Got a link from a mate?
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input value={joinInput} onChange={e => setJoinInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && !joining && handleJoin()}
-                placeholder="Paste invite link or code"
-                style={{ flex: 1, background: C.card2, border: `1px solid ${C.border}`, borderRadius: 8,
-                  padding: '10px 12px', color: C.text, fontSize: 13, fontFamily: font, outline: 'none' }} />
-              <button onClick={handleJoin} disabled={joining || !extractCode(joinInput)}
-                style={{ padding: '10px 22px', borderRadius: 8, fontFamily: font, fontSize: 13, fontWeight: 700,
-                  cursor: joining || !extractCode(joinInput) ? 'not-allowed' : 'pointer',
-                  background: joining || !extractCode(joinInput) ? C.card2 : C.accent,
-                  border: `1px solid ${joining || !extractCode(joinInput) ? C.border : C.accent}`,
-                  color: joining || !extractCode(joinInput) ? C.muted : '#fff' }}>
-                {joining ? '…' : 'Join'}
-              </button>
-            </div>
-          </div>
+        <div style={{ fontSize: 12, color: C.subtle, lineHeight: 1.6, padding: '4px 4px' }}>
+          You're not in any groups yet — create one above or paste a friend's invite link.
         </div>
       ) : (
-        /* ─────── Populated state ─────── */
         <>
-          {/* Compact action bar (toggle Create/Join inline) */}
-          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '12px 14px' }}>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button onClick={() => { setShowCreate(v => !v); setShowJoin(false); }}
-                style={{ padding: '8px 14px', borderRadius: 7,
-                  background: showCreate ? C.accentSoft : 'transparent',
-                  border: `1px solid ${showCreate ? C.accent : C.border}`,
-                  color: showCreate ? C.accent : C.muted,
-                  fontSize: 12, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>
-                + New group
-              </button>
-              <button onClick={() => { setShowJoin(v => !v); setShowCreate(false); }}
-                style={{ padding: '8px 14px', borderRadius: 7,
-                  background: showJoin ? C.accentSoft : 'transparent',
-                  border: `1px solid ${showJoin ? C.accent : C.border}`,
-                  color: showJoin ? C.accent : C.muted,
-                  fontSize: 12, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>
-                Join with link
-              </button>
-            </div>
-            {(showCreate || showJoin) && (
-              <div style={{ marginTop: 12 }}>
-                <CreateJoinBar compact />
-              </div>
-            )}
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase',
+            letterSpacing: 0.5, marginTop: 4 }}>
+            Your groups
           </div>
 
           {/* Group cards */}
