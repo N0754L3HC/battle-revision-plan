@@ -3,6 +3,7 @@ import { supabase, isSupabaseConfigured } from './lib/supabase';
 import AuthGate from './components/AuthGate';
 import SubjectPicker from './components/SubjectPicker';
 import GroupsView from './components/GroupsView';
+import TermsOfService from './components/TermsOfService';
 import { subjectsFromSelection, GCSE_CATALOG } from './data/subjects';
 import { BarChart3, PenLine, CalendarDays, ClipboardList, Trophy, Users, Timer, BookOpen, User, Sun, Moon, Lock, Pencil, GraduationCap, FileText, TrendingUp, Zap, Star, ArrowUpRight, Target, Shield, CheckCircle, Calendar, Search, Grid3x3, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
@@ -4515,6 +4516,51 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
   const [referralCount, setReferralCount] = useState(null);
   const [referralProUntil, setReferralProUntil] = useState(null);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [deleteStep, setDeleteStep] = useState(0); // 0=idle, 1=confirm, 2=type-confirm
+  const [deleteText, setDeleteText] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
+  const exportMyData = async () => {
+    if (!uid||uid==='anon') return;
+    setExporting(true);
+    try {
+      const [{data:profile},{data:dataRow}] = await Promise.all([
+        supabase.from('user_profiles').select('*').eq('id',uid).single(),
+        supabase.from('user_data').select('*').eq('user_id',uid).eq('profile','me').maybeSingle(),
+      ]);
+      const payload = {
+        exported_at: new Date().toISOString(),
+        app: 'A* Battle Plan',
+        format_version: 1,
+        profile: profile || null,
+        revision_data: dataRow || null,
+      };
+      const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `battle-plan-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    } finally { setExporting(false); }
+  };
+
+  const deleteMyAccount = async () => {
+    setDeleting(true);
+    try {
+      const {error} = await supabase.rpc('delete_current_user');
+      if (error) { alert(`Delete failed: ${error.message}`); setDeleting(false); return; }
+      // Clear local storage scoped to this uid
+      try { Object.keys(localStorage).filter(k=>k.includes(uid)).forEach(k=>localStorage.removeItem(k)); } catch {}
+      await supabase.auth.signOut();
+      // signOut triggers boot's SIGNED_OUT handler -> back to landing
+    } catch (e) {
+      alert(`Delete failed: ${e?.message ?? 'unknown error'}`);
+      setDeleting(false);
+    }
+  };
 
   useEffect(()=>{
     if (!uid||uid==='anon') return;
@@ -4958,12 +5004,122 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
         </button>
       </div>
 
+      {/* Your data — GDPR Article 20 (portability) + Article 17 (erasure) */}
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:6}}>
+          Your data
+        </div>
+        <div style={{fontSize:12,color:C.muted,lineHeight:1.6,marginBottom:14}}>
+          Your data belongs to you. Download a complete JSON copy of everything
+          we have on file, or permanently delete your account at any time.
+          We comply with UK GDPR (Article 17 erasure, Article 20 portability).
+        </div>
+
+        <button onClick={exportMyData} disabled={exporting||uid==='anon'}
+          style={{width:'100%',padding:'10px',background:C.card2,border:`1px solid ${C.border}`,
+            borderRadius:8,color:C.text,fontSize:13,fontWeight:600,fontFamily:font,
+            cursor:exporting?'wait':'pointer',marginBottom:10}}>
+          {exporting?'Preparing…':'Export my data (JSON)'}
+        </button>
+
+        {deleteStep===0&&(
+          <button onClick={()=>setDeleteStep(1)}
+            style={{width:'100%',padding:'10px',background:'transparent',
+              border:`1px solid ${C.danger}40`,borderRadius:8,color:C.danger,
+              fontSize:13,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
+            Delete my account
+          </button>
+        )}
+        {deleteStep===1&&(
+          <div style={{padding:'12px',background:`${C.danger}0a`,
+            border:`1px solid ${C.danger}40`,borderRadius:8}}>
+            <div style={{fontSize:12,color:C.text,marginBottom:10,lineHeight:1.6}}>
+              This <strong>permanently</strong> deletes your account, all your
+              papers, scores, errors, group memberships, and referral history.
+              It cannot be undone.
+            </div>
+            <div style={{display:'flex',gap:8}}>
+              <button onClick={()=>setDeleteStep(2)}
+                style={{flex:1,padding:'9px',background:C.danger,border:'none',
+                  borderRadius:7,color:'#fff',fontSize:12,fontWeight:700,
+                  fontFamily:font,cursor:'pointer'}}>
+                I understand — continue
+              </button>
+              <button onClick={()=>setDeleteStep(0)}
+                style={{padding:'9px 14px',background:'transparent',
+                  border:`1px solid ${C.border}`,borderRadius:7,color:C.muted,
+                  fontSize:12,fontFamily:font,cursor:'pointer'}}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+        {deleteStep===2&&(
+          <div style={{padding:'12px',background:`${C.danger}0a`,
+            border:`1px solid ${C.danger}40`,borderRadius:8}}>
+            <div style={{fontSize:12,color:C.text,marginBottom:10,lineHeight:1.6}}>
+              Type <strong style={{fontFamily:"'JetBrains Mono',monospace"}}>DELETE</strong> below
+              to confirm. Your account will be removed within seconds and you'll
+              be signed out.
+            </div>
+            <input value={deleteText} onChange={e=>setDeleteText(e.target.value)}
+              placeholder="Type DELETE to confirm"
+              style={{width:'100%',boxSizing:'border-box',padding:'9px 11px',
+                background:C.card2,border:`1px solid ${C.border}`,borderRadius:7,
+                color:C.text,fontSize:13,fontFamily:font,outline:'none',marginBottom:10}}/>
+            <div style={{display:'flex',gap:8}}>
+              <button onClick={deleteMyAccount}
+                disabled={deleteText!=='DELETE'||deleting}
+                style={{flex:1,padding:'9px',
+                  background:deleteText==='DELETE'?C.danger:C.card2,
+                  border:`1px solid ${deleteText==='DELETE'?C.danger:C.border}`,
+                  borderRadius:7,
+                  color:deleteText==='DELETE'?'#fff':C.muted,
+                  fontSize:12,fontWeight:700,fontFamily:font,
+                  cursor:deleteText==='DELETE'&&!deleting?'pointer':'not-allowed'}}>
+                {deleting?'Deleting…':'Permanently delete my account'}
+              </button>
+              <button onClick={()=>{setDeleteStep(0);setDeleteText('');}}
+                disabled={deleting}
+                style={{padding:'9px 14px',background:'transparent',
+                  border:`1px solid ${C.border}`,borderRadius:7,color:C.muted,
+                  fontSize:12,fontFamily:font,cursor:'pointer'}}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       <button onClick={onSignOut}
         style={{width:'100%',padding:'12px',background:'transparent',
           border:`1px solid ${C.danger}40`,borderRadius:10,color:C.danger,
           fontSize:13,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
         Sign out
       </button>
+
+      {/* Footer: beta notice + ToS link */}
+      <div style={{textAlign:'center',padding:'12px 0 4px',fontSize:11,color:C.subtle,lineHeight:1.8}}>
+        <div>
+          <strong style={{color:C.muted}}>A* Battle Plan</strong>
+          <span style={{marginLeft:6,padding:'1px 7px',background:C.accentSoft,
+            border:`1px solid ${C.accent}55`,borderRadius:8,fontSize:9,
+            fontWeight:800,color:C.accent,letterSpacing:0.5}}>BETA</span>
+        </div>
+        <div style={{marginTop:4}}>
+          <button onClick={()=>setShowTerms(true)}
+            style={{background:'transparent',border:'none',color:C.muted,
+              fontSize:11,fontFamily:font,cursor:'pointer',textDecoration:'underline',
+              padding:0}}>
+            Terms of Service &amp; Privacy Policy
+          </button>
+        </div>
+        <div style={{marginTop:2,fontSize:10}}>
+          Built in the UK · Data stored in EU under UK GDPR
+        </div>
+      </div>
+
+      {showTerms && <TermsOfService onClose={()=>setShowTerms(false)}/>}
     </div>
   );
 }
@@ -5918,7 +6074,11 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
                   background:{happy:'#22c55e',excited:'#fbbf24',worried:'#f97316',neutral:C.accent,sleepy:'#64748b'}[mood]||C.accent,
                   border:`2px solid ${C.nav}`}}/>
               </div>
-              <div style={{fontSize:13,fontWeight:700,color:C.text,letterSpacing:0.1}}>{companion.name}</div>
+              <div style={{display:'flex',alignItems:'center',gap:5}}>
+                <div style={{fontSize:13,fontWeight:700,color:C.text,letterSpacing:0.1}}>{companion.name}</div>
+                <span style={{fontSize:8,fontWeight:800,color:C.accent,background:C.accentSoft,
+                  border:`1px solid ${C.accent}55`,borderRadius:5,padding:'1px 5px',letterSpacing:0.4}}>BETA</span>
+              </div>
               <div style={{display:'flex',gap:5,flexWrap:'wrap',justifyContent:'center'}}>
                 <button onClick={e=>{e.stopPropagation();setCompanionDraft(companion.name);setCustomising(true);}}
                   style={{fontSize:10,color:C.muted,background:'transparent',
