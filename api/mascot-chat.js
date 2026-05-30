@@ -21,8 +21,17 @@ function take(map, key, cap) {
   if (entry.count >= cap) return false;
   entry.count++; map.set(key, entry); return true;
 }
-const rateLimitIp   = ip  => take(ipBucket,   ip,  60);
-const rateLimitUser = uid => take(userBucket, uid, 15); // 15 turns per user per hour
+// Hourly per-IP / per-user (in-process — survives serverless warm window).
+const HOUR_IP_CAP   = parseInt(process.env.CHAT_HOUR_PER_IP   || '60', 10);
+const HOUR_USER_CAP = parseInt(process.env.CHAT_HOUR_PER_USER || '15', 10);
+const rateLimitIp   = ip  => take(ipBucket,   ip,  HOUR_IP_CAP);
+const rateLimitUser = uid => take(userBucket, uid, HOUR_USER_CAP);
+
+// Daily caps + message size — enforced via Supabase counters.
+const DAILY_USER_CAP   = parseInt(process.env.CHAT_DAILY_PER_USER || '30',   10);
+const DAILY_GLOBAL_CAP = parseInt(process.env.CHAT_DAILY_GLOBAL   || '5000', 10);
+const MSG_MAX_CHARS    = parseInt(process.env.CHAT_MSG_MAX_CHARS  || '600',  10);
+const HISTORY_TURNS    = parseInt(process.env.CHAT_HISTORY_TURNS  || '5',    10);
 
 async function getAuthUser(req, admin) {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -121,7 +130,7 @@ function buildContext({subjects=[], scores=[], rag={}, examLevel='alevel', nextE
 function toGeminiContents(messages) {
   return messages.map(m => ({
     role: m.from === 'char' ? 'model' : 'user',
-    parts: [{ text: String(m.text || '').slice(0, 1600) }], // cap each msg (raised so code snippets in history aren't cut)
+    parts: [{ text: String(m.text || '').slice(0, MSG_MAX_CHARS) }], // cap each msg
   }));
 }
 
@@ -216,8 +225,8 @@ export default async function handler(req, res) {
   if (!lastUserMsg || typeof lastUserMsg.text !== 'string' || lastUserMsg.text.trim().length === 0) {
     return res.status(400).json({ error: 'No user message' });
   }
-  if (lastUserMsg.text.length > 800) {
-    return res.status(400).json({ error: 'Message too long (max 800 chars)' });
+  if (lastUserMsg.text.length > MSG_MAX_CHARS) {
+    return res.status(400).json({ error: `Message too long (max ${MSG_MAX_CHARS} chars)` });
   }
 
   // 1. CRISIS PRE-SCREEN — never call Gemini for these
@@ -229,14 +238,41 @@ export default async function handler(req, res) {
     });
   }
 
-  // 2. Cap history at last 8 turns to keep cost down + prevent prompt-stuffing
-  const trimmed = messages.slice(-8);
+  // 2. Daily caps via Supabase counter (atomic increment, single round-trip).
+  // Increments BEFORE Gemini call so a hammering attacker still consumes budget
+  // toward their own cap rather than slipping through. Admins exempt — they may
+  // legitimately want to test/debug.
+  if (!prof?.is_admin) {
+    const { data: usage, error: usageErr } = await admin.rpc('increment_chat_usage', { p_uid: uid });
+    if (usageErr) {
+      console.error('Chat usage counter error:', usageErr.message);
+      // Fail-open here — the counter is defence-in-depth, not the primary gate.
+      // Hourly per-user (15/h) + per-IP (60/h) are still enforced above.
+    } else {
+      const row = Array.isArray(usage) ? usage[0] : usage;
+      const userCount   = row?.user_count   ?? 0;
+      const globalCount = row?.global_count ?? 0;
+      if (userCount > DAILY_USER_CAP) {
+        return res.status(429).json({
+          error: `Daily chat limit reached (${DAILY_USER_CAP}/day). Resets at midnight UTC.`,
+        });
+      }
+      if (globalCount > DAILY_GLOBAL_CAP) {
+        return res.status(503).json({
+          error: `Chat is paused for the day — site-wide cap (${DAILY_GLOBAL_CAP}) reached. Back tomorrow.`,
+        });
+      }
+    }
+  }
 
-  // 3. Build context block
+  // 3. Cap history to keep cost down + prevent prompt-stuffing
+  const trimmed = messages.slice(-HISTORY_TURNS);
+
+  // 4. Build context block
   const contextBlock = buildContext(context || {});
   const sys = SYSTEM_PROMPT.replace('{{CONTEXT}}', contextBlock);
 
-  // 4. Call Gemini
+  // 5. Call Gemini
   try {
     const { reply, blocked, reason } = await callGemini({
       systemPrompt: sys,
