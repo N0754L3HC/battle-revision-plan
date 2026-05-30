@@ -56,6 +56,11 @@ function CheckIcon() {
 export default function AuthGate({ onAuth }) {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
+  const [tab, setTab]         = useState('google'); // 'google' | 'email'
+  const [emailMode, setEmailMode] = useState('signin'); // 'signin' | 'signup' | 'reset'
+  const [email, setEmail]     = useState('');
+  const [password, setPassword] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
   const mobile = window.innerWidth < 768;
 
   if (!isSupabaseConfigured()) {
@@ -85,6 +90,41 @@ export default function AuthGate({ onAuth }) {
       options: { redirectTo: window.location.origin },
     });
     if (err) { setLoading(false); setError(err.message); }
+  };
+
+  const sanitizeEmail = v => v.trim().toLowerCase().slice(0, 254);
+  const sanitizePassword = v => v.slice(0, 128);
+
+  const handleEmailAuth = async () => {
+    setLoading(true); setError('');
+    const safeEmail = sanitizeEmail(email);
+    const safePass = sanitizePassword(password);
+    if (!safeEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(safeEmail)) {
+      setError('Enter a valid email address.'); setLoading(false); return;
+    }
+    if (emailMode === 'reset') {
+      const { error: err } = await supabase.auth.resetPasswordForEmail(safeEmail, {
+        redirectTo: `${window.location.origin}?reset=1`,
+      });
+      setLoading(false);
+      if (err) { setError(err.message); return; }
+      setEmailSent(true); return;
+    }
+    if (safePass.length < 8) {
+      setError('Password must be at least 8 characters.'); setLoading(false); return;
+    }
+    if (emailMode === 'signup') {
+      const { error: err } = await supabase.auth.signUp({
+        email: safeEmail, password: safePass,
+        options: { emailRedirectTo: window.location.origin },
+      });
+      setLoading(false);
+      if (err) { setError(err.message); return; }
+      setEmailSent(true); return;
+    }
+    const { error: err } = await supabase.auth.signInWithPassword({ email: safeEmail, password: safePass });
+    setLoading(false);
+    if (err) setError(err.message === 'Invalid login credentials' ? 'Wrong email or password.' : err.message);
   };
 
   if (mobile) {
@@ -117,6 +157,18 @@ export default function AuthGate({ onAuth }) {
         <div style={{ margin:'0 16px', background:C.surface,
           borderRadius:16, border:`1px solid ${C.border}`, padding:'22px 20px', flex:'0 0 auto' }}>
 
+          {/* Tabs */}
+          <div style={{ display:'flex', gap:4, marginBottom:18, background:'rgba(255,255,255,0.04)', borderRadius:8, padding:3 }}>
+            {[['google','Google'],['email','Email']].map(([t,l])=>(
+              <button key={t} onClick={()=>{setTab(t);setError('');setEmailSent(false);}} style={{
+                flex:1, padding:'7px 0', borderRadius:6, border:'none', cursor:'pointer',
+                fontFamily:font, fontSize:13, fontWeight:tab===t?600:400,
+                background:tab===t?C.surface2||'rgba(255,255,255,0.08)':'transparent',
+                color:tab===t?C.text:C.muted, transition:'all 0.12s',
+              }}>{l}</button>
+            ))}
+          </div>
+
           {error && (
             <div style={{ background:'rgba(239,68,68,0.07)', border:'1px solid rgba(239,68,68,0.2)',
               borderRadius:8, padding:'10px 14px', marginBottom:16,
@@ -125,17 +177,76 @@ export default function AuthGate({ onAuth }) {
             </div>
           )}
 
-          <button onClick={handleGoogle} disabled={loading}
-            style={{ width:'100%', padding:'14px 0',
-              background:'rgba(255,255,255,0.06)',
-              border:`1px solid ${C.borderHover}`,
-              borderRadius:10, cursor:loading?'not-allowed':'pointer',
-              display:'flex', alignItems:'center', justifyContent:'center', gap:10,
-              fontFamily:font, fontSize:15, color:C.text, fontWeight:600,
-              transition:'background 0.15s' }}>
-            <GoogleIcon/>
-            {loading ? 'Redirecting…' : 'Continue with Google'}
-          </button>
+          {tab === 'google' ? (
+            <button onClick={handleGoogle} disabled={loading}
+              style={{ width:'100%', padding:'14px 0',
+                background:'rgba(255,255,255,0.06)',
+                border:`1px solid ${C.borderHover}`,
+                borderRadius:10, cursor:loading?'not-allowed':'pointer',
+                display:'flex', alignItems:'center', justifyContent:'center', gap:10,
+                fontFamily:font, fontSize:15, color:C.text, fontWeight:600,
+                transition:'background 0.15s' }}>
+              <GoogleIcon/>
+              {loading ? 'Redirecting…' : 'Continue with Google'}
+            </button>
+          ) : emailSent ? (
+            <div style={{ textAlign:'center', padding:'8px 0' }}>
+              <div style={{ fontSize:28, marginBottom:8 }}>📬</div>
+              <div style={{ fontSize:14, fontWeight:600, color:C.text, marginBottom:6 }}>
+                {emailMode==='reset' ? 'Reset link sent' : 'Check your email'}
+              </div>
+              <div style={{ fontSize:13, color:C.muted, lineHeight:1.6 }}>
+                {emailMode==='reset'
+                  ? 'A password reset link has been sent. Check your inbox.'
+                  : 'We sent a confirmation link to your email. Click it to activate your account.'}
+              </div>
+              <button onClick={()=>{setEmailSent(false);setEmailMode('signin');}} style={{
+                marginTop:16, background:'transparent', border:`1px solid ${C.border}`,
+                borderRadius:8, color:C.muted, fontSize:13, fontFamily:font,
+                cursor:'pointer', padding:'8px 16px',
+              }}>Back to sign in</button>
+            </div>
+          ) : (
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              <input value={email} onChange={e=>setEmail(e.target.value)} type="email"
+                placeholder="Email address" autoComplete="email"
+                onKeyDown={e=>e.key==='Enter'&&handleEmailAuth()}
+                style={{ width:'100%', padding:'12px 14px', background:'rgba(255,255,255,0.05)',
+                  border:`1px solid ${C.border}`, borderRadius:10, color:C.text,
+                  fontSize:14, fontFamily:font, outline:'none', boxSizing:'border-box' }}/>
+              {emailMode !== 'reset' && (
+                <input value={password} onChange={e=>setPassword(e.target.value)} type="password"
+                  placeholder={emailMode==='signup' ? 'Create password (8+ chars)' : 'Password'}
+                  autoComplete={emailMode==='signup'?'new-password':'current-password'}
+                  onKeyDown={e=>e.key==='Enter'&&handleEmailAuth()}
+                  style={{ width:'100%', padding:'12px 14px', background:'rgba(255,255,255,0.05)',
+                    border:`1px solid ${C.border}`, borderRadius:10, color:C.text,
+                    fontSize:14, fontFamily:font, outline:'none', boxSizing:'border-box' }}/>
+              )}
+              <button onClick={handleEmailAuth} disabled={loading}
+                style={{ width:'100%', padding:'13px 0', background:C.accent, border:'none',
+                  borderRadius:10, color:'#fff', fontSize:14, fontWeight:600,
+                  fontFamily:font, cursor:loading?'not-allowed':'pointer', opacity:loading?0.7:1 }}>
+                {loading ? '…' : emailMode==='signup' ? 'Create account' : emailMode==='reset' ? 'Send reset link' : 'Sign in'}
+              </button>
+              <div style={{ display:'flex', justifyContent:'space-between', marginTop:2 }}>
+                <button onClick={()=>{setEmailMode(emailMode==='signin'?'signup':'signin');setError('');}} style={{
+                  background:'none', border:'none', color:C.muted, fontSize:11,
+                  fontFamily:font, cursor:'pointer', textDecoration:'underline',
+                  textDecorationColor:'rgba(100,116,139,0.3)',
+                }}>
+                  {emailMode==='signin' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+                </button>
+                {emailMode==='signin' && (
+                  <button onClick={()=>{setEmailMode('reset');setError('');}} style={{
+                    background:'none', border:'none', color:C.muted, fontSize:11,
+                    fontFamily:font, cursor:'pointer', textDecoration:'underline',
+                    textDecorationColor:'rgba(100,116,139,0.3)',
+                  }}>Forgot password?</button>
+                )}
+              </div>
+            </div>
+          )}
 
           <div style={{ marginTop:14, textAlign:'center' }}>
             <button onClick={()=>onAuth(null)}
@@ -209,6 +320,19 @@ export default function AuthGate({ onAuth }) {
           Know your real grade, spot the patterns in your mistakes, and prepare with confidence.
         </p>
 
+        {/* Tabs */}
+        <div style={{ display:'flex', gap:4, marginBottom:18, background:'rgba(0,0,0,0.04)', borderRadius:8, padding:3 }}>
+          {[['google','Google'],['email','Email / Password']].map(([t,l])=>(
+            <button key={t} onClick={()=>{setTab(t);setError('');setEmailSent(false);}} style={{
+              flex:1, padding:'7px 0', borderRadius:6, border:'none', cursor:'pointer',
+              fontFamily:font, fontSize:13, fontWeight:tab===t?600:400,
+              background:tab===t?'#fff':'transparent',
+              color:tab===t?C.text:C.muted, transition:'all 0.12s',
+              boxShadow:tab===t?'0 1px 4px rgba(0,0,0,0.08)':'none',
+            }}>{l}</button>
+          ))}
+        </div>
+
         {error && (
           <div style={{ background:'rgba(239,68,68,0.07)', border:'1px solid rgba(239,68,68,0.2)',
             borderRadius:8, padding:'10px 14px', marginBottom:16,
@@ -217,17 +341,76 @@ export default function AuthGate({ onAuth }) {
           </div>
         )}
 
-        <button onClick={handleGoogle} disabled={loading}
-          style={{ width:'100%', padding:'13px 0',
-            background:'rgba(255,255,255,0.06)',
-            border:`1px solid ${C.borderHover}`,
-            borderRadius:10, cursor:loading?'not-allowed':'pointer',
-            display:'flex', alignItems:'center', justifyContent:'center', gap:10,
-            fontFamily:font, fontSize:15, color:C.text, fontWeight:600,
-            transition:'background 0.15s' }}>
-          <GoogleIcon/>
-          {loading ? 'Redirecting…' : 'Continue with Google'}
-        </button>
+        {tab === 'google' ? (
+          <button onClick={handleGoogle} disabled={loading}
+            style={{ width:'100%', padding:'13px 0',
+              background:'rgba(255,255,255,0.06)',
+              border:`1px solid ${C.borderHover}`,
+              borderRadius:10, cursor:loading?'not-allowed':'pointer',
+              display:'flex', alignItems:'center', justifyContent:'center', gap:10,
+              fontFamily:font, fontSize:15, color:C.text, fontWeight:600,
+              transition:'background 0.15s' }}>
+            <GoogleIcon/>
+            {loading ? 'Redirecting…' : 'Continue with Google'}
+          </button>
+        ) : emailSent ? (
+          <div style={{ textAlign:'center', padding:'12px 0' }}>
+            <div style={{ fontSize:32, marginBottom:10 }}>📬</div>
+            <div style={{ fontSize:15, fontWeight:600, color:C.text, marginBottom:6 }}>
+              {emailMode==='reset' ? 'Reset link sent' : 'Check your email'}
+            </div>
+            <div style={{ fontSize:13, color:C.muted, lineHeight:1.6 }}>
+              {emailMode==='reset'
+                ? 'A password reset link has been sent. Check your inbox.'
+                : 'We sent a confirmation link to your email. Click it to activate your account, then come back and sign in.'}
+            </div>
+            <button onClick={()=>{setEmailSent(false);setEmailMode('signin');}} style={{
+              marginTop:14, background:'transparent', border:`1px solid ${C.border}`,
+              borderRadius:8, color:C.muted, fontSize:13, fontFamily:font,
+              cursor:'pointer', padding:'8px 16px',
+            }}>Back to sign in</button>
+          </div>
+        ) : (
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            <input value={email} onChange={e=>setEmail(e.target.value)} type="email"
+              placeholder="Email address" autoComplete="email"
+              onKeyDown={e=>e.key==='Enter'&&handleEmailAuth()}
+              style={{ width:'100%', padding:'12px 14px', background:'rgba(255,255,255,0.06)',
+                border:`1px solid ${C.border}`, borderRadius:10, color:C.text,
+                fontSize:14, fontFamily:font, outline:'none', boxSizing:'border-box' }}/>
+            {emailMode !== 'reset' && (
+              <input value={password} onChange={e=>setPassword(e.target.value)} type="password"
+                placeholder={emailMode==='signup' ? 'Create password (8+ chars)' : 'Password'}
+                autoComplete={emailMode==='signup'?'new-password':'current-password'}
+                onKeyDown={e=>e.key==='Enter'&&handleEmailAuth()}
+                style={{ width:'100%', padding:'12px 14px', background:'rgba(255,255,255,0.06)',
+                  border:`1px solid ${C.border}`, borderRadius:10, color:C.text,
+                  fontSize:14, fontFamily:font, outline:'none', boxSizing:'border-box' }}/>
+            )}
+            <button onClick={handleEmailAuth} disabled={loading}
+              style={{ width:'100%', padding:'13px 0', background:C.accent, border:'none',
+                borderRadius:10, color:'#fff', fontSize:14, fontWeight:600,
+                fontFamily:font, cursor:loading?'not-allowed':'pointer', opacity:loading?0.7:1 }}>
+              {loading ? '…' : emailMode==='signup' ? 'Create account' : emailMode==='reset' ? 'Send reset link' : 'Sign in'}
+            </button>
+            <div style={{ display:'flex', justifyContent:'space-between', marginTop:2 }}>
+              <button onClick={()=>{setEmailMode(emailMode==='signin'?'signup':'signin');setError('');}} style={{
+                background:'none', border:'none', color:C.muted, fontSize:11,
+                fontFamily:font, cursor:'pointer', textDecoration:'underline',
+                textDecorationColor:'rgba(100,116,139,0.3)',
+              }}>
+                {emailMode==='signin' ? "Don't have an account? Sign up" : 'Have an account? Sign in'}
+              </button>
+              {emailMode==='signin' && (
+                <button onClick={()=>{setEmailMode('reset');setError('');}} style={{
+                  background:'none', border:'none', color:C.muted, fontSize:11,
+                  fontFamily:font, cursor:'pointer', textDecoration:'underline',
+                  textDecorationColor:'rgba(100,116,139,0.3)',
+                }}>Forgot password?</button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Stats */}
         <div style={{ marginTop:28, display:'flex', gap:0,

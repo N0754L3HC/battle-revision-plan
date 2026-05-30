@@ -122,9 +122,33 @@ function PickSubjects({ selection, onChange, catalog, maxSubjects }) {
   );
 }
 
+const FM_OPTIONS = {
+  edexcel: [
+    { code: '3C', label: 'Further Mechanics 1' },
+    { code: '3B', label: 'Further Statistics 1' },
+    { code: '3D', label: 'Decision Mathematics 1' },
+  ],
+  aqa: [
+    { code: 'OA', label: 'Mechanics (Paper 2)' },
+    { code: 'OB', label: 'Statistics / Discrete (Paper 3)' },
+  ],
+  'ocr-a': [
+    { code: 'Y533', label: 'Mechanics' },
+    { code: 'Y532', label: 'Statistics' },
+    { code: 'Y534', label: 'Discrete' },
+  ],
+};
+
 function PickBoards({ selection, onChange, catalog }) {
   const update = (subjectId, boardId) => {
-    onChange(selection.map(s => s.subjectId === subjectId ? { ...s, boardId } : s));
+    onChange(selection.map(s => s.subjectId === subjectId ? { ...s, boardId, options: [] } : s));
+  };
+  const toggleOption = (subjectId, code) => {
+    onChange(selection.map(s => {
+      if (s.subjectId !== subjectId) return s;
+      const opts = s.options || [];
+      return { ...s, options: opts.includes(code) ? opts.filter(o => o !== code) : [...opts, code] };
+    }));
   };
 
   return (
@@ -139,9 +163,11 @@ function PickBoards({ selection, onChange, catalog }) {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {selection.map(({ subjectId, boardId }) => {
+        {selection.map(({ subjectId, boardId, options: selOpts = [] }) => {
           const subject = catalog.find(s => s.id === subjectId);
           if (!subject) return null;
+          const isFM = subjectId === 'further-maths';
+          const fmOpts = isFM ? (FM_OPTIONS[boardId] || []) : [];
           return (
             <div key={subjectId} style={{
               background: 'rgba(0,0,0,0.02)',
@@ -173,9 +199,83 @@ function PickBoards({ selection, onChange, catalog }) {
                   </button>
                 ))}
               </div>
+              {isFM && fmOpts.length > 0 && (
+                <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${colors.border}` }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: colors.muted, marginBottom: 8, fontFamily: font }}>
+                    Which option modules are you taking? (select all that apply)
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {fmOpts.map(opt => {
+                      const sel = selOpts.includes(opt.code);
+                      return (
+                        <button key={opt.code} onClick={() => toggleOption(subjectId, opt.code)} style={{
+                          padding: '6px 12px',
+                          background: sel ? `${subject.color}14` : 'rgba(0,0,0,0.03)',
+                          border: `1.5px solid ${sel ? subject.color + '55' : colors.border}`,
+                          borderRadius: 6,
+                          color: sel ? colors.text : colors.muted,
+                          fontSize: 12, fontWeight: sel ? 600 : 400,
+                          fontFamily: font, cursor: 'pointer', transition: 'all 0.12s',
+                          display: 'flex', alignItems: 'center', gap: 4,
+                        }}>
+                          {sel && <span style={{ color: subject.color, fontSize: 10, fontWeight: 800 }}>✓</span>}
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div style={{ fontSize: 11, color: colors.subtle, marginTop: 6, fontFamily: font }}>
+                    Core Pure 1 &amp; 2 are always included.
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function PickYearGroup({ yearGroup, setYearGroup, examLevel }) {
+  const isGcse = examLevel === 'gcse';
+  const options = isGcse
+    ? [{id:'Y10',label:'Year 10',desc:'First year of GCSEs'},{id:'Y11',label:'Year 11',desc:'Final GCSE year — exams this summer'}]
+    : examLevel === 'aslevel'
+    ? [{id:'Y12',label:'Year 12',desc:'AS-Level year'}]
+    : [{id:'Y12',label:'Year 12',desc:'First year of A-Levels'},{id:'Y13',label:'Year 13',desc:'Final A-Level year — exams this summer'}];
+  return (
+    <div>
+      <div style={{ marginBottom: 24 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: colors.text, margin: '0 0 6px', fontFamily: font }}>
+          Which year are you in?
+        </h2>
+        <p style={{ fontSize: 13, color: colors.muted, margin: 0, fontFamily: font }}>
+          This personalises your exam countdown and readiness score.
+        </p>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {options.map(o => (
+          <button key={o.id} onClick={() => setYearGroup(o.id)} style={{
+            display: 'flex', alignItems: 'center', gap: 14,
+            padding: '16px 18px', textAlign: 'left',
+            background: yearGroup === o.id ? `rgba(181,115,90,0.08)` : 'rgba(0,0,0,0.02)',
+            border: `1.5px solid ${yearGroup === o.id ? colors.accent + '66' : colors.border}`,
+            borderRadius: 10, cursor: 'pointer', fontFamily: font, transition: 'all 0.15s',
+          }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+              background: yearGroup === o.id ? colors.accent : 'rgba(0,0,0,0.06)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 11, fontWeight: 800,
+              color: yearGroup === o.id ? '#fff' : colors.subtle,
+            }}>{o.id}</div>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: colors.text, marginBottom: 2 }}>{o.label}</div>
+              <div style={{ fontSize: 12, color: colors.muted }}>{o.desc}</div>
+            </div>
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -241,21 +341,25 @@ function Confirm({ selection, catalog, examLevel }) {
 export default function SubjectPicker({ user, onComplete, examLevel = 'alevel' }) {
   const [step, setStep] = useState(1);
   const [selection, setSelection] = useState([]);
+  const [yearGroup, setYearGroup] = useState('');
   const [saving, setSaving] = useState(false);
 
   const isGcse = examLevel === 'gcse';
   const catalog = isGcse ? GCSE_CATALOG : SUBJECT_CATALOG;
   const maxSubjects = isGcse ? 10 : 4;
   const minSubjects = isGcse ? 3 : 2;
+  const hasFM = selection.some(s => s.subjectId === 'further-maths');
 
   const canNext = step === 1
     ? selection.length >= minSubjects
     : step === 2
-      ? selection.every(s => s.boardId)
-      : true;
+      ? selection.every(s => s.boardId) && (!hasFM || selection.every(s => s.subjectId !== 'further-maths' || (s.options||[]).length > 0))
+      : step === 3
+        ? !!yearGroup
+        : true;
 
   const handleNext = async () => {
-    if (step < 3) { setStep(step + 1); return; }
+    if (step < 4) { setStep(step + 1); return; }
     setSaving(true);
     const subjectsJson = JSON.stringify(selection);
     if (user?.id) {
@@ -265,10 +369,10 @@ export default function SubjectPicker({ user, onComplete, examLevel = 'alevel' }
       await supabase.rpc('save_subjects', { p_subjects: subjectsJson });
     }
     setSaving(false);
-    onComplete(selection);
+    onComplete(selection, yearGroup);
   };
 
-  const STEP_LABELS = ['Subjects', 'Exam boards', 'Ready'];
+  const STEP_LABELS = ['Subjects', 'Boards', 'Year', 'Ready'];
 
   return (
     <div style={{
@@ -299,7 +403,7 @@ export default function SubjectPicker({ user, onComplete, examLevel = 'alevel' }
             const done   = step > n;
             const active = step === n;
             return (
-              <div key={n} style={{ display: 'flex', alignItems: 'center', flex: i < 2 ? 1 : 0 }}>
+              <div key={n} style={{ display: 'flex', alignItems: 'center', flex: i < 3 ? 1 : 0 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
                   <div style={{
                     width: 28, height: 28, borderRadius: '50%',
@@ -320,7 +424,7 @@ export default function SubjectPicker({ user, onComplete, examLevel = 'alevel' }
                     {label}
                   </span>
                 </div>
-                {i < 2 && (
+                {i < 3 && (
                   <div style={{
                     flex: 1, height: 1, margin: '0 8px', marginBottom: 20,
                     background: done ? colors.accent : colors.border,
@@ -340,7 +444,8 @@ export default function SubjectPicker({ user, onComplete, examLevel = 'alevel' }
         }}>
           {step === 1 && <PickSubjects selection={selection} onChange={setSelection} catalog={catalog} maxSubjects={maxSubjects} />}
           {step === 2 && <PickBoards  selection={selection} onChange={setSelection} catalog={catalog} />}
-          {step === 3 && <Confirm     selection={selection} catalog={catalog} examLevel={examLevel} />}
+          {step === 3 && <PickYearGroup yearGroup={yearGroup} setYearGroup={setYearGroup} examLevel={examLevel} />}
+          {step === 4 && <Confirm     selection={selection} catalog={catalog} examLevel={examLevel} />}
         </div>
 
         <div style={{ display: 'flex', gap: 8 }}>
@@ -371,7 +476,7 @@ export default function SubjectPicker({ user, onComplete, examLevel = 'alevel' }
               transition: 'all 0.15s',
             }}
           >
-            {saving ? 'Saving...' : step === 3 ? 'Start tracking' : 'Continue'}
+            {saving ? 'Saving...' : step === 4 ? 'Start tracking' : 'Continue'}
           </button>
         </div>
 

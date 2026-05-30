@@ -1063,6 +1063,7 @@ export function subjectsFromSelection(selection, catalog) {
       papers: (s.papers[sel.boardId] || s.papers[s.boards[0].id] || []),
       techniques: s.techniques,
       resources: s.resources,
+      options: sel.options || [],
     };
   }).filter(Boolean);
 }
