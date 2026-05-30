@@ -130,8 +130,9 @@ function LoginScreen({onAuth}) {
 }
 
 // ── User Detail Modal ──────────────────────────────────────────────────────
-function UserDetail({u,onClose,onToggleAdmin,onDeleteUser}) {
+function UserDetail({u,onClose,onToggleAdmin,onTogglePro,onDeleteUser}) {
   const [toggling,setToggling]=useState(false);
+  const [togglingPro,setTogglingPro]=useState(false);
   const [confirmDel,setConfirmDel]=useState(false);
   const allScores=Object.values(u.scores||{}).flat();
   const allErrors=Object.values(u.errors||{}).flat();
@@ -145,7 +146,19 @@ function UserDetail({u,onClose,onToggleAdmin,onDeleteUser}) {
   const errTypes={};
   allErrors.forEach(e=>{errTypes[e.type]=(errTypes[e.type]||0)+1;});
 
+  // Pro status — Stripe-paid OR admin-granted (referral_pro_until in future)
+  const proViaStripe = ['active','trialing'].includes(u.subscription_status);
+  const proViaGrant  = u.referral_pro_until && new Date(u.referral_pro_until).getTime() > Date.now();
+  const isPro        = proViaStripe || proViaGrant;
+
   const doToggle=async()=>{ setToggling(true); await onToggleAdmin(u); setToggling(false); };
+  const doTogglePro=async()=>{
+    if (proViaStripe) {
+      alert('This user has an active Stripe subscription. Cancel via Stripe dashboard instead of revoking the admin grant.');
+      return;
+    }
+    setTogglingPro(true); await onTogglePro(u, proViaGrant ? 0 : 365); setTogglingPro(false);
+  };
   const doDelete=async()=>{ await onDeleteUser(u); onClose(); };
 
   return (
@@ -157,6 +170,9 @@ function UserDetail({u,onClose,onToggleAdmin,onDeleteUser}) {
           <div style={{fontSize:15,fontWeight:700,color:'#fff'}}>{u.display_name||<span style={{color:MUT}}>No name</span>} <span style={{fontSize:11,color:MUT,fontWeight:400}}>{u.email}</span></div>
           <div style={{fontSize:10,color:DIM,marginTop:2}}>JOINED {fmtDate(u.created_at)} · LAST ACTIVE {timeSince(u.lastActive)} · {u.tos_agreed_at?'ToS ✓':'ToS pending'}</div>
         </div>
+        <button onClick={doTogglePro} disabled={togglingPro} title={proViaStripe?'Stripe-paid Pro — manage in Stripe dashboard':isPro?'Pro until '+new Date(u.referral_pro_until).toLocaleDateString('en-GB'):'Grants 365 days of Pro'} style={btn(isPro?'#FFD600':'#555')}>
+          {togglingPro?'...':(proViaStripe?'PRO (STRIPE)':proViaGrant?'REVOKE PRO':'GRANT PRO')}
+        </button>
         <button onClick={doToggle} disabled={toggling} style={btn(u.is_admin?'#FF3D00':'#555')}>
           {toggling?'...':(u.is_admin?'REVOKE ADMIN':'GRANT ADMIN')}
         </button>
@@ -288,6 +304,7 @@ function UserDetail({u,onClose,onToggleAdmin,onDeleteUser}) {
             ['School opt-in', u.school_opt_in?'Yes':'No'],
             ['Referral code', u.referral_code||'—'],
             ['Subscription',  u.subscription_status||'free'],
+            ['Pro grant until', u.referral_pro_until?fmtDate(u.referral_pro_until):'—'],
             ['Subjects',      (u.subjectList||[]).join(', ')||'—'],
           ].map(([l,v])=>(
             <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12}}>
@@ -1142,6 +1159,17 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
     setSelected(prev=>prev?.id===u.id?{...prev,is_admin:next}:prev);
   };
 
+  // Grant or revoke Pro via referral_pro_until. p_days=0 revokes, 365 grants a year.
+  // set_pro RPC re-verifies caller is admin. We deliberately don't touch
+  // subscription_status (Stripe owns that — webhook is source of truth).
+  const togglePro=async(u,days=365)=>{
+    const {data,error}=await supabase.rpc('set_pro',{p_target:u.id,p_days:days});
+    if (error) { alert(`Failed: ${error.message}`); return; }
+    const newUntil=data ?? null;
+    setUsers(prev=>prev.map(x=>x.id===u.id?{...x,referral_pro_until:newUntil}:x));
+    setSelected(prev=>prev?.id===u.id?{...prev,referral_pro_until:newUntil}:prev);
+  };
+
   const deleteUser=async(u)=>{
     await supabase.from('user_data').delete().eq('user_id',u.id);
     await supabase.from('user_profiles').delete().eq('id',u.id);
@@ -1200,7 +1228,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
 
   return (
     <>
-      {selected&&<UserDetail u={selected} onClose={()=>setSelected(null)} onToggleAdmin={toggleAdmin} onDeleteUser={deleteUser}/>}
+      {selected&&<UserDetail u={selected} onClose={()=>setSelected(null)} onToggleAdmin={toggleAdmin} onTogglePro={togglePro} onDeleteUser={deleteUser}/>}
       <div style={{minHeight:'100vh',background:'#050508',color:'#d0ccc8',fontFamily:mono}}>
         {/* Top bar */}
         <div style={{position:'sticky',top:0,zIndex:50,background:'rgba(5,5,8,0.98)',backdropFilter:'blur(20px)',borderBottom:'1px solid rgba(255,61,0,0.1)',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 24px',height:50}}>
