@@ -2186,6 +2186,7 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
     };
 
     let replyText = null;
+    let serverHit = false; // did we actually reach the chat server with a real reply?
     try {
       const {data:{session}} = await supabase.auth.getSession();
       if (session) {
@@ -2196,24 +2197,32 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
         });
         if (r.ok) {
           const d = await r.json();
-          if (d.reply) replyText = d.reply;
+          if (d.reply) { replyText = d.reply; serverHit = true; }
         } else if (r.status === 429) {
           const d = await r.json().catch(()=>({}));
           replyText = d.error || "I need a breather — too many messages this hour. Try again in a bit.";
+          serverHit = true;
         } else if (r.status === 402) {
           replyText = "Mascot chat is a Pro feature. Upgrade in Account → Settings to unlock me properly.";
+          serverHit = true;
         } else if (r.status === 503) {
           const d = await r.json().catch(()=>({}));
-          replyText = `Chat is offline: ${d.error || 'server not configured'}. Falling back to basic replies.`;
+          replyText = `Chat is offline (${d.error || 'server not configured'}). I'll be back once that's fixed.`;
+          serverHit = true;
         } else {
           const d = await r.json().catch(()=>({}));
-          replyText = d.error ? `Chat error: ${d.error}. Falling back to basic replies.` : null;
+          replyText = d.error ? `Chat error: ${d.error}` : null;
+          if (replyText) serverHit = true;
         }
       }
-    } catch {/* fall through to local fallback */}
+    } catch {/* network failure — fall through */}
 
-    // Fallback to local rule-based reply on any failure
-    if (!replyText) replyText = getCharacterReply(text, {subjects, scores, sessions, examSched});
+    // If the server didn't respond at all (no session, network down, or empty reply),
+    // be honest about it rather than silently injecting a rule-based reply that
+    // looks like a non-sequitur mid-conversation.
+    if (!replyText) {
+      replyText = "I'm having trouble reaching the chat server right now — try again in a moment, or refresh the page.";
+    }
 
     setMessages(prev => [...prev, {from:'char', text: replyText}]);
     setSending(false);
