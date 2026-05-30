@@ -124,18 +124,24 @@ function PickSubjects({ selection, onChange, catalog, maxSubjects }) {
 
 const FM_OPTIONS = {
   edexcel: [
-    { code: '3C', label: 'Further Mechanics 1' },
+    { code: '3A', label: 'Further Pure Mathematics 1' },
     { code: '3B', label: 'Further Statistics 1' },
+    { code: '3C', label: 'Further Mechanics 1' },
     { code: '3D', label: 'Decision Mathematics 1' },
+    { code: '4A', label: 'Further Pure Mathematics 2' },
+    { code: '4B', label: 'Further Statistics 2' },
+    { code: '4C', label: 'Further Mechanics 2' },
+    { code: '4D', label: 'Decision Mathematics 2' },
   ],
   aqa: [
     { code: 'OA', label: 'Mechanics (Paper 2)' },
     { code: 'OB', label: 'Statistics / Discrete (Paper 3)' },
   ],
   'ocr-a': [
-    { code: 'Y533', label: 'Mechanics' },
-    { code: 'Y532', label: 'Statistics' },
-    { code: 'Y534', label: 'Discrete' },
+    { code: 'Y533', label: 'Mechanics (Y533)' },
+    { code: 'Y532', label: 'Statistics (Y532)' },
+    { code: 'Y534', label: 'Discrete Maths (Y534)' },
+    { code: 'Y535', label: 'Numerical Methods (Y535)' },
   ],
 };
 
@@ -201,8 +207,11 @@ function PickBoards({ selection, onChange, catalog }) {
               </div>
               {isFM && fmOpts.length > 0 && (
                 <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${colors.border}` }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: colors.muted, marginBottom: 8, fontFamily: font }}>
-                    Which option modules are you taking? (select all that apply)
+                  <div style={{ fontSize: 12, fontWeight: 600, color: colors.muted, marginBottom: 4, fontFamily: font }}>
+                    Which option modules are you taking?
+                  </div>
+                  <div style={{ fontSize: 11, color: colors.subtle, marginBottom: 8, fontFamily: font }}>
+                    Most students pick 2. Select the ones you're actually sitting.
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {fmOpts.map(opt => {

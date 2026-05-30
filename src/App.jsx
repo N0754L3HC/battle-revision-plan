@@ -81,11 +81,16 @@ const EXAM_SCHEDULE = {
   },
   'further-maths': {
     edexcel: [
-      { date:'2026-05-14', paper:'Core Pure Mathematics 1',           code:'9FM0/01', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
-      { date:'2026-05-21', paper:'Core Pure Mathematics 2',           code:'9FM0/02', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
-      { date:'2026-06-05', paper:'Option: Further Mechanics 1',       code:'9FM0/3C', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75, option:'3C' },
-      { date:'2026-06-12', paper:'Option: Further Statistics 1',      code:'9FM0/3B', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75, option:'3B' },
-      { date:'2026-06-16', paper:'Option: Decision Mathematics 1',    code:'9FM0/3D', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75, option:'3D' },
+      { date:'2026-05-14', paper:'Core Pure Mathematics 1',              code:'9FM0/01', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
+      { date:'2026-05-21', paper:'Core Pure Mathematics 2',              code:'9FM0/02', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
+      { date:'2026-06-09', paper:'Option: Further Pure Mathematics 1',   code:'9FM0/3A', board:'Edexcel', time:'AM', duration:'1h 30m', maxMark:75, option:'3A' },
+      { date:'2026-06-05', paper:'Option: Further Mechanics 1',          code:'9FM0/3C', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75, option:'3C' },
+      { date:'2026-06-12', paper:'Option: Further Statistics 1',         code:'9FM0/3B', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75, option:'3B' },
+      { date:'2026-06-16', paper:'Option: Decision Mathematics 1',       code:'9FM0/3D', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75, option:'3D' },
+      { date:'2026-06-09', paper:'Option: Further Pure Mathematics 2',   code:'9FM0/4A', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75, option:'4A' },
+      { date:'2026-06-12', paper:'Option: Further Statistics 2',         code:'9FM0/4B', board:'Edexcel', time:'AM', duration:'1h 30m', maxMark:75, option:'4B' },
+      { date:'2026-06-05', paper:'Option: Further Mechanics 2',          code:'9FM0/4C', board:'Edexcel', time:'AM', duration:'1h 30m', maxMark:75, option:'4C' },
+      { date:'2026-06-16', paper:'Option: Decision Mathematics 2',       code:'9FM0/4D', board:'Edexcel', time:'AM', duration:'1h 30m', maxMark:75, option:'4D' },
     ],
     aqa: [
       { date:'2026-05-14', paper:'Paper 1: Compulsory (7367/1)',  code:'7367/1', board:'AQA', time:'PM', duration:'2h', maxMark:100 },
@@ -3848,12 +3853,44 @@ function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font}) {
 }
 
 // ── Exams ──────────────────────────────────────────────────────────────────
-function Exams({subjects,C,font,examSched=EXAM_SCHEDULE}) {
+function Exams({subjects,C,font,examSched=EXAM_SCHEDULE,yearGroup=''}) {
+  const isY12 = yearGroup === 'Y12' || yearGroup === 'Y10';
   const allExams=subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId,s.options).map(e=>({...e,subjectName:s.name,color:s.color})))
     .sort((a,b)=>new Date(a.date)-new Date(b.date));
   const upcoming=allExams.filter(e=>daysUntil(e.date)>=0);
   const past=allExams.filter(e=>daysUntil(e.date)<0);
   const next=upcoming[0]??null;
+
+  if (isY12 && !upcoming.length) return (
+    <div style={{padding:'40px 24px',maxWidth:520}}>
+      <div style={{fontSize:18,fontWeight:700,color:C.text,marginBottom:10}}>Your exams are in {yearGroup==='Y10'?'2027':'2027'}</div>
+      <div style={{fontSize:14,color:C.muted,lineHeight:1.7,marginBottom:16}}>
+        {yearGroup==='Y12'?'A-Level':'GCSE'} exam dates for {yearGroup==='Y12'?'2027':'2027'} haven't been officially published by exam boards yet — they're usually released in autumn {yearGroup==='Y12'?'2026':'2026'}.
+      </div>
+      <div style={{fontSize:13,color:C.muted,lineHeight:1.7,marginBottom:12}}>
+        In the meantime, use this app to:<br/>
+        • Log past papers to build your Battle Readiness score<br/>
+        • Track weak topics in the Topics tab<br/>
+        • Check back here once your board publishes the timetable
+      </div>
+      <div style={{fontSize:11,color:C.subtle,background:C.card2,borderRadius:8,padding:'10px 14px',border:`1px solid ${C.border}`}}>
+        The dates below (grayed out) are last year's 2026 schedule — shown for reference only. Your actual dates will differ.
+      </div>
+      {allExams.length>0&&(
+        <div style={{marginTop:20}}>
+          <div style={{fontSize:12,fontWeight:600,color:C.subtle,marginBottom:10,textTransform:'uppercase',letterSpacing:0.5}}>2026 reference dates (not your year)</div>
+          <div style={{display:'flex',flexDirection:'column',gap:4,opacity:0.35}}>
+            {allExams.map((e,i)=>(
+              <div key={i} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:'9px 12px'}}>
+                <div style={{fontSize:13,fontWeight:600,color:C.text}}>{e.subjectName}: {e.paper.split(':')[1]?.trim()||e.paper}</div>
+                <div style={{fontSize:12,color:C.muted,marginTop:2}}>{e.date} · {e.board} · {e.time}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   if (!allExams.length) return (
     <div style={{padding:'40px 0',textAlign:'center',color:C.subtle,fontSize:13}}>
