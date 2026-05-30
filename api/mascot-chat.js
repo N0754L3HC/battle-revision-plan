@@ -125,10 +125,7 @@ function toGeminiContents(messages) {
   }));
 }
 
-async function callGemini({systemPrompt, contents}) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error('GEMINI_API_KEY not configured');
-  const model = 'gemini-2.5-flash';
+async function callGeminiModel({apiKey, model, systemPrompt, contents}) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const body = {
     systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -148,22 +145,42 @@ async function callGemini({systemPrompt, contents}) {
   });
   if (!r.ok) {
     const txt = await r.text();
-    throw new Error(`Gemini ${r.status}: ${txt.slice(0, 200)}`);
+    const err = new Error(`Gemini ${r.status}: ${txt.slice(0, 200)}`);
+    err.status = r.status;
+    err.model = model;
+    throw err;
   }
   const d = await r.json();
-
-  // Blocked by safety filter on prompt
   if (d.promptFeedback?.blockReason) {
-    return { reply: null, blocked: true, reason: d.promptFeedback.blockReason };
+    return { reply: null, blocked: true, reason: d.promptFeedback.blockReason, model };
   }
   const cand = d.candidates?.[0];
-  if (!cand) return { reply: null, blocked: true, reason: 'no_candidate' };
+  if (!cand) return { reply: null, blocked: true, reason: 'no_candidate', model };
   if (cand.finishReason === 'SAFETY' || cand.finishReason === 'BLOCKLIST' || cand.finishReason === 'PROHIBITED_CONTENT') {
-    return { reply: null, blocked: true, reason: cand.finishReason };
+    return { reply: null, blocked: true, reason: cand.finishReason, model };
   }
   const text = cand.content?.parts?.map(p => p.text).filter(Boolean).join('\n').trim();
-  if (!text) return { reply: null, blocked: true, reason: 'empty' };
-  return { reply: text, blocked: false };
+  if (!text) return { reply: null, blocked: true, reason: 'empty', model };
+  return { reply: text, blocked: false, model };
+}
+
+async function callGemini({systemPrompt, contents}) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY not configured');
+  // Primary: 2.5 Flash. Fallback on 429/quota: 2.5 Flash Lite (higher free-tier RPM).
+  const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
+  let lastErr = null;
+  for (const model of models) {
+    try {
+      return await callGeminiModel({apiKey, model, systemPrompt, contents});
+    } catch (e) {
+      lastErr = e;
+      // Only fall through on 429 (quota/rate) or 503 (service unavailable). Other errors are real.
+      if (e.status !== 429 && e.status !== 503) throw e;
+      console.warn(`Gemini ${model} ${e.status} — falling back to next model`);
+    }
+  }
+  throw lastErr;
 }
 
 // ─── Handler ───────────────────────────────────────────────────────────────
@@ -238,10 +255,18 @@ export default async function handler(req, res) {
       meta: { source: 'gemini' },
     });
   } catch (err) {
-    console.error('Mascot chat error:', err?.message);
-    // Don't 500 — fall back gracefully on client side via 200 + null
+    const msg = err?.message || '';
+    console.error('Mascot chat error:', msg);
+    // 429 from Gemini = free-tier quota hit on every fallback model. Surface it
+    // explicitly so the user knows it's a quota issue and not a server bug.
+    if (err?.status === 429 || /Gemini 429/.test(msg)) {
+      return res.status(200).json({
+        reply: "I'm out of free messages from my AI brain for now — Google's rate limit. Wait a minute and try again (or ask the developer to enable billing on the Gemini API key).",
+        meta: { source: 'error', error: 'gemini_quota' },
+      });
+    }
     return res.status(200).json({
-      reply: null,
+      reply: "Something went wrong talking to my AI brain — try again in a moment.",
       meta: { source: 'error', error: 'upstream' },
     });
   }
