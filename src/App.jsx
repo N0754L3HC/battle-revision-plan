@@ -5055,8 +5055,31 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
     }
   };
 
+  // Pro payments aren't live yet — capture interest into pro_waitlist instead.
+  // Flip BETA_WAITLIST back to false (or rip this block) once Stripe is live.
+  const BETA_WAITLIST = true;
+  const [waitlistJoined, setWaitlistJoined] = useState(false);
+  useEffect(()=>{
+    if (!BETA_WAITLIST || !uid) return;
+    (async()=>{
+      const {data}=await supabase.from('pro_waitlist').select('id').eq('user_id',uid).maybeSingle();
+      if (data) setWaitlistJoined(true);
+    })();
+  },[uid]);
+
   const handleUpgrade = async () => {
     if (!user?.email) return;
+    if (BETA_WAITLIST) {
+      setUpgrading(true); setUpgradeError('');
+      const {error}=await supabase.from('pro_waitlist')
+        .insert({user_id:uid, email:user.email});
+      setUpgrading(false);
+      // 23505 = unique violation = already on the list; treat as success
+      if (error && error.code !== '23505') { setUpgradeError(error.message); return; }
+      setWaitlistJoined(true);
+      addToast("You're on the list — we'll email you when Pro launches.", 'success');
+      return;
+    }
     setUpgrading(true); setUpgradeError('');
     try {
       const r = await fetch('/api/create-checkout-session', {
@@ -5156,7 +5179,9 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
         ):(
           <>
             <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginTop:10,marginBottom:14}}>
-              Upgrade to Pro to unlock email reports, companion chat, and more — supporting ongoing development.
+              {BETA_WAITLIST
+                ? "Pro isn't quite ready yet — payments aren't live during the beta. Join the waitlist and you'll be the first to know when it launches."
+                : "Upgrade to Pro to unlock email reports, companion chat, and more — supporting ongoing development."}
             </div>
             <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:14}}>
               {['Email exam schedule & weekly digest','Companion chat','Priority feature access'].map(f=>(
@@ -5168,13 +5193,16 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
             {upgradeError&&(
               <div style={{fontSize:12,color:C.danger,marginBottom:10,lineHeight:1.5}}>{upgradeError}</div>
             )}
-            <button onClick={handleUpgrade} disabled={upgrading||!user}
+            <button onClick={handleUpgrade} disabled={upgrading||!user||(BETA_WAITLIST&&waitlistJoined)}
               style={{width:'100%',padding:'11px',
-                background:upgrading?C.card2:C.accent,
-                border:`1px solid ${upgrading?C.border:C.accent}`,borderRadius:8,
-                color:upgrading?C.muted:'#fff',fontSize:14,fontWeight:700,fontFamily:font,
-                cursor:upgrading||!user?'not-allowed':'pointer',transition:'background 0.15s'}}>
-              {upgrading?'Redirecting to checkout…':'Upgrade to Pro — £4.99/mo'}
+                background:(BETA_WAITLIST&&waitlistJoined)?C.card2:(upgrading?C.card2:C.accent),
+                border:`1px solid ${(BETA_WAITLIST&&waitlistJoined)?C.border:(upgrading?C.border:C.accent)}`,borderRadius:8,
+                color:(BETA_WAITLIST&&waitlistJoined)?C.muted:(upgrading?C.muted:'#fff'),
+                fontSize:14,fontWeight:700,fontFamily:font,
+                cursor:upgrading||!user||(BETA_WAITLIST&&waitlistJoined)?'not-allowed':'pointer',transition:'background 0.15s'}}>
+              {BETA_WAITLIST
+                ? (waitlistJoined ? "✓ You're on the waitlist" : (upgrading ? 'Adding you…' : 'Join the Pro waitlist'))
+                : (upgrading?'Redirecting to checkout…':'Upgrade to Pro — £4.99/mo')}
             </button>
           </>
         )}
@@ -5255,7 +5283,9 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
           <button onClick={handleUpgrade} disabled={upgrading}
             style={{width:'100%',padding:'10px',background:C.accentSoft,border:`1px solid ${C.accent}44`,
               borderRadius:8,color:C.accent,fontSize:13,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
-            {upgrading?'Redirecting…':'Unlock with Pro'}
+            {BETA_WAITLIST
+              ? (waitlistJoined ? '✓ On the waitlist' : (upgrading ? 'Adding you…' : 'Join the Pro waitlist'))
+              : (upgrading?'Redirecting…':'Unlock with Pro')}
           </button>
         ):(
           <>
@@ -5301,7 +5331,9 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
           <button onClick={handleUpgrade} disabled={upgrading}
             style={{width:'100%',padding:'11px',background:C.accentSoft,border:`1px solid ${C.accent}44`,
               borderRadius:8,color:C.accent,fontSize:13,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
-            {upgrading?'Redirecting…':'Unlock with Pro'}
+            {BETA_WAITLIST
+              ? (waitlistJoined ? '✓ On the waitlist' : (upgrading ? 'Adding you…' : 'Join the Pro waitlist'))
+              : (upgrading?'Redirecting…':'Unlock with Pro')}
           </button>
         ):(
           <>
@@ -6574,7 +6606,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
                     fontFamily:font,cursor:'pointer',fontWeight:500}}>
                   Customise
                 </button>
-                <button onClick={e=>{e.stopPropagation(); isPro?setCompanionChat(true):addToast('Upgrade to Pro to chat with your companion','info');}}
+                <button onClick={e=>{e.stopPropagation(); isPro?setCompanionChat(true):addToast('Companion chat is a Pro feature — payments are launching soon. Join the waitlist in Account → Settings.','info');}}
                   style={{fontSize:10,color:C.accent,background:C.accentSoft,
                     border:`1px solid ${C.accent}44`,borderRadius:5,padding:'3px 8px',
                     fontFamily:font,cursor:'pointer',fontWeight:600}}>
