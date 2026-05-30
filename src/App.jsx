@@ -2167,7 +2167,7 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
   const send = async () => {
     const text=input.trim();
     if(!text||sending) return;
-    if (text.length > 800) return; // ui caps input length; defensive
+    if (text.length > 600) return; // ui caps input length; defensive (matches server CHAT_MSG_MAX_CHARS)
     const nextHistory = [...messages, {from:'user', text}];
     setMessages(nextHistory);
     setInput('');
@@ -2272,10 +2272,10 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
         </div>
         <div style={{display:'flex',gap:8,padding:'10px 16px 12px',
           borderTop:`1px solid ${C.border}`,flexShrink:0}}>
-          <input value={input} onChange={e=>setInput(e.target.value.slice(0,800))}
+          <input value={input} onChange={e=>setInput(e.target.value.slice(0,600))}
             onKeyDown={e=>e.key==='Enter'&&!sending&&send()}
             placeholder={sending?'Sending…':`Message ${companion.name}...`}
-            maxLength={800}
+            maxLength={600}
             disabled={sending}
             style={{flex:1,background:C.card2,border:`1px solid ${C.border}`,borderRadius:10,
               padding:'10px 14px',color:C.text,fontSize:13,fontFamily:font,outline:'none',
