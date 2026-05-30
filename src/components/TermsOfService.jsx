@@ -35,7 +35,7 @@ export default function TermsOfService({ onClose }) {
       <div style={S.box}>
         <div style={S.header}>
           <span style={S.h1}>Terms of Service &amp; Privacy Policy</span>
-          <span style={{ color: '#555', fontSize: 11 }}>Last updated: 28 May 2026</span>
+          <span style={{ color: '#555', fontSize: 11 }}>Last updated: 31 May 2026</span>
         </div>
 
         <div style={S.body}>
@@ -45,10 +45,16 @@ export default function TermsOfService({ onClose }) {
             Please read them carefully.
           </p>
 
+          <div style={{ background:'rgba(255,165,0,0.08)', border:'1px solid rgba(255,165,0,0.25)',
+            borderRadius:6, padding:'10px 14px', margin:'8px 0 16px', fontSize:12, color:'#fbbf24', lineHeight:1.6 }}>
+            <strong>Important notice:</strong> Information on this App — including exam dates, grade boundaries, and predicted grades — is provided for guidance only and may not be accurate or up to date. Always verify exam dates with your school and the official exam board. Battle Plan is not responsible for decisions made based on this information. Do your own due diligence.
+          </div>
+
           <h2 style={S.h2}>1. Who We Are</h2>
           <p style={S.p}>
             A* Battle Plan is an independent revision tracking application built for UK A-Level and GCSE students.
             For questions or data requests, contact: <strong style={{ color: '#ddd' }}>51r4h100@gmail.com</strong>.
+            Physical correspondence address available on request.
           </p>
 
           <h2 style={S.h2}>2. Eligibility</h2>
@@ -72,14 +78,16 @@ export default function TermsOfService({ onClose }) {
 
           <p style={{ ...S.p, color: '#ddd', fontWeight: 700, marginTop: 12 }}>Account data (collected automatically on sign-in):</p>
           <p style={{ ...S.p, paddingLeft: 12 }}>
-            • <strong style={{ color: '#ddd' }}>Email address</strong> — provided via Google OAuth, used to identify your account<br />
-            • <strong style={{ color: '#ddd' }}>Display name</strong> — from your Google profile, shown on leaderboards<br />
+            • <strong style={{ color: '#ddd' }}>Email address</strong> — provided via Google OAuth or email sign-up, used to identify your account and send transactional emails<br />
+            • <strong style={{ color: '#ddd' }}>Display name</strong> — from your Google profile or set by you, shown on leaderboards<br />
             • <strong style={{ color: '#ddd' }}>Account creation timestamp</strong><br />
             • <strong style={{ color: '#ddd' }}>Last seen timestamp</strong> — updated each time you open the app, used for retention analytics<br />
             • <strong style={{ color: '#ddd' }}>ToS agreement timestamp</strong> — recorded when you accept these Terms<br />
             • <strong style={{ color: '#ddd' }}>Exam level</strong> — whether you are an A-Level or GCSE student<br />
-            • <strong style={{ color: '#ddd' }}>Selected subjects and exam boards</strong><br />
-            • <strong style={{ color: '#ddd' }}>Referral code</strong> — a short unique code generated for your account
+            • <strong style={{ color: '#ddd' }}>Year group</strong> — e.g. Y12 or Y11, used to personalise your countdown and plan<br />
+            • <strong style={{ color: '#ddd' }}>Selected subjects, exam boards, and option modules</strong><br />
+            • <strong style={{ color: '#ddd' }}>Referral code</strong> — a short unique code generated for your account<br />
+            • <strong style={{ color: '#ddd' }}>Pro waitlist status</strong> — if you join the Pro waitlist, your email and sign-up timestamp are recorded
           </p>
 
           <p style={{ ...S.p, color: '#ddd', fontWeight: 700, marginTop: 12 }}>Revision data (entered voluntarily by you):</p>
@@ -130,9 +138,11 @@ export default function TermsOfService({ onClose }) {
           <h2 style={S.h2}>6. Third-Party Services</h2>
           <p style={S.p}>We use the following third-party services to operate the App:</p>
           <p style={{ ...S.p, paddingLeft: 12 }}>
-            • <strong style={{ color: '#ddd' }}>Supabase</strong> — database and authentication provider. Your data is stored on Supabase's EU/US infrastructure. See <span style={{ color: '#aaa' }}>supabase.com/privacy</span> for their privacy policy.<br />
-            • <strong style={{ color: '#ddd' }}>Google OAuth</strong> — used for sign-in only. We receive your email and display name from Google. We do not access your Google Drive, Gmail, or any other Google data.<br />
-            • <strong style={{ color: '#ddd' }}>Stripe</strong> — used to process Pro subscription payments. Stripe stores your payment details; we store only your Stripe customer ID and subscription status. See <span style={{ color: '#aaa' }}>stripe.com/privacy</span>.<br />
+            • <strong style={{ color: '#ddd' }}>Supabase</strong> — database and authentication (including email/password sign-up). Your data is stored on Supabase's EU/US infrastructure. See supabase.com/privacy.<br />
+            • <strong style={{ color: '#ddd' }}>Google OAuth</strong> — optional sign-in method. We receive your email and display name only. We do not access Google Drive, Gmail, or any other Google service.<br />
+            • <strong style={{ color: '#ddd' }}>Google Gemini API</strong> — powers the AI companion chat feature. Messages you send to the companion are sent to Google's Gemini API for processing. Do not include personal or sensitive information in chat messages. Google's AI data usage policies apply. Chat messages are not stored by Battle Plan beyond the current session.<br />
+            • <strong style={{ color: '#ddd' }}>Resend</strong> — used to send transactional emails (account confirmation, schedule summaries, Pro waitlist notifications). See resend.com/privacy.<br />
+            • <strong style={{ color: '#ddd' }}>Stripe</strong> — used to process Pro subscription payments (not yet live). Stripe stores your payment details; we store only your Stripe customer ID and subscription status. See stripe.com/privacy.<br />
             • <strong style={{ color: '#ddd' }}>Vercel</strong> — the App is hosted on Vercel. Vercel may log request metadata (IP, user agent) for infrastructure purposes.
           </p>
 
@@ -196,6 +206,53 @@ export default function TermsOfService({ onClose }) {
           <p style={S.p}>
             These Terms are governed by the laws of England and Wales. Any disputes will be subject to the
             exclusive jurisdiction of the courts of England and Wales.
+          </p>
+
+          <h2 style={S.h2}>14. Copyright &amp; User-Uploaded Content</h2>
+          <p style={S.p}>
+            You must not upload, share, or reproduce copyrighted exam materials (including past papers, mark schemes,
+            or examiner reports) through this App in a way that infringes the rights of exam boards (AQA, Edexcel,
+            OCR, WJEC, CAIE, or others). The App is for personal revision tracking — paper scores and notes you
+            log are your own data.
+          </p>
+          <p style={S.p}>
+            If you believe content on this platform infringes your copyright, please contact
+            <strong style={{ color: '#ddd' }}> 51r4h100@gmail.com</strong> with: (1) a description of the work,
+            (2) where the infringing material appears, and (3) your contact details. We will investigate and
+            remove infringing content within 14 days of a valid notice.
+          </p>
+
+          <h2 style={S.h2}>15. AI Companion Disclaimer</h2>
+          <p style={S.p}>
+            The AI companion chat (powered by Google Gemini) can make mistakes. Responses are generated by an AI
+            and are not verified by education professionals. Do not rely solely on AI responses for exam preparation,
+            grade predictions, or academic decisions. Always cross-check with your teachers, official mark schemes,
+            and exam board guidance.
+          </p>
+          <p style={S.p}>
+            Do not share personal information, exam centre numbers, passwords, or other sensitive data in the chat.
+            Chat messages are sent to Google's servers for processing.
+          </p>
+
+          <h2 style={S.h2}>16. Email Communications</h2>
+          <p style={S.p}>
+            By creating an account, you may receive transactional emails (account confirmation, password reset,
+            exam schedule summaries if you request them). If you join the Pro waitlist, you consent to receiving
+            one notification email when Pro launches.
+          </p>
+          <p style={S.p}>
+            To unsubscribe from non-essential emails, email <strong style={{ color: '#ddd' }}>51r4h100@gmail.com</strong> with
+            "Unsubscribe" in the subject line, or use the unsubscribe link included in every email we send.
+            Transactional emails (e.g. account confirmation) cannot be opted out of while your account is active.
+          </p>
+
+          <h2 style={S.h2}>17. Information Accuracy Disclaimer</h2>
+          <p style={S.p}>
+            Exam dates, grade boundaries, and grade predictions shown in this App are based on publicly available
+            historical data and are provided for guidance only. They may be out of date, incomplete, or incorrect.
+            Battle Plan makes no guarantee of accuracy. Always verify exam dates with your school and the official
+            exam board. Predicted grades are estimates only and should not be relied upon for university applications
+            or other decisions.
           </p>
 
           <p style={{ ...S.p, marginTop: 24, color: '#555' }}>

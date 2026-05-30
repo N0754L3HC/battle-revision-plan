@@ -5,7 +5,7 @@ import SubjectPicker from './components/SubjectPicker';
 import GroupsView from './components/GroupsView';
 import TermsOfService from './components/TermsOfService';
 import { subjectsFromSelection, GCSE_CATALOG } from './data/subjects';
-import { BarChart3, PenLine, CalendarDays, ClipboardList, Trophy, Users, Timer, BookOpen, User, Sun, Moon, Lock, Pencil, GraduationCap, FileText, TrendingUp, Zap, Star, ArrowUpRight, Target, Shield, CheckCircle, Calendar, Search, Grid3x3, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { BarChart3, PenLine, CalendarDays, ClipboardList, Trophy, Users, Timer, BookOpen, User, Sun, Moon, Lock, Pencil, GraduationCap, FileText, TrendingUp, Zap, Star, ArrowUpRight, Target, Shield, CheckCircle, Calendar, Search, Grid3x3, PanelLeftClose, PanelLeftOpen, UserPlus } from 'lucide-react';
 
 // ── Error boundary ─────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
@@ -83,14 +83,14 @@ const EXAM_SCHEDULE = {
     edexcel: [
       { date:'2026-05-14', paper:'Core Pure Mathematics 1',           code:'9FM0/01', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
       { date:'2026-05-21', paper:'Core Pure Mathematics 2',           code:'9FM0/02', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
-      { date:'2026-06-05', paper:'Option: Further Mechanics 1',       code:'9FM0/3C', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
-      { date:'2026-06-12', paper:'Option: Further Statistics 1',      code:'9FM0/3B', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
-      { date:'2026-06-16', paper:'Option: Decision Mathematics 1',    code:'9FM0/3D', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
+      { date:'2026-06-05', paper:'Option: Further Mechanics 1',       code:'9FM0/3C', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75, option:'3C' },
+      { date:'2026-06-12', paper:'Option: Further Statistics 1',      code:'9FM0/3B', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75, option:'3B' },
+      { date:'2026-06-16', paper:'Option: Decision Mathematics 1',    code:'9FM0/3D', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75, option:'3D' },
     ],
     aqa: [
       { date:'2026-05-14', paper:'Paper 1: Compulsory (7367/1)',  code:'7367/1', board:'AQA', time:'PM', duration:'2h', maxMark:100 },
-      { date:'2026-05-20', paper:'Paper 2: Optional 1 (7367/2)', code:'7367/2', board:'AQA', time:'AM', duration:'1h 30m', maxMark:75 },
-      { date:'2026-06-10', paper:'Paper 3: Optional 2 (7367/3)', code:'7367/3', board:'AQA', time:'PM', duration:'1h 30m', maxMark:75 },
+      { date:'2026-05-20', paper:'Paper 2: Optional 1 (7367/2)', code:'7367/2', board:'AQA', time:'AM', duration:'1h 30m', maxMark:75, option:'OA' },
+      { date:'2026-06-10', paper:'Paper 3: Optional 2 (7367/3)', code:'7367/3', board:'AQA', time:'PM', duration:'1h 30m', maxMark:75, option:'OB' },
     ],
   },
   cs: {
@@ -508,12 +508,14 @@ const EXAM_SCHEDULE = {
   },
 };
 
-// Returns the exam list for a specific subject+board; falls back to first available board
-function getSubjectExams(sched, subjectId, boardId) {
+// Returns the exam list for a specific subject+board; filters by options when provided
+function getSubjectExams(sched, subjectId, boardId, options=[]) {
   const sub = sched[subjectId];
   if (!sub) return [];
   if (Array.isArray(sub)) return sub; // backward-compat
-  return sub[boardId] || sub[Object.keys(sub)[0]] || [];
+  const papers = sub[boardId] || sub[Object.keys(sub)[0]] || [];
+  if (!options || !options.length) return papers;
+  return papers.filter(p => !p.option || options.includes(p.option));
 }
 
 // ── Raw grade boundaries (paper-specific) ───────────────────────────────────
@@ -1188,7 +1190,7 @@ function generateSchedule(subjects, scores, errors, examSched, rag={}, targets={
   const today = new Date(); today.setHours(0,0,0,0);
   const GRADE_BOUNDS = Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries||{}]));
   const ranked = [...subjects].map(s => {
-    const exs = getSubjectExams(examSched, s.id, s.boardId);
+    const exs = getSubjectExams(examSched, s.id, s.boardId, s.options);
     const minDays = exs.length ? Math.min(...exs.map(e=>daysUntil(e.date))) : 999;
     const urgency = 1/(Math.max(0,minDays)+1)*50;
     const ss = scores.filter(x=>x.subject===s.name);
@@ -1217,7 +1219,7 @@ function generateSchedule(subjects, scores, errors, examSched, rag={}, targets={
   for (let i=0; i<14; i++) {
     const d = new Date(today); d.setDate(today.getDate()+i);
     const dateStr = d.toISOString().slice(0,10);
-    const examsToday = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId).filter(e=>e.date===dateStr).map(e=>({...e,subjectName:s.name,color:s.color})));
+    const examsToday = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId,s.options).filter(e=>e.date===dateStr).map(e=>({...e,subjectName:s.name,color:s.color})));
     if (examsToday.length) {
       days.push({date:d, isExamDay:true, exams:examsToday, slots:[]});
     } else {
@@ -1235,7 +1237,7 @@ function generateSchedule(subjects, scores, errors, examSched, rag={}, targets={
 function getNotifications(scores, errors, subjects, examSched=EXAM_SCHEDULE) {
   const now=new Date(); now.setHours(0,0,0,0);
   const notes=[];
-  const allExams=subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId).map(e=>({...e,subject:s.name,color:s.color})));
+  const allExams=subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId,s.options).map(e=>({...e,subject:s.name,color:s.color})));
   const upcoming=allExams.map(e=>({...e,d:Math.ceil((new Date(e.date)-now)/86400000)}))
     .filter(e=>e.d>0).sort((a,b)=>a.d-b.d);
   if (upcoming.length&&upcoming[0].d<=14) {
@@ -1366,7 +1368,7 @@ function computeUnlockedAchievements(scores,errors,subjects,extras={}){
   const examEve=(()=>{
     const sched=extras.examSched;
     if(!sched) return false;
-    const upcoming=subjects.flatMap(s=>getSubjectExams(sched,s.id,s.boardId));
+    const upcoming=subjects.flatMap(s=>getSubjectExams(sched,s.id,s.boardId,s.options));
     return scores.some(p=>{
       const pt=new Date(p.ts||p.id).getTime();
       return upcoming.some(e=>{
@@ -1796,7 +1798,7 @@ function getCompanionMood({sessions,scores,examSched,subjects}) {
   const todaySess = sessions.filter(s=>s.ts>=todayStart.getTime());
   const recent2d  = sessions.filter(s=>s.ts>=(todayStart.getTime()-86400000));
   const lastScore = scores.length?scores[scores.length-1]:null;
-  const nextExamDays = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId))
+  const nextExamDays = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId,s.options))
     .map(e=>Math.ceil((new Date(e.date)-Date.now())/86400000))
     .filter(d=>d>=0).sort((a,b)=>a-b)[0]??999;
   if (nextExamDays<=3&&recent2d.length>=1) return 'excited';
@@ -1827,7 +1829,7 @@ function generateMascotNotifications({scores=[], sessions=[], subjects=[], examS
   }
 
   // Exam within 7 days
-  const nextExam = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId))
+  const nextExam = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId,s.options))
     .map(e=>({...e, days: Math.ceil((new Date(e.date).getTime()-now)/86400000)}))
     .filter(e=>e.days>=0 && e.days<=7).sort((a,b)=>a.days-b.days)[0];
   if (nextExam) {
@@ -1860,7 +1862,7 @@ function generateMascotNotifications({scores=[], sessions=[], subjects=[], examS
 function getCompanionMessage({mood,sessions,scores,subjects,examSched,name}) {
   const hour = new Date().getHours();
   const tod = hour<12?'Morning':hour<17?'Afternoon':'Evening';
-  const nextExam = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId))
+  const nextExam = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId,s.options))
     .map(e=>({...e,d:Math.ceil((new Date(e.date)-Date.now())/86400000)}))
     .filter(e=>e.d>=0).sort((a,b)=>a.d-b.d)[0];
   if (mood==='excited'&&nextExam&&nextExam.d<=3) {
@@ -2123,7 +2125,7 @@ function getCharacterReply(input, {subjects, scores, sessions, examSched}) {
   if (t.match(/motivat|inspire|struggling|hard|difficult|giving up/))
     return "Here's the truth: everyone sitting your exams is also finding it hard. The ones who get the top grades aren't smarter — they just kept going when it got difficult. You're still here. That's the whole job.";
   if (t.match(/exam|when|how long|days left|next paper/)) {
-    const next = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId))
+    const next = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId,s.options))
       .map(e=>({...e,d:Math.ceil((new Date(e.date)-Date.now())/86400000)}))
       .filter(e=>e.d>=0).sort((a,b)=>a.d-b.d)[0];
     if (next) {
@@ -2174,7 +2176,7 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
     setSending(true);
 
     // Build minimal context — no PII, just stats Caps needs for grounded replies
-    const nextExam = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId))
+    const nextExam = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId,s.options))
       .map(e=>({...e, t: new Date(e.date).getTime()}))
       .filter(e=>e.t>=Date.now()).sort((a,b)=>a.t-b.t)[0] || null;
     const ctx = {
@@ -2337,7 +2339,7 @@ function AchievementsView({scores,errors,subjects,C,font,unlockedIds=[]}){
 function MissionBoard({subjects,scores,C,font,examSched,onQuickLog=()=>{}}) {
   const PAPER_SUGGS=Object.fromEntries(subjects.map(s=>[s.name,getPaperSuggestions(s)]));
   const allExams=subjects
-    .flatMap(s=>getSubjectExams(examSched,s.id,s.boardId).map(e=>({...e,subjectName:s.name,color:s.color})))
+    .flatMap(s=>getSubjectExams(examSched,s.id,s.boardId,s.options).map(e=>({...e,subjectName:s.name,color:s.color})))
     .filter(e=>daysUntil(e.date)>0)
     .sort((a,b)=>new Date(a.date)-new Date(b.date));
   const soonest=allExams[0]??null;
@@ -3343,7 +3345,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
     return ss.length ? Math.round(ss.reduce((a,x)=>a+x.pct,0)/ss.length) : null;
   };
 
-  const allUpcoming = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId))
+  const allUpcoming = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId,s.options))
     .map(e=>({...e,d:Math.ceil((new Date(e.date)-Date.now())/86400000)}))
     .filter(e=>e.d>=0).sort((a,b)=>a.d-b.d);
   const isOffSeason = allUpcoming.length===0 || allUpcoming[0].d>90;
@@ -3423,7 +3425,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
         (()=>{
           const now=new Date(); now.setHours(0,0,0,0);
           const upcoming=subjects.flatMap(s=>
-            getSubjectExams(examSched,s.id,s.boardId).map(e=>({...e,subjectName:s.name,color:s.color}))
+            getSubjectExams(examSched,s.id,s.boardId,s.options).map(e=>({...e,subjectName:s.name,color:s.color}))
           ).map(e=>({...e,d:Math.ceil((new Date(e.date)-now)/86400000)}))
            .filter(e=>e.d>=0).sort((a,b)=>a.d-b.d);
           if(!upcoming.length) return null;
@@ -3847,7 +3849,7 @@ function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font}) {
 
 // ── Exams ──────────────────────────────────────────────────────────────────
 function Exams({subjects,C,font,examSched=EXAM_SCHEDULE}) {
-  const allExams=subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId).map(e=>({...e,subjectName:s.name,color:s.color})))
+  const allExams=subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId,s.options).map(e=>({...e,subjectName:s.name,color:s.color})))
     .sort((a,b)=>new Date(a.date)-new Date(b.date));
   const upcoming=allExams.filter(e=>daysUntil(e.date)>=0);
   const past=allExams.filter(e=>daysUntil(e.date)<0);
@@ -3928,6 +3930,13 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE}) {
           </div>
         </div>
       )}
+
+      <div style={{marginTop:20,padding:'10px 14px',background:C.card2,borderRadius:8,
+        border:`1px solid ${C.border}`,fontSize:11,color:C.subtle,lineHeight:1.6}}>
+        Exam dates shown are based on 2026 timetables and are provided for guidance only.
+        Always verify dates with your school and the official board website before making decisions.
+        Battle Plan is not responsible for errors or changes to the exam schedule.
+      </div>
     </div>
   );
 }
@@ -5009,7 +5018,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
     setEmailSending(true); setEmailState('idle'); setEmailMsg('');
     const today = new Date().toISOString().split('T')[0];
     const exams = subjects.flatMap(s =>
-      getSubjectExams(examSched, s.id, s.boardId).map(e => ({ subject: s.name, ...e }))
+      getSubjectExams(examSched, s.id, s.boardId, s.options).map(e => ({ subject: s.name, ...e }))
     ).filter(e => e.date >= today).sort((a, b) => a.date.localeCompare(b.date));
     try {
       const r = await fetch('/api/send-schedule', {
@@ -6261,9 +6270,9 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
         let fS=lS,fE=lE,fR=lR,fT=lT,fSess=lSess,fRN=lRN,fTT=lTT,fComp=lComp,fAch=lAch,fPlan=lPlan;
         if (data) {
           const sIds=new Set(lS.map(s=>s.id));
-          fS=[...lS,...(data.scores||[]).filter(s=>!sIds.has(s.id))];
+          fS=[...lS,...(data.scores||[]).filter(s=>!sIds.has(s.id))].sort((a,b)=>(b.ts||b.id)-(a.ts||a.id));
           const eIds=new Set(lE.map(e=>e.id));
-          fE=[...lE,...(data.errors||[]).filter(e=>!eIds.has(e.id))];
+          fE=[...lE,...(data.errors||[]).filter(e=>!eIds.has(e.id))].sort((a,b)=>(b.ts||b.id)-(a.ts||a.id));
           if (data.rag&&Object.keys(data.rag).length>0) fR={...data.rag,...lR};
           if (data.targets&&Object.keys(data.targets).length>0&&!Object.keys(lT).length) fT=data.targets;
           if (data.sessions?.length) {
@@ -6409,8 +6418,9 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
     {id:'timetable',    label:'Timetable',    Icon:Grid3x3},
     {id:'achievements', label:'Achievements', Icon:Trophy},
     {id:'groups',       label:'Groups',       Icon:Users},
+    {id:'friends',      label:'Friends',      Icon:UserPlus, comingSoon:true},
     {id:'timer',        label:'Timer',        Icon:Timer},
-    {id:'resources',    label:'Resources',    Icon:BookOpen},
+    {id:'resources',    label:'Topics',       Icon:BookOpen},
     {id:'account',      label:'Account',      Icon:User},
   ];
   const sidebarW = sidebarOpen ? (isMobile ? 54 : 210) : 0;
@@ -6543,14 +6553,19 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
             </div>
             <div style={{flex:1,overflowY:'auto',width:'100%'}}>
               {DESKTOP_NAV.map(n=>(
-                <button key={n.id} onClick={()=>setView(n.id)} style={{
+                <button key={n.id} onClick={()=>!n.comingSoon&&setView(n.id)} style={{
                   width:'100%',display:'flex',flexDirection:'column',alignItems:'center',
                   justifyContent:'center',padding:'8px 0',background:'transparent',border:'none',
-                  cursor:'pointer',position:'relative',
+                  cursor:n.comingSoon?'default':'pointer',position:'relative',
                   borderLeft:`3px solid ${view===n.id?C.accent:'transparent'}`,
-                  color:view===n.id?C.accent:C.muted,
+                  color:n.comingSoon?C.subtle:view===n.id?C.accent:C.muted,
                   transition:'border-color 0.12s,color 0.12s'}}>
                   <n.Icon size={17} strokeWidth={view===n.id?2:1.6}/>
+                  {n.comingSoon&&(
+                    <span style={{position:'absolute',top:3,right:2,fontSize:6,fontWeight:800,
+                      color:'#fbbf24',background:'rgba(251,191,36,0.15)',borderRadius:3,
+                      padding:'1px 3px',letterSpacing:0.2,lineHeight:1}}>SOON</span>
+                  )}
                   {n.id==='achievements'&&unlockedIds.length>0&&(
                     <span style={{position:'absolute',top:4,right:4,width:5,height:5,
                       borderRadius:'50%',background:TIER_COLOR.gold}}/>
@@ -6616,19 +6631,24 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
             </div>
             <div style={{flex:1,overflowY:'auto',padding:'6px 8px'}}>
               {DESKTOP_NAV.map(n=>(
-                <button key={n.id} onClick={()=>setView(n.id)} style={{
+                <button key={n.id} onClick={()=>!n.comingSoon&&setView(n.id)} style={{
                   width:'100%',textAlign:'left',padding:'9px 10px',
                   background:view===n.id?C.accentSoft:'transparent',
                   border:'none',borderRadius:8,
-                  color:view===n.id?C.accent:C.muted,
+                  color:n.comingSoon?C.subtle:view===n.id?C.accent:C.muted,
                   fontSize:12,fontWeight:view===n.id?700:400,
-                  fontFamily:font,cursor:'pointer',marginBottom:1,
+                  fontFamily:font,cursor:n.comingSoon?'default':'pointer',marginBottom:1,
                   display:'flex',alignItems:'center',gap:8,position:'relative',
                   transition:'color 0.12s,background 0.12s'
                 }}>
                   <n.Icon size={14} strokeWidth={view===n.id?2:1.6} style={{flexShrink:0}}/>
                   {n.label}
-                  {n.id==='achievements'&&unlockedIds.length>0&&(
+                  {n.comingSoon&&(
+                    <span style={{marginLeft:'auto',fontSize:9,fontWeight:700,color:'#fbbf24',
+                      background:'rgba(251,191,36,0.1)',border:'1px solid rgba(251,191,36,0.28)',
+                      borderRadius:4,padding:'1px 5px',letterSpacing:0.3,flexShrink:0}}>SOON</span>
+                  )}
+                  {n.id==='achievements'&&!n.comingSoon&&unlockedIds.length>0&&(
                     <span style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',
                       width:6,height:6,borderRadius:'50%',background:TIER_COLOR.gold}}/>
                   )}
@@ -6994,7 +7014,13 @@ export default function App() {
   },[]);
 
 
-  function handleSubjectsDone(sel) { setSelection(sel); setPhase('app'); }
+  function handleSubjectsDone(sel, yg) {
+    setSelection(sel);
+    if (yg && user?.id) {
+      supabase.from('user_profiles').update({year_group:yg}).eq('id',user.id).then(()=>{});
+    }
+    setPhase('app');
+  }
 
   async function handleLevelDone(level) {
     setExamLevel(level);
