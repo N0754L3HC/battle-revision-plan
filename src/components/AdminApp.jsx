@@ -1092,6 +1092,85 @@ function ResourcesPanel() {
   );
 }
 
+// ── Waitlist Panel ─────────────────────────────────────────────────────────
+function WaitlistPanel() {
+  const [rows,setRows]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [copied,setCopied]=useState(false);
+
+  useEffect(()=>{
+    supabase.from('pro_waitlist').select('id,email,user_id,created_at,notified_at').order('created_at',{ascending:false})
+      .then(({data})=>{ setRows(data||[]); setLoading(false); });
+  },[]);
+
+  const markNotified = async (id) => {
+    const now = new Date().toISOString();
+    await supabase.from('pro_waitlist').update({notified_at:now}).eq('id',id);
+    setRows(prev=>prev.map(r=>r.id===id?{...r,notified_at:now}:r));
+  };
+
+  const copyEmails = () => {
+    const emails = rows.map(r=>r.email).join('\n');
+    navigator.clipboard.writeText(emails);
+    setCopied(true); setTimeout(()=>setCopied(false),2000);
+  };
+
+  if (loading) return <div style={{color:'#555',fontSize:12,padding:20}}>Loading…</div>;
+
+  return (
+    <div>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
+        <div>
+          <div style={{fontSize:9,letterSpacing:3,color:SEC,fontWeight:700}}>PRO WAITLIST</div>
+          <div style={{fontSize:22,fontWeight:900,color:'#ddd',marginTop:4}}>{rows.length} <span style={{fontSize:13,color:MUT,fontWeight:400}}>signups</span></div>
+        </div>
+        <button onClick={copyEmails} style={btn('#fbbf24',false)}>
+          {copied?'✓ COPIED':'COPY ALL EMAILS'}
+        </button>
+      </div>
+
+      {rows.length===0?(
+        <div style={{...card,padding:20,textAlign:'center',color:MUT,fontSize:13}}>No waitlist signups yet.</div>
+      ):(
+        <div style={{...card,overflow:'hidden'}}>
+          <table style={{width:'100%',borderCollapse:'collapse',fontSize:11,fontFamily:mono}}>
+            <thead>
+              <tr style={{borderBottom:'1px solid rgba(255,255,255,0.08)'}}>
+                {['Email','Signed up','Notified','Action'].map(h=>(
+                  <th key={h} style={{padding:'10px 14px',textAlign:'left',color:MUT,fontWeight:700,fontSize:9,letterSpacing:1}}>{h.toUpperCase()}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(r=>(
+                <tr key={r.id} style={{borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+                  <td style={{padding:'10px 14px',color:'#ddd'}}>{r.email}</td>
+                  <td style={{padding:'10px 14px',color:DIM}}>{fmtDate(r.created_at)}</td>
+                  <td style={{padding:'10px 14px'}}>
+                    {r.notified_at
+                      ? <span style={pill('#00E676')}>NOTIFIED {fmtDate(r.notified_at)}</span>
+                      : <span style={pill('#fbbf24')}>PENDING</span>}
+                  </td>
+                  <td style={{padding:'10px 14px'}}>
+                    {!r.notified_at&&(
+                      <button onClick={()=>markNotified(r.id)} style={btn('#00E676')}>MARK NOTIFIED</button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div style={{marginTop:16,fontSize:11,color:DIM,lineHeight:1.6}}>
+        Use "Copy All Emails" to paste into Resend broadcast or BCC field when Pro launches.
+        Mark users as notified once you've emailed them so you don't double-send.
+      </div>
+    </div>
+  );
+}
+
 // ── Dashboard ──────────────────────────────────────────────────────────────
 function Dashboard({adminUser,adminProfile,onLogout}) {
   const [users,setUsers]=useState([]);
@@ -1224,7 +1303,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
   const topByReadiness=[...users].sort((a,b)=>b.readiness-a.readiness).slice(0,5);
   const recentSignups=[...users].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5);
 
-  const TABS=['overview','users','analytics','query','exams','resources','broadcast','system'];
+  const TABS=['overview','users','analytics','query','exams','resources','broadcast','waitlist','system'];
 
   return (
     <>
@@ -1415,6 +1494,9 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
 
           {/* BROADCAST */}
           {tab==='broadcast'&&<BroadcastPanel users={users}/>}
+
+          {/* WAITLIST */}
+          {tab==='waitlist'&&<WaitlistPanel/>}
 
           {/* SYSTEM */}
           {tab==='system'&&(
