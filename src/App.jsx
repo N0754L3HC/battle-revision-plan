@@ -1594,7 +1594,9 @@ const SHOP_HATS = [
 ];
 
 function computeCoins(scores=[], sessions=[], spent=0) {
-  const sessionMin = sessions.reduce((sum, s) => sum + Math.max(0, (s.duration || s.durationSec || 0) / 60), 0);
+  // Study sessions are stored with a `secs` field (see StudyTimer). The older
+  // duration/durationSec keys are kept as fallbacks for any legacy rows.
+  const sessionMin = sessions.reduce((sum, s) => sum + Math.max(0, (s.secs ?? s.duration ?? s.durationSec ?? 0) / 60), 0);
   const earned = Math.floor(scores.length * 5 + sessionMin);
   return { earned, spent, available: Math.max(0, earned - spent) };
 }
@@ -3861,9 +3863,25 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE,yearGroup=''}) {
   const past=allExams.filter(e=>daysUntil(e.date)<0);
   const next=upcoming[0]??null;
 
+  // Y12/Y10 sit a year out — official 2027 dates aren't published yet, so show a
+  // rough countdown built from last year's earliest paper shifted into 2027.
+  let estDaysToExams=null;
+  if (isY12 && allExams.length) {
+    const d=new Date(allExams[0].date+'T00:00:00'); d.setFullYear(2027);
+    const today=new Date(); today.setHours(0,0,0,0);
+    estDaysToExams=Math.round((d-today)/86400000);
+  }
+
   if (isY12 && !upcoming.length) return (
     <div style={{padding:'40px 24px',maxWidth:520}}>
-      <div style={{fontSize:18,fontWeight:700,color:C.text,marginBottom:10}}>Your exams are in {yearGroup==='Y10'?'2027':'2027'}</div>
+      <div style={{fontSize:18,fontWeight:700,color:C.text,marginBottom:10}}>Your exams are in 2027</div>
+      {estDaysToExams!=null&&estDaysToExams>0&&(
+        <div style={{display:'inline-flex',alignItems:'baseline',gap:8,background:C.card2,
+          border:`1px solid ${C.border}`,borderRadius:10,padding:'12px 16px',marginBottom:16}}>
+          <span style={{fontSize:28,fontWeight:800,color:C.accent}}>~{estDaysToExams}</span>
+          <span style={{fontSize:13,color:C.muted}}>days until your 2027 exams (estimated)</span>
+        </div>
+      )}
       <div style={{fontSize:14,color:C.muted,lineHeight:1.7,marginBottom:16}}>
         {yearGroup==='Y12'?'A-Level':'GCSE'} exam dates for {yearGroup==='Y12'?'2027':'2027'} haven't been officially published by exam boards yet — they're usually released in autumn {yearGroup==='Y12'?'2026':'2026'}.
       </div>
@@ -6662,6 +6680,10 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
                 <div style={{fontSize:13,fontWeight:700,color:C.text,letterSpacing:0.1}}>{companion.name}</div>
                 <span style={{fontSize:8,fontWeight:800,color:C.accent,background:C.accentSoft,
                   border:`1px solid ${C.accent}55`,borderRadius:5,padding:'1px 5px',letterSpacing:0.4}}>BETA</span>
+              </div>
+              <div title="Earn coins by logging papers (+5 each) and study time (+1/min). Spend them in Customise." style={{display:'flex',alignItems:'center',gap:4,fontSize:12,fontWeight:700,color:C.accent}}>
+                {computeCoins(scores,sessions,companion?.spent_coins||0).available} 🪙
+                <span style={{color:C.muted,fontWeight:500}}>coins</span>
               </div>
               <div style={{display:'flex',gap:5,flexWrap:'wrap',justifyContent:'center'}}>
                 <button onClick={e=>{e.stopPropagation();setCompanionDraft(companion.name);setCustomising(true);}}

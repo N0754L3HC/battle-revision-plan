@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { SUBJECT_CATALOG, GCSE_CATALOG } from '../data/subjects';
 import { supabase } from '../lib/supabase';
+import TermsOfService from './TermsOfService';
+
+const TERMS_VERSION = '2026-05-31';
 
 const font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 
@@ -352,6 +355,8 @@ export default function SubjectPicker({ user, onComplete, examLevel = 'alevel' }
   const [selection, setSelection] = useState([]);
   const [yearGroup, setYearGroup] = useState('');
   const [saving, setSaving] = useState(false);
+  const [agreed, setAgreed] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   const isGcse = examLevel === 'gcse';
   const catalog = isGcse ? GCSE_CATALOG : SUBJECT_CATALOG;
@@ -365,7 +370,7 @@ export default function SubjectPicker({ user, onComplete, examLevel = 'alevel' }
       ? selection.every(s => s.boardId) && (!hasFM || selection.every(s => s.subjectId !== 'further-maths' || (s.options||[]).length > 0))
       : step === 3
         ? !!yearGroup
-        : true;
+        : agreed;
 
   const handleNext = async () => {
     if (step < 4) { setStep(step + 1); return; }
@@ -376,6 +381,8 @@ export default function SubjectPicker({ user, onComplete, examLevel = 'alevel' }
     }
     if (user) {
       await supabase.rpc('save_subjects', { p_subjects: subjectsJson });
+      // Record Terms/Privacy acceptance (best-effort — never block onboarding on it)
+      try { await supabase.rpc('accept_terms', { p_version: TERMS_VERSION }); } catch (_) {}
     }
     setSaving(false);
     onComplete(selection, yearGroup);
@@ -455,6 +462,29 @@ export default function SubjectPicker({ user, onComplete, examLevel = 'alevel' }
           {step === 2 && <PickBoards  selection={selection} onChange={setSelection} catalog={catalog} />}
           {step === 3 && <PickYearGroup yearGroup={yearGroup} setYearGroup={setYearGroup} examLevel={examLevel} />}
           {step === 4 && <Confirm     selection={selection} catalog={catalog} examLevel={examLevel} />}
+
+          {step === 4 && (
+            <label style={{
+              display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 18,
+              padding: '12px 14px', background: 'rgba(181,115,90,0.06)',
+              border: `1px solid ${colors.border}`, borderRadius: 10, cursor: 'pointer',
+            }}>
+              <input
+                type="checkbox" checked={agreed}
+                onChange={e => setAgreed(e.target.checked)}
+                style={{ marginTop: 2, width: 16, height: 16, accentColor: colors.accent, cursor: 'pointer', flexShrink: 0 }}
+              />
+              <span style={{ fontSize: 12, color: colors.muted, lineHeight: 1.6 }}>
+                I agree to the{' '}
+                <button type="button" onClick={e => { e.preventDefault(); setShowTerms(true); }}
+                  style={{ background: 'none', border: 'none', padding: 0, font: 'inherit',
+                    color: colors.accent, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}>
+                  Terms of Service &amp; Privacy Policy
+                </button>
+                , and I understand that exam dates, grade boundaries and predictions are estimates I should verify myself.
+              </span>
+            </label>
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: 8 }}>
@@ -493,6 +523,8 @@ export default function SubjectPicker({ user, onComplete, examLevel = 'alevel' }
           {isGcse ? 'Select at least 3 GCSEs. You can update your subjects any time in Settings.' : 'You can update your subjects any time in Settings.'}
         </p>
       </div>
+
+      {showTerms && <TermsOfService onClose={() => setShowTerms(false)} />}
     </div>
   );
 }
