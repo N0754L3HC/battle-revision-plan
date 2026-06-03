@@ -2,7 +2,7 @@ import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = process.env.RESEND_FROM ?? 'Battle Plan <onboarding@resend.dev>';
+const FROM = process.env.RESEND_FROM ?? 'A* Battle Plan <onboarding@resend.dev>';
 
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL ?? '',
@@ -116,7 +116,7 @@ function buildHtml({ scores = [], subjects = [], rag = {} }) {
     <div style="margin-top:24px;padding:16px 20px;background:rgba(181,115,90,0.08);border:1px solid rgba(181,115,90,0.2);border-radius:10px;text-align:center;">
       <p style="margin:0;font-size:13px;color:#574f48;line-height:1.6;">
         ${totalScores} paper${totalScores !== 1 ? 's' : ''} logged in total. Keep pushing — every paper counts.
-        <br>Log on <a href="https://beattheexam.org" style="color:#b5735a;font-weight:600;">Battle Plan</a> to track your readiness.
+        <br>Log on <a href="https://beattheexam.org" style="color:#b5735a;font-weight:600;">A* Battle Plan</a> to track your readiness.
       </p>
     </div>
 
@@ -155,7 +155,7 @@ export default async function handler(req, res) {
     const { data, error } = await resend.emails.send({
       from: FROM,
       to: [email],
-      subject: `Your Weekly Battle Plan Digest — ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}`,
+      subject: `Your Weekly A* Battle Plan Digest — ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}`,
       html: buildHtml({ scores, subjects, rag }),
     });
 

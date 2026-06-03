@@ -3085,7 +3085,7 @@ function ShareReadinessCard({br, subjects, scores, C, font, shareTheme='dark', s
         ctx.textAlign='center';
         ctx.fillStyle=br.labelColor;
         ctx.font="800 56px system-ui,-apple-system,sans-serif";
-        ctx.fillText('Battle Plan',W/2,160);
+        ctx.fillText('A* Battle Plan',W/2,160);
         ctx.fillStyle=P.mute;
         ctx.font="500 22px system-ui,-apple-system,sans-serif";
         ctx.fillText('A* REVISION TRACKER  ·  BEATTHEEXAM.ORG',W/2,200);
@@ -3155,7 +3155,7 @@ function ShareReadinessCard({br, subjects, scores, C, font, shareTheme='dark', s
 
         ctx.fillStyle=P.mute;
         ctx.font="500 22px system-ui,-apple-system,sans-serif";
-        ctx.fillText('Tracked with Battle Plan',W/2,H-50);
+        ctx.fillText('Tracked with A* Battle Plan',W/2,H-50);
       } else {
         // ── LANDSCAPE LAYOUT: 600x315 ──
         const GX=118, GY=158, GR=74;
@@ -3191,7 +3191,7 @@ function ShareReadinessCard({br, subjects, scores, C, font, shareTheme='dark', s
         ctx.textAlign='left';
         ctx.fillStyle=br.labelColor;
         ctx.font="800 16px system-ui,-apple-system,sans-serif";
-        ctx.fillText('Battle Plan',246,44);
+        ctx.fillText('A* Battle Plan',246,44);
         ctx.fillStyle=P.mute;
         ctx.font="500 9px system-ui,-apple-system,sans-serif";
         ctx.fillText('A* REVISION TRACKER  ·  BEATTHEEXAM.ORG',246,59);
@@ -3224,7 +3224,7 @@ function ShareReadinessCard({br, subjects, scores, C, font, shareTheme='dark', s
         ctx.fillStyle=P.mute;
         ctx.font="500 9px system-ui,-apple-system,sans-serif";
         ctx.textAlign='left';
-        ctx.fillText('Tracked with Battle Plan',8,H-8);
+        ctx.fillText('Tracked with A* Battle Plan',8,H-8);
         ctx.textAlign='right';
         ctx.fillText('beattheexam.org',W-8,H-8);
       }
@@ -3972,7 +3972,7 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE,yearGroup=''}) {
         border:`1px solid ${C.border}`,fontSize:11,color:C.subtle,lineHeight:1.6}}>
         Exam dates shown are based on 2026 timetables and are provided for guidance only.
         Always verify dates with your school and the official board website before making decisions.
-        Battle Plan is not responsible for errors or changes to the exam schedule.
+        A* Battle Plan is not responsible for errors or changes to the exam schedule.
       </div>
     </div>
   );
@@ -6292,51 +6292,63 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   useEffect(()=>ls.set(`rbp_my_plan_${uid}`,myPlan),[myPlan,uid]);
   useEffect(()=>{
     if (!user?.id||!isSupabaseConfigured()) { setSyncLoaded(true); return; }
-    const lS=ls.get(`rbp_scores_${uid}`,[]);
-    const lE=ls.get(`rbp_errors_${uid}`,[]);
-    const lR=ls.get(`rbp_rag_${uid}`,{});
-    const lT=ls.get(`rbp_targets_${uid}`,{});
-    const lSess=ls.get(`rbp_sessions_${uid}`,[]);
-    const lRN=ls.get(`rbp_rag_notes_${uid}`,{});
-    const lTT=ls.get(`rbp_timetable_${uid}`,{});
-    const lComp=ls.get(`rbp_companion_${uid}`,null);
-    const lAch=ls.get(`rbp_ach_${uid}`,[]);
-    const lPlan=ls.get(`rbp_my_plan_${uid}`,[]);
+    const localScores    = ls.get(`rbp_scores_${uid}`,[]);
+    const localErrors    = ls.get(`rbp_errors_${uid}`,[]);
+    const localRag       = ls.get(`rbp_rag_${uid}`,{});
+    const localTargets   = ls.get(`rbp_targets_${uid}`,{});
+    const localSessions  = ls.get(`rbp_sessions_${uid}`,[]);
+    const localRagNotes  = ls.get(`rbp_rag_notes_${uid}`,{});
+    const localTimetable = ls.get(`rbp_timetable_${uid}`,{});
+    const localCompanion = ls.get(`rbp_companion_${uid}`,null);
+    const localAch       = ls.get(`rbp_ach_${uid}`,[]);
+    const localPlan      = ls.get(`rbp_my_plan_${uid}`,[]);
     supabase.from('user_data').select('scores,errors,rag,targets,sessions,rag_notes,timetable,companion,achievements,my_plan').eq('user_id',user.id).eq('profile','me').single()
       .then(({data})=>{
-        let fS=lS,fE=lE,fR=lR,fT=lT,fSess=lSess,fRN=lRN,fTT=lTT,fComp=lComp,fAch=lAch,fPlan=lPlan;
+        let mergedScores    = localScores,
+            mergedErrors    = localErrors,
+            mergedRag       = localRag,
+            mergedTargets   = localTargets,
+            mergedSessions  = localSessions,
+            mergedRagNotes  = localRagNotes,
+            mergedTimetable = localTimetable,
+            mergedCompanion = localCompanion,
+            mergedAch       = localAch,
+            mergedPlan      = localPlan;
         if (data) {
-          const sIds=new Set(lS.map(s=>s.id));
-          fS=[...lS,...(data.scores||[]).filter(s=>!sIds.has(s.id))].sort((a,b)=>(b.ts||b.id)-(a.ts||a.id));
-          const eIds=new Set(lE.map(e=>e.id));
-          fE=[...lE,...(data.errors||[]).filter(e=>!eIds.has(e.id))].sort((a,b)=>(b.ts||b.id)-(a.ts||a.id));
-          if (data.rag&&Object.keys(data.rag).length>0) fR={...data.rag,...lR};
-          if (data.targets&&Object.keys(data.targets).length>0&&!Object.keys(lT).length) fT=data.targets;
+          // Merge server rows into local, de-duping by id, then sort newest-first
+          // so a paper logged on another device can't land at the bottom and skew
+          // the analytics trend.
+          const scoreIds = new Set(localScores.map(s=>s.id));
+          mergedScores = [...localScores, ...(data.scores||[]).filter(s=>!scoreIds.has(s.id))].sort((a,b)=>(b.ts||b.id)-(a.ts||a.id));
+          const errorIds = new Set(localErrors.map(e=>e.id));
+          mergedErrors = [...localErrors, ...(data.errors||[]).filter(e=>!errorIds.has(e.id))].sort((a,b)=>(b.ts||b.id)-(a.ts||a.id));
+          if (data.rag&&Object.keys(data.rag).length>0) mergedRag={...data.rag,...localRag};
+          if (data.targets&&Object.keys(data.targets).length>0&&!Object.keys(localTargets).length) mergedTargets=data.targets;
           if (data.sessions?.length) {
-            const sessIds=new Set(lSess.map(s=>s.id));
-            fSess=[...lSess,...(data.sessions||[]).filter(s=>!sessIds.has(s.id))];
+            const sessionIds = new Set(localSessions.map(s=>s.id));
+            mergedSessions = [...localSessions, ...(data.sessions||[]).filter(s=>!sessionIds.has(s.id))];
           }
-          if (data.rag_notes&&Object.keys(data.rag_notes).length>0) fRN={...data.rag_notes,...lRN};
-          if (data.timetable&&Object.keys(data.timetable).length>0&&!Object.keys(lTT).length) fTT=data.timetable;
-          if (data.companion&&Object.keys(data.companion).length>0) fComp={...(lComp||{}),...data.companion};
-          if (Array.isArray(data.achievements)&&data.achievements.length>0) fAch=[...new Set([...(lAch||[]),...data.achievements])];
+          if (data.rag_notes&&Object.keys(data.rag_notes).length>0) mergedRagNotes={...data.rag_notes,...localRagNotes};
+          if (data.timetable&&Object.keys(data.timetable).length>0&&!Object.keys(localTimetable).length) mergedTimetable=data.timetable;
+          if (data.companion&&Object.keys(data.companion).length>0) mergedCompanion={...(localCompanion||{}),...data.companion};
+          if (Array.isArray(data.achievements)&&data.achievements.length>0) mergedAch=[...new Set([...(localAch||[]),...data.achievements])];
           if (Array.isArray(data.my_plan)) {
-            const ids=new Set(lPlan.map(p=>p.id));
-            fPlan=[...lPlan,...data.my_plan.filter(p=>!ids.has(p.id))];
+            const planIds = new Set(localPlan.map(p=>p.id));
+            mergedPlan = [...localPlan, ...data.my_plan.filter(p=>!planIds.has(p.id))];
           }
-          setScores(fS);   ls.set(`rbp_scores_${uid}`,fS);
-          setErrors(fE);   ls.set(`rbp_errors_${uid}`,fE);
-          setRag(fR);      ls.set(`rbp_rag_${uid}`,fR);
-          setTargets(fT);  ls.set(`rbp_targets_${uid}`,fT);
-          setSessions(fSess); ls.set(`rbp_sessions_${uid}`,fSess);
-          setRagNotes(fRN);   ls.set(`rbp_rag_notes_${uid}`,fRN);
-          setTimetable(fTT);  ls.set(`rbp_timetable_${uid}`,fTT);
-          if (fComp) { setCompanion(c=>({...c,...fComp})); ls.set(`rbp_companion_${uid}`,fComp); }
-          setUnlockedAch(fAch); ls.set(`rbp_ach_${uid}`,fAch);
-          setMyPlan(fPlan); ls.set(`rbp_my_plan_${uid}`,fPlan);
+          setScores(mergedScores);        ls.set(`rbp_scores_${uid}`,mergedScores);
+          setErrors(mergedErrors);        ls.set(`rbp_errors_${uid}`,mergedErrors);
+          setRag(mergedRag);              ls.set(`rbp_rag_${uid}`,mergedRag);
+          setTargets(mergedTargets);      ls.set(`rbp_targets_${uid}`,mergedTargets);
+          setSessions(mergedSessions);    ls.set(`rbp_sessions_${uid}`,mergedSessions);
+          setRagNotes(mergedRagNotes);    ls.set(`rbp_rag_notes_${uid}`,mergedRagNotes);
+          setTimetable(mergedTimetable);  ls.set(`rbp_timetable_${uid}`,mergedTimetable);
+          if (mergedCompanion) { setCompanion(c=>({...c,...mergedCompanion})); ls.set(`rbp_companion_${uid}`,mergedCompanion); }
+          setUnlockedAch(mergedAch);      ls.set(`rbp_ach_${uid}`,mergedAch);
+          setMyPlan(mergedPlan);          ls.set(`rbp_my_plan_${uid}`,mergedPlan);
         }
         supabase.from('user_data').upsert(
-          {user_id:user.id,profile:'me',scores:fS,errors:fE,rag:fR,targets:fT,sessions:fSess,rag_notes:fRN,timetable:fTT,companion:fComp||companion,achievements:fAch,my_plan:fPlan,updated_at:new Date().toISOString()},
+          {user_id:user.id,profile:'me',scores:mergedScores,errors:mergedErrors,rag:mergedRag,targets:mergedTargets,sessions:mergedSessions,rag_notes:mergedRagNotes,timetable:mergedTimetable,companion:mergedCompanion||companion,achievements:mergedAch,my_plan:mergedPlan,updated_at:new Date().toISOString()},
           {onConflict:'user_id,profile'}
         ).then(()=>{});
         setSyncLoaded(true);

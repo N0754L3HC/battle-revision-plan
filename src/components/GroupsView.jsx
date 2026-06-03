@@ -105,7 +105,7 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast }
 
   const handleInvite = async (group) => {
     const url  = `${APP_ORIGIN}/j/${group.invite_code}`;
-    const text = `Join my Battle Plan study group "${group.name}" — compare exam scores`;
+    const text = `Join my A* Battle Plan study group "${group.name}" — compare exam scores`;
     try {
       if (navigator.share) {
         await navigator.share({ title: 'Join my study group', text, url });
