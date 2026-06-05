@@ -61,7 +61,11 @@ const T = {
 };
 
 // ── Exam schedule (subjectId → boardId → exams) ────────────────────────────
-const EXAM_SCHEDULE = {
+// Built-in defaults. Admin-managed overrides live in Supabase app_config
+// (key: exam_schedule) and are merged over these on load — see App() boot.
+// IMPORTANT: dates are verified against official board timetables but students
+// are always told to confirm with their own school timetable (dates can move).
+export const EXAM_SCHEDULE = {
   maths: {
     edexcel: [
       { date:'2026-06-03', paper:'Paper 1: Pure Mathematics 1',     code:'9MA0/01', board:'Edexcel', time:'PM', duration:'2h', maxMark:100 },
@@ -83,7 +87,7 @@ const EXAM_SCHEDULE = {
     edexcel: [
       { date:'2026-05-14', paper:'Core Pure Mathematics 1',              code:'9FM0/01', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
       { date:'2026-05-21', paper:'Core Pure Mathematics 2',              code:'9FM0/02', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75 },
-      { date:'2026-06-09', paper:'Option: Further Pure Mathematics 1',   code:'9FM0/3A', board:'Edexcel', time:'AM', duration:'1h 30m', maxMark:75, option:'3A' },
+      { date:'2026-06-19', paper:'Option: Further Pure Mathematics 1',   code:'9FM0/3A', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75, option:'3A' },
       { date:'2026-06-05', paper:'Option: Further Mechanics 1',          code:'9FM0/3C', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75, option:'3C' },
       { date:'2026-06-12', paper:'Option: Further Statistics 1',         code:'9FM0/3B', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75, option:'3B' },
       { date:'2026-06-16', paper:'Option: Decision Mathematics 1',       code:'9FM0/3D', board:'Edexcel', time:'PM', duration:'1h 30m', maxMark:75, option:'3D' },
@@ -136,9 +140,9 @@ const EXAM_SCHEDULE = {
       { date:'2026-06-08', paper:'Component 3: Unified Physics (H557/03)',    code:'H557/03', board:'OCR A', time:'AM', duration:'1h 30m', maxMark:70  },
     ],
     aqa: [
-      { date:'2026-05-21', paper:'Paper 1: Sections 1–5 (7408/1)',          code:'7408/1', board:'AQA', time:'AM', duration:'2h', maxMark:85 },
-      { date:'2026-06-04', paper:'Paper 2: Sections 6–8 (7408/2)',          code:'7408/2', board:'AQA', time:'AM', duration:'2h', maxMark:85 },
-      { date:'2026-06-16', paper:'Paper 3: Practical & Options (7408/3)',   code:'7408/3', board:'AQA', time:'AM', duration:'2h', maxMark:80 },
+      { date:'2026-05-20', paper:'Paper 1: Sections 1–5 (7408/1)',          code:'7408/1', board:'AQA', time:'PM', duration:'2h', maxMark:85 },
+      { date:'2026-06-01', paper:'Paper 2: Sections 6–8 (7408/2)',          code:'7408/2', board:'AQA', time:'AM', duration:'2h', maxMark:85 },
+      { date:'2026-06-08', paper:'Paper 3: Practical & Options (7408/3)',   code:'7408/3', board:'AQA', time:'AM', duration:'2h', maxMark:80 },
     ],
     edexcel: [
       { date:'2026-05-19', paper:'Paper 1: Advanced Physics I (9PH0/01)',                   code:'9PH0/01', board:'Edexcel', time:'PM', duration:'1h 45m', maxMark:90 },
@@ -162,7 +166,7 @@ const EXAM_SCHEDULE = {
     aqa: [
       { date:'2026-06-04', paper:'Paper 1: Biological Processes (7402/1)',  code:'7402/1', board:'AQA', time:'PM', duration:'2h', maxMark:91 },
       { date:'2026-06-12', paper:'Paper 2: Biological Diversity (7402/2)',  code:'7402/2', board:'AQA', time:'AM', duration:'2h', maxMark:91 },
-      { date:'2026-06-15', paper:'Paper 3: Essay & Data Analysis (7402/3)', code:'7402/3', board:'AQA', time:'PM', duration:'2h', maxMark:78 },
+      { date:'2026-06-16', paper:'Paper 3: Essay & Data Analysis (7402/3)', code:'7402/3', board:'AQA', time:'AM', duration:'2h', maxMark:78 },
     ],
     'edexcel-a': [
       { date:'2026-05-19', paper:'Paper 1: The Natural Environment (9BI0/01)',              code:'9BI0/01', board:'Edexcel A', time:'PM', duration:'1h 45m', maxMark:90 },
@@ -3964,8 +3968,20 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE,yearGroup=''}) {
           <div style={{fontSize:14,color:C.muted,marginTop:12}}>
             {next.subjectName} · {next.paper.split(':')[1]?.trim()||next.paper}
           </div>
+          <div style={{fontSize:13,color:C.text,marginTop:4,fontWeight:600}}>
+            {new Date(next.date).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})} · {next.time}
+          </div>
         </div>
       )}
+
+      {/* Always-confirm banner — sits up top because a wrong date is the one
+          mistake you can't recover from. */}
+      <div style={{marginBottom:20,padding:'11px 14px',background:'rgba(249,115,22,0.10)',
+        border:'1px solid rgba(249,115,22,0.35)',borderRadius:8,fontSize:12.5,
+        color:C.text,lineHeight:1.55,display:'flex',gap:9,alignItems:'flex-start'}}>
+        <span style={{fontSize:15,lineHeight:1}}>⚠️</span>
+        <span><strong>Double-check every date and time against your own school exam timetable.</strong> Boards occasionally move papers, and your centre's start times are the ones that count — never rely on this app alone to decide when to turn up.</span>
+      </div>
 
       {/* All exams list */}
       {upcoming.length>0&&(
@@ -6991,6 +7007,26 @@ export default function App() {
   const dark = ls.get('rbp_dark',false);
   const C    = dark?T.dark:T.light;
   const font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+
+  // Load admin-managed exam-date overrides (app_config.exam_schedule) and merge
+  // them over the built-in schedule. Public read, admin-only write (RLS). This is
+  // what makes the God-Mode exam editor's saved dates actually reach students —
+  // without it the editor wrote to a table nothing ever read back.
+  useEffect(()=>{
+    if (!isSupabaseConfigured()) return;
+    let alive=true;
+    (async()=>{
+      try {
+        const {data}=await supabase.from('app_config').select('value').eq('key','exam_schedule').maybeSingle();
+        if (!alive || !data?.value) return;
+        const override = typeof data.value==='string' ? JSON.parse(data.value) : data.value;
+        if (override && typeof override==='object' && !Array.isArray(override)) {
+          setExamSched(prev=>({...prev,...override}));
+        }
+      } catch(_) { /* keep built-in defaults on any error */ }
+    })();
+    return ()=>{ alive=false; };
+  },[]);
 
   useEffect(()=>{
     if (!isSupabaseConfigured()) { setPhase('landing'); return; }

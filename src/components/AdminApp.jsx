@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { EXAM_SCHEDULE } from '../App';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 // Admin status is enforced server-side via user_profiles.is_admin (set via SQL).
@@ -851,9 +852,15 @@ function ExamEditor() {
 
   const loadSchedule=async()=>{
     setLoading(true);
-    const {data}=await supabase.from('app_config').select('value').eq('key','exam_schedule').single();
+    const {data}=await supabase.from('app_config').select('value').eq('key','exam_schedule').maybeSingle();
     if (data?.value) {
-      try { setSchedule(typeof data.value==='string'?JSON.parse(data.value):data.value); } catch(_) {}
+      try { setSchedule(typeof data.value==='string'?JSON.parse(data.value):data.value); }
+      catch(_) { setSchedule(EXAM_SCHEDULE); }
+    } else {
+      // No override saved yet — seed from the app's built-in schedule so you edit
+      // the real dates. The live app merges per subject, so saving a half-empty
+      // schedule would wipe a subject's papers; seeding the full set avoids that.
+      setSchedule(EXAM_SCHEDULE);
     }
     setLoading(false);
   };
@@ -1303,7 +1310,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
   const topByReadiness=[...users].sort((a,b)=>b.readiness-a.readiness).slice(0,5);
   const recentSignups=[...users].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5);
 
-  const TABS=['overview','users','analytics','query','exams','resources','broadcast','waitlist','system'];
+  const TABS=['overview','myplan','users','analytics','query','exams','resources','broadcast','waitlist','system'];
 
   return (
     <>
@@ -1317,7 +1324,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
             <div style={{display:'flex',gap:1,marginLeft:6}}>
               {TABS.map(t=>(
                 <button key={t} onClick={()=>setTab(t)} style={{background:tab===t?'rgba(255,61,0,0.1)':'transparent',border:'none',borderBottom:`2px solid ${tab===t?'#FF3D00':'transparent'}`,color:tab===t?'#FF3D00':'#7a7570',padding:'0 12px',height:50,cursor:'pointer',fontSize:10,fontFamily:mono,letterSpacing:1,fontWeight:700,transition:'all 0.15s'}}>
-                  {t.toUpperCase()}
+                  {t==='myplan'?'★ MY PLAN':t.toUpperCase()}
                 </button>
               ))}
             </div>
@@ -1487,6 +1494,8 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
           {tab==='query'&&<QueryExplorer users={users}/>}
 
           {/* EXAMS */}
+          {tab==='myplan'&&<MyRevisionPlan/>}
+
           {tab==='exams'&&<ExamEditor/>}
 
           {/* RESOURCES */}
@@ -1560,6 +1569,177 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
 }
 
 // ── Root ───────────────────────────────────────────────────────────────────
+// ── My Revision Plan (private — admin/owner only) ──────────────────────────
+// A personal cockpit for the three papers the owner flagged as "forgotten":
+// FP1, OCR CS Paper 2, and Edexcel Maths Paper 3 (Stats & Mechanics). Dates are
+// the verified summer-2026 board dates. Checklists persist in localStorage.
+const MY_PLAN_SUBJECTS = [
+  {
+    key:'csp2', name:'CS Paper 2 — Algorithms & Programming', code:'OCR H446/02',
+    date:'2026-06-17', time:'AM', color:'#00E676',
+    topics:[
+      'Computational thinking: abstraction, decomposition, thinking ahead/procedurally/logically',
+      'Programming techniques: recursion, parameters & scope, OOP (classes, inheritance, encapsulation)',
+      'Computational methods: divide & conquer, backtracking, heuristics, performance modelling, pipelining',
+      'Big-O complexity: constant, linear, polynomial, exponential — best/worst case',
+      'Searching: linear search, binary search (and when each applies)',
+      'Sorting: bubble, insertion, merge, quick — how they work + complexity',
+      'Data structures: arrays, records, lists, tuples, stacks, queues',
+      'Graphs & trees: representation, traversal (DFS/BFS), binary search trees',
+      'Dijkstra’s shortest path + A* — trace through by hand',
+      'Hash tables & dictionaries: collisions, why O(1) lookup',
+    ],
+  },
+  {
+    key:'stats', name:'Statistics — Maths Paper 3', code:'Edexcel 9MA0/03',
+    date:'2026-06-18', time:'PM', color:'#40C4FF',
+    topics:[
+      'Sampling: random, systematic, stratified, quota, opportunity + the Large Data Set',
+      'Data presentation: histograms, box plots, cumulative frequency, outliers',
+      'Measures: mean, sd, interpolation for medians/quartiles, coding',
+      'Correlation & regression: PMCC, regression lines, interpretation in context',
+      'Probability: Venn diagrams, tree diagrams, conditional, set notation',
+      'Binomial distribution: P(X=x), cumulative, modelling assumptions',
+      'Normal distribution: probabilities, inverse normal, approximating binomial',
+      'Hypothesis testing: binomial test, correlation (PMCC) test, normal mean — full method',
+    ],
+  },
+  {
+    key:'mech', name:'Mechanics — Maths Paper 3', code:'Edexcel 9MA0/03',
+    date:'2026-06-18', time:'PM', color:'#FFD600',
+    topics:[
+      'Kinematics: suvat (constant acceleration) + motion graphs',
+      'Kinematics: variable acceleration with calculus + vectors (i, j)',
+      'Forces & Newton’s laws: F = ma, weight, normal reaction',
+      'Connected particles: pulleys, lifts, tow ropes',
+      'Friction & inclined planes: μ, limiting equilibrium, resolving',
+      'Projectiles: horizontal & angled, range, time of flight, greatest height',
+      'Moments: equilibrium of rigid bodies, tilting/about to rotate',
+      'Vectors in mechanics: forces as vectors, equilibrium',
+    ],
+  },
+  {
+    key:'fp1', name:'Further Pure 1 (FP1)', code:'Edexcel 9FM0/3A',
+    date:'2026-06-19', time:'PM', color:'#E040FB',
+    topics:[
+      'Coordinate systems: parabola & rectangular hyperbola — tangents, normals, loci',
+      'Coordinate systems: ellipse & hyperbola — foci, directrices, eccentricity',
+      'Inequalities: algebraic, modulus, using graphs',
+      'Further trigonometry: the t = tan(½θ) substitution',
+      'Series: method of differences',
+      'Maclaurin & Taylor series',
+      'Further calculus: improper integrals, mean value, arc length, surface of revolution',
+      'Further vectors: vector (cross) product, scalar triple product, lines & planes',
+      'Further differential equations: Taylor series method, reducible equations',
+      'Further numerical methods: numerical solution of differential equations',
+    ],
+  },
+];
+
+function MyRevisionPlan() {
+  const STORE_KEY='rbp_myplan_done_v1';
+  const [done,setDone]=useState(()=>{ try{return JSON.parse(localStorage.getItem(STORE_KEY)||'{}');}catch{return{};} });
+  const toggle=id=>setDone(p=>{ const n={...p,[id]:!p[id]}; try{localStorage.setItem(STORE_KEY,JSON.stringify(n));}catch{} return n; });
+
+  const today=new Date(); today.setHours(0,0,0,0);
+  const dleft=iso=>Math.round((new Date(iso+'T00:00:00')-today)/86400000);
+  const fmtLong=iso=>new Date(iso+'T12:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+
+  const totalTopics=MY_PLAN_SUBJECTS.reduce((a,s)=>a+s.topics.length,0);
+  const totalDone=MY_PLAN_SUBJECTS.reduce((a,s)=>a+s.topics.filter((_,i)=>done[`${s.key}_${i}`]).length,0);
+  const overallPct=Math.round(totalDone/totalTopics*100);
+
+  return (
+    <div style={{maxWidth:1100}}>
+      {/* Banner */}
+      <div style={{...card,padding:'18px 22px',marginBottom:16,borderColor:'rgba(255,61,0,0.25)'}}>
+        <div style={{fontSize:18,fontWeight:800,color:'#fff',letterSpacing:0.3}}>MISSION: A* — final push 🎯</div>
+        <div style={{fontSize:12,color:MUT,marginTop:6,lineHeight:1.6}}>
+          Your three flagged papers, in date order. Relearn fast with active recall + past papers — reading notes alone won’t move the needle. Tick topics as you genuinely master them (you can redo a paper question on it without notes). Progress saves to this browser.
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:12,marginTop:14}}>
+          <div style={{flex:1,height:8,background:'rgba(255,255,255,0.06)',borderRadius:4,overflow:'hidden'}}>
+            <div style={{height:'100%',width:`${overallPct}%`,background:overallPct>=70?'#00E676':overallPct>=40?'#FFD600':'#FF9100',transition:'width 0.3s'}}/>
+          </div>
+          <div style={{fontSize:13,fontWeight:800,color:'#fff'}}>{totalDone}/{totalTopics} <span style={{color:DIM,fontWeight:400}}>({overallPct}%)</span></div>
+        </div>
+      </div>
+
+      {/* Countdown cards */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:10,marginBottom:18}}>
+        {MY_PLAN_SUBJECTS.filter((s,i,arr)=>arr.findIndex(x=>x.date===s.date&&x.code===s.code)===i).sort((a,b)=>new Date(a.date)-new Date(b.date)).map(s=>{
+          const d=dleft(s.date);
+          return (
+            <div key={s.code+s.date} style={{...card,padding:'14px 16px',borderColor:`${s.color}33`}}>
+              <div style={{fontSize:10,color:MUT,letterSpacing:1.5,textTransform:'uppercase'}}>{s.code}</div>
+              <div style={{fontSize:13,fontWeight:700,color:'#ddd',margin:'4px 0 8px',lineHeight:1.3}}>{s.name.replace(/ —.*/,'')}</div>
+              <div style={{display:'flex',alignItems:'baseline',gap:6}}>
+                <span style={{fontSize:30,fontWeight:900,color:d<=3?'#FF3D00':d<=7?'#FF9100':s.color,lineHeight:1}}>{d>0?d:d===0?'TODAY':'—'}</span>
+                {d>0&&<span style={{fontSize:11,color:DIM}}>days</span>}
+              </div>
+              <div style={{fontSize:11,color:MUT,marginTop:6}}>{fmtLong(s.date)} · {s.time}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Daily engine */}
+      <div style={{...card,padding:'16px 20px',marginBottom:18}}>
+        <div style={{fontSize:9,letterSpacing:3,color:SEC,fontWeight:700,marginBottom:12}}>THE 12-HOUR DAY (REPEAT DAILY)</div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:10}}>
+          {[
+            ['Block 1 · 3h','Weakest subject. Relearn 1–2 topics: watch/read → worked examples → 8–10 practice questions. No passive reading.'],
+            ['Block 2 · 3h','Second subject, same method. Switch subjects to stay sharp — interleaving beats blocking.'],
+            ['Block 3 · 3h','One FULL past paper under timed, silent, no-notes conditions. This is non-negotiable from ~12 June.'],
+            ['Block 4 · 2–3h','Mark it brutally. Log every error, redo each missed question, then 20 min flashcards/active recall of today’s topics.'],
+          ].map(([t,b])=>(
+            <div key={t} style={{...card,padding:'12px 14px'}}>
+              <div style={{fontSize:12,fontWeight:800,color:'#FF6D00',marginBottom:5}}>{t}</div>
+              <div style={{fontSize:11.5,color:'#bbb',lineHeight:1.6}}>{b}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{fontSize:11,color:DIM,marginTop:12,lineHeight:1.7}}>
+          50-min focus / 10-min break (Pomodoro). Protect <strong style={{color:'#aaa'}}>7–8h sleep</strong> — it’s when memory consolidates; an all-nighter loses you more marks than it gains. Eat, move, hydrate. <br/>
+          <strong style={{color:'#aaa'}}>Phase 1 (now → ~11 Jun):</strong> relearn topic-by-topic. <strong style={{color:'#aaa'}}>Phase 2 (12–16 Jun):</strong> past papers daily + error log. <strong style={{color:'#aaa'}}>Exam days 17–19:</strong> light review of summary sheets + technique, then rest.
+        </div>
+      </div>
+
+      {/* Per-subject checklists */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(320px,1fr))',gap:12}}>
+        {MY_PLAN_SUBJECTS.map(s=>{
+          const sDone=s.topics.filter((_,i)=>done[`${s.key}_${i}`]).length;
+          const pct=Math.round(sDone/s.topics.length*100);
+          return (
+            <div key={s.key} style={{...card,padding:'16px 18px',borderColor:`${s.color}2a`}}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+                <div style={{fontSize:13,fontWeight:800,color:s.color}}>{s.name}</div>
+                <div style={{fontSize:11,fontWeight:700,color:pct===100?'#00E676':'#aaa'}}>{sDone}/{s.topics.length}</div>
+              </div>
+              <div style={{fontSize:10,color:MUT,marginBottom:12}}>{s.code} · {fmtLong(s.date)} · {s.time}</div>
+              <div style={{display:'flex',flexDirection:'column',gap:2}}>
+                {s.topics.map((t,i)=>{
+                  const id=`${s.key}_${i}`; const isDone=!!done[id];
+                  return (
+                    <label key={id} style={{display:'flex',gap:9,alignItems:'flex-start',padding:'7px 6px',borderRadius:6,cursor:'pointer',background:isDone?'rgba(0,230,118,0.05)':'transparent'}}>
+                      <input type="checkbox" checked={isDone} onChange={()=>toggle(id)} style={{marginTop:2,accentColor:s.color,cursor:'pointer',flexShrink:0}}/>
+                      <span style={{fontSize:12,lineHeight:1.5,color:isDone?DIM:'#cfcdc9',textDecoration:isDone?'line-through':'none'}}>{t}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{...card,padding:'12px 16px',marginTop:16,fontSize:11,color:DIM,lineHeight:1.7,borderColor:'rgba(255,255,255,0.06)'}}>
+        Topic lists are a strong starting point — open your spec/checklist and add anything missing on paper. If you also have <strong style={{color:'#aaa'}}>CS Paper 1 (10 Jun)</strong> and <strong style={{color:'#aaa'}}>Maths Paper 2 (11 Jun)</strong> on your timetable, those come first — slot them into Phase 1. One bad paper does not sink three A*s; consistent daily reps do the opposite. You’ve got this.
+      </div>
+    </div>
+  );
+}
+
 export default function AdminApp() {
   const [phase,setPhase]=useState('init');
   const [adminUser,setAdminUser]=useState(null);
