@@ -1626,6 +1626,20 @@ function computeCoins(scores=[], sessions=[], spent=0) {
   return { earned, spent, available: Math.max(0, earned - spent) };
 }
 
+// "Did you show up?" — any meaningful study action counts toward streaks,
+// momentum and the mascot: a timed session, a logged past paper, or a logged
+// error. This is deliberately separate from *minutes studied*, which stays
+// measured-only (timer + exam mode) so the clock never reflects a guess.
+// Returns a Set of local-midnight timestamps that had at least one action.
+function studyActivityDays({sessions=[],scores=[],errors=[]}={}) {
+  const days=new Set();
+  const add=ts=>{ if(!ts) return; const d=new Date(ts); d.setHours(0,0,0,0); days.add(d.getTime()); };
+  sessions.forEach(s=>add(s.ts));
+  scores.forEach(s=>add(s.ts??s.id));
+  errors.forEach(e=>add(e.ts??e.id));
+  return days;
+}
+
 function defaultOwned() { return { coats:[0], scarves:[0], hats:[0] }; }
 function totalOwnedItems(owned) {
   if (!owned) return 0;
@@ -1827,19 +1841,21 @@ function CompanionAvatar({skin=0,outfitColor=0,accessory=0,mood='neutral',pose='
 
 function getCompanionMood({sessions,scores,examSched,subjects}) {
   const todayStart = new Date(); todayStart.setHours(0,0,0,0);
-  const todaySess = sessions.filter(s=>s.ts>=todayStart.getTime());
-  const recent2d  = sessions.filter(s=>s.ts>=(todayStart.getTime()-86400000));
+  // Activity = any study action (timed session OR logged paper), not just the timer.
+  const acts = [...sessions.map(s=>s.ts), ...scores.map(s=>s.ts??s.id)].filter(Boolean);
+  const activeToday  = acts.some(t=>t>=todayStart.getTime());
+  const activeRecent = acts.some(t=>t>=(todayStart.getTime()-86400000));
   const lastScore = scores.length?scores[scores.length-1]:null;
   const nextExamDays = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId,s.options))
     .map(e=>Math.ceil((new Date(e.date)-Date.now())/86400000))
     .filter(d=>d>=0).sort((a,b)=>a-b)[0]??999;
-  if (nextExamDays<=3&&recent2d.length>=1) return 'excited';
-  if (nextExamDays<=5&&recent2d.length===0) return 'worried';
+  if (nextExamDays<=3&&activeRecent) return 'excited';
+  if (nextExamDays<=5&&!activeRecent) return 'worried';
   if (lastScore&&lastScore.pct>=80) return 'excited';
   if (lastScore&&lastScore.pct>=65) return 'happy';
-  if (recent2d.length>=1) return 'happy';
+  if (activeRecent) return 'happy';
   const hour = new Date().getHours();
-  if ((hour>=23||hour<5) && todaySess.length===0 && nextExamDays>5) return 'sleepy';
+  if ((hour>=23||hour<5) && !activeToday && nextExamDays>5) return 'sleepy';
   return 'neutral';
 }
 
@@ -1870,14 +1886,16 @@ function generateMascotNotifications({scores=[], sessions=[], subjects=[], examS
       msg:`${(nextExam.paper||'Exam').split(':')[0]} is ${nextExam.days===0?'today':nextExam.days===1?'tomorrow':`in ${nextExam.days} days`}. Drill weak topics.`});
   }
 
-  // Activity gap warning
-  const todaySess = sessions.filter(s=>s.ts>=todayStart.getTime());
-  const lastSessTs = sessions.length ? Math.max(...sessions.map(s=>s.ts||0)) : 0;
-  const daysSinceSession = lastSessTs ? Math.floor((now-lastSessTs)/86400000) : 999;
-  if (lastSessTs && daysSinceSession >= 3 && todaySess.length===0) {
+  // Activity gap warning — counts any study action (paper logged, error logged,
+  // timed session), so the warning never fires on a day the student did work.
+  const acts = [...sessions.map(s=>s.ts), ...scores.map(s=>s.ts??s.id)].filter(Boolean);
+  const activeToday = acts.some(t=>t>=todayStart.getTime());
+  const lastActTs = acts.length ? Math.max(...acts) : 0;
+  const daysSinceActive = lastActTs ? Math.floor((now-lastActTs)/86400000) : 999;
+  if (lastActTs && daysSinceActive >= 3 && !activeToday) {
     const id = `gap_${todayStart.toISOString().slice(0,10)}`;
     if (!dset.has(id)) out.push({id, kind:'warn',
-      msg:`Haven't seen you in ${daysSinceSession} days. Even 20 focused minutes today rebuilds momentum.`});
+      msg:`Haven't seen you in ${daysSinceActive} days. Even 20 focused minutes today rebuilds momentum.`});
   }
 
   // Coin milestone (only highest unhit, descending)
@@ -4122,6 +4140,7 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
   const [examExtraIdx,  setExamExtraIdx]  = useState(0); // index into EXTRA_TIME_OPTS
   const [examRunning,   setExamRunning]   = useState(false);
   const [examDone,      setExamDone]      = useState(false);
+  const [examResult,    setExamResult]    = useState(null); // {secs,logged} of last finished exam
   const examEndRef  = useRef(null);
   const examRemRef  = useRef(90*60);
 
@@ -4142,7 +4161,21 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
   const examReset = () => {
     examEndRef.current = null;
     examRemRef.current = examTotalMins * 60;
-    setExamRunning(false); setExamDone(false); setTick(t=>t+1);
+    setExamRunning(false); setExamDone(false); setExamResult(null); setTick(t=>t+1);
+  };
+  // End the exam and log the elapsed time as a real, subject-attributed study
+  // session (measured time — same footing as the stopwatch). Called both when
+  // the clock hits zero and when the student finishes early.
+  const finishExam = (elapsedSecs) => {
+    examEndRef.current = null; examRemRef.current = 0;
+    setExamRunning(false); setExamDone(true); setTick(t=>t+1);
+    const secs = Math.round(elapsedSecs);
+    const logged = secs >= 60 && !!selSubject;
+    if (logged) {
+      const sess={id:Date.now(),subjectId:selSubject,secs,ts:Date.now(),mode:'exam'};
+      setSessions(prev=>{const next=[...prev,sess];ls.set(`rbp_sessions_${uid}`,next);return next;});
+    }
+    setExamResult({secs, logged});
   };
 
   // Background-safe timer refs: all time derived from Date.now() not counters
@@ -4175,8 +4208,7 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
         }
       }
       if (examRunning && examEndRef.current && Date.now()>=examEndRef.current) {
-        setExamRunning(false); examEndRef.current=null;
-        examRemRef.current=0; setExamDone(true);
+        finishExam(examTotalMins*60); // ran full duration
       }
     }, 250);
     return ()=>clearInterval(id);
@@ -4245,7 +4277,9 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
     ...s, secs:todaySessions.filter(ss=>ss.subjectId===s.id).reduce((a,ss)=>a+ss.secs,0)
   })).filter(s=>s.secs>0).sort((a,b)=>b.secs-a.secs);
 
-  const daySet=new Set(workSessions.map(s=>{const d=new Date(s.ts);d.setHours(0,0,0,0);return d.getTime();}));
+  // Streak counts any study action that day — timed session, logged paper, or
+  // logged error — not just timer use. (Minutes above stay measured-only.)
+  const daySet=studyActivityDays({sessions,scores,errors});
   let streak=0; const chk=new Date(); chk.setHours(0,0,0,0);
   while(daySet.has(chk.getTime())){streak++;chk.setDate(chk.getDate()-1);}
 
@@ -4400,15 +4434,26 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
       ):timerMode==='exam'?(
         /* ── EXAM MODE ── */
         <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:'24px 20px'}}>
-          {examDone?(
-            /* Time's up screen */
+          {examDone?(()=>{
+            const earlyFinish = examResult && examResult.secs < examTotalMins*60;
+            return (
             <div style={{textAlign:'center',padding:'20px 0'}}>
-              <div style={{fontSize:13,fontWeight:700,color:'#ef4444',letterSpacing:1,textTransform:'uppercase',marginBottom:12}}>Time's up</div>
-              <div style={{fontSize:72,fontWeight:900,color:'#ef4444',
-                fontFamily:"'JetBrains Mono','SF Mono',monospace",lineHeight:1,marginBottom:8}}>00:00</div>
-              {examExtraMins>0&&(
+              <div style={{fontSize:13,fontWeight:700,color:earlyFinish?C.accent:'#ef4444',letterSpacing:1,textTransform:'uppercase',marginBottom:12}}>{earlyFinish?'Exam ended':"Time's up"}</div>
+              <div style={{fontSize:72,fontWeight:900,color:earlyFinish?C.text:'#ef4444',
+                fontFamily:"'JetBrains Mono','SF Mono',monospace",lineHeight:1,marginBottom:8}}>{earlyFinish?fmtSw(examResult.secs):'00:00'}</div>
+              {examExtraMins>0&&!earlyFinish&&(
                 <div style={{fontSize:13,color:C.muted,marginBottom:20}}>
                   That included {examExtraMins} min extra time
+                </div>
+              )}
+              {examResult?.logged&&(
+                <div style={{fontSize:13,color:'#4ade80',fontWeight:600,marginBottom:20}}>
+                  ✓ Logged {fmtDur(examResult.secs)} to {subjects.find(s=>s.id===selSubject)?.name||'your studies'}
+                </div>
+              )}
+              {examResult&&!examResult.logged&&(
+                <div style={{fontSize:12,color:C.subtle,marginBottom:20}}>
+                  {selSubject?'Under a minute — not logged.':'Pick a subject next time to log this as study time.'}
                 </div>
               )}
               <button onClick={examReset}
@@ -4417,7 +4462,8 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
                 Reset
               </button>
             </div>
-          ):(()=>{
+            );
+          })():(()=>{
             const mm=String(Math.floor(examSecs/60)).padStart(2,'0');
             const ss=String(examSecs%60).padStart(2,'0');
             const pct=examTotalMins>0?examSecs/(examTotalMins*60):1;
@@ -4426,6 +4472,8 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
             const dispColor=warn10?'#ef4444':warn30?'#f97316':C.text;
             return (
               <>
+                {/* Subject — so exam time logs against the right subject */}
+                {subjectPill(examRunning)}
                 {/* Duration picker */}
                 <div style={{marginBottom:18}}>
                   <div style={{fontSize:10,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Exam duration</div>
@@ -4483,14 +4531,22 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
                       background:warn10?'#ef4444':warn30?'#f97316':C.accent,
                       width:`${pct*100}%`,transition:'width 1s linear'}}/>
                   </div>
-                  <button onClick={examRunning?()=>{}:examStart} disabled={examRunning}
-                    style={{padding:'11px 36px',borderRadius:8,
-                      background:examRunning?C.card2:C.accent,
-                      border:`1px solid ${examRunning?C.border:C.accent}`,
-                      color:examRunning?C.muted:'#fff',fontSize:14,fontWeight:700,fontFamily:font,
-                      cursor:examRunning?'not-allowed':'pointer',transition:'all 0.15s'}}>
-                    {examRunning?'Running…':'Start Exam'}
-                  </button>
+                  {examRunning?(
+                    <button onClick={()=>finishExam(examTotalMins*60-examSecs)}
+                      style={{padding:'11px 32px',borderRadius:8,
+                        background:'rgba(74,222,128,0.10)',border:'1px solid #4ade8040',
+                        color:'#4ade80',fontSize:14,fontWeight:700,fontFamily:font,cursor:'pointer',transition:'all 0.15s'}}>
+                      Finish &amp; log
+                    </button>
+                  ):(
+                    <button onClick={examStart}
+                      style={{padding:'11px 36px',borderRadius:8,
+                        background:C.accent,border:`1px solid ${C.accent}`,
+                        color:'#fff',fontSize:14,fontWeight:700,fontFamily:font,
+                        cursor:'pointer',transition:'all 0.15s'}}>
+                      Start Exam
+                    </button>
+                  )}
                   {!examRunning&&examSecs<examTotalMins*60&&examSecs>0&&(
                     <button onClick={examReset} style={{marginLeft:10,padding:'11px 20px',borderRadius:8,
                       background:'transparent',border:`1px solid ${C.border}`,
@@ -4500,7 +4556,7 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
                   )}
                 </div>
                 <div style={{fontSize:11,color:C.subtle,textAlign:'center',lineHeight:1.6}}>
-                  Once started, the timer cannot be paused — just like a real exam.
+                  Can't be paused — just like a real exam. Finish early to log your time.
                 </div>
               </>
             );
