@@ -3,7 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 
 export const config = { api: { bodyParser: false } };
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+// Lazy-init so a missing key returns a clean 503 instead of crashing at module
+// load (FUNCTION_INVOCATION_FAILED).
+let _stripe;
+const getStripe = () => (_stripe ??= new Stripe(process.env.STRIPE_SECRET_KEY));
 const supabase = createClient(
   process.env.SUPABASE_URL ?? '',
   process.env.SUPABASE_SERVICE_KEY ?? ''
@@ -20,6 +23,10 @@ function getRawBody(req) {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
+    return res.status(503).json({ error: 'Payments not configured' });
+  }
+  if (!process.env.SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'Not configured' });
 
   const sig = req.headers['stripe-signature'];
   if (!sig) return res.status(400).json({ error: 'Missing stripe-signature header' });
@@ -27,7 +34,7 @@ export default async function handler(req, res) {
   let event;
   try {
     const rawBody = await getRawBody(req);
-    event = stripe.webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    event = getStripe().webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     console.error('Webhook signature verification failed:', err.message);
     return res.status(400).json({ error: `Webhook error: ${err.message}` });

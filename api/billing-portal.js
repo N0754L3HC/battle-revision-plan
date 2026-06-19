@@ -1,7 +1,10 @@
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+// Lazy-init so a missing key returns the clean 503 below instead of crashing
+// the function at module load (FUNCTION_INVOCATION_FAILED).
+let _stripe;
+const getStripe = () => (_stripe ??= new Stripe(process.env.STRIPE_SECRET_KEY));
 const APP_URL = process.env.APP_URL ?? 'https://beattheexam.org';
 
 const admin = createClient(
@@ -37,6 +40,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    const stripe = getStripe();
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
       return_url: `${APP_URL}/account`,

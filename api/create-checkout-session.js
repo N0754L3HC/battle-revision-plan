@@ -1,7 +1,11 @@
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+// Lazy-init so a missing key surfaces as a clean 503 from the handler guard
+// below, rather than throwing at module load (which crashes the whole function
+// with FUNCTION_INVOCATION_FAILED before any guard can run).
+let _stripe;
+const getStripe = () => (_stripe ??= new Stripe(process.env.STRIPE_SECRET_KEY));
 const PRO_PRICE_ID = process.env.STRIPE_PRO_PRICE_ID;
 const APP_URL = process.env.APP_URL ?? 'https://beattheexam.org';
 
@@ -59,6 +63,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    const stripe = getStripe();
     const params = {
       mode: 'subscription',
       payment_method_types: ['card'],
