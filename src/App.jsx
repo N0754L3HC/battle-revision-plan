@@ -70,14 +70,16 @@ const FONT_BODY    = "'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto
 const FONT_MONO    = "'JetBrains Mono','SF Mono',ui-monospace,monospace";
 
 // Reusable heading styles — spread into inline styles, override colour per use.
+// Values are the locked spec: page titles 2rem display/600, card titles ~1.4rem,
+// eyebrows 0.7rem sans, body ~0.95rem at 1.55 line-height, caption 0.8rem.
 const type = {
   display: { fontFamily:FONT_DISPLAY, fontWeight:600, letterSpacing:'-0.025em', lineHeight:1.05 },
-  h1:      { fontFamily:FONT_DISPLAY, fontWeight:600, fontSize:28, letterSpacing:'-0.02em', lineHeight:1.15 },
-  h2:      { fontFamily:FONT_DISPLAY, fontWeight:600, fontSize:21, letterSpacing:'-0.015em', lineHeight:1.2 },
+  h1:      { fontFamily:FONT_DISPLAY, fontWeight:600, fontSize:32, letterSpacing:'-0.02em', lineHeight:1.15 },
+  h2:      { fontFamily:FONT_DISPLAY, fontWeight:600, fontSize:22, letterSpacing:'-0.01em', lineHeight:1.2 },
   h3:      { fontFamily:FONT_BODY,    fontWeight:700, fontSize:15, letterSpacing:'-0.005em', lineHeight:1.3 },
-  body:    { fontFamily:FONT_BODY,    fontWeight:400, fontSize:14, lineHeight:1.6 },
-  caption: { fontFamily:FONT_BODY,    fontWeight:500, fontSize:12, lineHeight:1.5, letterSpacing:'0.01em' },
-  eyebrow: { fontFamily:FONT_BODY,    fontWeight:600, fontSize:12, letterSpacing:'0.09em', textTransform:'uppercase' },
+  body:    { fontFamily:FONT_BODY,    fontWeight:400, fontSize:15, lineHeight:1.55 },
+  caption: { fontFamily:FONT_BODY,    fontWeight:400, fontSize:13, lineHeight:1.5 },
+  eyebrow: { fontFamily:FONT_BODY,    fontWeight:600, fontSize:11, letterSpacing:'0.08em', textTransform:'uppercase' },
 };
 
 // ── Exam schedule (subjectId → boardId → exams) ────────────────────────────
@@ -2377,7 +2379,7 @@ function AchievementsView({scores,errors,subjects,C,font,unlockedIds=[]}){
     <div>
       <div style={{marginBottom:20}}>
         <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>Achievements</div>
-        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Your Milestones</h1>
+        <h1 style={{...type.h1,color:C.text,margin:0}}>Your Milestones</h1>
         <p style={{fontSize:13,color:C.muted,margin:'4px 0 12px'}}>{unlocked}/{total} unlocked</p>
         <div style={{height:5,background:C.border,borderRadius:3,overflow:'hidden'}}>
           <div style={{height:'100%',width:`${pct}%`,background:C.accent,borderRadius:3,transition:'width 1s ease'}}/>
@@ -2810,7 +2812,7 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
       <div>
         <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>Plan</div>
-        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Revision Schedule</h1>
+        <h1 style={{...type.h1,color:C.text,margin:0}}>Revision Schedule</h1>
         <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>Ranked by exam urgency and your weak areas.</p>
       </div>
 
@@ -3433,7 +3435,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
         <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>
           {isOffSeason?'Foundation Mode':greeting}
         </div>
-        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>
+        <h1 style={{...type.h1,color:C.text,margin:0}}>
           {isOffSeason?'Build Your Foundation':'Performance Dashboard'}
         </h1>
         <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>
@@ -3734,7 +3736,7 @@ function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font}) {
   return (
     <div>
       <div style={{marginBottom:20}}>
-        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:'0 0 4px'}}>Tracker</h1>
+        <h1 style={{...type.h1,color:C.text,margin:'0 0 4px'}}>Tracker</h1>
         <p style={{fontSize:13,color:C.muted,margin:0}}>Log past papers and errors. Synced to your account automatically.</p>
       </div>
 
@@ -4367,7 +4369,7 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
       <div>
         <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>Focus</div>
-        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Study Timer</h1>
+        <h1 style={{...type.h1,color:C.text,margin:0}}>Study Timer</h1>
         <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>Runs in background. Sessions synced across devices.</p>
       </div>
 
@@ -4902,7 +4904,7 @@ function Resources({subjects,uid,C,font,rag,setRag,ragNotes,setRagNotes}) {
     <div>
       <div style={{marginBottom:16}}>
         <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>Resources</div>
-        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>RAG Tracker</h1>
+        <h1 style={{...type.h1,color:C.text,margin:0}}>RAG Tracker</h1>
         <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>Rate every spec topic Red, Amber, or Green so you know exactly where to focus.</p>
       </div>
 
@@ -5831,7 +5833,7 @@ function TimetableView({ timetable, onSave, C, font }) {
   return (
     <div style={{maxWidth:900}}>
       <div style={{marginBottom:24}}>
-        <h2 style={{fontSize:22,fontWeight:700,color:C.text,margin:'0 0 6px',fontFamily:font}}>School Timetable</h2>
+        <h2 style={{...type.h1,color:C.text,margin:'0 0 6px'}}>School Timetable</h2>
         <p style={{fontSize:13,color:C.muted,margin:0,fontFamily:font}}>
           Click any slot to add your lesson. {filledCount > 0 ? `${filledCount} slots filled.` : 'Your week at a glance.'}
         </p>
@@ -6379,7 +6381,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   const [sessions, setSessions]  = useState(()=>ls.get(`rbp_sessions_${uid}`,[]));
 
   const C    = dark?T.dark:T.light;
-  const font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+  const font = FONT_BODY;
   const isGcse = examLevel === 'gcse';
   const isAS = examLevel === 'aslevel';
   let subjects = subjectsFromSelection(selection, isGcse ? GCSE_CATALOG : null);
@@ -7033,7 +7035,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
 
 // ── LevelPicker ────────────────────────────────────────────────────────────
 function LevelPicker({ onComplete }) {
-  const font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+  const font = FONT_BODY;
   const C = { bg:'#e8e4dd', surface:'#f0ece5', border:'rgba(0,0,0,0.09)', text:'#2b2b2b', muted:'#7a7268', accent:'#b5735a' };
   const [hover, setHover] = useState(null);
 
@@ -7074,11 +7076,11 @@ function LevelPicker({ onComplete }) {
             fontWeight:900, fontSize:11, color:'#fff', fontFamily:"'JetBrains Mono',monospace" }}>
             A*
           </div>
-          <span style={{ fontSize:14, fontWeight:600, color:C.text, letterSpacing:0.2 }}>Battle Plan</span>
+          <span style={{ fontFamily:FONT_DISPLAY, fontSize:16, fontWeight:600, color:C.text, letterSpacing:'-0.01em' }}>Battle Plan</span>
         </div>
 
         <div style={{ marginBottom:32 }}>
-          <h1 style={{ fontSize:22, fontWeight:800, color:C.text, margin:'0 0 8px', lineHeight:1.2 }}>
+          <h1 style={{ ...type.h1, color:C.text, margin:'0 0 8px' }}>
             What are you studying?
           </h1>
           <p style={{ fontSize:14, color:C.muted, margin:0, lineHeight:1.5 }}>
@@ -7151,7 +7153,7 @@ export default function App() {
 
   const dark = ls.get('rbp_dark',false);
   const C    = dark?T.dark:T.light;
-  const font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+  const font = FONT_BODY;
 
   // Load admin-managed exam-date overrides (app_config.exam_schedule) and merge
   // them over the built-in schedule. Public read, admin-only write (RLS). This is
