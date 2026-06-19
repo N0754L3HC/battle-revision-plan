@@ -60,6 +60,26 @@ const T = {
   },
 };
 
+// ── Type system ──────────────────────────────────────────────────────────────
+// One distinctive display face (Fraunces — warm editorial serif) carries the
+// character on headings; a clean body face (Inter) does the reading work. This
+// is the hierarchy backbone — sizes/weights are deliberately far apart so an
+// h1 never blurs into body. Colours are applied by callers, never baked in here.
+const FONT_DISPLAY = "'Fraunces','Iowan Old Style',Georgia,serif";
+const FONT_BODY    = "'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+const FONT_MONO    = "'JetBrains Mono','SF Mono',ui-monospace,monospace";
+
+// Reusable heading styles — spread into inline styles, override colour per use.
+const type = {
+  display: { fontFamily:FONT_DISPLAY, fontWeight:600, letterSpacing:'-0.025em', lineHeight:1.05 },
+  h1:      { fontFamily:FONT_DISPLAY, fontWeight:600, fontSize:28, letterSpacing:'-0.02em', lineHeight:1.15 },
+  h2:      { fontFamily:FONT_DISPLAY, fontWeight:600, fontSize:21, letterSpacing:'-0.015em', lineHeight:1.2 },
+  h3:      { fontFamily:FONT_BODY,    fontWeight:700, fontSize:15, letterSpacing:'-0.005em', lineHeight:1.3 },
+  body:    { fontFamily:FONT_BODY,    fontWeight:400, fontSize:14, lineHeight:1.6 },
+  caption: { fontFamily:FONT_BODY,    fontWeight:500, fontSize:12, lineHeight:1.5, letterSpacing:'0.01em' },
+  eyebrow: { fontFamily:FONT_BODY,    fontWeight:600, fontSize:12, letterSpacing:'0.09em', textTransform:'uppercase' },
+};
+
 // ── Exam schedule (subjectId → boardId → exams) ────────────────────────────
 // Built-in defaults. Admin-managed overrides live in Supabase app_config
 // (key: exam_schedule) and are merged over these on load — see App() boot.
@@ -5914,8 +5934,9 @@ function TimetableView({ timetable, onSave, C, font }) {
 
 // ── Landing page ───────────────────────────────────────────────────────────
 function LandingPage({ onGetStarted }) {
-  const font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
-  const mono = "'JetBrains Mono','SF Mono',monospace";
+  const font = FONT_BODY;
+  const display = FONT_DISPLAY;
+  const mono = FONT_MONO;
   const C = T.dark;
 
   const FEATURES = [
@@ -5962,100 +5983,111 @@ function LandingPage({ onGetStarted }) {
   return (
     <div style={{minHeight:'100vh', background:C.bg, fontFamily:font, color:C.text}}>
 
-      {/* Nav */}
+      {/* Nav — the one frosted layer in the app */}
       <nav style={{position:'fixed', top:0, left:0, right:0, zIndex:100,
-        background:'rgba(13,15,20,0.92)', backdropFilter:'blur(20px)',
-        WebkitBackdropFilter:'blur(20px)', borderBottom:`1px solid ${C.border}`,
-        height:54, display:'flex', alignItems:'center', padding:'0 20px',
+        background:C.nav, backdropFilter:'blur(16px)',
+        WebkitBackdropFilter:'blur(16px)', borderBottom:`1px solid ${C.border}`,
+        height:56, display:'flex', alignItems:'center', padding:'0 24px',
         justifyContent:'space-between'}}>
-        <div style={{display:'flex', alignItems:'center', gap:8}}>
-          <div style={{width:28, height:28, borderRadius:7, background:C.accent,
+        <div style={{display:'flex', alignItems:'center', gap:10}}>
+          <div style={{width:26, height:26, borderRadius:6, background:C.accent,
             display:'flex', alignItems:'center', justifyContent:'center',
-            fontFamily:mono, fontWeight:900, fontSize:12, color:'#fff'}}>A*</div>
-          <span style={{fontSize:15, fontWeight:700, color:C.text, letterSpacing:0.2}}>Battle Plan</span>
+            fontFamily:mono, fontWeight:800, fontSize:11, color:'#fff'}}>A*</div>
+          <span style={{fontFamily:display, fontSize:17, fontWeight:600, color:C.text, letterSpacing:'-0.01em'}}>Battle Plan</span>
         </div>
         <button onClick={onGetStarted}
-          style={{padding:'7px 16px', background:'transparent', border:`1px solid ${C.border}`,
-            borderRadius:7, color:C.muted, fontSize:13, fontWeight:600,
-            fontFamily:font, cursor:'pointer', letterSpacing:0.2}}>
+          style={{padding:'7px 15px', background:'transparent', border:`1px solid ${C.border}`,
+            borderRadius:6, color:C.muted, fontSize:13, fontWeight:500,
+            fontFamily:font, cursor:'pointer'}}>
           Sign in
         </button>
       </nav>
 
-      {/* Hero */}
-      <section style={{maxWidth:680, margin:'0 auto', padding:'120px 24px 64px',
-        textAlign:'center'}}>
-        <div style={{display:'inline-flex', alignItems:'center', gap:6, padding:'5px 12px',
-          borderRadius:20, background:'rgba(181,115,90,0.1)', border:`1px solid rgba(181,115,90,0.25)`,
-          fontSize:12, fontWeight:600, color:C.accent, marginBottom:28, letterSpacing:0.3}}>
-          Free during beta
-        </div>
-        <h1 style={{fontSize:'clamp(36px, 7vw, 60px)', fontWeight:800, lineHeight:1.1,
-          color:C.text, margin:'0 0 20px', letterSpacing:'-0.02em'}}>
-          Know exactly where<br/>
-          <span style={{color:C.accent}}>you're losing marks.</span>
-        </h1>
-        <p style={{fontSize:'clamp(15px, 2.5vw, 19px)', color:C.muted, lineHeight:1.7,
-          margin:'0 auto 36px', maxWidth:520}}>
-          Free revision tracker for A-Levels and GCSEs. Log past papers, track your grade trajectory,
-          and fix weak topics before exam day.
-        </p>
-        <button onClick={onGetStarted}
-          style={{display:'inline-flex', alignItems:'center', gap:8, padding:'15px 32px',
-            background:C.accent, border:'none', borderRadius:10, color:'#fff',
-            fontSize:16, fontWeight:700, fontFamily:font, cursor:'pointer',
-            letterSpacing:0.2, boxShadow:`0 0 40px rgba(181,115,90,0.3)`}}>
-          Get started — it's free
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </button>
-        <div style={{display:'flex', gap:20, justifyContent:'center', flexWrap:'wrap',
-          marginTop:20}}>
-          {TRUST.map(t => (
-            <span key={t} style={{fontSize:12, color:C.subtle, display:'flex',
-              alignItems:'center', gap:5}}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              {t}
-            </span>
-          ))}
+      {/* Hero — left-aligned, asymmetric */}
+      <section style={{maxWidth:1040, margin:'0 auto', padding:'132px 24px 72px'}}>
+        <div style={{maxWidth:760}}>
+          {/* Flat eyebrow — a thin accent rule, not a pill */}
+          <div style={{...type.eyebrow, color:C.accent, marginBottom:22,
+            display:'flex', alignItems:'center', gap:10}}>
+            <span style={{width:22, height:1.5, background:C.accent, display:'inline-block'}}/>
+            Free during beta
+          </div>
+          <h1 style={{...type.display, fontSize:'clamp(40px, 6.4vw, 66px)',
+            color:C.text, margin:'0 0 22px'}}>
+            Know exactly where<br/>
+            <span style={{color:C.accent}}>you're losing marks.</span>
+          </h1>
+          <p style={{...type.body, fontSize:'clamp(16px, 1.9vw, 19px)', color:C.muted,
+            margin:'0 0 34px', maxWidth:560}}>
+            Free revision tracker for A-Levels and GCSEs. Log past papers, track your grade trajectory,
+            and fix weak topics before exam day.
+          </p>
+          <button onClick={onGetStarted}
+            style={{display:'inline-flex', alignItems:'center', gap:9, padding:'14px 26px',
+              background:C.accent, border:'none', borderRadius:6, color:'#fff',
+              fontSize:15, fontWeight:600, fontFamily:font, cursor:'pointer'}}>
+            Get started — it's free
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+          <div style={{display:'flex', gap:18, flexWrap:'wrap', marginTop:26}}>
+            {TRUST.map(t => (
+              <span key={t} style={{...type.caption, color:C.subtle, display:'flex',
+                alignItems:'center', gap:6}}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.subtle} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                {t}
+              </span>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section style={{maxWidth:800, margin:'0 auto', padding:'0 24px 80px'}}>
-        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(340px, 1fr))',
-          gap:12}}>
-          {FEATURES.map(f => (
-            <div key={f.title} style={{background:C.surface, border:`1px solid ${C.border}`,
-              borderRadius:12, padding:'20px 22px', display:'flex', gap:14,
-              alignItems:'flex-start'}}>
-              <div style={{width:36, height:36, borderRadius:8, background:'rgba(181,115,90,0.1)',
-                border:`1px solid rgba(181,115,90,0.2)`, display:'flex', alignItems:'center',
-                justifyContent:'center', color:C.accent, flexShrink:0}}>
-                {f.icon}
+      {/* Features — asymmetric: intro column + a structured list, not a card grid */}
+      <section style={{maxWidth:1040, margin:'0 auto', padding:'8px 24px 96px'}}>
+        <div style={{display:'flex', flexWrap:'wrap', gap:'48px 56px', alignItems:'flex-start'}}>
+          <div style={{flex:'1 1 240px', minWidth:0, maxWidth:340}}>
+            <h2 style={{...type.h2, fontSize:'clamp(24px, 3vw, 32px)', color:C.text, margin:'0 0 12px'}}>
+              Everything you need to walk in ready.
+            </h2>
+            <p style={{...type.body, color:C.muted, margin:0}}>
+              Four tools, one place. Built around how marks are actually won and lost.
+            </p>
+          </div>
+          <div style={{flex:'2 1 460px', minWidth:0}}>
+            {FEATURES.map((f, i) => (
+              <div key={f.title} style={{display:'flex', gap:18, alignItems:'flex-start',
+                padding:'22px 0', borderTop:i===0 ? 'none' : `1px solid ${C.border}`}}>
+                <div style={{color:C.subtle, flexShrink:0, marginTop:1}}>{f.icon}</div>
+                <div>
+                  <div style={{...type.h3, color:C.text, marginBottom:5}}>{f.title}</div>
+                  <div style={{...type.body, fontSize:13.5, color:C.muted, maxWidth:520}}>{f.desc}</div>
+                </div>
               </div>
-              <div>
-                <div style={{fontSize:14, fontWeight:700, color:C.text, marginBottom:5}}>{f.title}</div>
-                <div style={{fontSize:13, color:C.muted, lineHeight:1.6}}>{f.desc}</div>
-              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Bottom CTA — flat band, left/right rhythm (not centered) */}
+      <section style={{borderTop:`1px solid ${C.border}`, background:C.surface}}>
+        <div style={{maxWidth:1040, margin:'0 auto', padding:'52px 24px',
+          display:'flex', justifyContent:'space-between', alignItems:'center',
+          gap:'28px 40px', flexWrap:'wrap'}}>
+          <div style={{maxWidth:520}}>
+            <div style={{...type.h2, fontSize:'clamp(22px, 2.6vw, 30px)', color:C.text, margin:'0 0 8px'}}>
+              Exams are in weeks. Start now.
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Bottom CTA strip */}
-      <section style={{borderTop:`1px solid ${C.border}`, padding:'40px 24px',
-        textAlign:'center', background:'rgba(255,255,255,0.015)'}}>
-        <div style={{fontSize:11, fontWeight:700, color:C.muted, letterSpacing:0.5,
-          textTransform:'uppercase', marginBottom:12}}>Exams are in weeks. Start now.</div>
-        <button onClick={onGetStarted}
-          style={{display:'inline-flex', alignItems:'center', gap:8, padding:'13px 28px',
-            background:'transparent', border:`1px solid ${C.accent}`,
-            borderRadius:8, color:C.accent, fontSize:15, fontWeight:600,
-            fontFamily:font, cursor:'pointer'}}>
-          Set up your account — 2 minutes
-        </button>
-        <div style={{marginTop:20, fontSize:12, color:C.subtle}}>
-          Supports AQA · Edexcel · OCR · WJEC · A-Levels &amp; GCSEs
+            <div style={{...type.caption, color:C.subtle}}>
+              Supports AQA · Edexcel · OCR · WJEC · A-Levels &amp; GCSEs
+            </div>
+          </div>
+          <button onClick={onGetStarted}
+            style={{display:'inline-flex', alignItems:'center', gap:8, padding:'13px 24px',
+              background:'transparent', border:`1px solid ${C.accent}`,
+              borderRadius:6, color:C.accent, fontSize:14, fontWeight:600,
+              fontFamily:font, cursor:'pointer', flexShrink:0}}>
+            Set up your account — 2 minutes
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
         </div>
       </section>
 
