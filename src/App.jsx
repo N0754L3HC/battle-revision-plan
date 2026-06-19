@@ -5211,10 +5211,15 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
     }
     setUpgrading(true); setUpgradeError('');
     try {
+      // The API derives userId/email from the verified JWT (it ignores the body
+      // for security), so we MUST send the access token or it 401s.
+      const { data:{ session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error('Please sign in again to upgrade');
       const r = await fetch('/api/create-checkout-session', {
         method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({userId:uid, email:user.email, customerId:stripeCustomerId||undefined}),
+        headers: {'Content-Type':'application/json', Authorization:`Bearer ${token}`},
+        body: JSON.stringify({customerId:stripeCustomerId||undefined}),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'Failed');
@@ -5229,9 +5234,12 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
     if (!stripeCustomerId) return;
     setPortalLoading(true);
     try {
+      const { data:{ session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error('Please sign in again');
       const r = await fetch('/api/billing-portal', {
         method: 'POST',
-        headers: {'Content-Type':'application/json'},
+        headers: {'Content-Type':'application/json', Authorization:`Bearer ${token}`},
         body: JSON.stringify({customerId:stripeCustomerId}),
       });
       const d = await r.json();
