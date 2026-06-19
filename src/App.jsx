@@ -1072,7 +1072,7 @@ function calcBattleReadiness(scores, errors) {
 }
 
 function getPaperSuggestions(subject) {
-  const years=['2023','2022','2019'];
+  const years=['2024','2023','2022','2019'];
   return subject.papers.flatMap(p=>years.map(y=>`${p} — ${y}`));
 }
 
@@ -1302,6 +1302,27 @@ const ANIM_CSS=`
 function ensureAnimStyles(){if(!document.getElementById('rbp-anims')){const s=document.createElement('style');s.id='rbp-anims';s.textContent=ANIM_CSS;document.head.appendChild(s);}}
 
 // ── Paper key utilities ────────────────────────────────────────────────────
+// Subject paper labels carry the spec code (e.g. "… (9MA0/01)") but the
+// HISTORICAL_GRADE_PCT keys don't. Map explicitly + code-scoped so that two
+// boards sharing a bare paper name (OCR vs Edexcel "Algorithms & Programming",
+// or OCR A-Level vs GCSE "Computer Systems") can never cross-map to the wrong
+// boundaries. Anything unmapped falls back to the Notional standard — never a
+// wrong year-specific grade.
+const HIST_PAPER_MAP = {
+  'Paper 1: Pure Mathematics 1 (9MA0/01)':'Paper 1: Pure Mathematics 1',
+  'Paper 2: Pure Mathematics 2 (9MA0/02)':'Paper 2: Pure Mathematics 2',
+  'Paper 3: Statistics & Mechanics (9MA0/03)':'Paper 3: Statistics & Mechanics',
+  'Core Pure 1 (9FM0/01)':'Core Pure Mathematics 1',
+  'Core Pure 2 (9FM0/02)':'Core Pure Mathematics 2',
+  'Paper 1: Computer Systems (H446/01)':'Paper 1: Computer Systems',
+  'Paper 2: Algorithms & Programming (H446/02)':'Paper 2: Algorithms & Programming',
+  'Paper 1: Inorganic & Physical Chemistry (7405/1)':'Paper 1: Inorganic & Physical Chemistry',
+  'Paper 2: Organic & Physical Chemistry (7405/2)':'Paper 2: Organic & Physical Chemistry',
+  'Paper 3: Practical Skills (7405/3)':'Paper 3: Practical Skills',
+  'Component 1: Modelling Physics (H557/01)':'Component 1: Modelling Physics',
+  'Component 2: Exploring Physics (H557/02)':'Component 2: Exploring Physics',
+};
+function histBaseName(name){ return HIST_PAPER_MAP[name] || name; }
 function parsePaperKey(key){
   const m=key.match(/^(.+?)\s[—–-]+\s?(\d{4})$/);
   if(m) return {name:m[1].trim(),year:parseInt(m[2])};
@@ -1309,7 +1330,7 @@ function parsePaperKey(key){
 }
 function getHistoricalGrade(pct,paperKey){
   const {name,year}=parsePaperKey(paperKey);
-  const b=HISTORICAL_GRADE_PCT[name]?.[year];
+  const b=HISTORICAL_GRADE_PCT[histBaseName(name)]?.[year];
   if(!b) return null;
   for(const g of ['A*','A','B','C','D','E']) if(pct>=(b[g]??0)) return g;
   return 'U';
@@ -1325,7 +1346,7 @@ function getNotionalThreshold(grade,subjectId){
 }
 function getHistoricalThreshold(grade,paperKey){
   const {name,year}=parsePaperKey(paperKey);
-  return HISTORICAL_GRADE_PCT[name]?.[year]?.[grade]??null;
+  return HISTORICAL_GRADE_PCT[histBaseName(name)]?.[year]?.[grade]??null;
 }
 
 // ── Achievements ───────────────────────────────────────────────────────────
@@ -5983,7 +6004,7 @@ function QuickLog({subjects,scores,setScores,uid,C,font,onClose,onSaved}){
   const histThresh=paper?getHistoricalThreshold('A*',paper):null;
   const notThresh=getNotionalThreshold('A*',sId);
   const {name:paperBase,year:paperYear}=parsePaperKey(paper||'');
-  const hasHistData=paperYear&&HISTORICAL_GRADE_PCT[paperBase]?.[paperYear];
+  const hasHistData=paperYear&&HISTORICAL_GRADE_PCT[histBaseName(paperBase)]?.[paperYear];
 
   const prevBest=()=>{
     const prev=scores.filter(s=>s.subject===subject&&s.paper===paper);
