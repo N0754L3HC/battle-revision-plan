@@ -5117,12 +5117,20 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
   })();
   const refsToNextReward = referralCount==null ? null : (3 - (referralCount % 3));
 
-  const copyReferralLink = () => {
-    const link=`https://beattheexam.org?ref=${referralCode}`;
-    navigator.clipboard.writeText(link).then(()=>{
+  const shareReferralLink = async () => {
+    const link=`https://beattheexam.org/?ref=${referralCode}`;
+    const text=`I'm using A* Battle Plan to track my revision and predict my grades — give it a go:`;
+    // Prefer the native share sheet (one tap into WhatsApp/iMessage with the
+    // link prefilled) — copy-only loses a lot of shares on mobile. Fall back to
+    // clipboard on desktop / where the Web Share API isn't available.
+    try {
+      if (navigator.share) { await navigator.share({ title:'A* Battle Plan', text, url:link }); return; }
+    } catch(e) { if (e?.name==='AbortError') return; }
+    try {
+      await navigator.clipboard.writeText(link);
       setCopySuccess(true);
       setTimeout(()=>setCopySuccess(false),2000);
-    }).catch(()=>{});
+    } catch {}
   };
 
   const sendSchedule = async () => {
@@ -5500,14 +5508,14 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
           <div style={{flex:1,background:C.card2,border:`1px solid ${C.border}`,borderRadius:8,
             padding:'9px 12px',fontSize:12,color:C.muted,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',
             fontFamily:"'JetBrains Mono',monospace"}}>
-            beattheexam.org?ref={referralCode}
+            beattheexam.org/?ref={referralCode}
           </div>
-          <button onClick={copyReferralLink}
+          <button onClick={shareReferralLink}
             style={{flexShrink:0,padding:'9px 16px',background:copySuccess?'rgba(74,222,128,0.1)':C.accentSoft,
               border:`1px solid ${copySuccess?'rgba(74,222,128,0.3)':C.accent}44`,borderRadius:8,
               color:copySuccess?C.success:C.accent,fontSize:12,fontWeight:600,fontFamily:font,cursor:'pointer',
               transition:'all 0.15s'}}>
-            {copySuccess?'Copied!':'Copy link'}
+            {copySuccess?'Copied!':'Share link'}
           </button>
         </div>
         {referralProDays>0&&(
