@@ -3995,14 +3995,34 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE,yearGroup=''}) {
         </div>
       )}
 
-      {/* Always-confirm banner — sits up top because a wrong date is the one
-          mistake you can't recover from. */}
-      <div style={{marginBottom:20,padding:'11px 14px',background:'rgba(249,115,22,0.10)',
-        border:'1px solid rgba(249,115,22,0.35)',borderRadius:8,fontSize:12.5,
-        color:C.text,lineHeight:1.55,display:'flex',gap:9,alignItems:'flex-start'}}>
-        <span style={{fontSize:15,lineHeight:1}}>⚠️</span>
-        <span><strong>Double-check every date and time against your own school exam timetable.</strong> Boards occasionally move papers, and your centre's start times are the ones that count — never rely on this app alone to decide when to turn up.</span>
-      </div>
+      {/* All exams done — celebratory close-out (current-year students only;
+          Y12/Y10 return early above, and the empty-schedule case is handled too). */}
+      {!next&&(
+        <div style={{textAlign:'center',marginBottom:28,padding:'32px 24px',
+          background:`linear-gradient(160deg, ${C.accent}1a, ${C.card2})`,
+          border:`1px solid ${C.accent}33`,borderRadius:14}}>
+          <div style={{fontSize:44,lineHeight:1,marginBottom:10}}>🎉</div>
+          <div style={{fontSize:22,fontWeight:800,color:C.text,marginBottom:8}}>That's a wrap — exams done!</div>
+          <div style={{fontSize:14,color:C.muted,lineHeight:1.6,maxWidth:360,margin:'0 auto'}}>
+            Every paper on your schedule is behind you. However they went, the hard part is over — and that took real graft.
+          </div>
+          <div style={{fontSize:13,color:C.text,fontWeight:600,marginTop:14}}>
+            Results land in August. Until then, rest — you've earned it.
+          </div>
+        </div>
+      )}
+
+      {/* Always-confirm banner — only while exams are still ahead. A wrong date
+          is the one mistake you can't recover from; once everything's done it's
+          just noise, so we drop it. */}
+      {upcoming.length>0&&(
+        <div style={{marginBottom:20,padding:'11px 14px',background:'rgba(249,115,22,0.10)',
+          border:'1px solid rgba(249,115,22,0.35)',borderRadius:8,fontSize:12.5,
+          color:C.text,lineHeight:1.55,display:'flex',gap:9,alignItems:'flex-start'}}>
+          <span style={{fontSize:15,lineHeight:1}}>⚠️</span>
+          <span><strong>Double-check every date and time against your own school exam timetable.</strong> Boards occasionally move papers, and your centre's start times are the ones that count — never rely on this app alone to decide when to turn up.</span>
+        </div>
+      )}
 
       {/* All exams list */}
       {upcoming.length>0&&(
