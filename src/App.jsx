@@ -5621,12 +5621,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
 
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
         <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Account</div>
-        <div style={{fontSize:14,color:C.text,fontWeight:600,marginBottom:4}}>{user?.email??'Signed in'}</div>
-        <div style={{fontSize:12,color:C.subtle}}>{subjects.map(s=>s.name).join(' · ')}</div>
-      </div>
-
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Subjects & boards</div>
+        <div style={{fontSize:14,color:C.text,fontWeight:600,marginBottom:14}}>{user?.email??'Signed in'}</div>
         <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:14}}>
           {subjects.map(s=>(
             <div key={s.name} style={{display:'flex',alignItems:'center',gap:10}}>
@@ -5661,34 +5656,14 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
         </div>
       </div>
 
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Research contribution</div>
-        <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:16}}>
-          <div style={{flex:1}}>
-            <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:4}}>Share anonymised data with universities</div>
-            <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>
-              Your scores are aggregated and anonymised — never individual — to help universities understand how students revise. You can opt out at any time.
-            </div>
-          </div>
-          <button onClick={()=>toggleConsent(!analyticsConsent)}
-            style={{flexShrink:0,width:44,height:24,borderRadius:12,padding:0,
-              background:analyticsConsent?C.accent:C.border,border:'none',cursor:'pointer',
-              position:'relative',transition:'background 0.2s'}}>
-            <div style={{position:'absolute',top:3,width:18,height:18,borderRadius:'50%',
-              background:'#fff',transition:'left 0.2s',
-              left:analyticsConsent?23:3}}/>
-          </button>
-        </div>
-      </div>
-
       {user && (
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px',position:'relative'}}>
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
         <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:8}}>
-          <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5}}>Exam schedule email</div>
+          <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5}}>Email reports</div>
           {!isPro&&<span style={{fontSize:10,fontWeight:700,color:C.accent,background:C.accentSoft,border:`1px solid ${C.accent}44`,borderRadius:4,padding:'1px 6px',letterSpacing:0.3}}>PRO</span>}
         </div>
         <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginBottom:12}}>
-          Send your full exam timetable to <span style={{color:C.text,fontWeight:500}}>{user.email}</span>.
+          Your exam timetable and a weekly progress digest, sent to <span style={{color:C.text,fontWeight:500}}>{user.email}</span>.
         </div>
         {!isPro?(
           <button onClick={handleUpgrade} disabled={upgrading}
@@ -5699,78 +5674,40 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
               : (upgrading?'Redirecting…':'Unlock with Pro')}
           </button>
         ):(
-          <>
-            {emailState==='sent'&&(
-              <div style={{background:'rgba(74,222,128,0.07)',border:'1px solid rgba(74,222,128,0.2)',
-                borderRadius:8,padding:'10px 14px',marginBottom:12,fontSize:13,color:C.success}}>
-                Sent — check your inbox.
-              </div>
-            )}
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
             {emailState==='error'&&(
               <div style={{background:'rgba(239,68,68,0.07)',border:'1px solid rgba(239,68,68,0.2)',
-                borderRadius:8,padding:'10px 14px',marginBottom:12,fontSize:13,color:C.danger,lineHeight:1.6}}>
+                borderRadius:8,padding:'10px 14px',fontSize:13,color:C.danger,lineHeight:1.6}}>
                 {emailMsg?.includes('Sender not verified')
-                  ? <>Domain not verified. Go to <b>resend.com/domains</b>, add <b>beattheexam.org</b>, add the DNS records, then set <b>RESEND_FROM</b> in Vercel env vars.</>
+                  ? <>Domain not verified. Add <b>beattheexam.org</b> in Resend, add the DNS records, then set <b>RESEND_FROM</b> in Vercel.</>
                   : (emailMsg||'Email service not available yet.')}
+              </div>
+            )}
+            {digestState==='error'&&(
+              <div style={{background:'rgba(239,68,68,0.07)',border:'1px solid rgba(239,68,68,0.2)',
+                borderRadius:8,padding:'10px 14px',fontSize:13,color:C.danger}}>
+                {digestMsg||'Failed to send. Try again.'}
               </div>
             )}
             <button onClick={sendSchedule} disabled={emailSending||emailState==='sent'}
               style={{width:'100%',padding:'10px',
                 background:emailState==='sent'?C.card2:C.accentSoft,
                 border:`1px solid ${emailState==='sent'?C.border:C.accent}`,
-                borderRadius:8,color:emailState==='sent'?C.muted:C.accent,
+                borderRadius:8,color:emailState==='sent'?C.success:C.accent,
                 fontSize:13,fontWeight:600,fontFamily:font,
-                cursor:emailSending||emailState==='sent'?'not-allowed':'pointer',
-                transition:'background 0.15s'}}>
-              {emailSending?'Sending…':emailState==='sent'?'Sent ✓':'Email me my schedule'}
+                cursor:emailSending||emailState==='sent'?'not-allowed':'pointer'}}>
+              {emailSending?'Sending…':emailState==='sent'?'Schedule sent ✓':'Email me my schedule'}
             </button>
-          </>
-        )}
-      </div>
-      )}
-
-      {user && (
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
-        <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:8}}>
-          <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5}}>Weekly progress digest</div>
-          {!isPro&&<span style={{fontSize:10,fontWeight:700,color:C.accent,background:C.accentSoft,border:`1px solid ${C.accent}44`,borderRadius:4,padding:'1px 6px',letterSpacing:0.3}}>PRO</span>}
-        </div>
-        <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginBottom:12}}>
-          Get a summary of this week's papers, scores, readiness, and RAG status sent to <span style={{color:C.text,fontWeight:500}}>{user.email}</span>.
-        </div>
-        {!isPro?(
-          <button onClick={handleUpgrade} disabled={upgrading}
-            style={{width:'100%',padding:'11px',background:C.accentSoft,border:`1px solid ${C.accent}44`,
-              borderRadius:8,color:C.accent,fontSize:13,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
-            {BETA_WAITLIST
-              ? (waitlistJoined ? '✓ On the waitlist' : (upgrading ? 'Adding you…' : 'Join the Pro waitlist'))
-              : (upgrading?'Redirecting…':'Unlock with Pro')}
-          </button>
-        ):(
-          <>
-            {digestState==='sent'&&(
-              <div style={{background:'rgba(74,222,128,0.07)',border:'1px solid rgba(74,222,128,0.2)',
-                borderRadius:8,padding:'10px 14px',marginBottom:12,fontSize:13,color:C.success}}>
-                Digest sent — check your inbox.
-              </div>
-            )}
-            {digestState==='error'&&(
-              <div style={{background:'rgba(239,68,68,0.07)',border:'1px solid rgba(239,68,68,0.2)',
-                borderRadius:8,padding:'10px 14px',marginBottom:12,fontSize:13,color:C.danger}}>
-                {digestMsg||'Failed to send. Try again.'}
-              </div>
-            )}
             <button onClick={sendDigest} disabled={digestSending||digestState==='sent'}
-              style={{width:'100%',padding:'11px',
+              style={{width:'100%',padding:'10px',
                 background:digestState==='sent'?C.card2:C.accentSoft,
                 border:`1px solid ${digestState==='sent'?C.border:C.accent}`,
-                borderRadius:8,color:digestState==='sent'?C.muted:C.accent,
+                borderRadius:8,color:digestState==='sent'?C.success:C.accent,
                 fontSize:13,fontWeight:600,fontFamily:font,
-                cursor:digestSending||digestState==='sent'?'not-allowed':'pointer',
-                transition:'background 0.15s'}}>
-              {digestSending?'Sending…':digestState==='sent'?'Sent ✓':'Email me weekly digest'}
+                cursor:digestSending||digestState==='sent'?'not-allowed':'pointer'}}>
+              {digestSending?'Sending…':digestState==='sent'?'Digest sent ✓':'Email me this week’s digest'}
             </button>
-          </>
+          </div>
         )}
       </div>
       )}
@@ -5872,6 +5809,26 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       </>}
 
       {accountTab==='data'&&<>
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Research contribution</div>
+        <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:16}}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:4}}>Share anonymised data with universities</div>
+            <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>
+              Your scores are aggregated and anonymised — never individual — to help universities understand how students revise. You can opt out at any time.
+            </div>
+          </div>
+          <button onClick={()=>toggleConsent(!analyticsConsent)}
+            style={{flexShrink:0,width:44,height:24,borderRadius:12,padding:0,
+              background:analyticsConsent?C.accent:C.border,border:'none',cursor:'pointer',
+              position:'relative',transition:'background 0.2s'}}>
+            <div style={{position:'absolute',top:3,width:18,height:18,borderRadius:'50%',
+              background:'#fff',transition:'left 0.2s',
+              left:analyticsConsent?23:3}}/>
+          </button>
+        </div>
+      </div>
+
       {/* Your data — GDPR Article 20 (portability) + Article 17 (erasure) */}
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
         <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:6}}>
