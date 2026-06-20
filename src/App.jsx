@@ -6577,6 +6577,12 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
 
   const C    = dark?T.dark:T.light;
   const font = FONT_BODY;
+  // Keep html+body painted to the live theme (so an in-app dark/light toggle
+  // updates the document, not just the App-level mount effect).
+  useEffect(()=>{
+    document.documentElement.style.background = C.bg;
+    document.body.style.background = C.bg;
+  },[C.bg]);
   const isGcse = examLevel === 'gcse';
   const isAS = examLevel === 'aslevel';
   let subjects = subjectsFromSelection(selection, isGcse ? GCSE_CATALOG : null);
@@ -7545,6 +7551,21 @@ export default function App() {
   const dark = ls.get('rbp_dark',false);
   const C    = dark?T.dark:T.light;
   const font = FONT_BODY;
+
+  // Paint the document (html + body) to match whatever screen is showing, so
+  // overscroll / momentum-scroll never reveals the browser-default white behind
+  // the themed canvas (which read as a fragile "slate floating on white").
+  useEffect(()=>{
+    const PHASE_BG = {
+      landing: T.dark.bg, anon: T.dark.bg,          // dark marketing + sign-in
+      'level-pick': '#e8e4dd', onboarding: '#e8e4dd', // light onboarding
+    };
+    const bg = PHASE_BG[phase] || C.bg;             // loading + app use the user's theme
+    const html = document.documentElement, body = document.body;
+    html.style.background = bg; body.style.background = bg;
+    body.style.margin = '0';
+    body.style.overscrollBehavior = 'none';         // kill rubber-band reveal
+  },[phase, dark, C.bg]);
 
   // Load admin-managed exam-date overrides (app_config.exam_schedule) and merge
   // them over the built-in schedule. Public read, admin-only write (RLS). This is

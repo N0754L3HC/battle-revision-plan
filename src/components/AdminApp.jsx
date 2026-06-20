@@ -1891,6 +1891,13 @@ export default function AdminApp() {
   const [adminUser,setAdminUser]=useState(null);
   const [adminProfile,setAdminProfile]=useState(null);
 
+  // Paint html+body to the console's slate so overscroll never reveals white.
+  useEffect(()=>{
+    const html=document.documentElement, body=document.body;
+    html.style.background=BG; body.style.background=BG;
+    body.style.margin='0'; body.style.overscrollBehavior='none';
+  },[]);
+
   useEffect(()=>{
     let alive=true;
     async function checkAdmin(session) {
