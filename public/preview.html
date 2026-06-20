@@ -8,42 +8,24 @@
     <style>
       html,body{margin:0;height:100%;background:#1d1916;color:#f3ede3;
         font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
-      .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px;}
-      .card{width:100%;max-width:340px;text-align:center;}
-      .badge{width:44px;height:44px;border-radius:13px;background:#3a2b24;margin:0 auto 16px;
-        display:flex;align-items:center;justify-content:center;}
-      h1{font-size:19px;font-weight:700;letter-spacing:-0.02em;margin:0 0 6px;}
-      p{font-size:13px;color:#b3a99c;margin:0 0 20px;line-height:1.5;}
-      input{width:100%;box-sizing:border-box;padding:11px 13px;border-radius:10px;
-        border:1px solid #39312b;background:#272220;color:#f3ede3;font-size:14px;
-        font-family:inherit;outline:none;margin-bottom:10px;}
-      button{width:100%;padding:11px;border:0;border-radius:10px;background:#cf8568;color:#1d1916;
-        font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;}
-      .err{color:#e2a07f;font-size:12px;min-height:16px;margin-top:8px;}
+      .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;}
+      .badge{width:46px;height:46px;border-radius:13px;background:#3a2b24;display:flex;align-items:center;justify-content:center;
+        animation:bob 1.6s ease-in-out infinite;}
+      @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+      p{font-size:13px;color:#b3a99c;margin:0;}
     </style>
   </head>
   <body>
     <div class="wrap">
-      <form class="card" id="f">
-        <div class="badge">
-          <svg viewBox="0 0 48 48" width="28" height="28"><circle cx="15" cy="13.5" r="5" fill="#a07a4f"/><circle cx="33" cy="13.5" r="5" fill="#a07a4f"/><ellipse cx="24" cy="26" rx="15" ry="13" fill="#b88c5c"/><ellipse cx="24" cy="31" rx="8" ry="6.4" fill="#d2a674"/><circle cx="18.4" cy="23" r="1.9" fill="#2b2620"/><circle cx="29.6" cy="23" r="1.9" fill="#2b2620"/><ellipse cx="24" cy="29" rx="2.2" ry="1.5" fill="#5a4632"/></svg>
-        </div>
-        <h1>Battle Plan · Preview</h1>
-        <p>The redesigned Battle Plan, in progress. Enter the preview password to continue.</p>
-        <input id="pw" type="password" placeholder="Preview password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" autofocus />
-        <button type="submit">Enter preview</button>
-        <div class="err" id="err"></div>
-      </form>
+      <div class="badge">
+        <svg viewBox="0 0 48 48" width="30" height="30"><circle cx="15" cy="13.5" r="5" fill="#a07a4f"/><circle cx="33" cy="13.5" r="5" fill="#a07a4f"/><ellipse cx="24" cy="26" rx="15" ry="13" fill="#b88c5c"/><ellipse cx="24" cy="31" rx="8" ry="6.4" fill="#d2a674"/><circle cx="18.4" cy="23" r="1.9" fill="#2b2620"/><circle cx="29.6" cy="23" r="1.9" fill="#2b2620"/><ellipse cx="24" cy="29" rx="2.2" ry="1.5" fill="#5a4632"/></svg>
+      </div>
+      <p>Loading the redesign…</p>
     </div>
     <script>
-      // Soft gate. Case-insensitive + trimmed so mobile auto-cap doesn't block it.
-      var PW = 'capybara26';
-      // The app's service worker can hijack the navigation to /bp-next.html and
-      // serve the normal app instead — so before entering we unregister it and
-      // clear its caches, guaranteeing the design loads straight from the network.
-      async function enter() {
-        var btn = document.querySelector('button');
-        if (btn) { btn.textContent = 'Loading preview…'; btn.disabled = true; }
+      // No password. Just clear the service worker (it was hijacking the
+      // navigation) and load the design straight from the network.
+      (async function () {
         try {
           if ('serviceWorker' in navigator) {
             var regs = await navigator.serviceWorker.getRegistrations();
@@ -54,14 +36,8 @@
             await Promise.all(keys.map(function (k) { return caches.delete(k); }));
           }
         } catch (e) {}
-        window.location.href = '/bp-next.html?v=' + Date.now();
-      }
-      document.getElementById('f').addEventListener('submit', function (e) {
-        e.preventDefault();
-        var v = (document.getElementById('pw').value || '').trim().toLowerCase();
-        if (v === PW) { enter(); }
-        else { document.getElementById('err').textContent = 'Wrong password — try again.'; }
-      });
+        location.replace('/bp-next.html?v=' + Date.now());
+      })();
     </script>
   </body>
 </html>
