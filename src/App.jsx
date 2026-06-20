@@ -2548,7 +2548,7 @@ function MissionBoard({subjects,scores,C,font,examSched,onQuickLog=()=>{}}) {
   }).filter(Boolean);
   const abbr=n=>n==='Further Mathematics'||n==='Further Maths'?'FM':n==='Computer Science'?'CS':n;
   return (
-    <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,overflow:'hidden',marginBottom:16}}>
+    <div style={{background:C.tintCream,borderRadius:14,overflow:'hidden',marginBottom:16}}>
       {soonest&&(
         <div style={{padding:'12px 18px',borderBottom:`1px solid ${C.border}`,
           display:'flex',alignItems:'center',justifyContent:'space-between',
@@ -4615,7 +4615,7 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
       </div>
 
       {timerMode==='pomodoro'?(
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:'24px 20px'}}>
+        <div style={{background:C.tintCream,borderRadius:14,padding:'24px 20px'}}>
           {subjectPill(pomRunning)}
           <div style={{textAlign:'center',marginBottom:16}}>
             <div style={{fontSize:10,fontWeight:700,letterSpacing:1,textTransform:'uppercase',
@@ -4682,7 +4682,7 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
         </div>
       ):timerMode==='exam'?(
         /* ── EXAM MODE ── */
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:'24px 20px'}}>
+        <div style={{background:C.tintCream,borderRadius:14,padding:'24px 20px'}}>
           {examDone?(()=>{
             const earlyFinish = examResult && examResult.secs < examTotalMins*60;
             return (
@@ -4812,7 +4812,7 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
           })()}
         </div>
       ):(
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:'24px 20px'}}>
+        <div style={{background:C.tintCream,borderRadius:14,padding:'24px 20px'}}>
           {subjectPill(swRunning)}
           <div style={{textAlign:'center',marginBottom:16}}>
             <div style={{fontSize:10,fontWeight:700,letterSpacing:1,textTransform:'uppercase',
@@ -5624,7 +5624,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
         )}
       </div>
 
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
+      <div style={{background:C.tintCream,borderRadius:14,padding:'18px 20px'}}>
         <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Account</div>
         <div style={{fontSize:14,color:C.text,fontWeight:600,marginBottom:14}}>{user?.email??'Signed in'}</div>
         <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:14}}>
@@ -5643,7 +5643,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
         </button>
       </div>
 
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
+      <div style={{background:C.tintCream,borderRadius:14,padding:'18px 20px'}}>
         <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Appearance</div>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <span style={{fontSize:13,color:C.text}}>Theme</span>
@@ -5662,7 +5662,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       </div>
 
       {user && (
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
+      <div style={{background:C.tintCream,borderRadius:14,padding:'18px 20px'}}>
         <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:8}}>
           <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5}}>Email reports</div>
           {!isPro&&<span style={{fontSize:10,fontWeight:700,color:C.accent,background:C.accentSoft,border:`1px solid ${C.accent}44`,borderRadius:4,padding:'1px 6px',letterSpacing:0.3}}>PRO</span>}
@@ -5721,7 +5721,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       </>}
 
       {accountTab==='data'&&<>
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
+      <div style={{background:C.tintCream,borderRadius:14,padding:'18px 20px'}}>
         <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Research contribution</div>
         <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:16}}>
           <div style={{flex:1}}>
@@ -5742,7 +5742,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       </div>
 
       {/* Your data — GDPR Article 20 (portability) + Article 17 (erasure) */}
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
+      <div style={{background:C.tintCream,borderRadius:14,padding:'18px 20px'}}>
         <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:6}}>
           Your data
         </div>
