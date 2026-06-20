@@ -3494,6 +3494,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
   const overallAvg = scores.length ? Math.round(scores.reduce((a,s)=>a+s.pct,0)/scores.length) : null;
   const onTarget   = rows.filter(r=>r.avg!=null && r.gap!=null && r.gap>=0).length;
   const ratedSubs  = rows.filter(r=>r.avg!=null).length;
+  const onTrackCount = rows.filter(r=>r.avg!=null && (r.pred ? r.pred.pct>=r.targetPct : r.avg>=r.targetPct)).length;
 
   // Activity / streak (counts every kind of study action, not just the timer)
   const activeDays = studyActivityDays({sessions,scores,errors});
@@ -3567,28 +3568,39 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
         ))}
       </div>
 
-      {/* ── Battle readiness gauge (protected) ────────────────────────────── */}
-      <div style={{...cardSx,padding:'16px 18px',marginBottom:12,display:'flex',gap:20,alignItems:'center',flexWrap:'wrap'}}>
-        <div style={{display:'flex',flexDirection:'column',alignItems:'center',flexShrink:0}}>
-          <div style={{...type.eyebrow,color:C.subtle,marginBottom:6}}>Battle Readiness</div>
-          <BattleGauge score={br.total} label={br.label} labelColor={br.labelColor} textColor={C.text} mutedColor={C.muted}/>
-        </div>
-        <div style={{flex:1,minWidth:160}}>
-          {[
-            ['Papers',    br.paperComp, 20, '#3b82f6'],
-            ['Avg score', br.scoreComp, 40, '#8b5cf6'],
-            ['Error ctrl',br.errorComp, 20, '#f97316'],
-            ['Plan done', 0,            20, '#22c55e'],
-          ].map(([l,v,mx,c])=>(
-            <div key={l} style={{display:'flex',alignItems:'center',gap:8,marginBottom:7}}>
-              <div style={{fontSize:12,color:C.muted,width:62,flexShrink:0}}>{l}</div>
-              <div style={{flex:1,height:5,borderRadius:3,background:C.border,overflow:'hidden'}}>
-                <div style={{height:'100%',width:`${(v/mx)*100}%`,background:c,borderRadius:3,transition:'width 1.2s ease'}}/>
-              </div>
-              <div style={{fontSize:12,fontWeight:600,color:c,width:20,textAlign:'right'}}>{v}</div>
+      {/* ── Projected results ─────────────────────────────────────────────── */}
+      <div style={{...cardSx,padding:'14px 16px',marginBottom:12}}>
+        <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:8,flexWrap:'wrap',marginBottom:12}}>
+          <div style={{...type.eyebrow,color:C.subtle}}>Projected results</div>
+          {ratedSubs>0&&(
+            <div style={{fontSize:12,color:C.muted}}>
+              On track for <strong style={{color:onTrackCount===ratedSubs?(C.success||'#22c55e'):C.text}}>{onTrackCount}/{ratedSubs}</strong> targets
             </div>
-          ))}
+          )}
         </div>
+        {scores.length===0 ? (
+          <div style={{...type.caption,color:C.muted}}>Log papers to see where you're projected to land.</div>
+        ) : (
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(74px,1fr))',gap:8}}>
+            {rows.map(r=>{
+              const proj    = r.pred?.grade || r.grade || null;
+              const onTrack = r.pred ? r.pred.pct>=r.targetPct : (r.avg!=null && r.avg>=r.targetPct);
+              const label   = r.s.name==='Further Mathematics'||r.s.name==='Further Maths'?'Further Maths':r.s.name;
+              return (
+                <div key={r.s.name} style={{textAlign:'center',padding:'11px 6px 9px',
+                  border:`1px solid ${C.border}`,borderRadius:9,borderTop:`2px solid ${r.s.color}`}}>
+                  <div style={{fontSize:10,color:C.muted,fontWeight:600,marginBottom:7,
+                    whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{label}</div>
+                  <div style={{fontSize:30,fontWeight:800,lineHeight:1,color:proj?gradeColor(proj):C.subtle}}>{proj||'—'}</div>
+                  <div style={{fontSize:10,marginTop:7,fontWeight:600,
+                    color:r.avg==null?C.subtle:onTrack?(C.success||'#22c55e'):(C.warn||'#f59e0b')}}>
+                    {r.avg==null?'no papers':`target ${r.target}`}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ── Subject performance table ─────────────────────────────────────── */}
@@ -3598,14 +3610,14 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
           <div style={{...type.caption,color:C.muted,paddingBottom:12}}>No papers logged yet.</div>
         ) : (
           <>
-            <div style={{display:'grid',gridTemplateColumns:'1.6fr 52px 56px 64px 1fr',gap:8,alignItems:'center',
+            <div style={{display:'grid',gridTemplateColumns:'1.6fr 52px 56px 64px 1.1fr',gap:8,alignItems:'center',
               padding:'0 0 8px',borderBottom:`1px solid ${C.border}`}}>
-              {['Subject','Avg','Proj','Target','vs target'].map((h,i)=>(
-                <div key={h} style={{...type.eyebrow,color:C.subtle,textAlign:i===0?'left':i===4?'left':'center'}}>{h}</div>
+              {['Subject','Avg','Proj','Target','Trend'].map((h,i)=>(
+                <div key={h} style={{...type.eyebrow,color:C.subtle,textAlign:i===0?'left':i===4?'right':'center'}}>{h}</div>
               ))}
             </div>
             {rows.map(r=>(
-              <div key={r.s.name} style={{display:'grid',gridTemplateColumns:'1.6fr 52px 56px 64px 1fr',gap:8,
+              <div key={r.s.name} style={{display:'grid',gridTemplateColumns:'1.6fr 52px 56px 64px 1.1fr',gap:8,
                 alignItems:'center',padding:'10px 0',borderBottom:`1px solid ${C.border}`}}>
                 {/* subject + sparkline */}
                 <div style={{minWidth:0}}>
@@ -3646,13 +3658,24 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
                     {(isGcse?['9','8','7','6','5']:isAS?['A','B','C','D']:['A*','A','B','C']).map(g=><option key={g} value={g}>{g}</option>)}
                   </select>
                 </div>
-                {/* vs target bar */}
-                <div style={{display:'flex',alignItems:'center',gap:6}}>
-                  <div style={{flex:1,height:5,borderRadius:3,background:C.border,overflow:'hidden'}}>
-                    <div style={{height:'100%',width:`${r.progress}%`,
-                      background:r.progress>=100?(C.success||'#22c55e'):r.s.color,borderRadius:3,transition:'width 1s ease'}}/>
-                  </div>
-                  <span style={{fontSize:11,fontWeight:700,color:r.progress>=100?(C.success||'#22c55e'):C.muted,width:30,textAlign:'right'}}>{r.avg!=null?`${r.progress}%`:'—'}</span>
+                {/* trend sparkline */}
+                <div style={{display:'flex',alignItems:'center',justifyContent:'flex-end',height:26}}>
+                  {r.ss.length>=2 ? (()=>{
+                    const pts=r.ss.map(d=>d.pct);
+                    const min=Math.min(...pts)-4, max=Math.min(100,Math.max(...pts)+4);
+                    const W=86,H=24, span=(max-min)||1;
+                    const x=i=>(i/(r.ss.length-1))*W;
+                    const y=v=>H-(((v-min)/span)*H);
+                    const poly=r.ss.map((d,i)=>`${x(i)},${y(d.pct)}`).join(' ');
+                    const last=pts[pts.length-1];
+                    return (
+                      <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{display:'block',overflow:'visible'}}>
+                        <polyline points={poly} fill="none" stroke={r.s.color} strokeWidth="1.5"
+                          strokeLinejoin="round" strokeLinecap="round"/>
+                        <circle cx={x(r.ss.length-1)} cy={y(last)} r="2.4" fill={r.s.color}/>
+                      </svg>
+                    );
+                  })() : <span style={{fontSize:11,color:C.subtle}}>—</span>}
                 </div>
               </div>
             ))}
@@ -7100,6 +7123,39 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
         onMouseEnter={e=>{e.currentTarget.style.transform='scale(1.12)';e.currentTarget.style.boxShadow=`0 6px 28px ${C.accent}88`;}}
         onMouseLeave={e=>{e.currentTarget.style.transform='scale(1)';e.currentTarget.style.boxShadow=`0 4px 20px ${C.accent}55`;}}>
         +
+      </button>
+
+      {/* ── Floating companion chat launcher ── */}
+      <button
+        onClick={()=> isPro ? setCompanionChat(true) : addToast('Companion chat is a Pro feature — payments are launching soon. Join the waitlist in Account → Settings.','info')}
+        aria-label={`Chat with ${companion.name}`}
+        style={{position:'fixed',bottom:isMobile?84:88,right:isMobile?20:24,zIndex:91,
+          display:'flex',alignItems:'center',gap:9,
+          background:C.surface,border:`1px solid ${C.border}`,borderRadius:30,
+          padding:isMobile?5:'5px 16px 5px 5px',cursor:'pointer',fontFamily:font,
+          boxShadow:'0 6px 24px rgba(0,0,0,0.20)',transition:'transform 0.15s'}}
+        onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-2px)';}}
+        onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';}}>
+        <div style={{width:42,height:42,borderRadius:'50%',overflow:'hidden',flexShrink:0,
+          border:`2px solid ${C.accent}`,background:C.bg,
+          display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <CompanionAvatar
+            skin={companion.skin} hair={companion.hair} hairStyle={companion.hairStyle}
+            eyeColor={companion.eyeColor??0} outfitColor={companion.outfitColor??0}
+            accessory={companion.accessory??0} mood={mood} pose="idle" size={36}/>
+        </div>
+        {!isMobile&&(
+          <span style={{display:'flex',alignItems:'center',gap:5,fontSize:13,fontWeight:600,color:C.text}}>
+            Ask {companion.name}
+            {!isPro&&<Lock size={11} strokeWidth={2.5} style={{color:C.subtle}}/>}
+          </span>
+        )}
+        {mascotNots.length>0&&(
+          <span style={{position:'absolute',top:-3,right:-3,minWidth:16,height:16,borderRadius:8,
+            background:'#ef4444',color:'#fff',fontSize:10,fontWeight:800,
+            display:'flex',alignItems:'center',justifyContent:'center',padding:'0 4px',
+            border:`2px solid ${C.surface}`,lineHeight:1}}>{mascotNots.length}</span>
+        )}
       </button>
 
       {/* Companion modals */}
