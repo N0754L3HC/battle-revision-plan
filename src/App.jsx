@@ -4825,8 +4825,8 @@ const RAG = [
 ];
 
 function Resources({subjects,uid,C,font,rag,setRag,ragNotes,setRagNotes}) {
-  const [view,       setView]      = useState('status');
-  const [selSubject, setSelSubject] = useState(subjects[0]?.id??'');
+  const [view,       setView]      = useState('subjects'); // subjects | papers
+  const [selSubject, setSelSubject] = useState(null);      // null=overview · id · '__weak__'
   const [hovered,    setHovered]   = useState(null);
   const [expandedNote, setExpandedNote] = useState(null); // `${sid}_${i}`
 
@@ -4919,198 +4919,172 @@ function Resources({subjects,uid,C,font,rag,setRag,ragNotes,setRagNotes}) {
     );
   };
 
+  const linkPrimary={display:'inline-flex',alignItems:'center',gap:5,padding:'7px 13px',
+    background:C.accentSoft,border:`1px solid ${C.accent}44`,borderRadius:6,
+    color:C.accent,fontSize:12,fontWeight:600,textDecoration:'none',fontFamily:font};
+  const linkSecondary={display:'inline-flex',alignItems:'center',gap:5,padding:'7px 13px',
+    background:C.card2,border:`1px solid ${C.border}`,borderRadius:6,
+    color:C.muted,fontSize:12,fontWeight:600,textDecoration:'none',fontFamily:font};
+  const chev=<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.subtle} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{flexShrink:0}}><polyline points="9 18 15 12 9 6"/></svg>;
+  const redColor=RAG.find(r=>r.k==='red')?.color||'#e23b3b';
+
   return (
     <div>
       <div style={{marginBottom:16}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>Resources</div>
-        <h1 style={{...type.h1,color:C.text,margin:0}}>RAG Tracker</h1>
-        <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>Rate every spec topic Red, Amber, or Green so you know exactly where to focus.</p>
+        <h1 style={{...type.h1,color:C.text,margin:'0 0 4px'}}>Topics</h1>
+        <p style={{...type.caption,color:C.muted,margin:0}}>Rate every spec topic Red, Amber or Green so you know exactly where to focus.</p>
       </div>
 
-      {/* Summary bar */}
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:12,padding:'14px 18px',marginBottom:12}}>
-        <div style={{display:'flex',gap:16,marginBottom:10,flexWrap:'wrap'}}>
-          {[...RAG,{k:'unset',label:'Unrated',color:C.muted,bg:'transparent',border:C.border}].map(r=>(
-            <div key={r.k} style={{display:'flex',alignItems:'center',gap:6}}>
-              <div style={{width:10,height:10,borderRadius:'50%',background:r.color,flexShrink:0}}/>
-              <span style={{fontSize:12,color:r.color,fontWeight:700}}>{counts[r.k]}</span>
-              <span style={{fontSize:12,color:C.muted}}>{r.label}</span>
-            </div>
+      {selSubject===null ? (<>
+        {/* Mode tabs */}
+        <div style={{display:'flex',gap:22,borderBottom:`1px solid ${C.border}`,marginBottom:18}}>
+          {[['subjects','By subject'],['papers','Paper bank']].map(([id,lbl])=>(
+            <button key={id} onClick={()=>setView(id)} style={{background:'none',border:'none',
+              cursor:'pointer',fontFamily:'inherit',padding:'0 0 9px',marginBottom:-1,fontSize:14,
+              fontWeight:view===id?600:500,color:view===id?C.text:C.muted,
+              borderBottom:`2px solid ${view===id?C.text:'transparent'}`}}>{lbl}</button>
           ))}
         </div>
-        {/* Stacked proportion bar */}
-        <div style={{height:8,borderRadius:4,background:C.border,overflow:'hidden',display:'flex'}}>
-          {RAG.map(r=>{
-            const w = total?Math.round((counts[r.k]/total)*100):0;
-            return w>0?(
-              <div key={r.k} style={{height:'100%',width:`${w}%`,background:r.color,transition:'width 0.4s ease'}}/>
-            ):null;
-          })}
-        </div>
-        <div style={{fontSize:11,color:C.muted,marginTop:5}}>
-          {total-counts.unset} of {total} topics rated
-        </div>
-      </div>
 
-      {/* View toggle */}
-      <div style={{display:'flex',gap:4,marginBottom:14,flexWrap:'wrap'}}>
-        {[{v:'status',l:'By Status'},{v:'subject',l:'By Subject'},{v:'papers',l:'Paper Bank'}].map(({v,l})=>(
-          <button key={v} onClick={()=>setView(v)}
-            style={{padding:'6px 14px',borderRadius:7,border:`1px solid ${view===v?C.accent:C.border}`,
-              background:view===v?C.accentSoft:'transparent',
-              color:view===v?C.accent:C.muted,
-              fontSize:12,fontWeight:view===v?700:400,fontFamily:font,cursor:'pointer'}}>
-            {l}
-          </button>
-        ))}
-      </div>
-
-      {view==='status' ? (
-        /* ── Grouped by RAG status ─────────────────────────────────────── */
-        <div>
-          {RAG.map(r=>{
-            const items = allTopics.filter(t=>t.status===r.k);
-            return (
-              <div key={r.k} style={{marginBottom:14}}>
-                <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:6}}>
-                  <div style={{width:10,height:10,borderRadius:'50%',background:r.color}}/>
-                  <span style={{fontSize:11,fontWeight:700,color:r.color,textTransform:'uppercase',letterSpacing:0.5}}>{r.label}</span>
-                  <span style={{fontSize:11,color:C.muted}}>({items.length})</span>
-                </div>
-                {items.length===0?(
-                  <div style={{fontSize:13,color:C.muted,padding:'10px 14px',
-                    background:C.surface,border:`1px solid ${C.border}`,borderRadius:10}}>
-                    No topics here yet — rate them below.
-                  </div>
-                ):(
-                  <div style={{background:C.surface,border:`1px solid ${r.border}`,borderRadius:10,overflow:'hidden'}}>
-                    {items.map(({topic,i,s})=>(
-                      <TopicRow key={`${s.id}_${i}`} topic={topic} i={i} s={s} showSubject={true}/>
-                    ))}
-                  </div>
-                )}
+        {view==='subjects' ? (<>
+          {/* Overall RAG proportion bar (protected) */}
+          {total>0&&(
+            <div style={{marginBottom:20}}>
+              <div style={{height:8,borderRadius:4,background:C.border,overflow:'hidden',display:'flex',marginBottom:8}}>
+                {RAG.map(r=>{
+                  const w=total?Math.round((counts[r.k]/total)*100):0;
+                  return w>0?<div key={r.k} style={{height:'100%',width:`${w}%`,background:r.color,transition:'width 0.4s ease'}}/>:null;
+                })}
               </div>
-            );
-          })}
-          {/* Unrated section */}
-          {counts.unset>0&&(
-            <div style={{marginBottom:14}}>
-              <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:6}}>
-                <div style={{width:10,height:10,borderRadius:'50%',background:C.border}}/>
-                <span style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5}}>Not Yet Rated</span>
-                <span style={{fontSize:11,color:C.muted}}>({counts.unset})</span>
-              </div>
-              <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,overflow:'hidden'}}>
-                {allTopics.filter(t=>!t.status).map(({topic,i,s})=>(
-                  <TopicRow key={`${s.id}_${i}`} topic={topic} i={i} s={s} showSubject={true}/>
+              <div style={{display:'flex',gap:14,flexWrap:'wrap'}}>
+                {[...RAG,{k:'unset',label:'unrated',color:C.subtle}].map(r=>(
+                  <span key={r.k} style={{...type.caption,color:C.muted,display:'flex',alignItems:'center',gap:5}}>
+                    <span style={{width:8,height:8,borderRadius:'50%',background:r.color}}/>
+                    <span style={{color:C.text,fontWeight:600}}>{counts[r.k]}</span> {r.label}
+                  </span>
                 ))}
               </div>
             </div>
           )}
-        </div>
-      ) : (
-        /* ── By Subject: dropdown picker + topic list ──────────────────── */
-        <div>
-          {/* Subject dropdown */}
-          {(()=>{
-            const sel = subjects.find(s=>s.id===selSubject)||subjects[0];
-            const topics = SPEC_TOPICS[sel?.id]||[];
-            const subjCounts={red:0,amber:0,green:0};
-            topics.forEach((_,i)=>{const st=rag[`${sel.id}_${i}`]; if(st)subjCounts[st]++;});
-            const unrated = topics.length - Object.values(subjCounts).reduce((a,b)=>a+b,0);
-            return (
-              <div>
-                {/* Dropdown */}
-                <select value={selSubject} onChange={e=>setSelSubject(e.target.value)}
-                  style={{width:'100%',background:C.surface,border:`1px solid ${sel?.color||C.accent}55`,
-                    borderLeft:`4px solid ${sel?.color||C.accent}`,
-                    borderRadius:10,padding:'11px 14px',color:C.text,fontSize:14,
-                    fontWeight:700,fontFamily:font,outline:'none',cursor:'pointer',
-                    appearance:'none',WebkitAppearance:'none',marginBottom:10,
-                    boxShadow:`0 2px 8px rgba(0,0,0,0.06)`}}>
-                  {subjects.map(s=>(
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
 
-                {/* RAG mini-summary for selected subject */}
-                <div style={{display:'flex',gap:10,marginBottom:10,padding:'8px 14px',
-                  background:C.surface,border:`1px solid ${C.border}`,borderRadius:8}}>
-                  {RAG.map(r=>(
-                    <div key={r.k} style={{display:'flex',alignItems:'center',gap:4}}>
-                      <div style={{width:8,height:8,borderRadius:'50%',background:r.color}}/>
-                      <span style={{fontSize:12,color:r.color,fontWeight:700}}>{subjCounts[r.k]}</span>
-                      <span style={{fontSize:11,color:C.muted}}>{r.label}</span>
-                    </div>
-                  ))}
-                  <span style={{fontSize:11,color:C.muted,marginLeft:'auto'}}>{unrated} unrated</span>
-                </div>
-
-                {/* Topic list for selected subject */}
-                {topics.length===0?(
-                  <div style={{padding:'14px',fontSize:13,color:C.muted,background:C.surface,
-                    border:`1px solid ${C.border}`,borderRadius:10}}>No topics defined for this subject.</div>
-                ):(
-                  <div style={{background:C.surface,border:`1px solid ${sel?.color||C.border}33`,
-                    borderLeft:`3px solid ${sel?.color||C.accent}`,borderRadius:10,overflow:'hidden'}}>
-                    {topics.map((topic,i)=>(
-                      <TopicRow key={i} topic={topic} i={i} s={sel} showSubject={false}/>
-                    ))}
-                  </div>
-                )}
+          {/* Needs work drill-in */}
+          {(counts.red+counts.amber)>0&&(
+            <button onClick={()=>setSelSubject('__weak__')} style={{display:'flex',alignItems:'center',gap:12,
+              width:'100%',textAlign:'left',padding:'14px 0',borderTop:`1px solid ${C.border}`,
+              background:'transparent',border:'none',cursor:'pointer',fontFamily:'inherit'}}>
+              <span style={{width:9,height:9,borderRadius:'50%',background:redColor,flexShrink:0}}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:15,fontWeight:600,color:C.text}}>Needs work</div>
+                <div style={{...type.caption,color:C.muted,marginTop:1}}>{counts.red} red · {counts.amber} amber across all subjects</div>
               </div>
-            );
-          })()}
-        </div>
-      )}
+              {chev}
+            </button>
+          )}
 
-      {/* ── Paper Bank ──────────────────────────────────────────────────── */}
-      {view==='papers'&&(
-        <div style={{display:'flex',flexDirection:'column',gap:10}}>
-          <div style={{fontSize:12,color:C.muted,lineHeight:1.6,marginBottom:4}}>
-            Official past paper collections for your subjects. Links open the board's assessment resources page and Physics & Maths Tutor (PMT).
-          </div>
+          {/* Subject rows */}
           {subjects.map(s=>{
-            const bank = (PAPER_BANK[s.id]||{})[s.boardId];
+            const topics=SPEC_TOPICS[s.id]||[];
+            const cc={red:0,amber:0,green:0};
+            topics.forEach((_,i)=>{const st=rag[`${s.id}_${i}`];if(st&&cc[st]!=null)cc[st]++;});
+            const tot=topics.length; const rated=cc.red+cc.amber+cc.green;
             return (
-              <div key={s.id} style={{background:C.surface,border:`1px solid ${C.border}`,
-                borderLeft:`3px solid ${s.color}`,borderRadius:10,padding:'14px 16px'}}>
-                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
-                  <div style={{width:8,height:8,borderRadius:'50%',background:s.color,flexShrink:0}}/>
-                  <div style={{fontSize:13,fontWeight:700,color:C.text}}>{s.name}</div>
-                  <div style={{fontSize:11,color:s.color,fontWeight:600,background:`${s.color}14`,
-                    border:`1px solid ${s.color}33`,borderRadius:4,padding:'1px 7px'}}>{s.board}</div>
+              <button key={s.id} onClick={()=>setSelSubject(s.id)} style={{display:'flex',alignItems:'center',gap:12,
+                width:'100%',textAlign:'left',padding:'14px 0',borderTop:`1px solid ${C.border}`,
+                background:'transparent',border:'none',cursor:'pointer',fontFamily:'inherit'}}>
+                <span style={{width:9,height:9,borderRadius:'50%',background:s.color,flexShrink:0}}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:15,fontWeight:600,color:C.text,marginBottom:6,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s.name}</div>
+                  <div style={{height:5,borderRadius:3,background:C.border,overflow:'hidden',display:'flex',maxWidth:200}}>
+                    {RAG.map(r=>{const w=tot?Math.round((cc[r.k]/tot)*100):0;return w>0?<div key={r.k} style={{height:'100%',width:`${w}%`,background:r.color}}/>:null;})}
+                  </div>
                 </div>
-                {bank ? (
-                  <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-                    <a href={bank.pmt} target="_blank" rel="noopener noreferrer"
-                      style={{display:'inline-flex',alignItems:'center',gap:5,padding:'7px 13px',
-                        background:C.accentSoft,border:`1px solid ${C.accent}44`,borderRadius:7,
-                        color:C.accent,fontSize:12,fontWeight:600,textDecoration:'none',
-                        fontFamily:font,transition:'background 0.12s'}}>
-                      PMT Paper Bank ↗
-                    </a>
-                    <a href={bank.board} target="_blank" rel="noopener noreferrer"
-                      style={{display:'inline-flex',alignItems:'center',gap:5,padding:'7px 13px',
-                        background:C.card2,border:`1px solid ${C.border}`,borderRadius:7,
-                        color:C.muted,fontSize:12,fontWeight:600,textDecoration:'none',
-                        fontFamily:font}}>
-                      Official board page ↗
-                    </a>
-                  </div>
-                ):(
-                  <div style={{fontSize:12,color:C.subtle}}>
-                    No direct link available — search "{s.name} {s.board} past papers" on the board's website.
-                  </div>
-                )}
-              </div>
+                <div style={{...type.caption,color:C.muted,flexShrink:0,textAlign:'right'}}>
+                  {rated>0?`${rated}/${tot}`:`${tot} topics`}
+                </div>
+                {chev}
+              </button>
             );
           })}
-          <div style={{fontSize:11,color:C.subtle,marginTop:4,lineHeight:1.7}}>
-            Always verify mark schemes and grade boundaries on the official board site. Links were last checked May 2026 — boards occasionally restructure their pages.
+        </>) : (
+          /* Paper bank */
+          <div>
+            <div style={{...type.caption,color:C.muted,lineHeight:1.6,marginBottom:8}}>
+              Official past-paper collections. Links open the board's resources page and Physics &amp; Maths Tutor (PMT).
+            </div>
+            {subjects.map(s=>{
+              const bank=(PAPER_BANK[s.id]||{})[s.boardId];
+              return (
+                <div key={s.id} style={{padding:'14px 0',borderTop:`1px solid ${C.border}`}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:9}}>
+                    <span style={{width:8,height:8,borderRadius:'50%',background:s.color,flexShrink:0}}/>
+                    <div style={{fontSize:14,fontWeight:600,color:C.text}}>{s.name}</div>
+                    <div style={{...type.caption,color:C.muted}}>{s.board}</div>
+                  </div>
+                  {bank?(
+                    <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                      <a href={bank.pmt} target="_blank" rel="noopener noreferrer" style={linkPrimary}>PMT paper bank ↗</a>
+                      <a href={bank.board} target="_blank" rel="noopener noreferrer" style={linkSecondary}>Official board page ↗</a>
+                    </div>
+                  ):(
+                    <div style={{...type.caption,color:C.subtle}}>No direct link — search "{s.name} {s.board} past papers".</div>
+                  )}
+                </div>
+              );
+            })}
+            <div style={{...type.caption,color:C.subtle,marginTop:12,lineHeight:1.7}}>
+              Always verify mark schemes and grade boundaries on the official board site. Links last checked May 2026.
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </>) : (() => {
+        /* Detail: a subject's topics, or the cross-subject weak list */
+        const weak = selSubject==='__weak__';
+        const sel = weak?null:subjects.find(s=>s.id===selSubject);
+        const items = weak
+          ? allTopics.filter(t=>t.status==='red'||t.status==='amber')
+              .sort((a,b)=>(a.status==='red'?0:1)-(b.status==='red'?0:1))
+          : (SPEC_TOPICS[sel?.id]||[]).map((topic,i)=>({topic,i,s:sel,status:rag[`${sel.id}_${i}`]||null}));
+        const cc={red:0,amber:0,green:0};
+        if(!weak&&sel)(SPEC_TOPICS[sel.id]||[]).forEach((_,i)=>{const st=rag[`${sel.id}_${i}`];if(st&&cc[st]!=null)cc[st]++;});
+        const bank=!weak&&sel?(PAPER_BANK[sel.id]||{})[sel.boardId]:null;
+        return (<>
+          <button onClick={()=>setSelSubject(null)} style={{display:'flex',alignItems:'center',gap:5,
+            background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',color:C.muted,
+            fontSize:13,padding:0,marginBottom:14}}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            All topics
+          </button>
+
+          <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:4}}>
+            <span style={{width:11,height:11,borderRadius:'50%',background:weak?redColor:(sel?.color||'#888'),flexShrink:0}}/>
+            <h1 style={{...type.h1,fontSize:24,color:C.text,margin:0}}>{weak?'Needs work':sel?.name}</h1>
+          </div>
+          <div style={{...type.caption,color:C.muted,marginBottom:bank?14:18}}>
+            {weak
+              ? `${items.length} red & amber topic${items.length===1?'':'s'} — drill these first`
+              : `${cc.red} red · ${cc.amber} amber · ${cc.green} green`}
+          </div>
+
+          {bank&&(
+            <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:18}}>
+              <a href={bank.pmt} target="_blank" rel="noopener noreferrer" style={linkPrimary}>PMT paper bank ↗</a>
+              <a href={bank.board} target="_blank" rel="noopener noreferrer" style={linkSecondary}>Board page ↗</a>
+            </div>
+          )}
+
+          {items.length===0?(
+            <div style={{...type.body,color:C.muted,textAlign:'center',padding:'18px 0'}}>
+              {weak?'Nothing flagged — rate topics Red or Amber to see them here.':'No topics defined for this subject.'}
+            </div>
+          ):(
+            <div>
+              {items.map(({topic,i,s})=>(
+                <TopicRow key={`${s.id}_${i}`} topic={topic} i={i} s={s} showSubject={weak}/>
+              ))}
+            </div>
+          )}
+        </>);
+      })()}
     </div>
   );
 }
