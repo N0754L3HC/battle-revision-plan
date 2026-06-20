@@ -2222,7 +2222,7 @@ function getCharacterReply(input, {subjects, scores, sessions, examSched}) {
   return fallbacks[Math.floor(Math.random()*fallbacks.length)];
 }
 
-function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},examLevel='alevel',errors=[],targets={},C,font,onClose}) {
+function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},examLevel='alevel',errors=[],targets={},applyAction=()=>({ok:false,message:'unavailable'}),C,font,onClose}) {
   ensureAnimStyles();
   const [messages,setMessages] = useState([{
     from:'char',
@@ -2236,8 +2236,8 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
     if(listRef.current) listRef.current.scrollTop=listRef.current.scrollHeight;
   },[messages,sending]);
 
-  const send = async () => {
-    const text=input.trim();
+  const send = async (preset) => {
+    const text=(typeof preset==='string'?preset:input).trim();
     if(!text||sending) return;
     if (text.length > 600) return; // ui caps input length; defensive (matches server CHAT_MSG_MAX_CHARS)
     const nextHistory = [...messages, {from:'user', text}];
@@ -2311,6 +2311,7 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
     };
 
     let replyText = null;
+    let serverActions = [];
     let serverHit = false; // did we actually reach the chat server with a real reply?
     try {
       const {data:{session}} = await supabase.auth.getSession();
@@ -2322,7 +2323,7 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
         });
         if (r.ok) {
           const d = await r.json();
-          if (d.reply) { replyText = d.reply; serverHit = true; }
+          if (d.reply) { replyText = d.reply; serverHit = true; serverActions = Array.isArray(d.actions)?d.actions:[]; }
         } else if (r.status === 429) {
           const d = await r.json().catch(()=>({}));
           replyText = d.error || "I need a breather — too many messages this hour. Try again in a bit.";
@@ -2349,9 +2350,35 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
       replyText = "I'm having trouble reaching the chat server right now — try again in a moment, or refresh the page.";
     }
 
-    setMessages(prev => [...prev, {from:'char', text: replyText}]);
+    setMessages(prev => [...prev, {from:'char', text: replyText, actions: serverActions}]);
     setSending(false);
   };
+
+  // ── Apply the actions Caps proposes ──
+  const applyOne = (msgIdx, actIdx) => {
+    const act = messages[msgIdx]?.actions?.[actIdx];
+    if (!act || act._applied) return;
+    const res = applyAction(act);
+    setMessages(prev => prev.map((m,i)=> i!==msgIdx ? m : {
+      ...m, actions: m.actions.map((a,j)=> j!==actIdx ? a : {...a, _applied:res.ok, _failed:!res.ok, _result:res.message})
+    }));
+  };
+  const applyAll = (msgIdx) => {
+    (messages[msgIdx]?.actions||[]).forEach((a,j)=>{ if(!a._applied) applyOne(msgIdx,j); });
+  };
+  const actLabel = (a) => {
+    if (a.type==='set_target')    return `Set ${a.subject} target → ${a.grade}`;
+    if (a.type==='mark_topics')   return `Mark ${a.topics.length} ${a.subject} topic${a.topics.length>1?'s':''} as ${a.level==='red'?'weak':a.level}`;
+    if (a.type==='add_plan_task') return `Plan · ${a.day}: ${a.subject}${a.topic?` — ${a.topic}`:''}${a.duration_min?` (${a.duration_min}m)`:''}`;
+    return 'Apply change';
+  };
+  const QUICK = {
+    'Plan my week':'Plan my week — build a revision schedule across the next 7 days based on my weakest subjects and nearest exams.',
+    'What should I do today?':'Based on my data, what are the 2-3 most useful things I should do today?',
+    'Find my weak spots':'Look at my scores and topic ratings and tell me my biggest weak spots — mark them red if it helps.',
+    'Suggest targets':"Suggest sensible target grades for each of my subjects based on how I'm currently doing.",
+  };
+
   return (
     <div style={{position:'fixed',inset:0,zIndex:400,background:'rgba(0,0,0,0.72)',
       display:'flex',alignItems:'flex-end',justifyContent:'center',
@@ -2372,7 +2399,8 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
         <div ref={listRef} style={{flex:1,overflowY:'auto',padding:'16px',
           display:'flex',flexDirection:'column',gap:10}}>
           {messages.map((m,i)=>(
-            <div key={i} style={{display:'flex',justifyContent:m.from==='user'?'flex-end':'flex-start'}}>
+            <div key={i} style={{display:'flex',flexDirection:'column',gap:6,
+              alignItems:m.from==='user'?'flex-end':'flex-start'}}>
               <div style={{maxWidth:'84%',
                 borderRadius:m.from==='user'?'14px 14px 4px 14px':'14px 14px 14px 4px',
                 padding:'10px 14px',
@@ -2381,8 +2409,44 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
                 fontSize:13,lineHeight:1.6,whiteSpace:'pre-wrap'}}>
                 {m.text}
               </div>
+              {Array.isArray(m.actions)&&m.actions.length>0&&(
+                <div style={{width:'100%',maxWidth:'92%',display:'flex',flexDirection:'column',gap:6}}>
+                  {m.actions.map((a,j)=>(
+                    <div key={j} style={{display:'flex',alignItems:'center',gap:8,
+                      background:C.surface,borderRadius:9,padding:'8px 10px',
+                      border:`1px solid ${a._applied?(C.success||'#22c55e')+'66':a._failed?(C.danger||'#ef4444')+'66':C.border}`}}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:12,fontWeight:600,color:C.text,lineHeight:1.35}}>{actLabel(a)}</div>
+                        {a._result&&(
+                          <div style={{fontSize:10,marginTop:2,
+                            color:a._failed?(C.danger||'#ef4444'):(C.success||'#22c55e')}}>{a._result}</div>
+                        )}
+                      </div>
+                      {a._applied
+                        ? <span style={{fontSize:11,fontWeight:700,color:C.success||'#22c55e',flexShrink:0}}>Applied</span>
+                        : <button onClick={()=>applyOne(i,j)} style={{flexShrink:0,padding:'5px 12px',
+                            background:C.accent,border:'none',borderRadius:7,color:'#fff',fontSize:12,
+                            fontWeight:700,fontFamily:font,cursor:'pointer'}}>{a._failed?'Retry':'Apply'}</button>}
+                    </div>
+                  ))}
+                  {m.actions.length>1 && m.actions.some(a=>!a._applied) && (
+                    <button onClick={()=>applyAll(i)} style={{alignSelf:'flex-start',padding:'5px 12px',
+                      background:'transparent',border:`1px solid ${C.accent}66`,borderRadius:7,color:C.accent,
+                      fontSize:12,fontWeight:700,fontFamily:font,cursor:'pointer'}}>Apply all</button>
+                  )}
+                </div>
+              )}
             </div>
           ))}
+          {messages.length===1 && !sending && (
+            <div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:2}}>
+              {Object.keys(QUICK).map(q=>(
+                <button key={q} onClick={()=>send(QUICK[q])} style={{padding:'7px 12px',
+                  background:C.card2,border:`1px solid ${C.border}`,borderRadius:16,color:C.text,
+                  fontSize:12,fontFamily:font,cursor:'pointer'}}>{q}</button>
+              ))}
+            </div>
+          )}
           {sending&&(
             <div style={{display:'flex',justifyContent:'flex-start'}}>
               <div style={{borderRadius:'14px 14px 14px 4px',padding:'10px 14px',
@@ -2405,7 +2469,7 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
             style={{flex:1,background:C.card2,border:`1px solid ${C.border}`,borderRadius:10,
               padding:'10px 14px',color:C.text,fontSize:13,fontFamily:font,outline:'none',
               opacity:sending?0.6:1}}/>
-          <button onClick={send} disabled={sending||!input.trim()}
+          <button onClick={()=>send()} disabled={sending||!input.trim()}
             style={{padding:'10px 18px',
               background:sending||!input.trim()?C.card2:C.accent,
               border:sending||!input.trim()?`1px solid ${C.border}`:'none',
@@ -6780,6 +6844,66 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   ];
   const sidebarW = sidebarOpen ? (isMobile ? 54 : 210) : 0;
 
+  // ── Caps actions: apply the changes Caps proposes in chat ──────────────────
+  const matchSubject = (q) => {
+    if (!q) return null;
+    const s = String(q).toLowerCase().trim();
+    return subjects.find(x=>x.name.toLowerCase()===s)
+      || subjects.find(x=>x.id && String(x.id).toLowerCase()===s)
+      || subjects.find(x=>x.name.toLowerCase().includes(s) || s.includes(x.name.toLowerCase()))
+      || subjects.find(x=> x.name.toLowerCase().startsWith('further') && (s.includes('fm')||s.includes('further')))
+      || null;
+  };
+  // Replicate Schedule's day-key format exactly (local-midnight → toISOString slice).
+  const resolvePlanDay = (day) => {
+    const base = new Date(); base.setHours(0,0,0,0);
+    const d = String(day||'today').toLowerCase().trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+      const [y,mo,da] = d.split('-').map(Number);
+      const dt = new Date(y,(mo||1)-1,da||1); dt.setHours(0,0,0,0);
+      return dt.toISOString().slice(0,10);
+    }
+    const names = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+    if (d==='tomorrow') base.setDate(base.getDate()+1);
+    else if (d!=='today') {
+      const wi = names.indexOf(d);
+      if (wi>=0) { let add=(wi-base.getDay()+7)%7; if(add===0) add=7; base.setDate(base.getDate()+add); }
+    }
+    return base.toISOString().slice(0,10);
+  };
+  const applyCapsAction = (a) => {
+    try {
+      if (a.type==='set_target') {
+        const subj = matchSubject(a.subject);
+        if (!subj) return {ok:false, message:`Couldn't find "${a.subject}"`};
+        setTargets(p=>({...p,[subj.name]:String(a.grade)}));
+        return {ok:true, message:`${subj.name} target set to ${a.grade}`};
+      }
+      if (a.type==='mark_topics') {
+        const subj = matchSubject(a.subject);
+        if (!subj) return {ok:false, message:`Couldn't find "${a.subject}"`};
+        const topics = SPEC_TOPICS[subj.id]||[];
+        if (!topics.length) return {ok:false, message:`No topic list for ${subj.name}`};
+        const idxs = new Set();
+        (a.topics||[]).forEach(t=>{ const q=String(t).toLowerCase().trim();
+          topics.forEach((name,i)=>{ const n=String(name).toLowerCase(); if(n===q||n.includes(q)||q.includes(n)) idxs.add(i); }); });
+        if (!idxs.size) return {ok:false, message:`No matching topics in ${subj.name}`};
+        setRag(prev=>{ const next={...prev}; idxs.forEach(i=>{ next[`${subj.id}_${i}`]=a.level; }); return next; });
+        return {ok:true, message:`Marked ${idxs.size} ${subj.name} topic${idxs.size>1?'s':''} ${a.level}`};
+      }
+      if (a.type==='add_plan_task') {
+        const subj = matchSubject(a.subject);
+        const date = resolvePlanDay(a.day);
+        const id = `plan_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+        setMyPlan(prev=>[...prev,{ id, date, subjectId: subj?.id||'custom',
+          subjectName: subj?.name || a.subject || 'Task', color: subj?.color||'#9ca3af',
+          topic: a.topic||'', duration_min: a.duration_min||null, note:'', done:false }]);
+        return {ok:true, message:`Added to ${a.day}: ${a.topic||subj?.name||'task'}`};
+      }
+      return {ok:false, message:'Unknown action'};
+    } catch { return {ok:false, message:'Could not apply'}; }
+  };
+
   const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse,isAS,analyticsConsent,setAnalyticsConsent,insNoted,setInsNoted,myPlan,setMyPlan,shareTheme,setShareTheme,shareAspect,setShareAspect,yearGroup,setYearGroup};
 
   return (
@@ -7183,7 +7307,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
       {companionChat&&(
         <CompanionChat companion={companion} subjects={subjects} scores={scores}
           sessions={sessions} examSched={examSched} rag={rag} examLevel={examLevel}
-          errors={errors} targets={targets}
+          errors={errors} targets={targets} applyAction={applyCapsAction}
           C={C} font={font}
           onClose={()=>setCompanionChat(false)}/>
       )}

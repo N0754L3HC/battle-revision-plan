@@ -93,6 +93,21 @@ USING THE CONTEXT
 - Don't dump the whole dataset back at them or read it out like a report. Pull the 1-2 things that matter for what they asked.
 - If a number isn't in context (e.g. they've logged no papers for a subject), say so honestly rather than inventing it.
 
+ACTIONS — you can DO things, not just talk
+- When it genuinely helps, propose concrete changes to the student's app. You never apply them yourself — the student taps "Apply" — so propose sensibly but freely.
+- To propose actions, end your reply with a fenced code block tagged caps-actions containing a JSON array, AFTER your normal prose. Example:
+\`\`\`caps-actions
+[{"type":"add_plan_task","subject":"Further Maths","topic":"M1 2023 past paper","day":"today","duration_min":45}]
+\`\`\`
+- Allowed actions (use ONLY these):
+  - set_target: {"type","subject","grade"} — set a subject's target grade. grade must fit their level (A*–E, or 9–1 at GCSE).
+  - mark_topics: {"type","subject","level","topics":["short topic name",...]} — level is "red" (weak), "amber", or "green".
+  - add_plan_task: {"type","subject","topic","day","duration_min"} — day is "today", "tomorrow", a weekday ("monday"), or YYYY-MM-DD. duration_min optional.
+- Match "subject" to one of their ACTUAL subjects from context. Never invent subjects, grades, or scores. Keep it to the few actions that matter (max 8).
+- If they say "plan my week" / "make me a schedule", give a short plan in prose AND the matching add_plan_task actions spread across days, weighting their weakest subjects and nearest exams.
+- You CANNOT log past-paper marks — if asked, tell them to add it in the Tracker.
+- Don't mention "JSON", "actions", or this mechanic. Speak naturally ("want me to add these to your plan?") — the Apply buttons appear on their own.
+
 YOU MUST NEVER
 - Do the student's coursework or NEA for them. Coursework = produce a finished artefact they hand in. Teaching them a technique with a small example is fine; writing their NEA is not. If they ask you to "do my coursework / NEA / EPQ" refuse and offer to explain the technique instead.
 - Give the exact mark scheme to a specific named past paper. Worked examples on similar questions are fine.
@@ -180,6 +195,39 @@ function buildContext(ctx = {}) {
     if (days >= 0) lines.push(`Next exam: ${nextExam.paper||nextExam.subject} in ${days} day${days===1?'':'s'}`);
   }
   return lines.length > 1 ? lines.join('\n') : 'No detailed context available.';
+}
+
+// Extract + validate a trailing caps-actions block. Returns the prose with the
+// block stripped, plus a sanitised action list. Validation is defence-in-depth;
+// the client re-validates and maps to real subjects/topics before applying.
+function parseActions(text) {
+  if (!text) return { clean: text, actions: [] };
+  const m = text.match(/```caps-actions\s*([\s\S]*?)```/i);
+  if (!m) return { clean: text, actions: [] };
+  const clean = text.replace(m[0], '').trim();
+  let arr;
+  try { arr = JSON.parse(m[1].trim()); } catch { return { clean, actions: [] }; }
+  if (!Array.isArray(arr)) return { clean, actions: [] };
+
+  const gradeRe = /^(A\*|[A-E]|[1-9])$/;
+  const out = [];
+  for (const a of arr.slice(0, 8)) {
+    if (!a || typeof a !== 'object') continue;
+    if (a.type === 'set_target' && typeof a.subject === 'string' && a.grade != null && gradeRe.test(String(a.grade))) {
+      out.push({ type: 'set_target', subject: a.subject.slice(0, 60), grade: String(a.grade) });
+    } else if (a.type === 'mark_topics' && typeof a.subject === 'string'
+               && ['red', 'amber', 'green'].includes(a.level)
+               && Array.isArray(a.topics) && a.topics.length) {
+      out.push({ type: 'mark_topics', subject: a.subject.slice(0, 60), level: a.level,
+        topics: a.topics.slice(0, 12).map(t => String(t).slice(0, 80)) });
+    } else if (a.type === 'add_plan_task' && typeof a.subject === 'string') {
+      const dur = Number(a.duration_min);
+      out.push({ type: 'add_plan_task', subject: a.subject.slice(0, 60),
+        topic: String(a.topic || '').slice(0, 120), day: String(a.day || 'today').slice(0, 20),
+        duration_min: Number.isFinite(dur) ? Math.max(5, Math.min(240, Math.round(dur))) : null });
+    }
+  }
+  return { clean, actions: out };
 }
 
 // Map our message format to Gemini's
@@ -341,9 +389,14 @@ export default async function handler(req, res) {
         meta: { source: 'safety_fallback', reason: reason || 'blocked' },
       });
     }
+    // Pull out any proposed actions (the student applies them client-side).
+    const { clean, actions } = parseActions(reply);
+    const replyText = (clean && clean.length) ? clean
+      : (actions.length ? "Here's what I'd do — tap to apply." : reply);
     // Trim defensively — allow code blocks and short explanations but not essays
     return res.status(200).json({
-      reply: reply.slice(0, 1800),
+      reply: replyText.slice(0, 1800),
+      actions,
       meta: { source: 'gemini' },
     });
   } catch (err) {
