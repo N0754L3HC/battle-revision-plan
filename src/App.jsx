@@ -31,12 +31,13 @@ class ErrorBoundary extends React.Component {
 // ── Theme ──────────────────────────────────────────────────────────────────
 const T = {
   light: {
-    bg:      '#f0ece6',
+    bg:      '#e7e0d6',
     surface: '#ffffff',
-    nav:     'rgba(248,245,241,0.97)',
-    border:  'rgba(0,0,0,0.09)',
-    card:    '#faf8f5',
-    card2:   'rgba(0,0,0,0.04)',
+    nav:     'rgba(250,247,243,0.97)',
+    border:  'rgba(0,0,0,0.12)',
+    card:    '#f7f4ef',
+    card2:   'rgba(0,0,0,0.045)',
+    shadow:  '0 1px 2px rgba(60,48,34,0.05), 0 2px 8px rgba(60,48,34,0.045)',
     text:    '#18170f',
     muted:   '#574f48',
     subtle:  '#9b938b',
@@ -48,9 +49,10 @@ const T = {
     bg:      '#0c0e13',
     surface: '#141720',
     nav:     'rgba(12,14,19,0.97)',
-    border:  'rgba(255,255,255,0.09)',
+    border:  'rgba(255,255,255,0.11)',
     card:    '#171b26',
     card2:   'rgba(255,255,255,0.05)',
+    shadow:  '0 1px 2px rgba(0,0,0,0.35), 0 2px 10px rgba(0,0,0,0.28)',
     text:    '#e4dfd8',
     muted:   '#857f79',
     subtle:  '#4e4a47',
@@ -7266,6 +7268,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
       </aside>
 
       <main style={{marginLeft:sidebarW,padding:isMobile?'16px 12px':'28px 32px',minHeight:'100vh',transition:'margin-left 0.2s ease'}}>
+        <div style={{maxWidth:1040,margin:'0 auto',width:'100%'}}>
         {view==='analytics'    && <Analytics    {...vp} onQuickLog={()=>setQuickLogOpen(true)} onUpgrade={()=>setView('account')}/>}
         {view==='tracker'      && <Tracker      {...vp} setScores={setScores} setErrors={setErrors} uid={uid}/>}
         {view==='exams'        && <Exams        {...vp}/>}
@@ -7276,6 +7279,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
         {view==='resources'    && <Resources    {...vp}/>}
         {view==='account'      && <Account      {...vp} user={user} selection={selection}
                                     dark={dark} setDark={setDark} onSignOut={onSignOut} onResetSubjects={onResetSubjects} isPro={isPro} stripeCustomerId={stripeCustomerId}/>}
+        </div>
       </main>
 
       {quickLogOpen&&(
