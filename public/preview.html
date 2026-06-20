@@ -36,19 +36,31 @@
       </form>
     </div>
     <script>
-      // Soft gate (this is a static preview, not the real app — see note in chat).
-      // Case-insensitive + trimmed so mobile auto-capitalisation doesn't block it.
+      // Soft gate. Case-insensitive + trimmed so mobile auto-cap doesn't block it.
       var PW = 'capybara26';
-      if (sessionStorage.getItem('bpnext') === '1') location.replace('/bp-next.html');
+      // The app's service worker can hijack the navigation to /bp-next.html and
+      // serve the normal app instead — so before entering we unregister it and
+      // clear its caches, guaranteeing the design loads straight from the network.
+      async function enter() {
+        var btn = document.querySelector('button');
+        if (btn) { btn.textContent = 'Loading preview…'; btn.disabled = true; }
+        try {
+          if ('serviceWorker' in navigator) {
+            var regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map(function (r) { return r.unregister(); }));
+          }
+          if (window.caches) {
+            var keys = await caches.keys();
+            await Promise.all(keys.map(function (k) { return caches.delete(k); }));
+          }
+        } catch (e) {}
+        window.location.href = '/bp-next.html?v=' + Date.now();
+      }
       document.getElementById('f').addEventListener('submit', function (e) {
         e.preventDefault();
         var v = (document.getElementById('pw').value || '').trim().toLowerCase();
-        if (v === PW) {
-          sessionStorage.setItem('bpnext', '1');
-          location.href = '/bp-next.html';
-        } else {
-          document.getElementById('err').textContent = 'Wrong password — try again.';
-        }
+        if (v === PW) { enter(); }
+        else { document.getElementById('err').textContent = 'Wrong password — try again.'; }
       });
     </script>
   </body>
