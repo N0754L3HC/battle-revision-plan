@@ -30,3 +30,16 @@ await sharp(svg, { density: 512 })
   .png()
   .toFile('public/apple-touch-icon.png');
 console.log('wrote public/apple-touch-icon.png 180px (opaque, iOS rounds)');
+
+// God Mode (admin) icons — distinct dark badge, from public/gm-icon.svg
+const gm = readFileSync('public/gm-icon.svg');
+for (const [file, size] of [['public/gm-192.png', 192], ['public/gm-512.png', 512]]) {
+  await sharp(gm, { density: 512 }).resize(size, size).png().toFile(file);
+  console.log('wrote', file, size + 'px (god mode)');
+}
+await sharp(gm, { density: 512 })
+  .resize(180, 180)
+  .flatten({ background: '#14171f' })
+  .png()
+  .toFile('public/gm-apple-touch.png');
+console.log('wrote public/gm-apple-touch.png 180px (god mode, opaque)');

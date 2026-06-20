@@ -24,6 +24,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        navigateFallbackDenylist: [/^\/hq/],
         skipWaiting: true,
         clientsClaim: true,
         runtimeCaching: [{
@@ -42,8 +43,8 @@ export default defineConfig({
     },
     rollupOptions: {
       input: {
-        main:  resolve(__dirname, 'index.html'),
-        admin: resolve(__dirname, 'admin.html'),
+        main: resolve(__dirname, 'index.html'),
+        hq:   resolve(__dirname, 'hq.html'),
       },
       output: {
         manualChunks(id) {
