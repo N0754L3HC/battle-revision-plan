@@ -7,19 +7,19 @@ import { EXAM_SCHEDULE } from '../App';
 // Admin status is enforced server-side via user_profiles.is_admin (set via SQL).
 // This list is informational only — used in the access-denied screen.
 const ADMIN_EMAILS = ['51r4h100@gmail.com'];
-// ── Corporate console design tokens (acquisition-ready: clean slate + indigo) ──
+// ── Design tokens — the SAME theme as the student app (T.dark + terracotta) ──
 const FONT  = "'Inter','SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
-const mono  = FONT;              // legacy name kept; now corporate sans so all text reads professionally
+const mono  = FONT;              // legacy name kept; resolves to the app's Inter
 const numF  = "'SF Mono','JetBrains Mono',ui-monospace,monospace"; // tabular figures only
-const BG     = '#0b0d12';
-const PANEL  = '#13161d';
-const PANEL2 = '#1a1e27';
-const BORDER = 'rgba(255,255,255,0.08)';
-const ACCENT = '#6366f1';        // indigo brand accent (replaces the hacker red)
-const ACCENT_SOFT = 'rgba(99,102,241,0.13)';
-const TXT    = '#e8eaed';
-const TXT2   = '#aeb4c0';
-const OK = '#22c55e', WARN = '#f59e0b', BAD = '#ef4444';
+const BG     = '#0c0e13';        // T.dark.bg
+const PANEL  = '#141720';        // T.dark.surface
+const PANEL2 = '#1b1f2b';        // nested / hover
+const BORDER = 'rgba(255,255,255,0.09)';
+const ACCENT = '#c27c60';        // T.dark.accent — terracotta
+const ACCENT_SOFT = 'rgba(194,124,96,0.13)';
+const TXT    = '#e4dfd8';        // T.dark.text
+const TXT2   = '#857f79';        // T.dark.muted
+const OK = '#4ade80', WARN = '#fbbf24', BAD = '#f87171';
 const GC = { 'A*':'#22c55e', A:'#4ade80', B:'#eab308', C:'#f59e0b', D:'#f97316', E:'#ef4444', U:'#64748b' };
 const SC = { maths:'#3b82f6','further-maths':'#a855f7',cs:'#10b981',chemistry:'#ec4899',physics:'#38bdf8',economics:'#eab308',biology:'#84cc16',history:'#fb923c',psychology:'#a78bfa',geography:'#22d3ee' };
 const GRADE_BOUNDS = { Maths:{'A*':80,A:70,B:60,C:50,D:40,E:30},'Further Maths':{'A*':83,A:72,B:60,C:50,D:40,E:30},CS:{'A*':75,A:65,B:55,C:45,D:35,E:25},Chemistry:{'A*':80,A:70,B:60,C:50,D:40,E:30},Physics:{'A*':80,A:70,B:60,C:50,D:40,E:30},Economics:{'A*':75,A:65,B:55,C:45,D:35,E:25} };
@@ -52,10 +52,10 @@ function gradeFromPct(pct,subject='') {
 const iS = {background:'#0f1218',border:`1px solid ${BORDER}`,borderRadius:8,padding:'9px 12px',color:TXT,fontSize:13,fontFamily:FONT,outline:'none',width:'100%',boxSizing:'border-box'};
 const card = {background:PANEL,border:`1px solid ${BORDER}`,borderRadius:12};
 const btn = (col=ACCENT,fill=false) => ({background:fill?col:'transparent',border:`1px solid ${fill?col:BORDER}`,color:fill?'#fff':col,padding:'7px 14px',borderRadius:8,cursor:'pointer',fontSize:12,fontWeight:600,fontFamily:FONT,letterSpacing:0,transition:'all 0.15s'});
-// neutral greys — readable on the slate background
-const DIM = '#6b7280';   // timestamps, ranks, footnotes
-const MUT = '#9aa3b2';   // secondary labels, sub-text
-const SEC = '#7c8598';   // section header labels (neutral)
+// warm greys — match the student theme
+const DIM = '#6f6862';   // timestamps, ranks, footnotes
+const MUT = '#9b938b';   // secondary labels, sub-text
+const SEC = '#9b938b';   // section header labels
 
 // ── Cursor ─────────────────────────────────────────────────────────────────
 function Cursor() {

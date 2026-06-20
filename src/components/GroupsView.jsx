@@ -163,11 +163,12 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast }
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
       {/* Header */}
-      <div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 4 }}>Groups</div>
-        <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>
+      <div style={{ marginBottom: 4 }}>
+        <h1 style={{ fontFamily: font, fontSize: 27, fontWeight: 700, letterSpacing: '-0.02em',
+          lineHeight: 1.2, color: C.text, margin: 0 }}>Groups</h1>
+        <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.5, margin: '4px 0 0' }}>
           Private leaderboards with your mates. Create one and share the link — they tap, sign in, and join instantly.
-        </div>
+        </p>
       </div>
 
       {/* ─────── Always-visible action card: Create + Join ─────── */}
@@ -289,7 +290,6 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast }
                 {/* Lone-member CTA — replaces leaderboard when you're alone */}
                 {alone ? (
                   <div style={{ padding: '24px 18px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 32, marginBottom: 8 }}>👋</div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 6 }}>
                       You're the only one here so far
                     </div>
