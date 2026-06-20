@@ -3268,7 +3268,7 @@ function ShareReadinessCard({br, subjects, scores, C, font, shareTheme='dark', s
         ctx.textAlign='center';
         ctx.fillStyle=br.labelColor;
         ctx.font="800 56px system-ui,-apple-system,sans-serif";
-        ctx.fillText('A* Battle Plan',W/2,160);
+        ctx.fillText('Battle Plan',W/2,160);
         ctx.fillStyle=P.mute;
         ctx.font="500 22px system-ui,-apple-system,sans-serif";
         ctx.fillText('A* REVISION TRACKER  ·  BEATTHEEXAM.ORG',W/2,200);
@@ -3338,7 +3338,7 @@ function ShareReadinessCard({br, subjects, scores, C, font, shareTheme='dark', s
 
         ctx.fillStyle=P.mute;
         ctx.font="500 22px system-ui,-apple-system,sans-serif";
-        ctx.fillText('Tracked with A* Battle Plan',W/2,H-50);
+        ctx.fillText('Tracked with Battle Plan',W/2,H-50);
       } else {
         // ── LANDSCAPE LAYOUT: 600x315 ──
         const GX=118, GY=158, GR=74;
@@ -3374,7 +3374,7 @@ function ShareReadinessCard({br, subjects, scores, C, font, shareTheme='dark', s
         ctx.textAlign='left';
         ctx.fillStyle=br.labelColor;
         ctx.font="800 16px system-ui,-apple-system,sans-serif";
-        ctx.fillText('A* Battle Plan',246,44);
+        ctx.fillText('Battle Plan',246,44);
         ctx.fillStyle=P.mute;
         ctx.font="500 9px system-ui,-apple-system,sans-serif";
         ctx.fillText('A* REVISION TRACKER  ·  BEATTHEEXAM.ORG',246,59);
@@ -3407,7 +3407,7 @@ function ShareReadinessCard({br, subjects, scores, C, font, shareTheme='dark', s
         ctx.fillStyle=P.mute;
         ctx.font="500 9px system-ui,-apple-system,sans-serif";
         ctx.textAlign='left';
-        ctx.fillText('Tracked with A* Battle Plan',8,H-8);
+        ctx.fillText('Tracked with Battle Plan',8,H-8);
         ctx.textAlign='right';
         ctx.fillText('beattheexam.org',W-8,H-8);
       }
@@ -3434,7 +3434,7 @@ function ShareReadinessCard({br, subjects, scores, C, font, shareTheme='dark', s
       await new Promise(resolve=>canvas.toBlob(async blob=>{
         try {
           const file=new File([blob],'battle-readiness.png',{type:'image/png'});
-          const shareText=`${br.total}% Battle Readiness — ${br.label}!\nTracked with A* Battle Plan`;
+          const shareText=`${br.total}% Battle Readiness — ${br.label}!\nTracked with Battle Plan`;
           if (navigator.canShare?.({files:[file]})) {
             await navigator.share({files:[file],title:'My Battle Readiness',text:shareText});
           } else {
@@ -4309,7 +4309,7 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE,yearGroup=''}) {
         ...type.caption,color:C.subtle,lineHeight:1.6}}>
         Exam dates are based on 2026 timetables and provided for guidance only.
         Always verify with your school and the official board website before making decisions.
-        A* Battle Plan is not responsible for changes to the exam schedule.
+        Battle Plan is not responsible for changes to the exam schedule.
       </div>
     </div>
   );
@@ -5327,7 +5327,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       ]);
       const payload = {
         exported_at: new Date().toISOString(),
-        app: 'A* Battle Plan',
+        app: 'Battle Plan',
         format_version: 1,
         profile: profile || null,
         revision_data: dataRow || null,
@@ -5393,12 +5393,12 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
 
   const shareReferralLink = async () => {
     const link=`https://beattheexam.org/?ref=${referralCode}`;
-    const text=`I'm using A* Battle Plan to track my revision and predict my grades — give it a go:`;
+    const text=`I'm using Battle Plan to track my revision and predict my grades — give it a go:`;
     // Prefer the native share sheet (one tap into WhatsApp/iMessage with the
     // link prefilled) — copy-only loses a lot of shares on mobile. Fall back to
     // clipboard on desktop / where the Web Share API isn't available.
     try {
-      if (navigator.share) { await navigator.share({ title:'A* Battle Plan', text, url:link }); return; }
+      if (navigator.share) { await navigator.share({ title:'Battle Plan', text, url:link }); return; }
     } catch(e) { if (e?.name==='AbortError') return; }
     try {
       await navigator.clipboard.writeText(link);
@@ -5969,7 +5969,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       {/* Footer: beta notice + ToS link */}
       <div style={{textAlign:'center',padding:'12px 0 4px',fontSize:11,color:C.subtle,lineHeight:1.8}}>
         <div>
-          <strong style={{color:C.muted}}>A* Battle Plan</strong>
+          <strong style={{color:C.muted}}>Battle Plan</strong>
           <span style={{marginLeft:6,padding:'1px 7px',background:C.accentSoft,
             border:`1px solid ${C.accent}55`,borderRadius:8,fontSize:9,
             fontWeight:800,color:C.accent,letterSpacing:0.5}}>BETA</span>

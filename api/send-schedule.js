@@ -2,7 +2,7 @@ import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = process.env.RESEND_FROM ?? 'A* Battle Plan <onboarding@resend.dev>';
+const FROM = process.env.RESEND_FROM ?? 'Battle Plan <onboarding@resend.dev>';
 
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL ?? '',
@@ -86,12 +86,12 @@ function buildHtml(exams) {
 
     <div style="margin-top:24px;padding:16px 20px;background:rgba(181,115,90,0.08);border:1px solid rgba(181,115,90,0.2);border-radius:10px;text-align:center;">
       <p style="margin:0;font-size:13px;color:#574f48;line-height:1.6;">
-        Log every paper you do on <a href="https://beattheexam.org" style="color:#b5735a;font-weight:600;">A* Battle Plan</a> to track your readiness score and spot weak topics before exam day.
+        Log every paper you do on <a href="https://beattheexam.org" style="color:#b5735a;font-weight:600;">Battle Plan</a> to track your readiness score and spot weak topics before exam day.
       </p>
     </div>
 
     <div style="text-align:center;padding:24px 0 8px;font-size:11px;color:#9b938b;line-height:1.7;">
-      A* Battle Plan &mdash; Free A-Level Revision Tracker<br>
+      Battle Plan &mdash; Free GCSE &amp; A-Level Revision Tracker<br>
       <a href="https://beattheexam.org" style="color:#b5735a;text-decoration:none;">beattheexam.org</a>
     </div>
 

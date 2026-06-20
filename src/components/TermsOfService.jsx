@@ -40,19 +40,19 @@ export default function TermsOfService({ onClose }) {
 
         <div style={S.body}>
           <p style={S.p}>
-            Welcome to <strong style={{ color: '#fff' }}>A* Battle Plan</strong> ("the App"), an A-Level and GCSE
+            Welcome to <strong style={{ color: '#fff' }}>Battle Plan</strong> ("the App"), an A-Level and GCSE
             revision tracking tool. By creating an account, you agree to these Terms of Service and Privacy Policy.
             Please read them carefully.
           </p>
 
           <div style={{ background:'rgba(255,165,0,0.08)', border:'1px solid rgba(255,165,0,0.25)',
             borderRadius:6, padding:'10px 14px', margin:'8px 0 16px', fontSize:12, color:'#fbbf24', lineHeight:1.6 }}>
-            <strong>Important notice:</strong> Information on this App — including exam dates, grade boundaries, and predicted grades — is provided for guidance only and may not be accurate or up to date. Always verify exam dates with your school and the official exam board. A* Battle Plan is not responsible for decisions made based on this information. Do your own due diligence.
+            <strong>Important notice:</strong> Information on this App — including exam dates, grade boundaries, and predicted grades — is provided for guidance only and may not be accurate or up to date. Always verify exam dates with your school and the official exam board. Battle Plan is not responsible for decisions made based on this information. Do your own due diligence.
           </div>
 
           <h2 style={S.h2}>1. Who We Are</h2>
           <p style={S.p}>
-            A* Battle Plan is an independent revision tracking application built for UK A-Level and GCSE students.
+            Battle Plan is an independent revision tracking application built for UK A-Level and GCSE students.
             For questions or data requests, contact: <strong style={{ color: '#ddd' }}>51r4h100@gmail.com</strong>.
             Physical correspondence address available on request.
           </p>
@@ -140,7 +140,7 @@ export default function TermsOfService({ onClose }) {
           <p style={{ ...S.p, paddingLeft: 12 }}>
             • <strong style={{ color: '#ddd' }}>Supabase</strong> — database and authentication (including email/password sign-up). Your data is stored on Supabase's EU/US infrastructure. See supabase.com/privacy.<br />
             • <strong style={{ color: '#ddd' }}>Google OAuth</strong> — optional sign-in method. We receive your email and display name only. We do not access Google Drive, Gmail, or any other Google service.<br />
-            • <strong style={{ color: '#ddd' }}>Google Gemini API</strong> — powers the AI companion chat feature. Messages you send to the companion are sent to Google's Gemini API for processing. Do not include personal or sensitive information in chat messages. Google's AI data usage policies apply. Chat messages are not stored by A* Battle Plan beyond the current session.<br />
+            • <strong style={{ color: '#ddd' }}>Google Gemini API</strong> — powers the AI companion chat feature. Messages you send to the companion are sent to Google's Gemini API for processing. Do not include personal or sensitive information in chat messages. Google's AI data usage policies apply. Chat messages are not stored by Battle Plan beyond the current session.<br />
             • <strong style={{ color: '#ddd' }}>Resend</strong> — used to send transactional emails (account confirmation, schedule summaries, Pro waitlist notifications). See resend.com/privacy.<br />
             • <strong style={{ color: '#ddd' }}>Stripe</strong> — used to process Pro subscription payments (not yet live). Stripe stores your payment details; we store only your Stripe customer ID and subscription status. See stripe.com/privacy.<br />
             • <strong style={{ color: '#ddd' }}>Vercel</strong> — the App is hosted on Vercel. Vercel may log request metadata (IP, user agent) for infrastructure purposes.
@@ -250,14 +250,14 @@ export default function TermsOfService({ onClose }) {
           <p style={S.p}>
             Exam dates, grade boundaries, and grade predictions shown in this App are based on publicly available
             historical data and are provided for guidance only. They may be out of date, incomplete, or incorrect.
-            A* Battle Plan makes no guarantee of accuracy. Always verify exam dates with your school and the official
+            Battle Plan makes no guarantee of accuracy. Always verify exam dates with your school and the official
             exam board. Predicted grades are estimates only and should not be relied upon for university applications
             or other decisions.
           </p>
 
           <h2 style={S.h2}>18. Billing, Subscriptions, Cancellation &amp; Refunds</h2>
           <p style={S.p}>
-            The core App is free. <strong style={{ color: '#ddd' }}>A* Battle Plan Pro</strong> is an optional paid
+            The core App is free. <strong style={{ color: '#ddd' }}>Battle Plan Pro</strong> is an optional paid
             subscription that unlocks additional features (including the AI companion chat and its planning tools).
             Payments are processed by <strong style={{ color: '#ddd' }}>Stripe</strong>; we never see or store your full
             card details.
