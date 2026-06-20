@@ -9,12 +9,12 @@ const TERMS_VERSION = '2026-05-31';
 const font = "'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
 
 const colors = {
-  bg:      '#e8e4dd',
-  surface: '#f0ece5',
-  border:  'rgba(0,0,0,0.09)',
-  text:    '#2b2b2b',
-  muted:   '#7a7268',
-  subtle:  '#9a9490',
+  bg:      '#f4eee3',
+  surface: '#fbf7ef',
+  border:  '#e7ddcc',
+  text:    '#2b2620',
+  muted:   '#6f665b',
+  subtle:  '#a39a8c',
   accent:  '#b5735a',
 };
 

@@ -31,37 +31,38 @@ class ErrorBoundary extends React.Component {
 
 // ── Theme ──────────────────────────────────────────────────────────────────
 const T = {
+  // Palette synced to the Claude Design prototype (Battle Plan.dc.html).
   light: {
-    bg:      '#ece4d4',
-    surface: '#ffffff',
-    nav:     'rgba(252,249,244,0.97)',
-    border:  'rgba(0,0,0,0.09)',
-    card:    '#faf6ee',
-    card2:   'rgba(0,0,0,0.04)',
-    shadow:  '0 1px 2px rgba(60,48,34,0.05), 0 2px 8px rgba(60,48,34,0.045)',
-    text:    '#18170f',
-    muted:   '#574f48',
-    subtle:  '#9b938b',
+    bg:      '#f4eee3',
+    surface: '#fbf7ef',
+    nav:     'rgba(251,247,239,0.92)',
+    border:  '#e7ddcc',
+    card:    '#fbf7ef',
+    card2:   '#efe7d8',
+    shadow:  '0 1px 2px rgba(60,40,20,0.05), 0 8px 30px rgba(60,40,20,0.05)',
+    text:    '#2b2620',
+    muted:   '#6f665b',
+    subtle:  '#a39a8c',
     accent:  '#b5735a',
-    accentSoft: 'rgba(181,115,90,0.10)',
-    tintCream:'#f6f1e6', tintSage:'#edf2ea', tintSky:'#eaf0f5',
-    success: '#15803d', warn: '#b45309', danger: '#b91c1c',
+    accentSoft: 'rgba(181,115,90,0.12)',
+    tintCream:'#f4ecda', tintSage:'#e7eee4', tintSky:'#e3ecf2', tintTerra:'#f3e3da',
+    success: '#4f7256', warn: '#b45309', danger: '#b91c1c',
   },
   dark: {
-    bg:      '#0c0e13',
-    surface: '#141720',
-    nav:     'rgba(12,14,19,0.97)',
-    border:  'rgba(255,255,255,0.11)',
-    card:    '#171b26',
-    card2:   'rgba(255,255,255,0.05)',
-    shadow:  '0 1px 2px rgba(0,0,0,0.35), 0 2px 10px rgba(0,0,0,0.28)',
-    text:    '#e4dfd8',
-    muted:   '#857f79',
-    subtle:  '#4e4a47',
-    accent:  '#c27c60',
-    accentSoft: 'rgba(194,124,96,0.13)',
-    tintCream:'rgba(194,124,96,0.07)', tintSage:'rgba(74,222,128,0.06)', tintSky:'rgba(96,165,250,0.07)',
-    success: '#4ade80', warn: '#fbbf24', danger: '#f87171',
+    bg:      '#1d1916',
+    surface: '#272220',
+    nav:     'rgba(29,25,22,0.92)',
+    border:  '#39312b',
+    card:    '#272220',
+    card2:   '#2f2925',
+    shadow:  '0 1px 2px rgba(0,0,0,0.3), 0 10px 34px rgba(0,0,0,0.34)',
+    text:    '#f3ede3',
+    muted:   '#b3a99c',
+    subtle:  '#857c70',
+    accent:  '#cf8568',
+    accentSoft: 'rgba(207,133,104,0.15)',
+    tintCream:'#322c23', tintSage:'#243029', tintSky:'#222e38', tintTerra:'#3a2b24',
+    success: '#7fb389', warn: '#fbbf24', danger: '#f87171',
   },
 };
 
@@ -6003,12 +6004,12 @@ function LandingPage({ onGetStarted }) {
   const font = FONT_BODY;
   const display = FONT_DISPLAY;
   const mono = FONT_MONO;
-  // Light, airy Notion-style palette (landing only)
+  // Palette synced to the Claude Design prototype (landing).
   const C = {
-    bg:'#f6f3ed', surface:'#ffffff', nav:'rgba(246,243,237,0.82)',
-    border:'rgba(0,0,0,0.10)', card2:'rgba(0,0,0,0.035)',
-    text:'#1a1712', muted:'#5c544a', subtle:'#948b7d', accent:'#b5735a',
-    success:'#15803d',
+    bg:'#f4eee3', surface:'#fbf7ef', nav:'rgba(251,247,239,0.9)',
+    border:'#e7ddcc', card2:'#efe7d8',
+    text:'#2b2620', muted:'#6f665b', subtle:'#a39a8c', accent:'#b5735a',
+    success:'#4f7256',
   };
   const [showTerms, setShowTerms] = useState(false);
   const ic = d => (
@@ -7434,7 +7435,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
 // ── LevelPicker ────────────────────────────────────────────────────────────
 function LevelPicker({ onComplete }) {
   const font = FONT_BODY;
-  const C = { bg:'#e8e4dd', surface:'#f0ece5', border:'rgba(0,0,0,0.09)', text:'#2b2b2b', muted:'#7a7268', accent:'#b5735a' };
+  const C = { bg:'#f4eee3', surface:'#fbf7ef', border:'#e7ddcc', text:'#2b2620', muted:'#6f665b', accent:'#b5735a' };
   const [hover, setHover] = useState(null);
 
   const options = [
@@ -7556,8 +7557,8 @@ export default function App() {
   // the themed canvas (which read as a fragile "slate floating on white").
   useEffect(()=>{
     const PHASE_BG = {
-      landing: '#f6f3ed', anon: '#f6f3ed',           // light marketing + sign-in
-      'level-pick': '#e8e4dd', onboarding: '#e8e4dd', // light onboarding
+      landing: '#f4eee3', anon: '#f4eee3',           // light marketing + sign-in
+      'level-pick': '#f4eee3', onboarding: '#f4eee3', // light onboarding
     };
     const bg = PHASE_BG[phase] || C.bg;             // loading + app use the user's theme
     const html = document.documentElement, body = document.body;

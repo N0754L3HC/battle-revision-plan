@@ -6,21 +6,21 @@ const font = "'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-se
 const mono = "'JetBrains Mono','SF Mono',ui-monospace,monospace";
 
 // Matches the app's grounded dark theme (T.dark) so sign-in is continuous with the landing.
-// Light Notion-style palette — matches the landing page.
+// Palette synced to the Claude Design prototype (matches landing + app).
 const C = {
-  bg:           '#f6f3ed',
-  surface:      '#ffffff',
-  surface2:     '#efeae1',
-  inputBg:      '#faf8f4',
-  border:       'rgba(0,0,0,0.10)',
-  borderHover:  'rgba(0,0,0,0.20)',
-  text:         '#1a1712',
-  muted:        '#5c544a',
-  subtle:       '#948b7d',
+  bg:           '#f4eee3',
+  surface:      '#fbf7ef',
+  surface2:     '#efe7d8',
+  inputBg:      '#fbf7ef',
+  border:       '#e7ddcc',
+  borderHover:  '#cdbfa8',
+  text:         '#2b2620',
+  muted:        '#6f665b',
+  subtle:       '#a39a8c',
   accent:       '#b5735a',
-  accentBg:     'rgba(181,115,90,0.10)',
+  accentBg:     'rgba(181,115,90,0.12)',
   accentBorder: 'rgba(181,115,90,0.28)',
-  green:        '#15803d',
+  green:        '#4f7256',
 };
 
 const FEATURES = [

@@ -30,22 +30,24 @@
         </div>
         <h1>Battle Plan · Preview</h1>
         <p>The redesigned Battle Plan, in progress. Enter the preview password to continue.</p>
-        <input id="pw" type="password" placeholder="Preview password" autocomplete="off" autofocus />
+        <input id="pw" type="password" placeholder="Preview password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" autofocus />
         <button type="submit">Enter preview</button>
         <div class="err" id="err"></div>
       </form>
     </div>
     <script>
       // Soft gate (this is a static preview, not the real app — see note in chat).
+      // Case-insensitive + trimmed so mobile auto-capitalisation doesn't block it.
       var PW = 'capybara26';
       if (sessionStorage.getItem('bpnext') === '1') location.replace('/bp-next.html');
       document.getElementById('f').addEventListener('submit', function (e) {
         e.preventDefault();
-        if (document.getElementById('pw').value === PW) {
+        var v = (document.getElementById('pw').value || '').trim().toLowerCase();
+        if (v === PW) {
           sessionStorage.setItem('bpnext', '1');
           location.href = '/bp-next.html';
         } else {
-          document.getElementById('err').textContent = 'Wrong password.';
+          document.getElementById('err').textContent = 'Wrong password — try again.';
         }
       });
     </script>

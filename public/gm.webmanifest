@@ -5,8 +5,8 @@
   "start_url": "/hq.html",
   "scope": "/hq.html",
   "display": "standalone",
-  "theme_color": "#0c0e13",
-  "background_color": "#0c0e13",
+  "theme_color": "#1d1916",
+  "background_color": "#1d1916",
   "icons": [
     { "src": "/gm-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
     { "src": "/gm-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },

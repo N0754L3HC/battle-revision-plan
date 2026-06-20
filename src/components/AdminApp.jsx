@@ -11,14 +11,14 @@ const ADMIN_EMAILS = ['51r4h100@gmail.com'];
 const FONT  = "'Inter','SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
 const mono  = FONT;              // legacy name kept; resolves to the app's Inter
 const numF  = "'SF Mono','JetBrains Mono',ui-monospace,monospace"; // tabular figures only
-const BG     = '#0c0e13';        // T.dark.bg
-const PANEL  = '#141720';        // T.dark.surface
-const PANEL2 = '#1b1f2b';        // nested / hover
-const BORDER = 'rgba(255,255,255,0.09)';
-const ACCENT = '#c27c60';        // T.dark.accent — terracotta
-const ACCENT_SOFT = 'rgba(194,124,96,0.13)';
-const TXT    = '#e4dfd8';        // T.dark.text
-const TXT2   = '#857f79';        // T.dark.muted
+const BG     = '#1d1916';        // T.dark.bg (warm, synced to prototype)
+const PANEL  = '#272220';        // T.dark.surface
+const PANEL2 = '#2f2925';        // nested / hover
+const BORDER = '#39312b';
+const ACCENT = '#cf8568';        // T.dark.accent — terracotta
+const ACCENT_SOFT = 'rgba(207,133,104,0.15)';
+const TXT    = '#f3ede3';        // T.dark.text
+const TXT2   = '#b3a99c';        // T.dark.muted
 const OK = '#4ade80', WARN = '#fbbf24', BAD = '#f87171';
 const GC = { 'A*':'#22c55e', A:'#4ade80', B:'#eab308', C:'#f59e0b', D:'#f97316', E:'#ef4444', U:'#64748b' };
 const SC = { maths:'#3b82f6','further-maths':'#a855f7',cs:'#10b981',chemistry:'#ec4899',physics:'#38bdf8',economics:'#eab308',biology:'#84cc16',history:'#fb923c',psychology:'#a78bfa',geography:'#22d3ee' };
@@ -52,7 +52,7 @@ function gradeFromPct(pct,subject='') {
 const iS = {background:'#0f1218',border:`1px solid ${BORDER}`,borderRadius:8,padding:'9px 12px',color:TXT,fontSize:13,fontFamily:FONT,outline:'none',width:'100%',boxSizing:'border-box'};
 // De-boxed: borderless panels (PANEL is lighter than BG, so they read without a border).
 const card = {background:PANEL,borderRadius:12};
-const TINTS = ['rgba(194,124,96,0.10)','rgba(74,222,128,0.08)','rgba(96,165,250,0.09)']; // cream/sage/sky on dark
+const TINTS = ['#322c23','#243029','#222e38']; // cream/sage/sky on warm dark (prototype)
 const btn = (col=ACCENT,fill=false) => ({background:fill?col:'transparent',border:`1px solid ${fill?col:BORDER}`,color:fill?'#fff':col,padding:'7px 14px',borderRadius:8,cursor:'pointer',fontSize:12,fontWeight:600,fontFamily:FONT,letterSpacing:0,transition:'all 0.15s'});
 // warm greys — match the student theme
 const DIM = '#6f6862';   // timestamps, ranks, footnotes
