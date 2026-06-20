@@ -2809,9 +2809,8 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
   return (
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
       <div>
-        <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>Plan</div>
-        <h1 style={{...type.h1,color:C.text,margin:0}}>Revision Schedule</h1>
-        <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>Ranked by exam urgency and your weak areas.</p>
+        <h1 style={{...type.h1,color:C.text,margin:'0 0 4px'}}>Plan</h1>
+        <p style={{...type.caption,color:C.muted,margin:0}}>Ranked by exam urgency and your weak areas.</p>
       </div>
 
       {/* Day strip */}
@@ -2823,27 +2822,26 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
           const sel = dayIdx===i;
           return (
             <button key={i} onClick={()=>setDayIdx(i)}
-              style={{flexShrink:0,padding:'7px 13px',borderRadius:8,cursor:'pointer',
-                fontFamily:font,fontSize:12,fontWeight:sel?700:400,whiteSpace:'nowrap',
-                background: sel ? (isExam?'rgba(249,115,22,0.12)':C.accentSoft) : 'transparent',
-                border:`1px solid ${sel?(isExam?'#f97316':C.accent):(isExam?'rgba(249,115,22,0.3)':C.border)}`,
-                color: sel ? (isExam?'#f97316':C.accent) : (isExam?'#f9731699':C.muted),
-                transition:'all 0.12s'}}>
-              {lbl}{isExam?' ·':''}{isExam&&<span style={{fontSize:9,fontWeight:800,letterSpacing:0.3}}> EXAM</span>}
+              style={{flexShrink:0,padding:'7px 12px',borderRadius:6,cursor:'pointer',
+                fontFamily:font,fontSize:12,fontWeight:sel?600:500,whiteSpace:'nowrap',
+                background: sel ? C.text : 'transparent',
+                border:`1px solid ${sel?C.text:C.border}`,
+                color: sel ? C.bg : C.muted,
+                transition:'all 0.12s',display:'flex',alignItems:'center',gap:5}}>
+              {isExam&&<span style={{width:5,height:5,borderRadius:'50%',background:C.warn,flexShrink:0}}/>}
+              {lbl}
             </button>
           );
         })}
       </div>
 
       {/* Selected day card */}
-      <div style={{background:day.isExamDay?'rgba(249,115,22,0.04)':C.surface,
-        border:`1px solid ${day.isExamDay?'rgba(249,115,22,0.35)':C.border}`,
-        borderRadius:12,overflow:'hidden'}}>
-        <div style={{padding:'14px 18px',borderBottom:`1px solid ${day.isExamDay?'rgba(249,115,22,0.2)':C.border}`,
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,overflow:'hidden'}}>
+        <div style={{padding:'13px 16px',borderBottom:`1px solid ${C.border}`,
           display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <div>
-            <div style={{fontSize:15,fontWeight:700,color:C.text}}>{dateLabel}</div>
-            {dayIdx!==0&&<div style={{fontSize:12,color:C.muted,marginTop:1}}>{fullDate}</div>}
+            <div style={{...type.h3,color:C.text}}>{dateLabel}</div>
+            {dayIdx!==0&&<div style={{...type.caption,color:C.muted,marginTop:1}}>{fullDate}</div>}
           </div>
           <div style={{display:'flex',gap:6}}>
             <button onClick={()=>setDayIdx(i=>Math.max(0,i-1))} disabled={dayIdx===0}
@@ -2885,14 +2883,14 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
               {/* My plan for this day */}
               {dayItems.length>0&&(
                 <div style={{marginBottom:18}}>
-                  <div style={{fontSize:11,fontWeight:700,color:C.accent,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>
-                    My plan ({dayItems.filter(p=>p.done).length}/{dayItems.length})
+                  <div style={{...type.eyebrow,color:C.subtle,marginBottom:6}}>
+                    My plan · {dayItems.filter(p=>p.done).length}/{dayItems.length}
                   </div>
-                  <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                  <div>
                     {dayItems.map(p=>(
                       <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,
-                        padding:'9px 12px',background:`${p.color}10`,borderRadius:7,
-                        border:`1px solid ${p.color}33`,opacity:p.done?0.55:1,transition:'opacity 0.15s'}}>
+                        padding:'10px 0',borderTop:`1px solid ${C.border}`,
+                        opacity:p.done?0.5:1,transition:'opacity 0.15s'}}>
                         <button onClick={()=>toggleDone(p.id)}
                           aria-label={p.done?'Mark not done':'Mark done'}
                           style={{width:18,height:18,borderRadius:'50%',
@@ -2921,24 +2919,21 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
               )}
 
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
-                <div style={{fontSize:11,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5}}>
-                  Suggested focus
-                </div>
+                <div style={{...type.eyebrow,color:C.subtle}}>Suggested focus</div>
                 <button onClick={openAdd}
-                  style={{fontSize:11,fontWeight:700,fontFamily:font,
-                    padding:'5px 11px',background:C.accentSoft,color:C.accent,
+                  style={{fontSize:12,fontWeight:600,fontFamily:font,
+                    padding:'5px 11px',background:'transparent',color:C.accent,
                     border:`1px solid ${C.accent}55`,borderRadius:6,cursor:'pointer'}}>
                   + Add task
                 </button>
               </div>
-              <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              <div>
                 {day.slots.map((s,j)=>{
                   const alreadyAdded = dayItems.some(p=>p.subjectId===s.id && !p.topic);
                   return (
-                  <div key={j} style={{padding:'12px 14px',background:`${s.color}0d`,borderRadius:8,
-                    border:`1px solid ${s.color}22`}}>
-                    <div style={{display:'flex',alignItems:'center',gap:12}}>
-                      <div style={{width:3,alignSelf:'stretch',borderRadius:2,background:s.color,flexShrink:0}}/>
+                  <div key={j} style={{padding:'12px 0',borderTop:`1px solid ${C.border}`}}>
+                    <div style={{display:'flex',alignItems:'center',gap:10}}>
+                      <span style={{width:8,height:8,borderRadius:'50%',background:s.color,flexShrink:0}}/>
                       <div style={{flex:1,fontSize:14,fontWeight:600,color:C.text}}>{s.name}</div>
                       <button onClick={()=>addItem(s.id,s.name,s.color,'')}
                         disabled={alreadyAdded}
@@ -3002,10 +2997,10 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
           display:'flex',alignItems:'center',justifyContent:'center',padding:16,
           backdropFilter:'blur(4px)',WebkitBackdropFilter:'blur(4px)'}}
           onClick={e=>{if(e.target===e.currentTarget)setShowAdd(false);}}>
-          <div style={{background:C.surface,borderRadius:14,width:'100%',maxWidth:420,
-            boxShadow:'0 24px 80px rgba(0,0,0,0.45)',padding:'22px 24px'}}>
+          <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,width:'100%',maxWidth:420,
+            boxShadow:'0 12px 40px rgba(0,0,0,0.25)',padding:'22px 24px'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
-              <div style={{fontSize:15,fontWeight:700,color:C.text}}>Add task to plan</div>
+              <div style={{...type.h3,color:C.text}}>Add task to plan</div>
               <button onClick={()=>setShowAdd(false)}
                 style={{background:'transparent',border:'none',color:C.muted,
                   cursor:'pointer',fontSize:20,lineHeight:1}}>✕</button>
@@ -6638,7 +6633,6 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
     {id:'tracker',      label:'Tracker',      Icon:PenLine},
     {id:'exams',        label:'Exams',        Icon:CalendarDays},
     {id:'plan',         label:'Plan',         Icon:ClipboardList},
-    {id:'timetable',    label:'Timetable',    Icon:Grid3x3},
     {id:'achievements', label:'Achievements', Icon:Trophy},
     {id:'groups',       label:'Groups',       Icon:Users},
     {id:'friends',      label:'Friends',      Icon:UserPlus, comingSoon:true},
@@ -6909,7 +6903,6 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
         {view==='tracker'      && <Tracker      {...vp} setScores={setScores} setErrors={setErrors} uid={uid}/>}
         {view==='exams'        && <Exams        {...vp}/>}
         {view==='plan'         && <Schedule     {...vp}/>}
-        {view==='timetable'    && <TimetableView timetable={timetable} onSave={saveTimetable} C={C} font={font}/>}
         {view==='achievements' && <AchievementsView {...vp} unlockedIds={unlockedIds}/>}
         {view==='groups'       && <GroupsView    user={user} scores={scores} uid={uid} C={C} font={font} addToast={addToast}/>}
         {view==='timer'        && <StudyTimer    subjects={subjects} uid={uid} C={C} font={font} sessions={sessions} setSessions={setSessions} scores={scores} errors={errors} rag={rag}/>}
