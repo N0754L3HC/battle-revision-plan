@@ -7676,6 +7676,8 @@ export default function App() {
   const [isPro,setIsPro]           = useState(false);
   const [stripeCustomerId,setStripeCustomerId] = useState(null);
   const [referralCode,setReferralCode] = useState(null);
+  const [splash,setSplash] = useState(true);
+  useEffect(()=>{ const t=setTimeout(()=>setSplash(false),1500); return ()=>clearTimeout(t); },[]);
 
   const dark = ls.get('rbp_dark',false);
   const C    = dark?T.dark:T.light;
@@ -7839,14 +7841,29 @@ export default function App() {
     setSelection([]); setPhase('onboarding');
   }
 
+  // Splash — show the full mascot for a beat on first load so Caps is seen.
+  const splashScreen=(
+    <div style={{minHeight:'100vh',background:C.bg,display:'flex',alignItems:'center',
+      justifyContent:'center',flexDirection:'column',gap:8,fontFamily:font,
+      animation:'rbp-fade-in 0.3s ease'}}>
+      <style>{`@keyframes caps-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}`}</style>
+      <div style={{animation:'caps-bob 1.7s ease-in-out infinite'}}>
+        <CompanionAvatar skin={0} outfitColor={0} accessory={0} mood="happy" pose="wave" size={120}/>
+      </div>
+      <div style={{fontFamily:FONT_DISPLAY,fontSize:24,fontWeight:700,color:C.text,letterSpacing:'-0.02em',marginTop:4}}>Battle Plan</div>
+      <div style={{fontSize:13,color:C.subtle}}>Loading your plan…</div>
+    </div>
+  );
+
   const loading=(
     <div style={{minHeight:'100vh',background:C.bg,display:'flex',alignItems:'center',
       justifyContent:'center',flexDirection:'column',gap:16,fontFamily:font}}>
-      <CapsMark size={44}/>
+      <CapsMark size={48}/>
       <div style={{fontSize:13,color:C.muted}}>Loading…</div>
     </div>
   );
 
+  if (splash)               return <ErrorBoundary>{splashScreen}</ErrorBoundary>;
   if (phase==='loading')    return <ErrorBoundary>{loading}</ErrorBoundary>;
   if (phase==='landing')    return <ErrorBoundary><LandingPage onGetStarted={()=>setPhase('anon')}/></ErrorBoundary>;
   if (phase==='anon')       return <ErrorBoundary><AuthGate onAuth={()=>{}}/></ErrorBoundary>;
