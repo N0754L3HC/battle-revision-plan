@@ -6,19 +6,21 @@ const font = "'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-se
 const mono = "'JetBrains Mono','SF Mono',ui-monospace,monospace";
 
 // Matches the app's grounded dark theme (T.dark) so sign-in is continuous with the landing.
+// Light Notion-style palette — matches the landing page.
 const C = {
-  bg:           '#0c0e13',
-  surface:      '#141720',
-  surface2:     '#1a1e28',
-  border:       'rgba(255,255,255,0.09)',
-  borderHover:  'rgba(255,255,255,0.16)',
-  text:         '#e4dfd8',
-  muted:        '#857f79',
-  subtle:       '#4e4a47',
-  accent:       '#c27c60',
-  accentBg:     'rgba(194,124,96,0.10)',
-  accentBorder: 'rgba(194,124,96,0.24)',
-  green:        '#4ade80',
+  bg:           '#f6f3ed',
+  surface:      '#ffffff',
+  surface2:     '#efeae1',
+  inputBg:      '#faf8f4',
+  border:       'rgba(0,0,0,0.10)',
+  borderHover:  'rgba(0,0,0,0.20)',
+  text:         '#1a1712',
+  muted:        '#5c544a',
+  subtle:       '#948b7d',
+  accent:       '#b5735a',
+  accentBg:     'rgba(181,115,90,0.10)',
+  accentBorder: 'rgba(181,115,90,0.28)',
+  green:        '#15803d',
 };
 
 const FEATURES = [
@@ -72,7 +74,7 @@ export default function AuthGate({ onAuth }) {
         <div style={{ maxWidth:400, width:'100%', textAlign:'center' }}>
           <div style={{ fontSize:22, fontWeight:700, color:C.text, marginBottom:8 }}>Configuration needed</div>
           <p style={{ color:C.muted, fontSize:14, lineHeight:1.6, marginBottom:20 }}>
-            Add your Supabase credentials to <code style={{ color:C.text, background:'rgba(255,255,255,0.06)',
+            Add your Supabase credentials to <code style={{ color:C.text, background:C.inputBg,
               padding:'1px 6px', borderRadius:4 }}>.env</code> and restart the dev server.
           </p>
           <button onClick={()=>onAuth(null)} style={{ width:'100%', padding:'12px 0',
@@ -158,7 +160,7 @@ export default function AuthGate({ onAuth }) {
           borderRadius:16, border:`1px solid ${C.border}`, padding:'22px 20px', flex:'0 0 auto' }}>
 
           {/* Tabs */}
-          <div style={{ display:'flex', gap:4, marginBottom:18, background:'rgba(255,255,255,0.04)', borderRadius:8, padding:3 }}>
+          <div style={{ display:'flex', gap:4, marginBottom:18, background:'rgba(0,0,0,0.04)', borderRadius:8, padding:3 }}>
             {[['google','Google'],['email','Email']].map(([t,l])=>(
               <button key={t} onClick={()=>{setTab(t);setError('');setEmailSent(false);}} style={{
                 flex:1, padding:'7px 0', borderRadius:6, border:'none', cursor:'pointer',
@@ -172,7 +174,7 @@ export default function AuthGate({ onAuth }) {
           {error && (
             <div style={{ background:'rgba(239,68,68,0.07)', border:'1px solid rgba(239,68,68,0.2)',
               borderRadius:8, padding:'10px 14px', marginBottom:16,
-              fontSize:13, color:'#fca5a5', lineHeight:1.5 }}>
+              fontSize:13, color:'#b91c1c', lineHeight:1.5 }}>
               {error}
             </div>
           )}
@@ -180,7 +182,7 @@ export default function AuthGate({ onAuth }) {
           {tab === 'google' ? (
             <button onClick={handleGoogle} disabled={loading}
               style={{ width:'100%', padding:'14px 0',
-                background:'rgba(255,255,255,0.06)',
+                background:C.inputBg,
                 border:`1px solid ${C.borderHover}`,
                 borderRadius:10, cursor:loading?'not-allowed':'pointer',
                 display:'flex', alignItems:'center', justifyContent:'center', gap:10,
@@ -213,7 +215,7 @@ export default function AuthGate({ onAuth }) {
               <input value={email} onChange={e=>setEmail(e.target.value)} type="email"
                 placeholder="Email address" autoComplete="email"
                 onKeyDown={e=>e.key==='Enter'&&handleEmailAuth()}
-                style={{ width:'100%', padding:'12px 14px', background:'rgba(255,255,255,0.05)',
+                style={{ width:'100%', padding:'12px 14px', background:C.inputBg,
                   border:`1px solid ${C.border}`, borderRadius:10, color:C.text,
                   fontSize:14, fontFamily:font, outline:'none', boxSizing:'border-box' }}/>
               {emailMode !== 'reset' && (
@@ -221,7 +223,7 @@ export default function AuthGate({ onAuth }) {
                   placeholder={emailMode==='signup' ? 'Create password (8+ chars)' : 'Password'}
                   autoComplete={emailMode==='signup'?'new-password':'current-password'}
                   onKeyDown={e=>e.key==='Enter'&&handleEmailAuth()}
-                  style={{ width:'100%', padding:'12px 14px', background:'rgba(255,255,255,0.05)',
+                  style={{ width:'100%', padding:'12px 14px', background:C.inputBg,
                     border:`1px solid ${C.border}`, borderRadius:10, color:C.text,
                     fontSize:14, fontFamily:font, outline:'none', boxSizing:'border-box' }}/>
               )}
@@ -321,7 +323,7 @@ export default function AuthGate({ onAuth }) {
         </p>
 
         {/* Tabs */}
-        <div style={{ display:'flex', gap:4, marginBottom:18, background:'rgba(255,255,255,0.04)', borderRadius:8, padding:3 }}>
+        <div style={{ display:'flex', gap:4, marginBottom:18, background:'rgba(0,0,0,0.04)', borderRadius:8, padding:3 }}>
           {[['google','Google'],['email','Email / Password']].map(([t,l])=>(
             <button key={t} onClick={()=>{setTab(t);setError('');setEmailSent(false);}} style={{
               flex:1, padding:'7px 0', borderRadius:6, border:'none', cursor:'pointer',
@@ -335,7 +337,7 @@ export default function AuthGate({ onAuth }) {
         {error && (
           <div style={{ background:'rgba(239,68,68,0.07)', border:'1px solid rgba(239,68,68,0.2)',
             borderRadius:8, padding:'10px 14px', marginBottom:16,
-            fontSize:13, color:'#fca5a5', lineHeight:1.5 }}>
+            fontSize:13, color:'#b91c1c', lineHeight:1.5 }}>
             {error}
           </div>
         )}
@@ -343,7 +345,7 @@ export default function AuthGate({ onAuth }) {
         {tab === 'google' ? (
           <button onClick={handleGoogle} disabled={loading}
             style={{ width:'100%', padding:'13px 0',
-              background:'rgba(255,255,255,0.06)',
+              background:C.inputBg,
               border:`1px solid ${C.borderHover}`,
               borderRadius:10, cursor:loading?'not-allowed':'pointer',
               display:'flex', alignItems:'center', justifyContent:'center', gap:10,
@@ -376,7 +378,7 @@ export default function AuthGate({ onAuth }) {
             <input value={email} onChange={e=>setEmail(e.target.value)} type="email"
               placeholder="Email address" autoComplete="email"
               onKeyDown={e=>e.key==='Enter'&&handleEmailAuth()}
-              style={{ width:'100%', padding:'12px 14px', background:'rgba(255,255,255,0.06)',
+              style={{ width:'100%', padding:'12px 14px', background:C.inputBg,
                 border:`1px solid ${C.border}`, borderRadius:10, color:C.text,
                 fontSize:14, fontFamily:font, outline:'none', boxSizing:'border-box' }}/>
             {emailMode !== 'reset' && (
@@ -384,7 +386,7 @@ export default function AuthGate({ onAuth }) {
                 placeholder={emailMode==='signup' ? 'Create password (8+ chars)' : 'Password'}
                 autoComplete={emailMode==='signup'?'new-password':'current-password'}
                 onKeyDown={e=>e.key==='Enter'&&handleEmailAuth()}
-                style={{ width:'100%', padding:'12px 14px', background:'rgba(255,255,255,0.06)',
+                style={{ width:'100%', padding:'12px 14px', background:C.inputBg,
                   border:`1px solid ${C.border}`, borderRadius:10, color:C.text,
                   fontSize:14, fontFamily:font, outline:'none', boxSizing:'border-box' }}/>
             )}

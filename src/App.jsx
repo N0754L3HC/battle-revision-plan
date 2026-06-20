@@ -7688,8 +7688,7 @@ export default function App() {
   // the themed canvas (which read as a fragile "slate floating on white").
   useEffect(()=>{
     const PHASE_BG = {
-      landing: '#f6f3ed',                            // light marketing page
-      anon: T.dark.bg,                               // dark sign-in
+      landing: '#f6f3ed', anon: '#f6f3ed',           // light marketing + sign-in
       'level-pick': '#e8e4dd', onboarding: '#e8e4dd', // light onboarding
     };
     const bg = PHASE_BG[phase] || C.bg;             // loading + app use the user's theme
