@@ -41,19 +41,40 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast }
   const [nationalAvg, setNationalAvg] = useState(null);
   const schoolsFetchedRef = useRef({});
 
+  // Robust token: refresh if the persisted session is missing or about to lapse,
+  // so create/join don't fail with "Unauthorized" on a stale token.
   const getToken = async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token ?? null;
+    let token = session?.access_token ?? null;
+    const expSoon = session?.expires_at && (session.expires_at * 1000 - Date.now() < 120000);
+    if (!token || expSoon) {
+      const { data } = await supabase.auth.refreshSession();
+      token = data?.session?.access_token ?? token;
+    }
+    return token;
   };
 
   const apiFetch = useCallback(async (method, body) => {
     const token = await getToken();
-    if (!token) return { error: 'Not signed in' };
-    const r = await fetch('/api/groups', {
+    if (!token) return { error: 'Please sign in to use groups' };
+    let r = await fetch('/api/groups', {
       method,
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
+    // One automatic retry on 401 with a freshly refreshed token (covers a token
+    // that expired between fetch and server validation).
+    if (r.status === 401) {
+      const { data } = await supabase.auth.refreshSession();
+      const fresh = data?.session?.access_token;
+      if (fresh && fresh !== token) {
+        r = await fetch('/api/groups', {
+          method,
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${fresh}` },
+          ...(body ? { body: JSON.stringify(body) } : {}),
+        });
+      }
+    }
     return r.json();
   }, []);
 
