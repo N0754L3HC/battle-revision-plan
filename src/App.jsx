@@ -3425,13 +3425,13 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
   return (
     <div>
       <div style={{marginBottom:20}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.accent,letterSpacing:0.6,textTransform:'uppercase',marginBottom:4}}>
+        <div style={{...type.eyebrow,color:C.accent,marginBottom:6}}>
           {isOffSeason?'Foundation Mode':greeting}
         </div>
         <h1 style={{...type.h1,color:C.text,margin:0}}>
           {isOffSeason?'Build Your Foundation':'Performance Dashboard'}
         </h1>
-        <p style={{fontSize:13,color:C.muted,margin:'4px 0 0'}}>
+        <p style={{...type.caption,color:C.muted,margin:'4px 0 0'}}>
           {isOffSeason
             ? allUpcoming.length>0
               ? `${allUpcoming[0].d} days until your first exam. Build the habits that will carry you through.`
@@ -3445,9 +3445,8 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
         <>
           {allUpcoming.length>0&&(
             <div style={{background:C.surface,border:`1px solid ${C.border}`,
-              borderRadius:12,padding:'14px 16px',marginBottom:12}}>
-              <div style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:0.8,
-                textTransform:'uppercase',marginBottom:8}}>Season countdown</div>
+              borderRadius:10,padding:'14px 16px',marginBottom:12}}>
+              <div style={{...type.eyebrow,color:C.subtle,marginBottom:8}}>Season countdown</div>
               <div style={{display:'flex',alignItems:'center',gap:16}}>
                 <div>
                   <div style={{fontSize:36,fontWeight:900,color:C.accent,lineHeight:1}}>{allUpcoming[0].d}</div>
@@ -3461,10 +3460,9 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
             </div>
           )}
           {redTopics.length>0&&(
-            <div style={{background:C.surface,border:'1px solid rgba(239,68,68,0.2)',
-              borderRadius:12,padding:'14px 16px',marginBottom:12}}>
-              <div style={{fontSize:10,fontWeight:700,color:'#ef4444',letterSpacing:0.8,
-                textTransform:'uppercase',marginBottom:10}}>Topics to master before exam season</div>
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,
+              borderRadius:10,padding:'14px 16px',marginBottom:12}}>
+              <div style={{...type.eyebrow,color:C.subtle,marginBottom:10}}>Topics to master before exam season</div>
               <div style={{display:'flex',flexDirection:'column',gap:6}}>
                 {redTopics.map(t=>(
                   <div key={t.key} style={{display:'flex',alignItems:'center',gap:10}}>
@@ -3478,9 +3476,9 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
           )}
           {redTopics.length===0&&Object.keys(rag).length===0&&(
             <div style={{background:C.surface,border:`1px solid ${C.border}`,
-              borderRadius:12,padding:'14px 16px',marginBottom:12}}>
-              <div style={{fontSize:13,color:C.muted,lineHeight:1.6}}>
-                Go to <strong style={{color:C.text}}>Resources</strong> and mark your spec topics.
+              borderRadius:10,padding:'14px 16px',marginBottom:12}}>
+              <div style={{...type.body,color:C.muted}}>
+                Go to <strong style={{color:C.text}}>Topics</strong> and mark your spec topics.
                 Red items will appear here so you know exactly what to focus on before exam season.
               </div>
             </div>
@@ -3496,9 +3494,9 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
           if(!upcoming.length) return null;
           const thisWeek=upcoming.filter(e=>e.d<=7);
           return (
-            <div style={{background:C.surface,border:`1px solid ${upcoming[0].d<=7?upcoming[0].color+'44':C.border}`,
-              borderRadius:12,padding:'12px 16px',marginBottom:12}}>
-              <div style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:0.8,textTransform:'uppercase',marginBottom:10}}>
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,
+              borderRadius:10,padding:'12px 16px',marginBottom:12}}>
+              <div style={{...type.eyebrow,color:C.subtle,marginBottom:10}}>
                 {thisWeek.length>1?`${thisWeek.length} exams this week`:'Next exam'}
               </div>
               <div style={{display:'flex',gap:8,overflowX:'auto',paddingBottom:2,scrollbarWidth:'none'}}>
@@ -3523,10 +3521,10 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
       )}
 
       {/* ── Battle readiness gauge ───────────────────────────────────────── */}
-      <div style={{background:C.surface,border:`1px solid ${br.labelColor}30`,borderRadius:12,
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,
         padding:'16px 18px',marginBottom:12,display:'flex',gap:20,alignItems:'center',flexWrap:'wrap'}}>
         <div style={{display:'flex',flexDirection:'column',alignItems:'center',flexShrink:0}}>
-          <div style={{fontSize:10,fontWeight:700,color:C.muted,letterSpacing:0.8,textTransform:'uppercase',marginBottom:6}}>Battle Readiness</div>
+          <div style={{...type.eyebrow,color:C.subtle,marginBottom:6}}>Battle Readiness</div>
           <BattleGauge score={br.total} label={br.label} labelColor={br.labelColor} textColor={C.text} mutedColor={C.muted}/>
         </div>
         <div style={{flex:1,minWidth:160}}>
@@ -3567,10 +3565,9 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
           return (
             <div key={s.name} style={{
               background:C.surface,
-              borderRadius:10,padding:'12px 16px',
+              borderRadius:8,padding:'12px 16px',
               border:`1px solid ${C.border}`,
               borderLeft:`3px solid ${s.color}`,
-              boxShadow:`0 2px 8px rgba(0,0,0,0.05)`,
             }}>
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
                 <div>
@@ -3636,7 +3633,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
       {/* Score trend chart */}
       <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:18,marginBottom:12}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
-          <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5}}>Score Trend Chart</div>
+          <div style={{...type.eyebrow,color:C.subtle}}>Score Trend Chart</div>
           <div style={{display:'flex',gap:4}}>
             {subjects.map(s=>(
               <button key={s.name} onClick={()=>setChartSubject(s.name)}
