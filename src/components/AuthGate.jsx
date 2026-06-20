@@ -1,22 +1,23 @@
 import { useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
-const font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-const mono = "'JetBrains Mono', 'SF Mono', monospace";
+const font = "'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+const mono = "'JetBrains Mono','SF Mono',ui-monospace,monospace";
 
+// Matches the app's grounded dark theme (T.dark) so sign-in is continuous with the landing.
 const C = {
-  bg:           '#0d0f14',
-  surface:      '#13161e',
+  bg:           '#0c0e13',
+  surface:      '#141720',
   surface2:     '#1a1e28',
-  border:       'rgba(255,255,255,0.07)',
-  borderHover:  'rgba(255,255,255,0.14)',
-  text:         '#e8eaf0',
-  muted:        '#6b7280',
-  subtle:       '#4b5563',
-  accent:       '#b5735a',
-  accentBg:     'rgba(181,115,90,0.08)',
-  accentBorder: 'rgba(181,115,90,0.22)',
-  green:        '#22c55e',
+  border:       'rgba(255,255,255,0.09)',
+  borderHover:  'rgba(255,255,255,0.16)',
+  text:         '#e4dfd8',
+  muted:        '#857f79',
+  subtle:       '#4e4a47',
+  accent:       '#c27c60',
+  accentBg:     'rgba(194,124,96,0.10)',
+  accentBorder: 'rgba(194,124,96,0.24)',
+  green:        '#4ade80',
 };
 
 const FEATURES = [
@@ -29,9 +30,9 @@ const FEATURES = [
 ];
 
 const STATS = [
-  { value: '2,000+', label: 'students using it' },
-  { value: '15+', label: 'subjects supported' },
   { value: 'Free', label: 'no credit card' },
+  { value: '15+', label: 'subjects' },
+  { value: 'All boards', label: 'AQA · Edexcel · OCR · WJEC' },
 ];
 
 function GoogleIcon() {
@@ -140,9 +141,9 @@ export default function AuthGate({ onAuth }) {
               fontFamily:mono, fontWeight:900, fontSize:13, color:'#fff' }}>A*</div>
             <span style={{ fontSize:15, fontWeight:700, color:C.text, letterSpacing:0.2 }}>Battle Plan</span>
           </div>
-          <div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'4px 10px',
-            borderRadius:20, background:C.accentBg, border:`1px solid ${C.accentBorder}`,
-            fontSize:11, fontWeight:600, color:C.accent, marginBottom:16, letterSpacing:0.3 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16,
+            fontSize:11, fontWeight:600, color:C.accent, letterSpacing:'0.05em', textTransform:'uppercase' }}>
+            <span style={{ width:20, height:1.5, background:C.accent, display:'inline-block' }}/>
             A-Levels &amp; GCSEs
           </div>
           <h1 style={{ fontSize:26, fontWeight:800, color:C.text, margin:'0 0 10px', lineHeight:1.25, letterSpacing:'-0.01em' }}>
@@ -191,7 +192,9 @@ export default function AuthGate({ onAuth }) {
             </button>
           ) : emailSent ? (
             <div style={{ textAlign:'center', padding:'8px 0' }}>
-              <div style={{ fontSize:28, marginBottom:8 }}>📬</div>
+              <div style={{ marginBottom:10, display:'flex', justifyContent:'center' }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
+            </div>
               <div style={{ fontSize:14, fontWeight:600, color:C.text, marginBottom:6 }}>
                 {emailMode==='reset' ? 'Reset link sent' : 'Check your email'}
               </div>
@@ -306,10 +309,10 @@ export default function AuthGate({ onAuth }) {
           <span style={{ fontSize:15, fontWeight:700, color:C.text, letterSpacing:0.2 }}>Battle Plan</span>
         </div>
 
-        <div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'4px 10px',
-          borderRadius:20, background:C.accentBg, border:`1px solid ${C.accentBorder}`,
-          fontSize:11, fontWeight:600, color:C.accent, marginBottom:18, letterSpacing:0.3,
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:18,
+          fontSize:11, fontWeight:600, color:C.accent, letterSpacing:'0.05em', textTransform:'uppercase',
           alignSelf:'flex-start' }}>
+          <span style={{ width:20, height:1.5, background:C.accent, display:'inline-block' }}/>
           A-Levels &amp; GCSEs
         </div>
 
@@ -321,14 +324,13 @@ export default function AuthGate({ onAuth }) {
         </p>
 
         {/* Tabs */}
-        <div style={{ display:'flex', gap:4, marginBottom:18, background:'rgba(0,0,0,0.04)', borderRadius:8, padding:3 }}>
+        <div style={{ display:'flex', gap:4, marginBottom:18, background:'rgba(255,255,255,0.04)', borderRadius:8, padding:3 }}>
           {[['google','Google'],['email','Email / Password']].map(([t,l])=>(
             <button key={t} onClick={()=>{setTab(t);setError('');setEmailSent(false);}} style={{
               flex:1, padding:'7px 0', borderRadius:6, border:'none', cursor:'pointer',
               fontFamily:font, fontSize:13, fontWeight:tab===t?600:400,
-              background:tab===t?'#fff':'transparent',
+              background:tab===t?C.surface2:'transparent',
               color:tab===t?C.text:C.muted, transition:'all 0.12s',
-              boxShadow:tab===t?'0 1px 4px rgba(0,0,0,0.08)':'none',
             }}>{l}</button>
           ))}
         </div>
@@ -355,7 +357,9 @@ export default function AuthGate({ onAuth }) {
           </button>
         ) : emailSent ? (
           <div style={{ textAlign:'center', padding:'12px 0' }}>
-            <div style={{ fontSize:32, marginBottom:10 }}>📬</div>
+            <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}>
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
+            </div>
             <div style={{ fontSize:15, fontWeight:600, color:C.text, marginBottom:6 }}>
               {emailMode==='reset' ? 'Reset link sent' : 'Check your email'}
             </div>

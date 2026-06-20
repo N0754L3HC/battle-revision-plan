@@ -5,7 +5,7 @@ import TermsOfService from './TermsOfService';
 
 const TERMS_VERSION = '2026-05-31';
 
-const font = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+const font = "'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
 
 const colors = {
   bg:      '#e8e4dd',
