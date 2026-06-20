@@ -226,11 +226,11 @@ function UserDetail({u,onClose,onToggleAdmin,onTogglePro,onDeleteUser}) {
             <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:12}}>SUBJECT BREAKDOWN</div>
             <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
               {bySubject.map(({sub,avg,g,n})=>(
-                <div key={sub} style={{...card,padding:'12px 16px',minWidth:140,flex:'1 1 140px',borderColor:`${SC[sub]||'#888'}33`}}>
-                  <div style={{fontSize:9,letterSpacing:2,color:'#aaa',marginBottom:6,textTransform:'uppercase'}}>{sub.replace(/-/g,' ')}</div>
+                <div key={sub} style={{...card,padding:'12px 16px',minWidth:140,flex:'1 1 140px',borderColor:`${SC[sub]||MUT}33`}}>
+                  <div style={{fontSize:9,letterSpacing:2,color:MUT,marginBottom:6,textTransform:'uppercase'}}>{sub.replace(/-/g,' ')}</div>
                   <div style={{fontSize:32,fontWeight:900,color:GC[g]||'#555'}}>{g}</div>
                   <div style={{fontSize:11,color:'#777',marginTop:2}}>{avg}% · {n} paper{n!==1?'s':''}</div>
-                  <Spark scores={allScores.filter(s=>s.subject===sub)} color={SC[sub]||'#888'} w={80} h={20}/>
+                  <Spark scores={allScores.filter(s=>s.subject===sub)} color={SC[sub]||MUT} w={80} h={20}/>
                 </div>
               ))}
             </div>
@@ -256,12 +256,12 @@ function UserDetail({u,onClose,onToggleAdmin,onTogglePro,onDeleteUser}) {
           {allScores.length===0?<div style={{color:DIM,fontSize:12}}>No papers logged.</div>:allScores.slice(0,30).map((sc,i)=>(
             <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'7px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12}}>
               <div style={{display:'flex',alignItems:'center',gap:8,flex:1,minWidth:0}}>
-                <span style={pill(SC[sc.subject]||'#888')}>{sc.subject}</span>
-                <span style={{color:'#aaa',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{sc.paper}</span>
+                <span style={pill(SC[sc.subject]||MUT)}>{sc.subject}</span>
+                <span style={{color:MUT,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{sc.paper}</span>
               </div>
               <div style={{display:'flex',gap:12,alignItems:'center',flexShrink:0}}>
                 <span style={{color:MUT,fontSize:10}}>{sc.date}</span>
-                <span style={{color:'#aaa'}}>{sc.got}/{sc.max??sc.maxMark??100}</span>
+                <span style={{color:MUT}}>{sc.got}/{sc.max??sc.maxMark??100}</span>
                 <span style={{fontWeight:800,color:GC[gradeFromPct(sc.pct,sc.subject)]}}>{sc.pct}%</span>
               </div>
             </div>
@@ -274,8 +274,8 @@ function UserDetail({u,onClose,onToggleAdmin,onTogglePro,onDeleteUser}) {
           {allErrors.length===0?<div style={{color:DIM,fontSize:12}}>No errors logged.</div>:allErrors.slice(0,20).map((e,i)=>(
             <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'6px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12}}>
               <div style={{display:'flex',alignItems:'center',gap:8}}>
-                <span style={pill(SC[e.subject]||'#888',true)}>{e.subject||'?'}</span>
-                <span style={{color:'#ccc'}}>{e.topic}</span>
+                <span style={pill(SC[e.subject]||MUT,true)}>{e.subject||'?'}</span>
+                <span style={{color:TXT}}>{e.topic}</span>
                 {e.note&&<span style={{color:MUT,fontSize:11}}>— {e.note}</span>}
               </div>
               <span style={pill('#FF9100',true)}>{e.type}</span>
@@ -295,16 +295,16 @@ function UserDetail({u,onClose,onToggleAdmin,onTogglePro,onDeleteUser}) {
               <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:12}}>STUDY SESSIONS ({allSess.length} · {Math.round(totalSecs/3600)}h total)</div>
               <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>
                 {Object.entries(bySubj).sort((a,b)=>b[1]-a[1]).map(([sub,secs])=>(
-                  <div key={sub} style={{...card,padding:'8px 12px',borderColor:`${SC[sub]||'#888'}33`}}>
+                  <div key={sub} style={{...card,padding:'8px 12px',borderColor:`${SC[sub]||MUT}33`}}>
                     <div style={{fontSize:9,color:MUT,textTransform:'uppercase'}}>{sub.replace(/-/g,' ')}</div>
-                    <div style={{fontSize:16,fontWeight:800,color:SC[sub]||'#888',marginTop:2}}>{Math.round(secs/3600)}h {Math.round((secs%3600)/60)}m</div>
+                    <div style={{fontSize:16,fontWeight:800,color:SC[sub]||MUT,marginTop:2}}>{Math.round(secs/3600)}h {Math.round((secs%3600)/60)}m</div>
                   </div>
                 ))}
               </div>
               <div style={{fontSize:9,letterSpacing:2,color:DIM,marginBottom:8}}>RECENT SESSIONS</div>
               {recent.map((s,i)=>(
                 <div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:11,padding:'5px 0',borderBottom:'1px solid rgba(255,255,255,0.03)'}}>
-                  <span style={pill(SC[s.subjectId]||'#888',true)}>{(s.subjectId||'?').replace(/-/g,' ')}</span>
+                  <span style={pill(SC[s.subjectId]||MUT,true)}>{(s.subjectId||'?').replace(/-/g,' ')}</span>
                   <span style={{color:'#bbb'}}>{Math.round((s.secs||0)/60)}m</span>
                   <span style={{color:DIM}}>{s.ts?timeSince(new Date(s.ts)):s.id?timeSince(new Date(s.id)):'—'}</span>
                 </div>
@@ -326,7 +326,7 @@ function UserDetail({u,onClose,onToggleAdmin,onTogglePro,onDeleteUser}) {
           ].map(([l,v])=>(
             <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12}}>
               <span style={{color:MUT,fontSize:11}}>{l}</span>
-              <span style={{color:'#ccc',maxWidth:320,textAlign:'right',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{v}</span>
+              <span style={{color:TXT,maxWidth:320,textAlign:'right',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{v}</span>
             </div>
           ))}
         </div>
@@ -382,8 +382,8 @@ function BroadcastPanel({users}) {
         <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:14,fontWeight:700}}>RECENT BROADCASTS</div>
         {history.length===0?<div style={{color:DIM,fontSize:12}}>No broadcasts yet.</div>:history.map((b,i)=>(
           <div key={b.id||i} style={{...card,padding:'10px 14px',marginBottom:8}}>
-            <div style={{fontSize:12,fontWeight:700,color:'#ddd',marginBottom:4}}>{b.title}</div>
-            <div style={{fontSize:11,color:'#aaa',marginBottom:6,lineHeight:1.5}}>{b.body}</div>
+            <div style={{fontSize:12,fontWeight:700,color:TXT,marginBottom:4}}>{b.title}</div>
+            <div style={{fontSize:11,color:MUT,marginBottom:6,lineHeight:1.5}}>{b.body}</div>
             <div style={{fontSize:9,color:DIM}}>{fmtDate(b.created_at)} · {b.recipient_count||0} recipients</div>
           </div>
         ))}
@@ -547,7 +547,7 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
             ['School opt-in',          schoolOpt, '#40C4FF'],
           ].map(([l,n,c])=>(
             <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12}}>
-              <span style={{color:'#888'}}>{l}</span>
+              <span style={{color:MUT}}>{l}</span>
               <span style={{fontWeight:800,color:c}}>{n} <span style={{color:DIM,fontWeight:400,fontSize:10}}>({total?Math.round(n/total*100):0}%)</span></span>
             </div>
           ))}
@@ -564,7 +564,7 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
             return (
               <div key={l} style={{marginBottom:12}}>
                 <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:4}}>
-                  <span style={{color:'#888'}}>{l}</span>
+                  <span style={{color:MUT}}>{l}</span>
                   <span style={{color:'#fff',fontWeight:700}}>{pct}% <span style={{color:DIM,fontWeight:400}}>({n})</span></span>
                 </div>
                 <div style={{height:5,background:'rgba(255,255,255,0.05)',borderRadius:3,overflow:'hidden'}}>
@@ -575,8 +575,8 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
           })}
           <div style={{height:1,background:'rgba(255,255,255,0.06)',margin:'12px 0'}}/>
           <div style={{fontSize:11,color:DIM,lineHeight:1.8}}>
-            Total papers: <strong style={{color:'#ccc'}}>{totalPapers.toLocaleString()}</strong><br/>
-            Total study hours: <strong style={{color:'#ccc'}}>{totalHours}h</strong>
+            Total papers: <strong style={{color:TXT}}>{totalPapers.toLocaleString()}</strong><br/>
+            Total study hours: <strong style={{color:TXT}}>{totalHours}h</strong>
           </div>
         </Sec>
 
@@ -584,7 +584,7 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
           {topSubs.map(([s,n])=>(
             <div key={s} style={{marginBottom:10}}>
               <div style={{display:'flex',justifyContent:'space-between',fontSize:10,marginBottom:3}}>
-                <span style={{textTransform:'capitalize',color:SC[s]||'#888'}}>{s.replace(/-/g,' ')}</span>
+                <span style={{textTransform:'capitalize',color:SC[s]||MUT}}>{s.replace(/-/g,' ')}</span>
                 <span style={{color:'#FF3D00'}}>{n} <span style={{color:DIM}}>({total?Math.round(n/total*100):0}%)</span></span>
               </div>
               <div style={{height:4,background:'rgba(255,255,255,0.04)',borderRadius:2,overflow:'hidden'}}>
@@ -649,7 +649,7 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
                 {topReferrers.map((r,i)=>(
                   <div key={r.code} style={{display:'flex',gap:10,alignItems:'center',padding:'6px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12}}>
                     <span style={{width:16,textAlign:'center',fontSize:11,color:i<3?'#FFD600':DIM,fontWeight:800}}>{i+1}</span>
-                    <span style={{flex:1,color:'#ddd',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.user?.display_name||r.user?.email||r.code}</span>
+                    <span style={{flex:1,color:TXT,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.user?.display_name||r.user?.email||r.code}</span>
                     <span style={{fontWeight:700,color:'#fbbf24'}}>{r.count}</span>
                   </div>
                 ))}
@@ -660,7 +660,7 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
                 {topSchools.map((s,i)=>(
                   <div key={s.name} style={{display:'flex',gap:10,alignItems:'center',padding:'6px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12}}>
                     <span style={{width:16,textAlign:'center',fontSize:11,color:i<3?'#FFD600':DIM,fontWeight:800}}>{i+1}</span>
-                    <span style={{flex:1,color:'#ddd',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s.name}</span>
+                    <span style={{flex:1,color:TXT,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s.name}</span>
                     <span style={{fontSize:10,color:DIM,marginRight:5}}>{s.count}u</span>
                     <span style={{fontWeight:700,color:s.avg>=80?'#00E676':s.avg>=60?'#FFD600':'#FF9100'}}>{s.avg}%</span>
                   </div>
@@ -674,7 +674,7 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
                 return (
                   <div key={k} style={{marginBottom:10}}>
                     <div style={{display:'flex',justifyContent:'space-between',fontSize:11,marginBottom:3}}>
-                      <span style={{color:'#aaa',textTransform:'uppercase',letterSpacing:0.5}}>{k}</span>
+                      <span style={{color:MUT,textTransform:'uppercase',letterSpacing:0.5}}>{k}</span>
                       <span style={{color:'#fff',fontWeight:700}}>{n} <span style={{color:DIM,fontWeight:400,fontSize:10}}>({pct}%)</span></span>
                     </div>
                     <div style={{height:4,background:'rgba(255,255,255,0.05)',borderRadius:2,overflow:'hidden'}}>
@@ -796,7 +796,7 @@ function QueryExplorer({users}) {
               border:`1px solid ${activePreset===p.label?'rgba(255,61,0,0.4)':'rgba(255,255,255,0.08)'}`,
               borderRadius:6,padding:'10px 14px',cursor:'pointer',textAlign:'left',transition:'all 0.15s',
             }}>
-              <div style={{fontSize:11,fontWeight:700,color:activePreset===p.label?'#FF3D00':'#ccc',marginBottom:3}}>{p.label}</div>
+              <div style={{fontSize:11,fontWeight:700,color:activePreset===p.label?'#FF3D00':TXT,marginBottom:3}}>{p.label}</div>
               <div style={{fontSize:9,color:DIM}}>{p.desc}</div>
             </button>
           ))}
@@ -939,7 +939,7 @@ function ExamEditor() {
       <div>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
           <div>
-            <span style={{fontSize:14,fontWeight:700,color:'#ddd'}}>
+            <span style={{fontSize:14,fontWeight:700,color:TXT}}>
               {allSubjects.find(s=>s.id===activeSub)?.name||activeSub}
             </span>
             <span style={{fontSize:10,color:MUT,marginLeft:8}}>{activeExams.length} exam{activeExams.length!==1?'s':''}</span>
@@ -986,7 +986,7 @@ function ExamEditor() {
         ))}
 
         <div style={{marginTop:12,fontSize:10,color:DIM,lineHeight:1.7}}>
-          Changes are saved to the <code style={{color:'#888'}}>app_config</code> Supabase table (key: <code style={{color:'#888'}}>exam_schedule</code>). The main app reads this on login and merges with built-in dates. Requires an <code style={{color:'#888'}}>app_config</code> table with columns <code style={{color:'#888'}}>key TEXT PRIMARY KEY, value TEXT, updated_at TIMESTAMPTZ</code>.
+          Changes are saved to the <code style={{color:MUT}}>app_config</code> Supabase table (key: <code style={{color:MUT}}>exam_schedule</code>). The main app reads this on login and merges with built-in dates. Requires an <code style={{color:MUT}}>app_config</code> table with columns <code style={{color:MUT}}>key TEXT PRIMARY KEY, value TEXT, updated_at TIMESTAMPTZ</code>.
         </div>
       </div>
     </div>
@@ -1061,7 +1061,7 @@ function ResourcesPanel() {
           {file?(
             <div>
               <div style={{fontSize:22,marginBottom:6}}>📄</div>
-              <div style={{fontSize:13,color:'#ddd',fontWeight:600,marginBottom:3}}>{file.name}</div>
+              <div style={{fontSize:13,color:TXT,fontWeight:600,marginBottom:3}}>{file.name}</div>
               <div style={{fontSize:10,color:MUT}}>{fmtSize(file.size)}</div>
               <button onClick={e=>{e.stopPropagation();setFile(null);}} style={{...btn('#FF3D00'),marginTop:10,fontSize:10}}>✕ REMOVE</button>
             </div>
@@ -1085,7 +1085,7 @@ function ResourcesPanel() {
         </button>
         {err&&<div style={{color:'#FF9100',fontSize:11,marginTop:10}}>{err}</div>}
         <div style={{fontSize:9,color:DIM,marginTop:14,lineHeight:1.8,borderTop:'1px solid rgba(255,255,255,0.05)',paddingTop:12}}>
-          Requires Supabase Storage bucket <code style={{color:'#888'}}>resources</code> (public) and a <code style={{color:'#888'}}>resources</code> table with columns: id, title, description, file_url, file_name, file_size, storage_path, created_at.
+          Requires Supabase Storage bucket <code style={{color:MUT}}>resources</code> (public) and a <code style={{color:MUT}}>resources</code> table with columns: id, title, description, file_url, file_name, file_size, storage_path, created_at.
         </div>
       </div>
 
@@ -1098,8 +1098,8 @@ function ResourcesPanel() {
           <div key={r.id} style={{...card,padding:'14px 16px',marginBottom:8}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10}}>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:13,fontWeight:700,color:'#ddd',marginBottom:3}}>{r.title}</div>
-                {r.description&&<div style={{fontSize:11,color:'#aaa',marginBottom:6,lineHeight:1.5}}>{r.description}</div>}
+                <div style={{fontSize:13,fontWeight:700,color:TXT,marginBottom:3}}>{r.title}</div>
+                {r.description&&<div style={{fontSize:11,color:MUT,marginBottom:6,lineHeight:1.5}}>{r.description}</div>}
                 <div style={{fontSize:9,color:DIM}}>{r.file_name}{r.file_size?` · ${fmtSize(r.file_size)}`:''} · {fmtDate(r.created_at)}</div>
               </div>
               <div style={{display:'flex',gap:5,flexShrink:0}}>
@@ -1145,7 +1145,7 @@ function WaitlistPanel() {
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
         <div>
           <div style={{fontSize:9,letterSpacing:3,color:SEC,fontWeight:700}}>PRO WAITLIST</div>
-          <div style={{fontSize:22,fontWeight:900,color:'#ddd',marginTop:4}}>{rows.length} <span style={{fontSize:13,color:MUT,fontWeight:400}}>signups</span></div>
+          <div style={{fontSize:22,fontWeight:900,color:TXT,marginTop:4}}>{rows.length} <span style={{fontSize:13,color:MUT,fontWeight:400}}>signups</span></div>
         </div>
         <button onClick={copyEmails} style={btn('#fbbf24',false)}>
           {copied?'✓ COPIED':'COPY ALL EMAILS'}
@@ -1167,7 +1167,7 @@ function WaitlistPanel() {
             <tbody>
               {rows.map(r=>(
                 <tr key={r.id} style={{borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
-                  <td style={{padding:'10px 14px',color:'#ddd'}}>{r.email}</td>
+                  <td style={{padding:'10px 14px',color:TXT}}>{r.email}</td>
                   <td style={{padding:'10px 14px',color:DIM}}>{fmtDate(r.created_at)}</td>
                   <td style={{padding:'10px 14px'}}>
                     {r.notified_at
@@ -1522,7 +1522,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
                   <div key={u.id} onClick={()=>setSelected(u)} style={{display:'flex',alignItems:'center',gap:12,padding:'9px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',cursor:'pointer'}}>
                     <span style={{fontSize:11,color:DIM,width:16,textAlign:'right'}}>{i+1}</span>
                     <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:12,color:'#ccc',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{u.display_name||u.email}</div>
+                      <div style={{fontSize:12,color:TXT,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{u.display_name||u.email}</div>
                       <div style={{fontSize:9,color:MUT,marginTop:1}}>{u.totalScores} papers · {u.avgScore}% avg</div>
                     </div>
                     <div style={{display:'flex',alignItems:'center',gap:8}}>
@@ -1537,7 +1537,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
                 {recentSignups.map(u=>(
                   <div key={u.id} onClick={()=>setSelected(u)} style={{display:'flex',alignItems:'center',gap:12,padding:'9px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',cursor:'pointer'}}>
                     <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:12,color:'#ccc',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{u.display_name||u.email}</div>
+                      <div style={{fontSize:12,color:TXT,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{u.display_name||u.email}</div>
                       <div style={{display:'flex',gap:4,marginTop:4,flexWrap:'wrap'}}>
                         {(u.subjectList||[]).slice(0,3).map(s=><span key={s} style={{fontSize:8,color:'#FF3D00',background:'rgba(255,61,0,0.08)',border:'1px solid rgba(255,61,0,0.2)',padding:'1px 5px',borderRadius:3,textTransform:'capitalize'}}>{s.replace(/-/g,' ')}</span>)}
                       </div>
@@ -1556,7 +1556,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
                   {l:'Users with no papers',v:users.filter(u=>u.totalScores===0).length,c:'#555'},
                 ].map(({l,v,c})=>(
                   <div key={l} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
-                    <span style={{fontSize:11,color:'#aaa'}}>{l}</span>
+                    <span style={{fontSize:11,color:MUT}}>{l}</span>
                     <span style={{fontSize:14,fontWeight:800,color:c}}>{v}</span>
                   </div>
                 ))}
@@ -1566,7 +1566,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
                 {topSubjects.slice(0,6).map(([s,n])=>(
                   <div key={s} style={{marginBottom:10}}>
                     <div style={{display:'flex',justifyContent:'space-between',fontSize:10,color:'#666',marginBottom:3}}>
-                      <span style={{textTransform:'capitalize',color:SC[s]||'#888'}}>{s.replace(/-/g,' ')}</span>
+                      <span style={{textTransform:'capitalize',color:SC[s]||MUT}}>{s.replace(/-/g,' ')}</span>
                       <span style={{color:'#FF3D00'}}>{n}</span>
                     </div>
                     <div style={{height:3,background:'rgba(255,255,255,0.04)',borderRadius:2,overflow:'hidden'}}>
@@ -1607,7 +1607,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
                           <td style={{padding:'11px 14px'}}>
                             <div style={{fontSize:13,fontWeight:600,color:TXT}}>{u.display_name||<span style={{color:MUT}}>—</span>}</div>
                             <div style={{fontSize:11,color:DIM,marginTop:1}}>{u.email}</div>
-                            <div style={{display:'flex',gap:4,flexWrap:'wrap',marginTop:4}}>{(u.subjectList||[]).slice(0,3).map(s=><span key={s} style={{fontSize:9,color:SC[s]||MUT,background:`${SC[s]||'#888'}1a`,border:`1px solid ${SC[s]||'#888'}33`,padding:'1px 5px',borderRadius:4,textTransform:'capitalize'}}>{s.replace(/-/g,' ')}</span>)}</div>
+                            <div style={{display:'flex',gap:4,flexWrap:'wrap',marginTop:4}}>{(u.subjectList||[]).slice(0,3).map(s=><span key={s} style={{fontSize:9,color:SC[s]||MUT,background:`${SC[s]||MUT}1a`,border:`1px solid ${SC[s]||MUT}33`,padding:'1px 5px',borderRadius:4,textTransform:'capitalize'}}>{s.replace(/-/g,' ')}</span>)}</div>
                           </td>
                           <td style={{padding:'11px 14px',fontSize:12,color:MUT,whiteSpace:'nowrap',fontFamily:numF}}>{fmtDate(u.created_at)}</td>
                           <td style={{padding:'11px 14px',fontSize:12,color:MUT,whiteSpace:'nowrap'}}>{timeSince(u.lastActive)}</td>
@@ -1667,7 +1667,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
                   {l:'Admin accounts',v:stats.admins,ok:stats.admins>0},
                 ].map(({l,v,ok})=>(
                   <div key={l} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'9px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
-                    <span style={{fontSize:11,color:'#aaa'}}>{l}</span>
+                    <span style={{fontSize:11,color:MUT}}>{l}</span>
                     <span style={{fontSize:12,fontWeight:700,color:ok?'#00E676':'#FF3D00'}}>{typeof v==='boolean'?(v?'Yes':'No'):v}</span>
                   </div>
                 ))}
@@ -1677,7 +1677,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
                 {users.filter(u=>u.is_admin).map(u=>(
                   <div key={u.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'9px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
                     <div>
-                      <div style={{fontSize:12,color:'#ddd'}}>{u.display_name||u.email}</div>
+                      <div style={{fontSize:12,color:TXT}}>{u.display_name||u.email}</div>
                       <div style={{fontSize:9,color:DIM,marginTop:1}}>{u.email}</div>
                     </div>
                     {u.id!==adminUser?.id&&(
@@ -1692,15 +1692,15 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
               </div>
               <div style={{...card,padding:20}}>
                 <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:14,fontWeight:700}}>DANGER ZONE</div>
-                <div style={{fontSize:11,color:'#aaa',marginBottom:14,lineHeight:1.7}}>Destructive actions. These cannot be undone.</div>
+                <div style={{fontSize:11,color:MUT,marginBottom:14,lineHeight:1.7}}>Destructive actions. These cannot be undone.</div>
                 <div style={{display:'flex',flexDirection:'column',gap:8}}>
                   <button onClick={exportCSV} style={{...btn('#00E676'),padding:'10px 16px',textAlign:'left'}}>↓ EXPORT ALL USER DATA (CSV)</button>
                 </div>
               </div>
               <div style={{...card,padding:20}}>
                 <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:14,fontWeight:700}}>LOGGED IN AS</div>
-                <div style={{fontSize:13,color:'#ddd',marginBottom:4}}>{adminProfile?.display_name||'Admin'}</div>
-                <div style={{fontSize:11,color:'#aaa',marginBottom:16}}>{adminUser?.email}</div>
+                <div style={{fontSize:13,color:TXT,marginBottom:4}}>{adminProfile?.display_name||'Admin'}</div>
+                <div style={{fontSize:11,color:MUT,marginBottom:16}}>{adminUser?.email}</div>
                 <button onClick={onLogout} style={{...btn('#FF3D00',true),padding:'10px 20px'}}>LOGOUT → SIGN OUT</button>
               </div>
             </div>
@@ -1818,7 +1818,7 @@ function MyRevisionPlan() {
           return (
             <div key={s.code+s.date} style={{...card,padding:'14px 16px',borderColor:`${s.color}33`}}>
               <div style={{fontSize:10,color:MUT,letterSpacing:1.5,textTransform:'uppercase'}}>{s.code}</div>
-              <div style={{fontSize:13,fontWeight:700,color:'#ddd',margin:'4px 0 8px',lineHeight:1.3}}>{s.name.replace(/ —.*/,'')}</div>
+              <div style={{fontSize:13,fontWeight:700,color:TXT,margin:'4px 0 8px',lineHeight:1.3}}>{s.name.replace(/ —.*/,'')}</div>
               <div style={{display:'flex',alignItems:'baseline',gap:6}}>
                 <span style={{fontSize:30,fontWeight:900,color:d<=3?'#FF3D00':d<=7?'#FF9100':s.color,lineHeight:1}}>{d>0?d:d===0?'TODAY':'—'}</span>
                 {d>0&&<span style={{fontSize:11,color:DIM}}>days</span>}
@@ -1846,8 +1846,8 @@ function MyRevisionPlan() {
           ))}
         </div>
         <div style={{fontSize:11,color:DIM,marginTop:12,lineHeight:1.7}}>
-          50-min focus / 10-min break (Pomodoro). Protect <strong style={{color:'#aaa'}}>7–8h sleep</strong> — it’s when memory consolidates; an all-nighter loses you more marks than it gains. Eat, move, hydrate. <br/>
-          <strong style={{color:'#aaa'}}>Phase 1 (now → ~11 Jun):</strong> relearn topic-by-topic. <strong style={{color:'#aaa'}}>Phase 2 (12–16 Jun):</strong> past papers daily + error log. <strong style={{color:'#aaa'}}>Exam days 17–19:</strong> light review of summary sheets + technique, then rest.
+          50-min focus / 10-min break (Pomodoro). Protect <strong style={{color:MUT}}>7–8h sleep</strong> — it’s when memory consolidates; an all-nighter loses you more marks than it gains. Eat, move, hydrate. <br/>
+          <strong style={{color:MUT}}>Phase 1 (now → ~11 Jun):</strong> relearn topic-by-topic. <strong style={{color:MUT}}>Phase 2 (12–16 Jun):</strong> past papers daily + error log. <strong style={{color:MUT}}>Exam days 17–19:</strong> light review of summary sheets + technique, then rest.
         </div>
       </div>
 
@@ -1860,7 +1860,7 @@ function MyRevisionPlan() {
             <div key={s.key} style={{...card,padding:'16px 18px',borderColor:`${s.color}2a`}}>
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
                 <div style={{fontSize:13,fontWeight:800,color:s.color}}>{s.name}</div>
-                <div style={{fontSize:11,fontWeight:700,color:pct===100?'#00E676':'#aaa'}}>{sDone}/{s.topics.length}</div>
+                <div style={{fontSize:11,fontWeight:700,color:pct===100?'#00E676':MUT}}>{sDone}/{s.topics.length}</div>
               </div>
               <div style={{fontSize:10,color:MUT,marginBottom:12}}>{s.code} · {fmtLong(s.date)} · {s.time}</div>
               <div style={{display:'flex',flexDirection:'column',gap:2}}>
@@ -1880,7 +1880,7 @@ function MyRevisionPlan() {
       </div>
 
       <div style={{...card,padding:'12px 16px',marginTop:16,fontSize:11,color:DIM,lineHeight:1.7,borderColor:'rgba(255,255,255,0.06)'}}>
-        Topic lists are a strong starting point — open your spec/checklist and add anything missing on paper. If you also have <strong style={{color:'#aaa'}}>CS Paper 1 (10 Jun)</strong> and <strong style={{color:'#aaa'}}>Maths Paper 2 (11 Jun)</strong> on your timetable, those come first — slot them into Phase 1. One bad paper does not sink three A*s; consistent daily reps do the opposite. You’ve got this.
+        Topic lists are a strong starting point — open your spec/checklist and add anything missing on paper. If you also have <strong style={{color:MUT}}>CS Paper 1 (10 Jun)</strong> and <strong style={{color:MUT}}>Maths Paper 2 (11 Jun)</strong> on your timetable, those come first — slot them into Phase 1. One bad paper does not sink three A*s; consistent daily reps do the opposite. You’ve got this.
       </div>
     </div>
   );
