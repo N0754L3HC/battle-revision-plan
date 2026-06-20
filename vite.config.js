@@ -24,7 +24,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-        navigateFallbackDenylist: [/^\/hq/],
+        navigateFallbackDenylist: [/^\/hq/, /^\/preview/, /^\/bp-next/],
         skipWaiting: true,
         clientsClaim: true,
         runtimeCaching: [{

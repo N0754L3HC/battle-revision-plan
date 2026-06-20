@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script>if(sessionStorage.getItem("bpnext")!=="1")location.replace("/preview.html");</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4eee3; --surface:#fbf7ef; --surface-2:#efe7d8; --raise:#ffffff;
+  --ink:#2b2620; --ink-soft:#6f665b; --ink-faint:#a39a8c;
+  --line:#e7ddcc; --line-soft:#efe7d8;
+  --tint-sage:#e7eee4; --tint-sky:#e3ecf2; --tint-cream:#f4ecda; --tint-terra:#f3e3da;
+  --terra:#b5735a; --terra-deep:#9f6149; --terra-ink:#8a4f39;
+  --shadow:0 1px 2px rgba(60,40,20,.05), 0 8px 30px rgba(60,40,20,.05);
+}
+[data-theme="dark"]{
+  --bg:#1d1916; --surface:#272220; --surface-2:#2f2925; --raise:#2c2724;
+  --ink:#f3ede3; --ink-soft:#b3a99c; --ink-faint:#857c70;
+  --line:#39312b; --line-soft:#332c27;
+  --tint-sage:#243029; --tint-sky:#222e38; --tint-cream:#322c23; --tint-terra:#3a2b24;
+  --terra:#cf8568; --terra-deep:#b5735a; --terra-ink:#e0a184;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 34px rgba(0,0,0,.34);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{background:var(--bg);}
+::selection{background:rgba(181,115,90,.22);}
+@keyframes bpFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes bpRise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes bpDash{to{stroke-dashoffset:0}}
+.bp-scroll::-webkit-scrollbar{width:0;height:0;}
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;-webkit-font-smoothing:antialiased;letter-spacing:-0.011em;">
+
+<!-- ============================ LANDING ============================ -->
+<sc-if value="{{ isLanding }}" hint-placeholder-val="{{ true }}">
+<div style="max-width:1180px;margin:0 auto;padding:0 24px;">
+
+  <!-- nav -->
+  <header style="display:flex;align-items:center;justify-content:space-between;padding:22px 0;position:sticky;top:0;z-index:30;background:linear-gradient(var(--bg),var(--bg) 70%,rgba(244,238,227,0));">
+    <div style="display:flex;align-items:center;gap:11px;">
+      <div style="width:38px;height:38px;border-radius:12px;background:var(--tint-terra);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px var(--line);">
+        <svg viewBox="0 0 48 48" width="26" height="26"><circle cx="15" cy="13.5" r="5" fill="#a07a4f"/><circle cx="33" cy="13.5" r="5" fill="#a07a4f"/><ellipse cx="24" cy="26" rx="15" ry="13" fill="#b88c5c"/><ellipse cx="24" cy="31" rx="8" ry="6.4" fill="#d2a674"/><circle cx="18.4" cy="23" r="1.9" fill="#2b2620"/><circle cx="29.6" cy="23" r="1.9" fill="#2b2620"/><ellipse cx="24" cy="29" rx="2.2" ry="1.5" fill="#5a4632"/></svg>
+      </div>
+      <span style="font-weight:800;font-size:18px;letter-spacing:-0.02em;">Battle&nbsp;Plan</span>
+    </div>
+    <nav style="display:flex;align-items:center;gap:28px;">
+      <a href="#how" style="color:var(--ink-soft);text-decoration:none;font-size:14.5px;font-weight:500;">How it works</a>
+      <a href="#features" style="color:var(--ink-soft);text-decoration:none;font-size:14.5px;font-weight:500;">Features</a>
+      <a href="#faq" style="color:var(--ink-soft);text-decoration:none;font-size:14.5px;font-weight:500;">FAQ</a>
+      <button onClick="{{ openApp }}" style="border:0;background:var(--ink);color:var(--bg);font-family:inherit;font-weight:600;font-size:14px;padding:9px 17px;border-radius:11px;cursor:pointer;">Open app</button>
+    </nav>
+  </header>
+
+  <!-- hero -->
+  <section style="display:grid;grid-template-columns:1.04fr 0.96fr;gap:56px;align-items:center;padding:54px 0 30px;">
+    <div>
+      <div style="display:inline-flex;align-items:center;gap:8px;background:var(--tint-sage);color:#4f7256;padding:6px 13px;border-radius:999px;font-size:13px;font-weight:600;margin-bottom:24px;">
+        <span style="width:7px;height:7px;border-radius:50%;background:#5a8a63;"></span> For GCSE &amp; A-Level · every exam board
+      </div>
+      <h1 style="font-size:60px;line-height:1.02;letter-spacing:-0.035em;font-weight:800;margin:0 0 20px;">Stop guessing.<br>Know your <span style="color:var(--terra);">real grade.</span></h1>
+      <p style="font-size:19px;line-height:1.55;color:var(--ink-soft);margin:0 0 30px;max-width:480px;">Log your past-paper marks and Battle Plan shows the grade you'd actually get — against official mark-scheme boundaries — then tells you exactly what to revise next. Calm, honest, yours.</p>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <button onClick="{{ startOnboard }}" style="border:0;background:var(--terra);color:#fff;font-family:inherit;font-weight:600;font-size:16px;padding:14px 26px;border-radius:13px;cursor:pointer;box-shadow:0 6px 18px rgba(181,115,90,.28);display:inline-flex;align-items:center;gap:9px;">Start free <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
+        <a href="#how" style="text-decoration:none;color:var(--ink);font-weight:600;font-size:16px;padding:14px 20px;border-radius:13px;border:1px solid var(--line);display:inline-flex;align-items:center;gap:8px;">See how it works</a>
+      </div>
+      <div style="display:flex;gap:22px;margin-top:30px;color:var(--ink-faint);font-size:13.5px;font-weight:500;flex-wrap:wrap;">
+        <span style="display:inline-flex;align-items:center;gap:7px;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#5a8a63" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Free, forever</span>
+        <span style="display:inline-flex;align-items:center;gap:7px;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#5a8a63" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Private by default</span>
+        <span style="display:inline-flex;align-items:center;gap:7px;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#5a8a63" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>No card needed</span>
+      </div>
+    </div>
+
+    <!-- browser-framed product shot -->
+    <div style="position:relative;">
+      <div style="position:absolute;inset:-26px -10px;background:radial-gradient(120% 90% at 70% 20%,var(--tint-sky),transparent 60%),radial-gradient(120% 90% at 20% 90%,var(--tint-terra),transparent 60%);filter:blur(8px);border-radius:30px;opacity:.85;"></div>
+      <div style="position:relative;background:var(--raise);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;border:1px solid var(--line);">
+        <div style="display:flex;align-items:center;gap:7px;padding:11px 14px;border-bottom:1px solid var(--line-soft);background:var(--surface);">
+          <span style="width:11px;height:11px;border-radius:50%;background:#e0b3a3;"></span><span style="width:11px;height:11px;border-radius:50%;background:#e6d2a3;"></span><span style="width:11px;height:11px;border-radius:50%;background:#bcd3b6;"></span>
+          <div style="margin-left:10px;flex:1;height:22px;border-radius:7px;background:var(--surface-2);display:flex;align-items:center;padding:0 11px;font-size:11px;color:var(--ink-faint);">battleplan.study/dashboard</div>
+        </div>
+        <div style="padding:18px;background:var(--surface);">
+          <div style="font-size:12px;color:var(--ink-faint);font-weight:600;">Tuesday, 16 June</div>
+          <div style="font-size:18px;font-weight:800;margin:2px 0 14px;">Evening, Sarah 👋</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:13px;">
+            <div style="background:var(--tint-cream);border-radius:12px;padding:11px 13px;"><div style="font-size:11px;color:var(--ink-soft);font-weight:600;">Real average</div><div style="font-size:23px;font-weight:800;">79%</div></div>
+            <div style="background:var(--tint-sage);border-radius:12px;padding:11px 13px;"><div style="font-size:11px;color:#557a5c;font-weight:600;">On target</div><div style="font-size:23px;font-weight:800;color:#4f7256;">2 / 3</div></div>
+          </div>
+          <div style="background:var(--raise);border-radius:12px;padding:12px 13px;border:1px solid var(--line-soft);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px;"><span style="width:9px;height:9px;border-radius:50%;background:#3b6fd4;"></span><span style="font-weight:700;font-size:13px;">Mathematics</span><span style="margin-left:auto;font-weight:800;font-size:13px;color:#2f9e63;">A → projected A*</span></div>
+            <svg viewBox="0 0 220 34" width="100%" height="34" preserveAspectRatio="none"><polyline points="4,26 50,20 96,22 142,24 200,8" fill="none" stroke="#3b6fd4" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- how it works -->
+  <section id="how" style="padding:64px 0 30px;">
+    <div style="text-align:center;margin-bottom:40px;">
+      <div style="font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--terra);margin-bottom:10px;">How it works</div>
+      <h2 style="font-size:36px;letter-spacing:-0.03em;font-weight:800;margin:0;">Three steps to a number you can trust</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;">
+      <sc-for list="{{ steps }}" as="st" hint-placeholder-count="3">
+        <div style="padding:8px 28px;border-left:1px solid var(--line);">
+          <div style="width:46px;height:46px;border-radius:13px;background:var(--tint-cream);display:flex;align-items:center;justify-content:center;color:var(--terra-ink);margin-bottom:16px;" data-icon="{{ st.icon }}"></div>
+          <div style="font-size:13px;font-weight:700;color:var(--ink-faint);margin-bottom:6px;">Step {{ st.n }}</div>
+          <h3 style="font-size:20px;font-weight:700;letter-spacing:-0.02em;margin:0 0 8px;">{{ st.title }}</h3>
+          <p style="font-size:15px;line-height:1.55;color:var(--ink-soft);margin:0;">{{ st.body }}</p>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- features -->
+  <section id="features" style="padding:60px 0 20px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+      <div style="grid-column:1 / -1;background:var(--tint-sky);border-radius:22px;padding:38px 40px;display:grid;grid-template-columns:1.1fr 1fr;gap:30px;align-items:center;">
+        <div>
+          <div style="font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#3f6d8c;margin-bottom:12px;">Real grades, not vibes</div>
+          <h3 style="font-size:30px;letter-spacing:-0.03em;font-weight:800;margin:0 0 12px;">Every mark, mapped to official boundaries</h3>
+          <p style="font-size:16px;line-height:1.55;color:var(--ink-soft);margin:0;">Enter a raw mark and Battle Plan converts it to your real grade using the actual mark-scheme boundaries for that paper and series. AQA, Edexcel, OCR, WJEC — all of them.</p>
+        </div>
+        <div style="background:var(--raise);border-radius:16px;padding:18px;box-shadow:var(--shadow);">
+          <div style="font-size:12px;color:var(--ink-faint);font-weight:600;margin-bottom:10px;">Paper 1 · Pure Mathematics</div>
+          <div style="display:flex;align-items:flex-end;gap:14px;margin-bottom:6px;"><span style="font-size:44px;font-weight:800;line-height:1;">79%</span><span style="font-size:26px;font-weight:800;color:#2f9e63;margin-bottom:3px;">A</span></div>
+          <div style="height:8px;border-radius:6px;background:var(--surface-2);overflow:hidden;margin:12px 0 7px;"><div style="height:100%;width:79%;background:linear-gradient(90deg,#3b6fd4,#5a86e0);border-radius:6px;"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink-faint);font-weight:600;"><span>Boundary A: 76%</span><span>A*: 90%</span></div>
+        </div>
+      </div>
+      <div style="background:var(--tint-sage);border-radius:22px;padding:32px 34px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:var(--raise);display:flex;align-items:center;justify-content:center;color:#4f7256;margin-bottom:16px;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg></div>
+        <h3 style="font-size:22px;letter-spacing:-0.02em;font-weight:800;margin:0 0 9px;">See your trajectory</h3>
+        <p style="font-size:15px;line-height:1.55;color:var(--ink-soft);margin:0;">Watch each subject trend over time and get an honest projected grade — so you know if you're climbing, steady, or need a nudge.</p>
+      </div>
+      <div style="background:var(--tint-terra);border-radius:22px;padding:32px 34px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:var(--raise);display:flex;align-items:center;justify-content:center;color:var(--terra-ink);margin-bottom:16px;"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
+        <h3 style="font-size:22px;letter-spacing:-0.02em;font-weight:800;margin:0 0 9px;">Know what to revise next</h3>
+        <p style="font-size:15px;line-height:1.55;color:var(--ink-soft);margin:0;">Your weakest topics rise to the top, colour-coded red / amber / green. No more staring at a blank revision timetable.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- caps band -->
+  <section style="padding:54px 0 20px;">
+    <div style="background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:40px;display:grid;grid-template-columns:auto 1fr;gap:30px;align-items:center;">
+      <div style="width:118px;height:118px;border-radius:30px;background:var(--tint-terra);display:flex;align-items:center;justify-content:center;animation:bpFloat 5s ease-in-out infinite;flex-shrink:0;">
+        <svg viewBox="0 0 48 48" width="84" height="84"><circle cx="15" cy="13.5" r="5.2" fill="#a07a4f"/><circle cx="33" cy="13.5" r="5.2" fill="#a07a4f"/><ellipse cx="24" cy="26" rx="15" ry="13" fill="#b88c5c"/><ellipse cx="24" cy="31" rx="8" ry="6.4" fill="#d2a674"/><circle cx="18.4" cy="23" r="2" fill="#2b2620"/><circle cx="29.6" cy="23" r="2" fill="#2b2620"/><ellipse cx="24" cy="29" rx="2.3" ry="1.6" fill="#5a4632"/><path d="M20 33.5q4 2.5 8 0" fill="none" stroke="#5a4632" stroke-width="1.3" stroke-linecap="round"/></svg>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--terra);margin-bottom:10px;">Meet Caps</div>
+        <h3 style="font-size:27px;letter-spacing:-0.03em;font-weight:800;margin:0 0 10px;">Your calm capybara study companion</h3>
+        <p style="font-size:16px;line-height:1.55;color:var(--ink-soft);margin:0;max-width:620px;">Caps quizzes you on your weak topics, plans your week, and talks you down when it all feels like too much — grounded in your actual data, never preachy. Exams are stressful enough.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- trust -->
+  <section style="padding:54px 0 20px;">
+    <div style="text-align:center;margin-bottom:34px;"><h2 style="font-size:30px;letter-spacing:-0.03em;font-weight:800;margin:0;">Honest by design</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;">
+      <sc-for list="{{ trust }}" as="t" hint-placeholder-count="4">
+        <div style="padding:6px 26px;border-left:1px solid var(--line);text-align:left;">
+          <div style="color:var(--terra);margin-bottom:13px;" data-icon="{{ t.icon }}"></div>
+          <h4 style="font-size:16px;font-weight:700;margin:0 0 6px;letter-spacing:-0.01em;">{{ t.title }}</h4>
+          <p style="font-size:13.5px;line-height:1.5;color:var(--ink-soft);margin:0;">{{ t.body }}</p>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- faq -->
+  <section id="faq" style="padding:60px 0 20px;max-width:760px;margin:0 auto;">
+    <div style="text-align:center;margin-bottom:30px;"><h2 style="font-size:30px;letter-spacing:-0.03em;font-weight:800;margin:0;">Questions, answered</h2></div>
+    <sc-for list="{{ faqs }}" as="f" hint-placeholder-count="4">
+      <div onClick="{{ f.toggle }}" style="border-bottom:1px solid var(--line);padding:20px 4px;cursor:pointer;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;">
+          <span style="font-size:17px;font-weight:600;letter-spacing:-0.01em;">{{ f.q }}</span>
+          <span style="color:var(--ink-faint);transform:rotate({{ f.rot }});transition:transform .2s;flex-shrink:0;"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>
+        </div>
+        <sc-if value="{{ f.open }}" hint-placeholder-val="{{ false }}">
+          <p style="font-size:15px;line-height:1.6;color:var(--ink-soft);margin:12px 0 2px;max-width:660px;">{{ f.a }}</p>
+        </sc-if>
+      </div>
+    </sc-for>
+  </section>
+
+  <!-- closing cta -->
+  <section style="padding:64px 0;">
+    <div style="background:var(--ink);border-radius:26px;padding:54px 40px;text-align:center;">
+      <h2 style="font-size:38px;letter-spacing:-0.03em;font-weight:800;margin:0 0 14px;color:var(--bg);">Know where you really stand.</h2>
+      <p style="font-size:17px;color:rgba(244,238,227,.7);margin:0 auto 26px;max-width:440px;">Free, private, and built by a student who got tired of guessing. Start in under a minute.</p>
+      <button onClick="{{ startOnboard }}" style="border:0;background:var(--terra);color:#fff;font-family:inherit;font-weight:600;font-size:16px;padding:15px 30px;border-radius:13px;cursor:pointer;box-shadow:0 6px 20px rgba(181,115,90,.4);">Start free</button>
+    </div>
+  </section>
+
+  <!-- footer -->
+  <footer style="padding:30px 0 50px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:18px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <svg viewBox="0 0 48 48" width="22" height="22"><circle cx="15" cy="13.5" r="5" fill="#a07a4f"/><circle cx="33" cy="13.5" r="5" fill="#a07a4f"/><ellipse cx="24" cy="26" rx="15" ry="13" fill="#b88c5c"/><ellipse cx="24" cy="31" rx="8" ry="6.4" fill="#d2a674"/><circle cx="18.4" cy="23" r="1.9" fill="#2b2620"/><circle cx="29.6" cy="23" r="1.9" fill="#2b2620"/></svg>
+      <span style="font-weight:700;font-size:14px;">Battle Plan</span>
+      <span style="color:var(--ink-faint);font-size:13px;margin-left:6px;">Made by a student, for students.</span>
+    </div>
+    <div style="display:flex;gap:22px;color:var(--ink-soft);font-size:13.5px;font-weight:500;"><a href="#" style="color:inherit;text-decoration:none;">Privacy</a><a href="#" style="color:inherit;text-decoration:none;">Exam boards</a><a href="#" style="color:inherit;text-decoration:none;">Contact</a></div>
+  </footer>
+
+</div>
+</sc-if>
+
+<!-- ============================ ONBOARDING ============================ -->
+<sc-if value="{{ isOnboard }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;">
+  <div style="width:100%;max-width:460px;">
+    <div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:26px;">
+      <div style="width:42px;height:42px;border-radius:13px;background:var(--tint-terra);display:flex;align-items:center;justify-content:center;">
+        <svg viewBox="0 0 48 48" width="30" height="30"><circle cx="15" cy="13.5" r="5" fill="#a07a4f"/><circle cx="33" cy="13.5" r="5" fill="#a07a4f"/><ellipse cx="24" cy="26" rx="15" ry="13" fill="#b88c5c"/><ellipse cx="24" cy="31" rx="8" ry="6.4" fill="#d2a674"/><circle cx="18.4" cy="23" r="1.9" fill="#2b2620"/><circle cx="29.6" cy="23" r="1.9" fill="#2b2620"/><ellipse cx="24" cy="29" rx="2.2" ry="1.5" fill="#5a4632"/></svg>
+      </div>
+    </div>
+    <h1 style="font-size:28px;font-weight:800;letter-spacing:-0.03em;text-align:center;margin:0 0 6px;">Let's set you up</h1>
+    <p style="text-align:center;color:var(--ink-soft);font-size:15px;margin:0 0 30px;">Two quick things, then you're in. No card, no email needed yet.</p>
+
+    <div style="font-size:13px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:12px;">Your level</div>
+    <div style="display:flex;gap:9px;margin-bottom:28px;">
+      <sc-for list="{{ levels }}" as="lv" hint-placeholder-count="3">
+        <button onClick="{{ lv.pick }}" style="flex:1;border:1.5px solid {{ lv.border }};background:{{ lv.bg }};color:{{ lv.fg }};font-family:inherit;font-weight:700;font-size:15px;padding:14px 0;border-radius:13px;cursor:pointer;">{{ lv.label }}</button>
+      </sc-for>
+    </div>
+
+    <div style="font-size:13px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:12px;">Your subjects</div>
+    <div style="display:flex;flex-wrap:wrap;gap:9px;margin-bottom:32px;">
+      <sc-for list="{{ subjectPicks }}" as="sp" hint-placeholder-count="8">
+        <button onClick="{{ sp.toggle }}" style="border:1.5px solid {{ sp.border }};background:{{ sp.bg }};color:{{ sp.fg }};font-family:inherit;font-weight:600;font-size:14px;padding:10px 15px;border-radius:999px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;"><span style="width:9px;height:9px;border-radius:50%;background:{{ sp.dot }};"></span>{{ sp.name }}</button>
+      </sc-for>
+    </div>
+
+    <button onClick="{{ openApp }}" style="width:100%;border:0;background:var(--terra);color:#fff;font-family:inherit;font-weight:600;font-size:16px;padding:15px 0;border-radius:13px;cursor:pointer;box-shadow:0 6px 18px rgba(181,115,90,.28);">Enter Battle Plan</button>
+    <button onClick="{{ backLanding }}" style="width:100%;border:0;background:transparent;color:var(--ink-soft);font-family:inherit;font-weight:500;font-size:14px;padding:14px 0 0;cursor:pointer;">Back</button>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============================ APP ============================ -->
+<sc-if value="{{ isApp }}" hint-placeholder-val="{{ false }}">
+<div style="max-width:480px;margin:0 auto;min-height:100vh;background:var(--bg);position:relative;padding-bottom:96px;box-shadow:0 0 60px rgba(60,40,20,.06);">
+
+  <!-- top bar -->
+  <div style="position:sticky;top:0;z-index:20;background:linear-gradient(var(--bg),var(--bg) 78%,rgba(244,238,227,0));padding:18px 20px 12px;display:flex;align-items:center;justify-content:space-between;">
+    <div>
+      <div style="font-size:12.5px;color:var(--ink-faint);font-weight:600;">{{ today }}</div>
+      <div style="font-size:21px;font-weight:800;letter-spacing:-0.02em;">{{ tabTitle }}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button onClick="{{ toggleTheme }}" aria-label="Toggle theme" style="width:38px;height:38px;border-radius:11px;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);display:flex;align-items:center;justify-content:center;cursor:pointer;" data-icon="{{ themeIcon }}"></button>
+      <div onClick="{{ backLanding }}" style="width:38px;height:38px;border-radius:11px;background:var(--tint-terra);display:flex;align-items:center;justify-content:center;cursor:pointer;">
+        <svg viewBox="0 0 48 48" width="27" height="27"><circle cx="15" cy="13.5" r="5" fill="#a07a4f"/><circle cx="33" cy="13.5" r="5" fill="#a07a4f"/><ellipse cx="24" cy="26" rx="15" ry="13" fill="#b88c5c"/><ellipse cx="24" cy="31" rx="8" ry="6.4" fill="#d2a674"/><circle cx="18.4" cy="23" r="1.9" fill="#2b2620"/><circle cx="29.6" cy="23" r="1.9" fill="#2b2620"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:4px 20px 0;">
+
+  <!-- DASHBOARD -->
+  <sc-if value="{{ isDash }}" hint-placeholder-val="{{ true }}">
+  <div style="animation:bpRise .35s ease both;">
+    <!-- caps nudge -->
+    <div style="background:var(--tint-terra);border-radius:18px;padding:15px 16px;display:flex;align-items:center;gap:13px;margin-bottom:18px;">
+      <div style="width:46px;height:46px;border-radius:13px;background:var(--raise);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg viewBox="0 0 48 48" width="34" height="34"><circle cx="15" cy="13.5" r="5" fill="#a07a4f"/><circle cx="33" cy="13.5" r="5" fill="#a07a4f"/><ellipse cx="24" cy="26" rx="15" ry="13" fill="#b88c5c"/><ellipse cx="24" cy="31" rx="8" ry="6.4" fill="#d2a674"/><circle cx="18.4" cy="23" r="1.9" fill="#2b2620"/><circle cx="29.6" cy="23" r="1.9" fill="#2b2620"/><ellipse cx="24" cy="29" rx="2.2" ry="1.5" fill="#5a4632"/></svg>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:12px;font-weight:700;color:var(--terra-ink);letter-spacing:0.02em;">CAPS SUGGESTS</div>
+        <div style="font-size:14.5px;font-weight:600;line-height:1.35;">Trigonometry is your weakest topic. Want a 5-minute quiz?</div>
+      </div>
+      <button onClick="{{ openCaps }}" style="border:0;background:var(--terra);color:#fff;font-family:inherit;font-weight:600;font-size:13px;padding:9px 14px;border-radius:10px;cursor:pointer;flex-shrink:0;">Let's go</button>
+    </div>
+
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:24px;">
+      <div style="background:var(--tint-cream);border-radius:16px;padding:15px 16px;">
+        <div style="font-size:12px;color:var(--ink-soft);font-weight:600;margin-bottom:8px;">Real average</div>
+        <div style="font-size:30px;font-weight:800;letter-spacing:-0.02em;line-height:1;">79%</div>
+        <div style="font-size:12px;color:#2f9e63;font-weight:600;margin-top:5px;">↑ 6% this month</div>
+      </div>
+      <div style="background:var(--tint-sage);border-radius:16px;padding:15px 16px;">
+        <div style="font-size:12px;color:#557a5c;font-weight:600;margin-bottom:8px;">On target</div>
+        <div style="font-size:30px;font-weight:800;letter-spacing:-0.02em;line-height:1;color:#4f7256;">2<span style="font-size:18px;color:var(--ink-faint);font-weight:700;"> / 3</span></div>
+        <div style="font-size:12px;color:var(--ink-soft);font-weight:600;margin-top:5px;">subjects</div>
+      </div>
+      <div style="background:var(--tint-sky);border-radius:16px;padding:15px 16px;">
+        <div style="font-size:12px;color:#3f6d8c;font-weight:600;margin-bottom:8px;">Studied this week</div>
+        <div style="font-size:30px;font-weight:800;letter-spacing:-0.02em;line-height:1;color:#3f6d8c;">4h 20m</div>
+        <div style="font-size:12px;color:var(--ink-soft);font-weight:600;margin-top:5px;">across 6 sessions</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:15px 16px;">
+        <div style="font-size:12px;color:var(--ink-soft);font-weight:600;margin-bottom:8px;">Next exam</div>
+        <div style="font-size:30px;font-weight:800;letter-spacing:-0.02em;line-height:1;">3 <span style="font-size:18px;color:var(--ink-faint);font-weight:700;">days</span></div>
+        <div style="font-size:12px;color:var(--ink-soft);font-weight:600;margin-top:5px;">Maths · Paper 1</div>
+      </div>
+    </div>
+
+    <!-- projected grades -->
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;">
+      <h3 style="font-size:16px;font-weight:800;letter-spacing:-0.01em;margin:0;">Your subjects</h3>
+      <span style="font-size:13px;color:var(--ink-faint);font-weight:600;">Projected grade</span>
+    </div>
+    <div style="margin-bottom:26px;">
+      <sc-for list="{{ subjects }}" as="s" hint-placeholder-count="3">
+        <div style="padding:16px 2px;border-bottom:1px solid var(--line-soft);">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:11px;">
+            <span style="width:11px;height:11px;border-radius:50%;background:{{ s.color }};flex-shrink:0;"></span>
+            <span style="font-weight:700;font-size:15px;">{{ s.name }}</span>
+            <span style="margin-left:auto;font-size:13px;color:var(--ink-faint);font-weight:600;">{{ s.avgLabel }}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div style="flex-shrink:0;width:62px;">
+              <div style="font-size:11px;color:var(--ink-faint);font-weight:600;">Now</div>
+              <div style="font-size:24px;font-weight:800;line-height:1;color:{{ s.gradeColor }};">{{ s.grade }}</div>
+            </div>
+            <sc-if value="{{ s.hasPapers }}" hint-placeholder-val="{{ true }}">
+              <svg viewBox="0 0 132 40" width="132" height="40" preserveAspectRatio="none" style="flex:1;"><polyline points="{{ s.spark }}" fill="none" stroke="{{ s.color }}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </sc-if>
+            <sc-if value="{{ s.noPapers }}" hint-placeholder-val="{{ false }}">
+              <div style="flex:1;font-size:13px;color:var(--ink-faint);font-style:italic;">Log a paper to start tracking</div>
+            </sc-if>
+            <div style="flex-shrink:0;width:66px;text-align:right;">
+              <div style="font-size:11px;color:var(--ink-faint);font-weight:600;">→ Target {{ s.target }}</div>
+              <div style="font-size:16px;font-weight:800;line-height:1.2;color:{{ s.projColor }};">{{ s.projLabel }}</div>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- weak topics -->
+    <h3 style="font-size:16px;font-weight:800;letter-spacing:-0.01em;margin:0 0 4px;">Where to focus</h3>
+    <p style="font-size:13px;color:var(--ink-soft);margin:0 0 12px;">Your most-missed topics, ranked.</p>
+    <div style="background:var(--surface);border-radius:16px;padding:6px 16px;margin-bottom:26px;">
+      <sc-for list="{{ weak }}" as="w" hint-placeholder-count="4">
+        <div style="display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line-soft);">
+          <span style="width:9px;height:9px;border-radius:50%;background:{{ w.rag }};flex-shrink:0;"></span>
+          <div style="flex:1;">
+            <div style="font-size:14.5px;font-weight:600;">{{ w.topic }}</div>
+            <div style="font-size:12px;color:var(--ink-faint);font-weight:600;">{{ w.subject }} · {{ w.miss }}</div>
+          </div>
+          <button style="border:1px solid var(--line);background:transparent;color:var(--terra);font-family:inherit;font-weight:600;font-size:12.5px;padding:7px 12px;border-radius:9px;cursor:pointer;">Revise</button>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- consistency -->
+    <h3 style="font-size:16px;font-weight:800;letter-spacing:-0.01em;margin:0 0 12px;">Study consistency</h3>
+    <div style="background:var(--surface);border-radius:16px;padding:18px 16px 14px;margin-bottom:8px;">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:7px;height:78px;">
+        <sc-for list="{{ weeks }}" as="wk" hint-placeholder-count="8">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;">
+            <div style="width:100%;max-width:22px;height:{{ wk.h }};background:{{ wk.bg }};border-radius:6px;"></div>
+            <span style="font-size:10px;color:var(--ink-faint);font-weight:600;">{{ wk.label }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="font-size:12.5px;color:var(--ink-soft);font-weight:500;margin-top:12px;text-align:center;">7-week streak — your calmest, most consistent run yet. 🌱</div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- TRACKER -->
+  <sc-if value="{{ isTracker }}" hint-placeholder-val="{{ false }}">
+  <div style="animation:bpRise .35s ease both;">
+    <div style="background:var(--surface);border-radius:18px;padding:18px;margin-bottom:20px;">
+      <div style="font-size:14px;font-weight:800;margin-bottom:14px;">Log a past paper</div>
+      <div style="background:var(--tint-sage);border-radius:13px;padding:13px 15px;display:flex;align-items:center;gap:11px;margin-bottom:15px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:#5a8a63;flex-shrink:0;"></span>
+        <div style="flex:1;"><div style="font-size:11px;font-weight:700;color:#4f7256;letter-spacing:0.04em;">SUGGESTED NEXT</div><div style="font-size:14px;font-weight:600;">Core Pure 1 (9FM0/01) — 2019</div></div>
+        <span style="font-size:13px;color:var(--terra);font-weight:600;cursor:pointer;">Tap to fill</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr;gap:9px;margin-bottom:9px;">
+        <div style="background:var(--surface-2);border-radius:11px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:600;">Further Mathematics <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--ink-faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>
+        <input placeholder="Paper name / year" style="background:var(--surface-2);border:0;border-radius:11px;padding:12px 14px;font-family:inherit;font-size:14px;color:var(--ink);outline:none;"/>
+        <div style="display:flex;gap:9px;">
+          <input placeholder="Mark" style="flex:1;background:var(--surface-2);border:0;border-radius:11px;padding:12px 14px;font-family:inherit;font-size:14px;color:var(--ink);outline:none;min-width:0;"/>
+          <input placeholder="/ Max" style="flex:1;background:var(--surface-2);border:0;border-radius:11px;padding:12px 14px;font-family:inherit;font-size:14px;color:var(--ink);outline:none;min-width:0;"/>
+          <button style="border:0;background:var(--terra);color:#fff;font-family:inherit;font-weight:600;font-size:14px;padding:0 22px;border-radius:11px;cursor:pointer;">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <h3 style="font-size:15px;font-weight:800;margin:0;">Paper history</h3>
+      <div style="display:flex;gap:6px;">
+        <span style="font-size:12px;font-weight:600;padding:5px 11px;border-radius:8px;background:var(--ink);color:var(--bg);">All</span>
+        <span style="font-size:12px;font-weight:600;padding:5px 11px;border-radius:8px;background:var(--surface);color:var(--ink-soft);">FM</span>
+        <span style="font-size:12px;font-weight:600;padding:5px 11px;border-radius:8px;background:var(--surface);color:var(--ink-soft);">Maths</span>
+      </div>
+    </div>
+    <div>
+      <sc-for list="{{ papers }}" as="p" hint-placeholder-count="6">
+        <div style="display:flex;align-items:center;gap:13px;padding:14px 4px;border-bottom:1px solid var(--line-soft);">
+          <span style="width:3px;align-self:stretch;border-radius:3px;background:{{ p.color }};"></span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:12px;font-weight:700;color:{{ p.color }};">{{ p.subject }}</div>
+            <div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ p.paper }}</div>
+            <div style="font-size:12px;color:var(--ink-faint);font-weight:500;">{{ p.date }}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="font-size:16px;font-weight:800;"><span style="color:{{ p.gradeColor }};">{{ p.grade }}</span> · {{ p.pct }}%</div>
+            <div style="font-size:12px;color:var(--ink-faint);font-weight:500;">{{ p.raw }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- RAG -->
+  <sc-if value="{{ isRag }}" hint-placeholder-val="{{ false }}">
+  <div style="animation:bpRise .35s ease both;">
+    <p style="font-size:13.5px;color:var(--ink-soft);margin:0 0 16px;">Rate every topic Red, Amber, or Green so you always know where to focus.</p>
+    <div style="background:var(--surface);border-radius:16px;padding:16px;margin-bottom:18px;">
+      <div style="display:flex;gap:16px;font-size:12.5px;font-weight:600;margin-bottom:12px;flex-wrap:wrap;">
+        <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:9px;height:9px;border-radius:50%;background:#d9534f;"></span>9 Need work</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:9px;height:9px;border-radius:50%;background:#e0903a;"></span>5 Getting there</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:9px;height:9px;border-radius:50%;background:#3f9d63;"></span>14 Confident</span>
+      </div>
+      <div style="height:10px;border-radius:6px;overflow:hidden;display:flex;">
+        <div style="width:32%;background:#d9534f;"></div><div style="width:18%;background:#e0903a;"></div><div style="width:50%;background:#3f9d63;"></div>
+      </div>
+      <div style="font-size:12px;color:var(--ink-faint);font-weight:600;margin-top:9px;">28 of 28 topics rated</div>
+    </div>
+    <div style="font-size:12px;font-weight:700;color:#d9534f;letter-spacing:0.04em;margin-bottom:6px;">● NEED WORK</div>
+    <div>
+      <sc-for list="{{ ragRows }}" as="r" hint-placeholder-count="6">
+        <div style="display:flex;align-items:center;gap:12px;padding:13px 2px;border-bottom:1px solid var(--line-soft);">
+          <span style="width:3px;align-self:stretch;border-radius:3px;background:{{ r.color }};"></span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:11px;font-weight:700;color:{{ r.color }};text-transform:uppercase;letter-spacing:0.03em;">{{ r.subject }}</div>
+            <div style="font-size:14.5px;font-weight:600;">{{ r.topic }}</div>
+          </div>
+          <div style="display:flex;gap:5px;flex-shrink:0;">
+            <button onClick="{{ r.setR }}" style="width:32px;height:32px;border-radius:9px;border:1.5px solid {{ r.rBorder }};background:{{ r.rBg }};color:{{ r.rFg }};font-family:inherit;font-weight:800;font-size:13px;cursor:pointer;">R</button>
+            <button onClick="{{ r.setA }}" style="width:32px;height:32px;border-radius:9px;border:1.5px solid {{ r.aBorder }};background:{{ r.aBg }};color:{{ r.aFg }};font-family:inherit;font-weight:800;font-size:13px;cursor:pointer;">A</button>
+            <button onClick="{{ r.setG }}" style="width:32px;height:32px;border-radius:9px;border:1.5px solid {{ r.gBorder }};background:{{ r.gBg }};color:{{ r.gFg }};font-family:inherit;font-weight:800;font-size:13px;cursor:pointer;">G</button>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- PLAN -->
+  <sc-if value="{{ isPlan }}" hint-placeholder-val="{{ false }}">
+  <div style="animation:bpRise .35s ease both;">
+    <p style="font-size:13.5px;color:var(--ink-soft);margin:0 0 16px;">A gentle plan, ranked by exam urgency and your weak areas.</p>
+    <div class="bp-scroll" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:18px;">
+      <sc-for list="{{ days }}" as="d" hint-placeholder-count="7">
+        <button onClick="{{ d.pick }}" style="flex-shrink:0;border:1.5px solid {{ d.border }};background:{{ d.bg }};color:{{ d.fg }};font-family:inherit;font-weight:700;font-size:13px;padding:9px 14px;border-radius:11px;cursor:pointer;text-align:center;min-width:58px;"><div>{{ d.day }}</div><div style="font-size:11px;font-weight:600;opacity:.8;">{{ d.sub }}</div></button>
+      </sc-for>
+    </div>
+    <div style="font-size:12px;font-weight:700;color:var(--terra);letter-spacing:0.04em;margin-bottom:10px;">TODAY · 3 GENTLE SESSIONS</div>
+    <div>
+      <sc-for list="{{ tasks }}" as="tk" hint-placeholder-count="3">
+        <div onClick="{{ tk.toggle }}" style="display:flex;align-items:center;gap:13px;padding:15px 16px;border-radius:14px;background:{{ tk.bg }};margin-bottom:10px;cursor:pointer;">
+          <span style="width:24px;height:24px;border-radius:50%;border:2px solid {{ tk.ring }};background:{{ tk.fill }};display:flex;align-items:center;justify-content:center;flex-shrink:0;" data-icon="{{ tk.icon }}"></span>
+          <div style="flex:1;">
+            <div style="font-size:11px;font-weight:700;color:{{ tk.color }};text-transform:uppercase;letter-spacing:0.03em;">{{ tk.subject }}</div>
+            <div style="font-size:15px;font-weight:600;text-decoration:{{ tk.strike }};color:{{ tk.textColor }};">{{ tk.title }}</div>
+            <div style="font-size:12px;color:var(--ink-faint);font-weight:500;">{{ tk.meta }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="background:var(--tint-sage);border-radius:14px;padding:15px 16px;margin-top:8px;font-size:13.5px;color:#4f7256;font-weight:500;line-height:1.5;">Done for today? Good. Rest is part of the plan — Caps will line up tomorrow.</div>
+  </div>
+  </sc-if>
+
+  <!-- GROUPS -->
+  <sc-if value="{{ isGroups }}" hint-placeholder-val="{{ false }}">
+  <div style="animation:bpRise .35s ease both;">
+    <p style="font-size:13.5px;color:var(--ink-soft);margin:0 0 16px;">Private leaderboards with your mates. Friendly, not frantic.</p>
+    <div style="background:var(--surface);border-radius:18px;padding:18px;margin-bottom:18px;">
+      <div style="font-size:12px;font-weight:700;color:var(--ink-faint);letter-spacing:0.04em;margin-bottom:10px;">START A NEW GROUP</div>
+      <div style="display:flex;gap:9px;margin-bottom:16px;">
+        <input placeholder="e.g. Maths crew, Form 12B" style="flex:1;background:var(--surface-2);border:0;border-radius:11px;padding:12px 14px;font-family:inherit;font-size:14px;color:var(--ink);outline:none;min-width:0;"/>
+        <button style="border:0;background:var(--terra);color:#fff;font-family:inherit;font-weight:600;font-size:14px;padding:0 18px;border-radius:11px;cursor:pointer;">Create</button>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:var(--ink-faint);letter-spacing:0.04em;margin-bottom:10px;">JOIN WITH A LINK</div>
+      <div style="display:flex;gap:9px;">
+        <input placeholder="Paste invite link or code" style="flex:1;background:var(--surface-2);border:0;border-radius:11px;padding:12px 14px;font-family:inherit;font-size:14px;color:var(--ink);outline:none;min-width:0;"/>
+        <button style="border:1px solid var(--line);background:transparent;color:var(--ink);font-family:inherit;font-weight:600;font-size:14px;padding:0 18px;border-radius:11px;cursor:pointer;">Join</button>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <h3 style="font-size:15px;font-weight:800;margin:0;">Maths crew</h3>
+      <span style="font-size:12px;color:var(--ink-faint);font-weight:600;">5 members</span>
+    </div>
+    <div style="background:var(--surface);border-radius:16px;padding:6px 16px;margin-bottom:18px;">
+      <sc-for list="{{ leaderboard }}" as="lb" hint-placeholder-count="5">
+        <div style="display:flex;align-items:center;gap:13px;padding:13px 0;border-bottom:1px solid var(--line-soft);">
+          <span style="width:22px;text-align:center;font-weight:800;font-size:14px;color:{{ lb.rankColor }};">{{ lb.rank }}</span>
+          <div style="width:34px;height:34px;border-radius:50%;background:{{ lb.avatarBg }};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:{{ lb.avatarFg }};flex-shrink:0;">{{ lb.initial }}</div>
+          <div style="flex:1;font-size:14.5px;font-weight:600;">{{ lb.name }}</div>
+          <div style="font-size:15px;font-weight:800;color:{{ lb.scoreColor }};">{{ lb.score }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="background:var(--tint-terra);border-radius:18px;padding:20px;display:flex;align-items:center;gap:14px;">
+      <div style="width:46px;height:46px;border-radius:13px;background:var(--raise);display:flex;align-items:center;justify-content:center;color:var(--terra);flex-shrink:0;"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:800;">Revise better, together</div>
+        <div style="font-size:13px;color:var(--ink-soft);font-weight:500;">Invite a friend — you both get a calmer term.</div>
+      </div>
+      <button style="border:0;background:var(--terra);color:#fff;font-family:inherit;font-weight:600;font-size:13px;padding:10px 14px;border-radius:10px;cursor:pointer;flex-shrink:0;">Share</button>
+    </div>
+  </div>
+  </sc-if>
+
+  </div><!-- /padding -->
+
+  <!-- Caps launcher -->
+  <button onClick="{{ openCaps }}" aria-label="Open Caps" style="position:fixed;right:max(20px,calc(50% - 240px + 20px));bottom:104px;z-index:40;width:58px;height:58px;border-radius:18px;border:0;background:var(--terra);box-shadow:0 8px 24px rgba(181,115,90,.45);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+    <svg viewBox="0 0 48 48" width="38" height="38"><circle cx="15" cy="13.5" r="5" fill="#e6c79f"/><circle cx="33" cy="13.5" r="5" fill="#e6c79f"/><ellipse cx="24" cy="26" rx="15" ry="13" fill="#f1dab3"/><ellipse cx="24" cy="31" rx="8" ry="6.4" fill="#fff0d6"/><circle cx="18.4" cy="23" r="1.9" fill="#5a4632"/><circle cx="29.6" cy="23" r="1.9" fill="#5a4632"/><ellipse cx="24" cy="29" rx="2.2" ry="1.5" fill="#a07a4f"/></svg>
+  </button>
+
+  <!-- bottom nav -->
+  <nav style="position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;z-index:40;background:var(--surface);border-top:1px solid var(--line);padding:9px 8px calc(9px + env(safe-area-inset-bottom));display:flex;justify-content:space-around;">
+    <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+      <button onClick="{{ n.go }}" style="border:0;background:transparent;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 10px;color:{{ n.color }};flex:1;" data-iconwrap="{{ n.icon }}">
+        <span style="font-size:11px;font-weight:600;">{{ n.label }}</span>
+      </button>
+    </sc-for>
+  </nav>
+
+  <!-- Caps chat sheet -->
+  <sc-if value="{{ capsOpen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closeCaps }}" style="position:fixed;inset:0;z-index:60;background:rgba(40,30,20,.4);display:flex;align-items:flex-end;justify-content:center;">
+    <div onClick="{{ stop }}" style="width:100%;max-width:480px;height:82vh;background:var(--surface);border-radius:24px 24px 0 0;display:flex;flex-direction:column;animation:bpRise .3s ease both;overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:11px;padding:18px 20px;border-bottom:1px solid var(--line-soft);">
+        <div style="width:40px;height:40px;border-radius:12px;background:var(--tint-terra);display:flex;align-items:center;justify-content:center;">
+          <svg viewBox="0 0 48 48" width="30" height="30"><circle cx="15" cy="13.5" r="5" fill="#a07a4f"/><circle cx="33" cy="13.5" r="5" fill="#a07a4f"/><ellipse cx="24" cy="26" rx="15" ry="13" fill="#b88c5c"/><ellipse cx="24" cy="31" rx="8" ry="6.4" fill="#d2a674"/><circle cx="18.4" cy="23" r="1.9" fill="#2b2620"/><circle cx="29.6" cy="23" r="1.9" fill="#2b2620"/><ellipse cx="24" cy="29" rx="2.2" ry="1.5" fill="#5a4632"/></svg>
+        </div>
+        <div style="flex:1;"><div style="font-weight:800;font-size:16px;">Caps</div><div style="font-size:12px;color:#5a8a63;font-weight:600;display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:#5a8a63;"></span>Here for you</div></div>
+        <button onClick="{{ closeCaps }}" style="width:34px;height:34px;border-radius:10px;border:0;background:var(--surface-2);color:var(--ink-soft);cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      </div>
+      <div class="bp-scroll" style="flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:12px;">
+        <div style="align-self:flex-start;max-width:84%;background:var(--surface-2);border-radius:16px 16px 16px 5px;padding:13px 15px;font-size:14.5px;line-height:1.5;">Hey, I'm Caps. 🌿 I've been looking at your papers — you're actually doing really well. Want a quick quiz on Trigonometry, or shall we plan a gentle week?</div>
+        <div style="align-self:flex-end;max-width:84%;background:var(--terra);color:#fff;border-radius:16px 16px 5px 16px;padding:13px 15px;font-size:14.5px;line-height:1.5;">Honestly I'm a bit stressed about Maths Paper 1</div>
+        <div style="align-self:flex-start;max-width:84%;background:var(--surface-2);border-radius:16px 16px 16px 5px;padding:13px 15px;font-size:14.5px;line-height:1.5;">Totally fair — it's in 3 days. But your last 5 papers trend upward and you're projected an A*. Let's spend 20 minutes on the two topics you miss most, then stop. You've got this.</div>
+      </div>
+      <div style="padding:0 20px 10px;display:flex;gap:8px;overflow-x:auto;" class="bp-scroll">
+        <sc-for list="{{ chips }}" as="c" hint-placeholder-count="3">
+          <button style="flex-shrink:0;border:1px solid var(--line);background:var(--bg);color:var(--terra);font-family:inherit;font-weight:600;font-size:13px;padding:9px 14px;border-radius:999px;cursor:pointer;">{{ c }}</button>
+        </sc-for>
+      </div>
+      <div style="padding:10px 20px 16px;border-top:1px solid var(--line-soft);display:flex;gap:9px;align-items:center;">
+        <input placeholder="Message Caps…" style="flex:1;background:var(--surface-2);border:0;border-radius:13px;padding:13px 15px;font-family:inherit;font-size:14px;color:var(--ink);outline:none;"/>
+        <button style="width:46px;height:46px;border-radius:13px;border:0;background:var(--terra);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
+      </div>
+      <div style="padding:0 20px 14px;font-size:11px;color:var(--ink-faint);text-align:center;line-height:1.4;">Caps can make mistakes and isn't a substitute for real support. If you're struggling, talk to someone — Samaritans 116 123.</div>
+    </div>
+  </div>
+  </sc-if>
+
+</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1180,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  state = {
+    view: 'landing', tab: 'dashboard', caps: false, theme: 'light',
+    level: 'A-Level', faqOpen: 0, day: 0,
+    rag: { t1:'R', t2:'R', t3:'A', t4:'R', t5:'G', t6:'A' },
+    picks: { 'Mathematics':true, 'Further Mathematics':true, 'Computer Science':true },
+    tasksDone: { k1:true, k2:false, k3:false }
+  };
+
+  spark(arr, w, h, pad) {
+    pad = pad || 4;
+    const mn = Math.min(...arr), mx = Math.max(...arr), r = (mx - mn) || 1;
+    return arr.map((v, i) => {
+      const x = pad + (i / (arr.length - 1)) * (w - pad * 2);
+      const y = pad + (1 - (v - mn) / r) * (h - pad * 2);
+      return x.toFixed(1) + ',' + y.toFixed(1);
+    }).join(' ');
+  }
+
+  icon(name, color, size) {
+    color = color || 'currentColor'; size = size || 22;
+    const P = {
+      pencil:'<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>',
+      gauge:'<path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/>',
+      map:'<path d="M9 22V12"/><path d="M15 18V8"/><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3Z"/>',
+      heart:'<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z"/>',
+      lock:'<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+      shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
+      grad:'<path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1 2 2 6 2s6-1 6-2v-5"/>',
+      gift:'<rect width="18" height="13" x="3" y="8" rx="1"/><path d="M12 8v13M19 12v9H5v-9M2 8h20M12 8C9 8 7.5 6 7.5 4.5A2.5 2.5 0 0 1 12 4a2.5 2.5 0 0 1 4.5.5C16.5 6 15 8 12 8Z"/>',
+      check:'<path d="M20 6 9 17l-5-5"/>',
+      home:'<path d="M3 9.5 12 3l9 6.5V21H3z"/><path d="M9 21v-7h6v7"/>',
+      file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/>',
+      cal:'<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/><path d="m9 16 2 2 4-4"/>',
+      users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+      moon:'<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+      sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M6.3 17.7l-1.4 1.4M19.1 4.9l-1.4 1.4"/>'
+    };
+    return '<svg viewBox="0 0 24 24" width="'+size+'" height="'+size+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(P[name]||'')+'</svg>';
+  }
+
+  componentDidMount(){ this.paintIcons(); }
+  componentDidUpdate(){ this.paintIcons(); }
+  paintIcons(){
+    const root = this._root || document;
+    requestAnimationFrame(() => {
+      document.querySelectorAll('[data-icon]').forEach(el => {
+        const v = el.getAttribute('data-icon'); if(!v) return;
+        const want = el.getAttribute('data-painted');
+        if(want !== v){ el.innerHTML = v; el.setAttribute('data-painted', v); }
+      });
+    });
+  }
+
+  gradeColor(g){ if(g==='A*'||g==='A'||g==='9'||g==='8') return '#2f9e63'; if(g==='B'||g==='7'||g==='6') return '#3f6d8c'; if(g==='—') return 'var(--ink-faint)'; return 'var(--terra)'; }
+
+  renderVals() {
+    const s = this.state;
+    const go = (v) => () => this.setState({ view: v });
+    const setTab = (t) => () => this.setState({ tab: t });
+
+    const themeIcon = this.icon(s.theme==='dark'?'sun':'moon', 'currentColor', 19);
+
+    const subjectsRaw = [
+      { id:'fm', name:'Further Mathematics', color:'#7c5cd0', grade:'A*', avg:80, target:'A*', papers:6, proj:'A* · 93%', trend:[74,80,77,84,86,82] },
+      { id:'ma', name:'Mathematics', color:'#3b6fd4', grade:'A', avg:77, target:'A*', papers:5, proj:'A* · 89%', trend:[70,73,72,71,79] },
+      { id:'cs', name:'Computer Science', color:'#2f9e63', grade:'—', avg:0, target:'A*', papers:0, proj:'—', trend:[] }
+    ];
+    const subjects = subjectsRaw.map(x => ({
+      ...x,
+      hasPapers: x.papers>0, noPapers: x.papers===0,
+      spark: x.trend.length ? this.spark(x.trend,132,40) : '',
+      avgLabel: x.papers>0 ? (x.avg+'% avg · '+x.papers+' papers') : 'No papers yet',
+      gradeColor: this.gradeColor(x.grade),
+      projLabel: x.proj,
+      projColor: x.papers>0 ? '#2f9e63' : 'var(--ink-faint)'
+    }));
+
+    const steps = [
+      { n:1, icon:this.icon('pencil','var(--terra-ink)',22), title:'Log a paper', body:'Pop in the subject, paper and your raw mark. Takes ten seconds.' },
+      { n:2, icon:this.icon('gauge','var(--terra-ink)',22), title:'See your real grade', body:'We map it to the official mark-scheme boundaries — the grade you\u2019d actually get.' },
+      { n:3, icon:this.icon('map','var(--terra-ink)',22), title:'Know what to revise', body:'Your weakest topics surface automatically, so revision is never guesswork.' }
+    ];
+
+    const trust = [
+      { icon:this.icon('heart','var(--terra)',22), title:'Free, forever', body:'The core tracker costs nothing. No paywall on knowing your grade.' },
+      { icon:this.icon('lock','var(--terra)',22), title:'Private by default', body:'Your marks are yours. Nothing is shared unless you choose to.' },
+      { icon:this.icon('grad','var(--terra)',22), title:'Every exam board', body:'AQA, Edexcel, OCR, WJEC, GCSE 9\u20131 and A-Level A*\u2013E.' },
+      { icon:this.icon('users','var(--terra)',22), title:'Made by a student', body:'Built by someone sitting the same exams. No fake reviews, no inflated stats.' }
+    ];
+
+    const faqData = [
+      { q:'How accurate are the grades?', a:'We use the official grade boundaries published by each exam board for that specific paper and series. Where a paper hasn\u2019t been graded yet, we estimate from recent years and clearly label it.' },
+      { q:'Is it really free?', a:'Yes. Logging papers, seeing your real grade, the RAG map and your plan are all free. There are no fake user counts or testimonials here \u2014 just the tool.' },
+      { q:'Does it work for GCSE and A-Level?', a:'Both. Battle Plan handles GCSE 9\u20131 and A-Level A*\u2013E, across every major board. It\u2019s for everyone, not just top-set students.' },
+      { q:'Is my data private?', a:'Your marks stay private to you. Friend leaderboards are opt-in and only show what you choose to share.' }
+    ];
+    const faqs = faqData.map((f,i) => ({
+      ...f, open: s.faqOpen===i, rot: s.faqOpen===i ? '180deg':'0deg',
+      toggle: () => this.setState({ faqOpen: s.faqOpen===i ? -1 : i })
+    }));
+
+    const weak = [
+      { topic:'Trigonometry', subject:'Mathematics', miss:'missed in 4 of 5 papers', rag:'#d9534f' },
+      { topic:'Integration by parts', subject:'Mathematics', miss:'missed in 3 papers', rag:'#d9534f' },
+      { topic:'Complex numbers', subject:'Further Maths', miss:'getting there', rag:'#e0903a' },
+      { topic:'Hypothesis testing', subject:'Mathematics', miss:'getting there', rag:'#e0903a' }
+    ];
+
+    const weekH = [38,52,30,64,48,70,58,75];
+    const weeks = weekH.map((h,i) => ({
+      h: h+'%',
+      bg: i>=5 ? '#b5735a' : 'var(--surface-2)',
+      label: 'W'+(i+1)
+    }));
+
+    const papersRaw = [
+      { subject:'Mathematics', color:'#3b6fd4', paper:'Mock Set 5 · Paper 2', date:'11 Jun 2026', grade:'A*', pct:85, raw:'85 / 100' },
+      { subject:'Mathematics', color:'#3b6fd4', paper:'Mock Set 5 · Paper 1', date:'11 Jun 2026', grade:'A', pct:73, raw:'73 / 100' },
+      { subject:'Mathematics', color:'#3b6fd4', paper:'Mock Set 4', date:'10 Jun 2026', grade:'A*', pct:80, raw:'80 / 100' },
+      { subject:'Mathematics', color:'#3b6fd4', paper:'Pure Mathematics 1 — 2022', date:'30 May 2026', grade:'A', pct:79, raw:'79 / 100' },
+      { subject:'Further Maths', color:'#7c5cd0', paper:'Core Pure 1 (9FM0/01) — 2023', date:'28 May 2026', grade:'A', pct:75, raw:'56 / 75' },
+      { subject:'Further Maths', color:'#7c5cd0', paper:'Core Pure 1 (9FM0/01) — 2022', date:'25 May 2026', grade:'A*', pct:95, raw:'71 / 75' }
+    ];
+    const papers = papersRaw.map(p => ({ ...p, gradeColor: this.gradeColor(p.grade) }));
+
+    const ragMeta = {
+      R: { border:'#d9534f', bg:'#d9534f', fg:'#fff' },
+      A: { border:'#e0903a', bg:'#e0903a', fg:'#fff' },
+      G: { border:'#3f9d63', bg:'#3f9d63', fg:'#fff' }
+    };
+    const off = { border:'var(--line)', bg:'transparent', fg:'var(--ink-faint)' };
+    const ragRaw = [
+      { id:'t1', subject:'Mathematics', color:'#3b6fd4', topic:'Trigonometry' },
+      { id:'t2', subject:'Mathematics', color:'#3b6fd4', topic:'Integration' },
+      { id:'t3', subject:'Mathematics', color:'#3b6fd4', topic:'Hypothesis testing' },
+      { id:'t4', subject:'Further Maths', color:'#7c5cd0', topic:'Complex numbers' },
+      { id:'t5', subject:'Further Maths', color:'#7c5cd0', topic:'Matrices' },
+      { id:'t6', subject:'Computer Science', color:'#2f9e63', topic:'Big-O notation' }
+    ];
+    const ragRows = ragRaw.map(r => {
+      const cur = s.rag[r.id];
+      const cell = (k) => cur===k ? ragMeta[k] : off;
+      const cR=cell('R'), cA=cell('A'), cG=cell('G');
+      return { ...r,
+        rBorder:cR.border, rBg:cR.bg, rFg:cR.fg,
+        aBorder:cA.border, aBg:cA.bg, aFg:cA.fg,
+        gBorder:cG.border, gBg:cG.bg, gFg:cG.fg,
+        setR: () => this.setState({ rag: { ...s.rag, [r.id]:'R' } }),
+        setA: () => this.setState({ rag: { ...s.rag, [r.id]:'A' } }),
+        setG: () => this.setState({ rag: { ...s.rag, [r.id]:'G' } })
+      };
+    });
+
+    const dayData = [
+      { day:'Today', sub:'2 left' }, { day:'Wed', sub:'Maths' }, { day:'Thu', sub:'EXAM' },
+      { day:'Fri', sub:'rest' }, { day:'Sat', sub:'FM' }, { day:'Sun', sub:'light' }, { day:'Mon', sub:'CS' }
+    ];
+    const days = dayData.map((d,i) => {
+      const on = s.day===i;
+      return { ...d,
+        border: on ? 'var(--terra)' : 'var(--line)',
+        bg: on ? 'var(--tint-terra)' : 'var(--surface)',
+        fg: on ? 'var(--terra-ink)' : 'var(--ink-soft)',
+        pick: () => this.setState({ day: i })
+      };
+    });
+
+    const taskRaw = [
+      { id:'k1', subject:'Mathematics', color:'#3b6fd4', title:'Trigonometry — 10 mixed questions', meta:'25 min · weak topic' },
+      { id:'k2', subject:'Further Maths', color:'#7c5cd0', title:'Complex numbers — past paper Q4–6', meta:'30 min' },
+      { id:'k3', subject:'Mathematics', color:'#3b6fd4', title:'Light review of marked Paper 1', meta:'15 min · gentle' }
+    ];
+    const tasks = taskRaw.map(t => {
+      const done = !!s.tasksDone[t.id];
+      return { ...t,
+        bg: done ? 'var(--tint-sage)' : 'var(--surface)',
+        ring: done ? '#3f9d63' : 'var(--line)',
+        fill: done ? '#3f9d63' : 'transparent',
+        icon: done ? this.icon('check','#fff',14) : '',
+        strike: done ? 'line-through' : 'none',
+        textColor: done ? 'var(--ink-faint)' : 'var(--ink)',
+        toggle: () => this.setState({ tasksDone: { ...s.tasksDone, [t.id]: !done } })
+      };
+    });
+
+    const lbRaw = [
+      { rank:1, name:'Priya', initial:'P', score:'82%', dot:'#7c5cd0' },
+      { rank:2, name:'You', initial:'S', score:'79%', dot:'#b5735a', me:true },
+      { rank:3, name:'Marcus', initial:'M', score:'76%', dot:'#3b6fd4' },
+      { rank:4, name:'Aisha', initial:'A', score:'74%', dot:'#2f9e63' },
+      { rank:5, name:'Tom', initial:'T', score:'68%', dot:'#e0903a' }
+    ];
+    const leaderboard = lbRaw.map(l => ({ ...l,
+      rankColor: l.rank<=1 ? '#b5735a' : 'var(--ink-faint)',
+      avatarBg: l.me ? 'var(--tint-terra)' : 'var(--surface-2)',
+      avatarFg: l.me ? 'var(--terra-ink)' : 'var(--ink-soft)',
+      scoreColor: l.me ? 'var(--terra)' : 'var(--ink)'
+    }));
+
+    const navData = [
+      { tab:'dashboard', label:'Home', name:'home' },
+      { tab:'tracker', label:'Tracker', name:'file' },
+      { tab:'rag', label:'RAG', name:'map' },
+      { tab:'plan', label:'Plan', name:'cal' },
+      { tab:'groups', label:'Groups', name:'users' }
+    ];
+    const nav = navData.map(n => {
+      const on = s.tab===n.tab;
+      return { label:n.label, go:setTab(n.tab),
+        color: on ? 'var(--terra)' : 'var(--ink-faint)',
+        icon: this.icon(n.name, on ? 'var(--terra)' : 'var(--ink-faint)', 22) };
+    });
+
+    const levels = ['GCSE','AS','A-Level'].map(l => {
+      const on = s.level===l;
+      return { label:l,
+        border: on ? 'var(--terra)' : 'var(--line)',
+        bg: on ? 'var(--tint-terra)' : 'var(--surface)',
+        fg: on ? 'var(--terra-ink)' : 'var(--ink-soft)',
+        pick: () => this.setState({ level:l }) };
+    });
+
+    const subjList = [
+      { name:'Mathematics', dot:'#3b6fd4' }, { name:'Further Mathematics', dot:'#7c5cd0' },
+      { name:'Computer Science', dot:'#2f9e63' }, { name:'Physics', dot:'#d97a45' },
+      { name:'Chemistry', dot:'#3f9d8a' }, { name:'Biology', dot:'#5a8a63' },
+      { name:'Economics', dot:'#c2546a' }, { name:'History', dot:'#8a6a4f' }
+    ];
+    const subjectPicks = subjList.map(sj => {
+      const on = !!s.picks[sj.name];
+      return { name:sj.name, dot:sj.dot,
+        border: on ? sj.dot : 'var(--line)',
+        bg: on ? 'var(--surface)' : 'var(--surface)',
+        fg: on ? 'var(--ink)' : 'var(--ink-soft)',
+        toggle: () => this.setState({ picks: { ...s.picks, [sj.name]: !on } }) };
+    });
+
+    const tabTitles = { dashboard:'Dashboard', tracker:'Tracker', rag:'RAG map', plan:'Your plan', groups:'Groups' };
+
+    return {
+      theme: s.theme, themeIcon,
+      isLanding: s.view==='landing', isOnboard: s.view==='onboard', isApp: s.view==='app',
+      isDash: s.tab==='dashboard', isTracker: s.tab==='tracker', isRag: s.tab==='rag',
+      isPlan: s.tab==='plan', isGroups: s.tab==='groups',
+      tabTitle: tabTitles[s.tab] || 'Dashboard',
+      today: 'Tuesday, 16 June',
+      openApp: () => this.setState({ view:'app', tab:'dashboard' }),
+      startOnboard: go('onboard'), backLanding: go('landing'),
+      toggleTheme: () => this.setState({ theme: s.theme==='dark'?'light':'dark' }),
+      openCaps: () => this.setState({ caps:true }), closeCaps: () => this.setState({ caps:false }),
+      capsOpen: s.caps, stop: (e) => { e && e.stopPropagation && e.stopPropagation(); },
+      subjects, steps, trust, faqs, weak, weeks, papers, ragRows, days, tasks,
+      leaderboard, nav, levels, subjectPicks,
+      chips: ['Quiz me on Trig', 'Plan my week', 'What should I do today?']
+    };
+  }
+}
+</script>
+</body>
+</html>

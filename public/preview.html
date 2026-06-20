@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Battle Plan — Preview</title>
+    <style>
+      html,body{margin:0;height:100%;background:#1d1916;color:#f3ede3;
+        font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;}
+      .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px;}
+      .card{width:100%;max-width:340px;text-align:center;}
+      .badge{width:44px;height:44px;border-radius:13px;background:#3a2b24;margin:0 auto 16px;
+        display:flex;align-items:center;justify-content:center;}
+      h1{font-size:19px;font-weight:700;letter-spacing:-0.02em;margin:0 0 6px;}
+      p{font-size:13px;color:#b3a99c;margin:0 0 20px;line-height:1.5;}
+      input{width:100%;box-sizing:border-box;padding:11px 13px;border-radius:10px;
+        border:1px solid #39312b;background:#272220;color:#f3ede3;font-size:14px;
+        font-family:inherit;outline:none;margin-bottom:10px;}
+      button{width:100%;padding:11px;border:0;border-radius:10px;background:#cf8568;color:#1d1916;
+        font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;}
+      .err{color:#e2a07f;font-size:12px;min-height:16px;margin-top:8px;}
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <form class="card" id="f">
+        <div class="badge">
+          <svg viewBox="0 0 48 48" width="28" height="28"><circle cx="15" cy="13.5" r="5" fill="#a07a4f"/><circle cx="33" cy="13.5" r="5" fill="#a07a4f"/><ellipse cx="24" cy="26" rx="15" ry="13" fill="#b88c5c"/><ellipse cx="24" cy="31" rx="8" ry="6.4" fill="#d2a674"/><circle cx="18.4" cy="23" r="1.9" fill="#2b2620"/><circle cx="29.6" cy="23" r="1.9" fill="#2b2620"/><ellipse cx="24" cy="29" rx="2.2" ry="1.5" fill="#5a4632"/></svg>
+        </div>
+        <h1>Battle Plan · Preview</h1>
+        <p>The redesigned Battle Plan, in progress. Enter the preview password to continue.</p>
+        <input id="pw" type="password" placeholder="Preview password" autocomplete="off" autofocus />
+        <button type="submit">Enter preview</button>
+        <div class="err" id="err"></div>
+      </form>
+    </div>
+    <script>
+      // Soft gate (this is a static preview, not the real app — see note in chat).
+      var PW = 'capybara26';
+      if (sessionStorage.getItem('bpnext') === '1') location.replace('/bp-next.html');
+      document.getElementById('f').addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (document.getElementById('pw').value === PW) {
+          sessionStorage.setItem('bpnext', '1');
+          location.href = '/bp-next.html';
+        } else {
+          document.getElementById('err').textContent = 'Wrong password.';
+        }
+      });
+    </script>
+  </body>
+</html>
