@@ -6136,47 +6136,28 @@ function LandingPage({ onGetStarted }) {
   const mono = FONT_MONO;
   const C = T.dark;
   const [showTerms, setShowTerms] = useState(false);
-  const mobile = typeof window !== 'undefined' && window.innerWidth < 760;
-  const tile = {background:C.surface, border:`1px solid ${C.border}`, borderRadius:14,
-    padding:'20px 22px', display:'flex', flexDirection:'column', overflow:'hidden'};
-
+  const ic = d => (
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{d}</svg>
+  );
   const FEATURES = [
-    {
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-      ),
+    { icon: ic(<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>),
       title: 'Past paper tracker',
-      desc: 'Log every paper you do. See your actual grade using official mark-scheme boundaries — not rough percentages.',
-    },
-    {
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-      ),
-      title: 'Error pattern analysis',
-      desc: 'Tag every mistake by type. See which topics keep coming up. Fix the patterns before the exam — not after.',
-    },
-    {
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-        </svg>
-      ),
+      desc: 'Log every paper and see your real grade — calculated against official mark-scheme boundaries, not rough percentages.' },
+    { icon: ic(<><path d="M22 12A10 10 0 1 1 12 2"/><path d="M12 12 16 8"/></>),
+      title: 'Battle Readiness',
+      desc: 'One score for how prepared you actually are, updated every time you log a paper.' },
+    { icon: ic(<><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></>),
+      title: 'Error patterns',
+      desc: 'Tag every mistake by type and see which topics keep costing you marks — so you fix the cause, not the symptom.' },
+    { icon: ic(<><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></>),
+      title: 'RAG topic map',
+      desc: 'Rate every topic red, amber or green. See at a glance exactly where your revision time should go.' },
+    { icon: ic(<><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>),
       title: 'Exam countdown',
-      desc: 'See exactly how many days until each paper, across every subject and board — all in one place.',
-    },
-    {
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
-        </svg>
-      ),
-      title: 'Battle Readiness score',
-      desc: 'A single number that tells you how prepared you actually are. Updated every time you log a paper.',
-    },
+      desc: 'Every paper date across every subject and board, with the days remaining, in one place.' },
+    { icon: ic(<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>),
+      title: 'AI study companion',
+      desc: 'Ask what to do next and get an answer grounded in your own papers, weak topics and exam dates.' },
   ];
 
   const TRUST_CHIPS = ['Free during beta', 'No credit card', 'A-Levels & GCSEs', 'No ads'];
@@ -6226,49 +6207,35 @@ function LandingPage({ onGetStarted }) {
         </button>
       </nav>
 
-      {/* Hero — centred pitch + windowed product shot, warm glow */}
-      <section style={{position:'relative', overflow:'hidden'}}>
-        <div aria-hidden style={{position:'absolute', top:-200, left:'50%', transform:'translateX(-50%)',
-          width:1100, height:760, borderRadius:'50%', pointerEvents:'none',
-          background:`radial-gradient(circle, ${C.accent}24 0%, ${C.accent}0d 34%, transparent 66%)`}}/>
-        <div style={{position:'relative', maxWidth:880, margin:'0 auto', padding:'118px 24px 0', textAlign:'center'}}>
-          <div style={{display:'inline-flex', alignItems:'center', gap:8, padding:'5px 12px 5px 6px',
-            borderRadius:999, border:`1px solid ${C.border}`, background:C.surface, marginBottom:26}}>
-            <span style={{fontSize:10, fontWeight:800, color:'#fff', background:C.accent, borderRadius:999, padding:'2px 8px', letterSpacing:0.4}}>BETA</span>
+      {/* Hero — minimal, centred, type-led */}
+      <section>
+        <div style={{maxWidth:820, margin:'0 auto', padding:'132px 24px 0', textAlign:'center'}}>
+          <div style={{display:'inline-flex', alignItems:'center', gap:8, padding:'5px 13px',
+            borderRadius:999, border:`1px solid ${C.border}`, marginBottom:30}}>
+            <span style={{width:6, height:6, borderRadius:'50%', background:C.accent}}/>
             <span style={{...type.caption, color:C.muted}}>Free while in beta · A-Levels &amp; GCSEs</span>
           </div>
-          <h1 style={{...type.display, fontSize:'clamp(40px, 6.6vw, 72px)', color:C.text, margin:'0 0 22px', letterSpacing:'-0.03em'}}>
-            Know exactly where<br/>
-            <span style={{background:`linear-gradient(100deg, ${C.accent} 10%, #e3a583 90%)`,
-              WebkitBackgroundClip:'text', backgroundClip:'text', color:'transparent'}}>you're losing marks.</span>
+          <h1 style={{fontFamily:display, fontWeight:600, fontSize:'clamp(40px, 6.2vw, 66px)',
+            color:C.text, margin:'0 0 24px', letterSpacing:'-0.035em', lineHeight:1.05}}>
+            Know exactly where<br/>you're losing marks.
           </h1>
-          <p style={{...type.body, fontSize:'clamp(16px, 1.9vw, 20px)', color:C.muted, margin:'0 auto 34px', maxWidth:600}}>
-            The revision tracker that turns past papers into a real grade, a clear trajectory, and a short
-            list of what to fix next. Built for A-Level and GCSE students — free.
+          <p style={{...type.body, fontSize:'clamp(16px, 1.7vw, 19px)', color:C.muted, margin:'0 auto 36px', maxWidth:540}}>
+            The revision tracker that turns past papers into a real grade, a clear trajectory,
+            and a short list of what to fix next. Free for A-Level and GCSE students.
           </p>
-          <div style={{display:'flex', gap:12, justifyContent:'center', flexWrap:'wrap'}}>
+          <div style={{display:'flex', gap:10, justifyContent:'center', flexWrap:'wrap'}}>
             <button onClick={onGetStarted}
-              style={{display:'inline-flex', alignItems:'center', gap:9, padding:'14px 28px',
+              style={{display:'inline-flex', alignItems:'center', gap:8, padding:'12px 22px',
                 background:C.accent, border:'none', borderRadius:8, color:'#fff',
-                fontSize:15, fontWeight:600, fontFamily:font, cursor:'pointer',
-                boxShadow:`0 8px 30px ${C.accent}40`}}>
+                fontSize:14, fontWeight:600, fontFamily:font, cursor:'pointer'}}>
               Get started — it's free
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </button>
             <button onClick={onGetStarted}
-              style={{display:'inline-flex', alignItems:'center', padding:'14px 24px',
+              style={{display:'inline-flex', alignItems:'center', padding:'12px 20px',
                 background:'transparent', border:`1px solid ${C.border}`, borderRadius:8, color:C.text,
-                fontSize:15, fontWeight:600, fontFamily:font, cursor:'pointer'}}>
+                fontSize:14, fontWeight:600, fontFamily:font, cursor:'pointer'}}>
               Sign in
             </button>
-          </div>
-          <div style={{display:'flex', gap:18, justifyContent:'center', flexWrap:'wrap', marginTop:24}}>
-            {TRUST_CHIPS.map(t => (
-              <span key={t} style={{...type.caption, color:C.subtle, display:'flex', alignItems:'center', gap:6}}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                {t}
-              </span>
-            ))}
           </div>
         </div>
 
@@ -6294,18 +6261,18 @@ function LandingPage({ onGetStarted }) {
                 ))}
               </div>
               <div style={{background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:'4px 16px'}}>
-                {[['Further Maths','#a855f7','A*',86,'12,34,28,44,40,58'],
-                  ['Chemistry','#ec4899','A',71,'30,36,22,40,34,48'],
-                  ['Computer Science','#10b981','A*',79,'20,26,30,28,42,52']].map(([n,col,g,v,pts],i)=>(
+                {[['Further Maths','A*',86,'12,34,28,44,40,58'],
+                  ['Chemistry','A',71,'30,36,22,40,34,48'],
+                  ['Computer Science','A*',79,'20,26,30,28,42,52']].map(([n,g,v,pts],i)=>(
                   <div key={n} style={{display:'flex', alignItems:'center', gap:14, padding:'13px 0', borderTop:i?`1px solid ${C.border}`:'none'}}>
-                    <span style={{width:8, height:8, borderRadius:'50%', background:col, flexShrink:0}}/>
-                    <span style={{flex:1, minWidth:0, fontSize:13.5, color:C.text, fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{n}</span>
-                    <svg width="72" height="22" viewBox="0 0 72 22" style={{flexShrink:0, opacity:0.9}}>
+                    <span style={{width:7, height:7, borderRadius:'50%', background:C.subtle, flexShrink:0}}/>
+                    <span style={{flex:1, minWidth:0, fontSize:13.5, color:C.text, fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{n}</span>
+                    <svg width="72" height="22" viewBox="0 0 72 22" style={{flexShrink:0}}>
                       <polyline points={String(pts).split(',').map((y,j)=>`${j*14},${22-(+y/60)*22}`).join(' ')}
-                        fill="none" stroke={col} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                        fill="none" stroke={C.muted} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                    <span style={{fontSize:12, fontWeight:800, color:gradeColor(g), width:24, textAlign:'center'}}>{g}</span>
-                    <span style={{fontSize:12, fontWeight:700, color:C.muted, width:34, textAlign:'right', fontFamily:mono}}>{v}%</span>
+                    <span style={{fontSize:12, fontWeight:700, color:C.text, width:24, textAlign:'center'}}>{g}</span>
+                    <span style={{fontSize:12, fontWeight:600, color:C.muted, width:34, textAlign:'right', fontFamily:mono}}>{v}%</span>
                   </div>
                 ))}
               </div>
@@ -6347,175 +6314,86 @@ function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
-      {/* Features — bento grid */}
-      <section style={{maxWidth:1100, margin:'0 auto', padding:'72px 24px'}}>
-        <div style={{...type.eyebrow, color:C.accent, marginBottom:10}}>Features</div>
-        <h2 style={{...type.h2, fontSize:'clamp(24px, 3vw, 32px)', color:C.text, margin:'0 0 32px', maxWidth:560}}>
+      {/* Features — minimal uniform grid with hairline dividers */}
+      <section style={{maxWidth:1080, margin:'0 auto', padding:'104px 24px'}}>
+        <div style={{...type.eyebrow, color:C.subtle, marginBottom:14}}>Features</div>
+        <h2 style={{fontFamily:display, fontWeight:600, fontSize:'clamp(26px, 3.4vw, 40px)', color:C.text,
+          margin:'0 0 44px', letterSpacing:'-0.03em', maxWidth:540}}>
           Everything you need to walk in ready.
         </h2>
-        <div style={{display:'grid', gap:14,
-          gridTemplateColumns: mobile?'1fr':'repeat(6,1fr)',
-          gridAutoRows: mobile?'auto':'176px'}}>
-
-          {/* Flagship — paper tracker */}
-          <div style={{...tile, gridColumn:mobile?'auto':'span 4', gridRow:mobile?'auto':'span 2', justifyContent:'space-between'}}>
-            <div>
-              <div style={{...type.h3, color:C.text, marginBottom:6}}>Past paper tracker</div>
-              <div style={{...type.body, fontSize:14, color:C.muted, maxWidth:420}}>
-                Log every paper and see your real grade — calculated against official mark-scheme boundaries, not rough percentages.
-              </div>
-            </div>
-            <div style={{marginTop:18}}>
-              <svg viewBox="0 0 320 90" preserveAspectRatio="none" style={{width:'100%', height:90, display:'block'}}>
-                <defs><linearGradient id="lpfill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={C.accent} stopOpacity="0.28"/><stop offset="100%" stopColor={C.accent} stopOpacity="0"/>
-                </linearGradient></defs>
-                <polygon points="0,72 53,60 106,64 160,42 213,46 266,26 320,18 320,90 0,90" fill="url(#lpfill)"/>
-                <polyline points="0,72 53,60 106,64 160,42 213,46 266,26 320,18" fill="none" stroke={C.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:10}}>
-                <span style={{...type.caption, color:C.subtle}}>Pure 1 · last paper</span>
-                <span style={{fontSize:13, fontWeight:700, color:C.text}}>82% <span style={{color:gradeColor('A')}}>→ A</span></span>
-              </div>
-            </div>
-          </div>
-
-          {/* Readiness */}
-          <div style={{...tile, gridColumn:mobile?'auto':'span 2', gridRow:mobile?'auto':'span 2', justifyContent:'space-between'}}>
-            <div style={{...type.h3, color:C.text}}>Battle Readiness</div>
-            <div>
-              <div style={{display:'flex', alignItems:'flex-end', gap:8}}>
-                <span style={{fontSize:54, fontWeight:800, color:C.text, lineHeight:0.9, letterSpacing:'-0.04em', fontFamily:mono}}>74</span>
-                <span style={{fontSize:13, color:C.success, fontWeight:600, marginBottom:6}}>On track</span>
-              </div>
-              <div style={{height:6, background:C.card2, borderRadius:3, overflow:'hidden', marginTop:12}}>
-                <div style={{width:'74%', height:'100%', background:C.accent, borderRadius:3}}/>
-              </div>
-              <div style={{...type.body, fontSize:13, color:C.muted, marginTop:12}}>One score for how prepared you actually are.</div>
-            </div>
-          </div>
-
-          {/* Errors */}
-          <div style={{...tile, gridColumn:mobile?'auto':'span 2'}}>
-            <div style={{...type.h3, color:C.text, marginBottom:6}}>Error patterns</div>
-            <div style={{...type.body, fontSize:13, color:C.muted, marginBottom:'auto'}}>Tag every mistake. Spot what keeps costing you.</div>
-            <div style={{display:'flex', gap:6, flexWrap:'wrap', marginTop:12}}>
-              {[['Arithmetic',4],['Method',3],['Misread',2]].map(([t,n])=>(
-                <span key={t} style={{fontSize:11, color:C.muted, background:C.card2, border:`1px solid ${C.border}`, borderRadius:6, padding:'3px 8px'}}>
-                  {t} <span style={{color:C.accent, fontWeight:700}}>×{n}</span>
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Topics RAG */}
-          <div style={{...tile, gridColumn:mobile?'auto':'span 2'}}>
-            <div style={{...type.h3, color:C.text, marginBottom:6}}>RAG topic map</div>
-            <div style={{...type.body, fontSize:13, color:C.muted, marginBottom:'auto'}}>Red, amber, green — every topic.</div>
-            <div style={{display:'flex', gap:6, marginTop:12}}>
-              {[['#ef4444',2],['#f59e0b',5],['#22c55e',9]].map(([c,n])=>(
-                <div key={c} style={{flex:n, height:8, background:c, borderRadius:3, opacity:0.9}}/>
-              ))}
-            </div>
-            <div style={{display:'flex', justifyContent:'space-between', marginTop:7}}>
-              <span style={{fontSize:11, color:'#ef4444'}}>2 weak</span>
-              <span style={{fontSize:11, color:'#22c55e'}}>9 strong</span>
-            </div>
-          </div>
-
-          {/* Countdown */}
-          <div style={{...tile, gridColumn:mobile?'auto':'span 2'}}>
-            <div style={{...type.h3, color:C.text, marginBottom:6}}>Exam countdown</div>
-            <div style={{...type.body, fontSize:13, color:C.muted, marginBottom:'auto'}}>Every paper date, one place.</div>
-            <div style={{display:'flex', alignItems:'baseline', gap:8, marginTop:12}}>
-              <span style={{fontSize:34, fontWeight:800, color:C.accent, fontFamily:mono, letterSpacing:'-0.03em', lineHeight:1}}>12</span>
-              <span style={{fontSize:12, color:C.muted}}>days · Chemistry P1</span>
-            </div>
-          </div>
-
-          {/* AI companion — wide */}
-          <div style={{...tile, gridColumn:mobile?'auto':'span 6', flexDirection:mobile?'column':'row', alignItems:mobile?'flex-start':'center', gap:18}}>
-            <div style={{flex:1}}>
-              <div style={{...type.h3, color:C.text, marginBottom:6}}>An AI study companion that knows your data</div>
-              <div style={{...type.body, fontSize:13.5, color:C.muted, maxWidth:520}}>
-                Ask what to do next and get an answer grounded in your actual papers, weak topics and exam dates — not generic advice.
-              </div>
-            </div>
-            <div style={{flexShrink:0, display:'flex', alignItems:'center', gap:10, background:C.card2,
-              border:`1px solid ${C.border}`, borderRadius:12, padding:'12px 14px', maxWidth:340}}>
-              <div style={{width:28, height:28, borderRadius:'50%', background:C.accent, flexShrink:0,
-                display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:800, fontSize:12}}>C</div>
-              <span style={{fontSize:13, color:C.text, lineHeight:1.5}}>Focus on M1 today — it's your weakest, and Mechanics is 12 days out.</span>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* Trust */}
-      <section style={{borderTop:`1px solid ${C.border}`, background:C.surface}}>
-        <div style={{maxWidth:1100, margin:'0 auto', padding:'64px 24px'}}>
-          <div style={{...type.eyebrow, color:C.accent, marginBottom:10}}>Why you can trust it</div>
-          <h2 style={{...type.h2, fontSize:'clamp(24px, 3vw, 32px)', color:C.text, margin:'0 0 32px', maxWidth:560}}>
-            No gimmicks. Just an honest tool for your grades.
-          </h2>
-          <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:14, marginBottom:28}}>
-            {TRUST.map(t => (
-              <div key={t.title} style={{background:C.bg, border:`1px solid ${C.border}`,
-                borderRadius:12, padding:'18px 18px'}}>
-                <div style={{...type.h3, fontSize:14, color:C.text, marginBottom:6}}>{t.title}</div>
-                <div style={{...type.body, fontSize:13, color:C.muted}}>{t.desc}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{display:'flex', gap:14, alignItems:'flex-start', maxWidth:640,
-            padding:'16px 18px', background:`${C.accent}0f`, border:`1px solid ${C.accent}33`, borderRadius:12}}>
-            <div style={{width:34, height:34, borderRadius:9, background:C.accent, flexShrink:0,
-              display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:800, fontFamily:mono, fontSize:13}}>A*</div>
-            <div style={{...type.body, fontSize:13.5, color:C.muted}}>
-              <span style={{color:C.text, fontWeight:600}}>Made by a student who just sat their A-Levels.</span>{' '}
-              Built out of frustration with revision that felt busy but not effective — and shaped around what actually moves a grade.
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section style={{maxWidth:1100, margin:'0 auto', padding:'72px 24px'}}>
-        <h2 style={{...type.h2, fontSize:'clamp(24px, 3vw, 32px)', color:C.text, margin:'0 0 32px'}}>
-          Questions, answered.
-        </h2>
-        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(300px, 1fr))', gap:'4px 48px'}}>
-          {FAQ.map((f, i) => (
-            <div key={f.q} style={{padding:'20px 0', borderTop:i<2 ? 'none' : `1px solid ${C.border}`}}>
-              <div style={{...type.h3, fontSize:15, color:C.text, marginBottom:7}}>{f.q}</div>
-              <div style={{...type.body, fontSize:13.5, color:C.muted}}>{f.a}</div>
+        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))',
+          gap:1, background:C.border, border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden'}}>
+          {FEATURES.map(f => (
+            <div key={f.title} style={{background:C.bg, padding:'30px 28px'}}>
+              <div style={{color:C.muted, marginBottom:18}}>{f.icon}</div>
+              <div style={{...type.h3, color:C.text, marginBottom:8}}>{f.title}</div>
+              <div style={{...type.body, fontSize:14, color:C.muted, lineHeight:1.6}}>{f.desc}</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Final CTA */}
-      <section style={{borderTop:`1px solid ${C.border}`, background:C.surface}}>
-        <div style={{maxWidth:1100, margin:'0 auto', padding:'56px 24px',
-          display:'flex', justifyContent:'space-between', alignItems:'center',
-          gap:'28px 40px', flexWrap:'wrap'}}>
-          <div style={{maxWidth:520}}>
-            <div style={{...type.h2, fontSize:'clamp(22px, 2.6vw, 30px)', color:C.text, margin:'0 0 8px'}}>
-              Your exams won't wait. Start today.
-            </div>
-            <div style={{...type.caption, color:C.subtle}}>
-              Two-minute setup · free during beta · no card
-            </div>
+      {/* Trust */}
+      <section style={{borderTop:`1px solid ${C.border}`}}>
+        <div style={{maxWidth:1080, margin:'0 auto', padding:'104px 24px'}}>
+          <div style={{...type.eyebrow, color:C.subtle, marginBottom:14}}>Why you can trust it</div>
+          <h2 style={{fontFamily:display, fontWeight:600, fontSize:'clamp(26px, 3.4vw, 40px)', color:C.text,
+            margin:'0 0 44px', letterSpacing:'-0.03em', maxWidth:540}}>
+            No gimmicks. An honest tool for your grades.
+          </h2>
+          <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:'36px 48px'}}>
+            {TRUST.map(t => (
+              <div key={t.title}>
+                <div style={{...type.h3, fontSize:15, color:C.text, marginBottom:8}}>{t.title}</div>
+                <div style={{...type.body, fontSize:14, color:C.muted, lineHeight:1.6}}>{t.desc}</div>
+              </div>
+            ))}
           </div>
+          <div style={{...type.body, fontSize:15, color:C.muted, marginTop:48, maxWidth:600, lineHeight:1.7,
+            paddingTop:32, borderTop:`1px solid ${C.border}`}}>
+            <span style={{color:C.text, fontWeight:600}}>Made by a student who just sat their A-Levels</span> — built out of
+            frustration with revision that felt busy but not effective, and shaped around what actually moves a grade.
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section style={{borderTop:`1px solid ${C.border}`}}>
+        <div style={{maxWidth:1080, margin:'0 auto', padding:'104px 24px'}}>
+          <h2 style={{fontFamily:display, fontWeight:600, fontSize:'clamp(26px, 3.4vw, 40px)', color:C.text,
+            margin:'0 0 44px', letterSpacing:'-0.03em'}}>
+            Questions, answered.
+          </h2>
+          <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(300px, 1fr))', gap:'0 56px'}}>
+            {FAQ.map((f, i) => (
+              <div key={f.q} style={{padding:'22px 0', borderTop:i<2 ? 'none' : `1px solid ${C.border}`}}>
+                <div style={{...type.h3, fontSize:15, color:C.text, marginBottom:8}}>{f.q}</div>
+                <div style={{...type.body, fontSize:14, color:C.muted, lineHeight:1.6}}>{f.a}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section style={{borderTop:`1px solid ${C.border}`}}>
+        <div style={{maxWidth:1080, margin:'0 auto', padding:'96px 24px', textAlign:'center'}}>
+          <h2 style={{fontFamily:display, fontWeight:600, fontSize:'clamp(28px, 3.6vw, 44px)', color:C.text,
+            margin:'0 0 14px', letterSpacing:'-0.03em'}}>
+            Your exams won't wait.
+          </h2>
+          <p style={{...type.body, fontSize:16, color:C.muted, margin:'0 auto 28px', maxWidth:440}}>
+            Two-minute setup. Free during beta. No card.
+          </p>
+          <div style={{display:'flex', justifyContent:'center'}}>
           <button onClick={onGetStarted}
             style={{display:'inline-flex', alignItems:'center', gap:8, padding:'14px 26px',
               background:C.accent, border:'none',
               borderRadius:6, color:'#fff', fontSize:15, fontWeight:600,
               fontFamily:font, cursor:'pointer', flexShrink:0}}>
             Get started — it's free
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </button>
+          </div>
         </div>
       </section>
 
