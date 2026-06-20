@@ -238,7 +238,7 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
       </div>
 
       {/* ─────── Always-visible action card: Create + Join ─────── */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: '18px 20px' }}>
+      <div style={{ background: C.tintCream, borderRadius: 14, padding: '18px 20px' }}>
 
         {/* Create */}
         <div style={{ marginBottom: 14 }}>
@@ -317,7 +317,7 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
             const visible  = isOpen ? g.members : g.members.slice(0, 5);
 
             return (
-              <div key={g.id} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, overflow: 'hidden' }}>
+              <div key={g.id} style={{ background: C.tintCream, borderRadius: 14, overflow: 'hidden' }}>
 
                 {/* Header */}
                 <div style={{ padding: '14px 16px', borderBottom: `1px solid ${C.border}`,
@@ -408,7 +408,7 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
 
       {/* Refer a friend (social) */}
       {referralCode && (
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '18px 20px' }}>
+        <div style={{ background: C.tintCream, borderRadius: 14, padding: '18px 20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5 }}>Refer a friend</div>
             <span style={{ fontSize: 10, fontWeight: 700, color: '#fbbf24', background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.32)', borderRadius: 4, padding: '1px 6px', letterSpacing: 0.3 }}>EARN PRO</span>
@@ -431,7 +431,7 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
 
       {/* School opt-in (moved from Account) */}
       {user && (
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '18px 20px' }}>
+        <div style={{ background: C.tintCream, borderRadius: 14, padding: '18px 20px' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>Appear on the school leaderboard</div>
           <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.6, marginBottom: 12 }}>
             Add your school and opt in to put it on the anonymous leaderboard below. Only your school's average is shown — never your individual data.
@@ -459,7 +459,7 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
       )}
 
       {/* School leaderboard */}
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '18px 20px' }}>
+      <div style={{ background: C.tintCream, borderRadius: 14, padding: '18px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5 }}>
             School leaderboard

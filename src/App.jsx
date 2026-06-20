@@ -2963,7 +2963,7 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
       </div>
 
       {/* Selected day card */}
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,overflow:'hidden'}}>
+      <div style={{background:C.tintCream,borderRadius:14,overflow:'hidden'}}>
         <div style={{padding:'13px 16px',borderBottom:`1px solid ${C.border}`,
           display:'flex',alignItems:'center',justifyContent:'space-between'}}>
           <div>
@@ -4246,7 +4246,7 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE,yearGroup=''}) {
       {/* Next exam — compact, left-aligned */}
       {next&&(
         <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:22,
-          padding:'16px 18px',background:C.surface,border:`1px solid ${C.border}`,borderRadius:10}}>
+          padding:'16px 18px',background:C.tintCream,borderRadius:14}}>
           <div style={{textAlign:'center',flexShrink:0,minWidth:58}}>
             <div style={{fontSize:36,fontWeight:700,color:C.accent,lineHeight:1}}>
               {daysUntil(next.date)===0?'!':daysUntil(next.date)}
@@ -4859,7 +4859,7 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
       )}
 
       {weekSessions.length>0?(
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,overflow:'hidden'}}>
+        <div style={{background:C.tintCream,borderRadius:14,overflow:'hidden'}}>
           <div style={{padding:'13px 18px',borderBottom:`1px solid ${C.border}`}}>
             <div style={{fontSize:13,fontWeight:700,color:C.text}}>This week</div>
           </div>
@@ -4996,7 +4996,7 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
           </div>
         </div>
       ):(
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,
+        <div style={{background:C.tintCream,borderRadius:14,
           padding:'24px 20px',textAlign:'center'}}>
           <div style={{fontSize:13,color:C.muted,lineHeight:1.6}}>
             Complete a session to start tracking.<br/>
