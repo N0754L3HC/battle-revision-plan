@@ -44,6 +44,7 @@ const T = {
     subtle:  '#9b938b',
     accent:  '#b5735a',
     accentSoft: 'rgba(181,115,90,0.10)',
+    tintCream:'#f6f1e6', tintSage:'#edf2ea', tintSky:'#eaf0f5',
     success: '#15803d', warn: '#b45309', danger: '#b91c1c',
   },
   dark: {
@@ -59,6 +60,7 @@ const T = {
     subtle:  '#4e4a47',
     accent:  '#c27c60',
     accentSoft: 'rgba(194,124,96,0.13)',
+    tintCream:'rgba(194,124,96,0.07)', tintSage:'rgba(74,222,128,0.06)', tintSky:'rgba(96,165,250,0.07)',
     success: '#4ade80', warn: '#fbbf24', danger: '#f87171',
   },
 };
@@ -3602,7 +3604,8 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
   const hour = new Date().getHours();
   const greeting = hour<5?'Night ops':hour<12?'Morning briefing':hour<17?'Afternoon briefing':'Evening briefing';
 
-  const cardSx = {background:C.surface,border:`1px solid ${C.border}`,borderRadius:10};
+  // De-boxed: soft borderless tinted panels instead of hard bordered cards.
+  const cardSx = {background:C.tintCream,borderRadius:14};
   const Eyebrow = ({children}) => <div style={{...type.eyebrow,color:C.subtle,marginBottom:12}}>{children}</div>;
 
   return (
@@ -3630,8 +3633,8 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
           nextExam
             ? {l:'Next exam', v:`${nextExam.d}d`, sub:'until first paper', c:C.accent}
             : {l:'Streak', v:`${streak}`, sub:`day${streak===1?'':'s'} active`, c: streak>0?C.accent:C.subtle},
-        ].map(k=>(
-          <div key={k.l} style={{...cardSx,padding:'11px 13px',minWidth:0}}>
+        ].map((k,i)=>(
+          <div key={k.l} style={{background:[C.tintCream,C.tintSage,C.tintSky,C.tintCream][i],borderRadius:14,padding:'12px 14px',minWidth:0}}>
             <div style={{...type.eyebrow,color:C.subtle,marginBottom:6,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{k.l}</div>
             <div style={{fontSize:23,fontWeight:800,color:k.c,lineHeight:1,letterSpacing:'-0.02em'}}>{k.v}</div>
             <div style={{fontSize:11,color:C.muted,marginTop:4,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{k.sub}</div>
