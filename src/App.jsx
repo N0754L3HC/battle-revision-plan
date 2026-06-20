@@ -32,12 +32,12 @@ class ErrorBoundary extends React.Component {
 // ── Theme ──────────────────────────────────────────────────────────────────
 const T = {
   light: {
-    bg:      '#e7e0d6',
+    bg:      '#ece4d4',
     surface: '#ffffff',
-    nav:     'rgba(250,247,243,0.97)',
-    border:  'rgba(0,0,0,0.12)',
-    card:    '#f7f4ef',
-    card2:   'rgba(0,0,0,0.045)',
+    nav:     'rgba(252,249,244,0.97)',
+    border:  'rgba(0,0,0,0.09)',
+    card:    '#faf6ee',
+    card2:   'rgba(0,0,0,0.04)',
     shadow:  '0 1px 2px rgba(60,48,34,0.05), 0 2px 8px rgba(60,48,34,0.045)',
     text:    '#18170f',
     muted:   '#574f48',
