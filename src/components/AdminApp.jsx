@@ -50,7 +50,9 @@ function gradeFromPct(pct,subject='') {
 
 // ── Shared input style ─────────────────────────────────────────────────────
 const iS = {background:'#0f1218',border:`1px solid ${BORDER}`,borderRadius:8,padding:'9px 12px',color:TXT,fontSize:13,fontFamily:FONT,outline:'none',width:'100%',boxSizing:'border-box'};
-const card = {background:PANEL,border:`1px solid ${BORDER}`,borderRadius:12};
+// De-boxed: borderless panels (PANEL is lighter than BG, so they read without a border).
+const card = {background:PANEL,borderRadius:12};
+const TINTS = ['rgba(194,124,96,0.10)','rgba(74,222,128,0.08)','rgba(96,165,250,0.09)']; // cream/sage/sky on dark
 const btn = (col=ACCENT,fill=false) => ({background:fill?col:'transparent',border:`1px solid ${fill?col:BORDER}`,color:fill?'#fff':col,padding:'7px 14px',borderRadius:8,cursor:'pointer',fontSize:12,fontWeight:600,fontFamily:FONT,letterSpacing:0,transition:'all 0.15s'});
 // warm greys — match the student theme
 const DIM = '#6f6862';   // timestamps, ranks, footnotes
@@ -1490,8 +1492,8 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
               {v:stats.newWeek,l:'New · 7d',c:ACCENT},
               {v:stats.activated,l:'Activated'},
               {v:stats.admins,l:'Admins'},
-            ].map(({v,l,c})=>(
-              <div key={l} style={{...card,padding:'14px 16px'}}>
+            ].map(({v,l,c},i)=>(
+              <div key={l} style={{background:TINTS[i%3],borderRadius:12,padding:'14px 16px'}}>
                 <div style={{fontSize:24,fontWeight:700,color:c||TXT,lineHeight:1,letterSpacing:'-0.02em',fontFamily:numF}}>{v}</div>
                 <div style={{fontSize:12,color:MUT,marginTop:6}}>{l}</div>
               </div>
@@ -1504,8 +1506,8 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
               {v:stats.totalErrors,l:'Errors logged',c:WARN},
               {v:stats.avgReadiness,l:'Avg readiness',c:R(stats.avgReadiness)},
               {v:`£${(stats.pro*4.99).toFixed(0)}`,l:'Est. MRR',c:ACCENT},
-            ].map(({v,l,c})=>(
-              <div key={l} style={{...card,padding:'14px 16px'}}>
+            ].map(({v,l,c},i)=>(
+              <div key={l} style={{background:TINTS[(i+1)%3],borderRadius:12,padding:'14px 16px'}}>
                 <div style={{fontSize:24,fontWeight:700,color:c||TXT,lineHeight:1,letterSpacing:'-0.02em',fontFamily:numF}}>{v}</div>
                 <div style={{fontSize:12,color:MUT,marginTop:6}}>{l}</div>
               </div>
