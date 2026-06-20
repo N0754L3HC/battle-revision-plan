@@ -22,7 +22,7 @@ function extractCode(raw) {
   return m ? m[1] : '';
 }
 
-export default function GroupsView({ user, scores = [], uid, C, font, addToast, referralCode }) {
+export default function GroupsView({ user, scores = [], uid, C, font, addToast, referralCode, yearGroup = '', setYearGroup = () => {} }) {
   const [groups, setGroups]       = useState([]);
   const [loading, setLoading]     = useState(true);
 
@@ -186,6 +186,31 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
     } catch (e) { if (e?.name === 'AbortError') return; }
     try { await navigator.clipboard.writeText(link); setRefCopied(true); setTimeout(() => setRefCopied(false), 2000); }
     catch { addToast(`Share this link: ${link}`, 'info'); }
+  };
+
+  // School opt-in (moved here from Account — it's social, and feeds this page's
+  // school leaderboard)
+  const [schoolName, setSchoolName] = useState('');
+  const [schoolOptIn, setSchoolOptIn] = useState(false);
+  const [schoolSaving, setSchoolSaving] = useState(false);
+  const [schoolSaved, setSchoolSaved] = useState(false);
+  useEffect(() => {
+    if (!uid || uid === 'anon') return;
+    supabase.from('user_profiles').select('school_name,school_opt_in').eq('id', uid).single()
+      .then(({ data }) => { if (data) { setSchoolName(data.school_name || ''); setSchoolOptIn(!!data.school_opt_in); } })
+      .catch(() => {});
+  }, [uid]);
+  const saveSchool = async () => {
+    if (!uid || uid === 'anon') return;
+    setSchoolSaving(true);
+    try {
+      await supabase.from('user_profiles')
+        .update({ school_name: schoolName || null, school_opt_in: schoolOptIn, year_group: yearGroup || null })
+        .eq('id', uid);
+      setSchoolSaved(true); setTimeout(() => setSchoolSaved(false), 2000);
+      if (schoolOptIn && schoolsOpen) { schoolsFetchedRef.current = {}; loadSchools(yearFilter); }
+    } catch { addToast('Could not save', 'error'); }
+    setSchoolSaving(false);
   };
 
   const handleToggleSchools = () => {
@@ -401,6 +426,35 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
               {refCopied ? 'Copied!' : 'Share link'}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* School opt-in (moved from Account) */}
+      {user && (
+        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '18px 20px' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>Appear on the school leaderboard</div>
+          <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.6, marginBottom: 12 }}>
+            Add your school and opt in to put it on the anonymous leaderboard below. Only your school's average is shown — never your individual data.
+          </div>
+          <input value={schoolName} onChange={e => setSchoolName(e.target.value)} placeholder="Your school name" maxLength={80}
+            style={{ width: '100%', boxSizing: 'border-box', background: C.card2, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 12px', color: C.text, fontSize: 13, fontFamily: font, outline: 'none', marginBottom: 10 }} />
+          <div style={{ fontSize: 11, color: C.subtle, marginBottom: 6 }}>Year group (optional)</div>
+          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 12 }}>
+            {['Y10', 'Y11', 'Y12', 'Y13'].map(y => (
+              <button key={y} onClick={() => setYearGroup(yearGroup === y ? '' : y)}
+                style={{ padding: '5px 11px', borderRadius: 6, background: yearGroup === y ? C.accentSoft : 'transparent', border: `1px solid ${yearGroup === y ? C.accent : C.border}`, color: yearGroup === y ? C.accent : C.muted, fontSize: 11, fontWeight: yearGroup === y ? 700 : 500, fontFamily: font, cursor: 'pointer' }}>{y}</button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <div style={{ fontSize: 13, color: C.text }}>Show on school leaderboard</div>
+            <button onClick={() => setSchoolOptIn(v => !v)} style={{ flexShrink: 0, width: 44, height: 24, borderRadius: 12, padding: 0, background: schoolOptIn ? C.accent : C.border, border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}>
+              <div style={{ position: 'absolute', top: 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.2s', left: schoolOptIn ? 23 : 3 }} />
+            </button>
+          </div>
+          <button onClick={saveSchool} disabled={schoolSaving}
+            style={{ width: '100%', padding: '10px', background: schoolSaved ? 'rgba(74,222,128,0.12)' : C.accentSoft, border: `1px solid ${schoolSaved ? 'rgba(74,222,128,0.3)' : C.accent + '44'}`, borderRadius: 8, color: schoolSaved ? '#22c55e' : C.accent, fontSize: 13, fontWeight: 600, fontFamily: font, cursor: schoolSaving ? 'not-allowed' : 'pointer' }}>
+            {schoolSaving ? 'Saving…' : schoolSaved ? 'Saved ✓' : 'Save'}
+          </button>
         </div>
       )}
 

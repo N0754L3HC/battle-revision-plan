@@ -5713,53 +5713,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       </div>
       )}
 
-      {/* Referral moved to the Groups page (it's social) */}
-
-      {/* School leaderboard opt-in */}
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:10}}>School leaderboard</div>
-        <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginBottom:12}}>
-          Enter your school name and opt in to appear on the anonymous school leaderboard in the Groups tab. Only your school's average score is visible — never individual data.
-        </div>
-        <input
-          value={schoolName}
-          onChange={e=>setSchoolName(e.target.value)}
-          placeholder="Your school name"
-          maxLength={80}
-          style={{width:'100%',boxSizing:'border-box',background:C.card2,border:`1px solid ${C.border}`,
-            borderRadius:8,padding:'10px 12px',color:C.text,fontSize:13,fontFamily:font,
-            outline:'none',marginBottom:10}}
-        />
-        <div style={{fontSize:11,color:C.subtle,marginBottom:6}}>Year group (optional — used for filtering)</div>
-        <div style={{display:'flex',gap:5,flexWrap:'wrap',marginBottom:12}}>
-          {['Y10','Y11','Y12','Y13'].map(y=>(
-            <button key={y} onClick={()=>setYearGroup(yearGroup===y?'':y)}
-              style={{padding:'5px 11px',borderRadius:6,
-                background:yearGroup===y?C.accentSoft:'transparent',
-                border:`1px solid ${yearGroup===y?C.accent:C.border}`,
-                color:yearGroup===y?C.accent:C.muted,
-                fontSize:11,fontWeight:yearGroup===y?700:500,fontFamily:font,cursor:'pointer'}}>
-              {y}
-            </button>
-          ))}
-        </div>
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
-          <div style={{fontSize:13,color:C.text}}>Show on school leaderboard</div>
-          <button onClick={()=>setSchoolOptIn(v=>!v)}
-            style={{flexShrink:0,width:44,height:24,borderRadius:12,padding:0,
-              background:schoolOptIn?C.accent:C.border,border:'none',cursor:'pointer',
-              position:'relative',transition:'background 0.2s'}}>
-            <div style={{position:'absolute',top:3,width:18,height:18,borderRadius:'50%',
-              background:'#fff',transition:'left 0.2s',left:schoolOptIn?23:3}}/>
-          </button>
-        </div>
-        <button onClick={()=>saveSchool(schoolName,schoolOptIn,yearGroup)} disabled={schoolSaving}
-          style={{width:'100%',padding:'10px',background:C.accentSoft,border:`1px solid ${C.accent}44`,
-            borderRadius:8,color:C.accent,fontSize:13,fontWeight:600,fontFamily:font,
-            cursor:schoolSaving?'not-allowed':'pointer'}}>
-          {schoolSaving?'Saving…':'Save school settings'}
-        </button>
-      </div>
+      {/* Referral + school opt-in moved to the Groups page (they're social) */}
       </>}
 
       {accountTab==='data'&&<>
@@ -7324,7 +7278,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
         {view==='exams'        && <Exams        {...vp}/>}
         {view==='plan'         && <Schedule     {...vp}/>}
         {view==='achievements' && <AchievementsView {...vp} unlockedIds={unlockedIds}/>}
-        {view==='groups'       && <GroupsView    user={user} scores={scores} uid={uid} C={C} font={font} addToast={addToast} referralCode={referralCode}/>}
+        {view==='groups'       && <GroupsView    user={user} scores={scores} uid={uid} C={C} font={font} addToast={addToast} referralCode={referralCode} yearGroup={yearGroup} setYearGroup={setYearGroup}/>}
         {view==='timer'        && <StudyTimer    subjects={subjects} uid={uid} C={C} font={font} sessions={sessions} setSessions={setSessions} scores={scores} errors={errors} rag={rag}/>}
         {view==='resources'    && <Resources    {...vp}/>}
         {view==='account'      && <Account      {...vp} user={user} selection={selection}
