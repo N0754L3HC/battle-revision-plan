@@ -6135,6 +6135,7 @@ function LandingPage({ onGetStarted }) {
   const display = FONT_DISPLAY;
   const mono = FONT_MONO;
   const C = T.dark;
+  const [showTerms, setShowTerms] = useState(false);
 
   const FEATURES = [
     {
@@ -6175,12 +6176,34 @@ function LandingPage({ onGetStarted }) {
     },
   ];
 
-  const TRUST = ['Free — no credit card', 'A-Levels & GCSEs', 'Works on mobile', 'No ads'];
+  const TRUST_CHIPS = ['Free during beta', 'No credit card', 'A-Levels & GCSEs', 'No ads'];
+
+  const STEPS = [
+    { n:'1', title:'Set up in two minutes', desc:'Pick your subjects and exam boards. The right papers and official grade boundaries load automatically.' },
+    { n:'2', title:'Log papers as you go', desc:'Enter your mark after each past paper, tag the mistakes you made, and rate every topic red, amber or green.' },
+    { n:'3', title:'See exactly what to fix', desc:'Your real grade, your trajectory and the topics costing you the most marks — so every revision hour is spent where it counts.' },
+  ];
+
+  const TRUST = [
+    { title:'Free during beta', desc:'No card, no trial countdown, no locked features. Everything is open right now.' },
+    { title:'Your data stays yours', desc:'No ads, never sold. Export everything or delete your account at any time.' },
+    { title:'Real grades, not guesses', desc:'Marks become grades using official mark-scheme boundaries — not rough percentages.' },
+    { title:'Every major board', desc:'AQA, Edexcel, OCR and WJEC — across A-Levels, AS and GCSEs.' },
+  ];
+
+  const FAQ = [
+    { q:'Is it actually free?', a:'Yes — free while in beta. No card required, and nothing is hidden behind a trial.' },
+    { q:'Which exam boards do you support?', a:'AQA, Edexcel, OCR and WJEC, for A-Levels, AS-Levels and GCSEs across the main subjects.' },
+    { q:'Is my data safe?', a:'Your revision data is stored securely and is never sold or used for ads. You can export it or permanently delete your account whenever you like.' },
+    { q:'Do I have to log every single paper?', a:'No. Even a handful of papers gives you a grade trajectory and shows your weakest topics. Log as much or as little as you want.' },
+    { q:'I do GCSEs — does it work for me?', a:'Yes. Choose GCSE at sign-up and everything switches to the 9–1 grade scale and GCSE papers.' },
+  ];
 
   return (
     <div style={{minHeight:'100vh', background:C.bg, fontFamily:font, color:C.text}}>
+      {showTerms && <TermsOfService onClose={()=>setShowTerms(false)}/>}
 
-      {/* Nav — the one frosted layer in the app */}
+      {/* Nav */}
       <nav style={{position:'fixed', top:0, left:0, right:0, zIndex:100,
         background:C.nav, backdropFilter:'blur(16px)',
         WebkitBackdropFilter:'blur(16px)', borderBottom:`1px solid ${C.border}`,
@@ -6200,60 +6223,119 @@ function LandingPage({ onGetStarted }) {
         </button>
       </nav>
 
-      {/* Hero — left-aligned, asymmetric */}
-      <section style={{maxWidth:1040, margin:'0 auto', padding:'132px 24px 72px'}}>
-        <div style={{maxWidth:760}}>
-          {/* Flat eyebrow — a thin accent rule, not a pill */}
-          <div style={{...type.eyebrow, color:C.accent, marginBottom:22,
-            display:'flex', alignItems:'center', gap:10}}>
-            <span style={{width:22, height:1.5, background:C.accent, display:'inline-block'}}/>
-            Free during beta
+      {/* Hero — text + live-looking product preview */}
+      <section style={{maxWidth:1100, margin:'0 auto', padding:'120px 24px 64px'}}>
+        <div style={{display:'flex', gap:'48px 56px', flexWrap:'wrap', alignItems:'center'}}>
+          <div style={{flex:'1 1 440px', minWidth:0}}>
+            <div style={{...type.eyebrow, color:C.accent, marginBottom:22,
+              display:'flex', alignItems:'center', gap:10}}>
+              <span style={{width:22, height:1.5, background:C.accent, display:'inline-block'}}/>
+              Free during beta
+            </div>
+            <h1 style={{...type.display, fontSize:'clamp(38px, 5.6vw, 60px)',
+              color:C.text, margin:'0 0 22px'}}>
+              Know exactly where<br/>
+              <span style={{color:C.accent}}>you're losing marks.</span>
+            </h1>
+            <p style={{...type.body, fontSize:'clamp(16px, 1.9vw, 19px)', color:C.muted,
+              margin:'0 0 32px', maxWidth:520}}>
+              A free revision tracker for A-Levels and GCSEs. Log past papers, see your real grade against
+              official boundaries, and fix the topics costing you marks — before exam day.
+            </p>
+            <div style={{display:'flex', gap:12, flexWrap:'wrap', alignItems:'center'}}>
+              <button onClick={onGetStarted}
+                style={{display:'inline-flex', alignItems:'center', gap:9, padding:'14px 26px',
+                  background:C.accent, border:'none', borderRadius:6, color:'#fff',
+                  fontSize:15, fontWeight:600, fontFamily:font, cursor:'pointer'}}>
+                Get started — it's free
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </button>
+            </div>
+            <div style={{display:'flex', gap:16, flexWrap:'wrap', marginTop:24}}>
+              {TRUST_CHIPS.map(t => (
+                <span key={t} style={{...type.caption, color:C.subtle, display:'flex', alignItems:'center', gap:6}}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  {t}
+                </span>
+              ))}
+            </div>
           </div>
-          <h1 style={{...type.display, fontSize:'clamp(40px, 6.4vw, 66px)',
-            color:C.text, margin:'0 0 22px'}}>
-            Know exactly where<br/>
-            <span style={{color:C.accent}}>you're losing marks.</span>
-          </h1>
-          <p style={{...type.body, fontSize:'clamp(16px, 1.9vw, 19px)', color:C.muted,
-            margin:'0 0 34px', maxWidth:560}}>
-            Free revision tracker for A-Levels and GCSEs. Log past papers, track your grade trajectory,
-            and fix weak topics before exam day.
-          </p>
-          <button onClick={onGetStarted}
-            style={{display:'inline-flex', alignItems:'center', gap:9, padding:'14px 26px',
-              background:C.accent, border:'none', borderRadius:6, color:'#fff',
-              fontSize:15, fontWeight:600, fontFamily:font, cursor:'pointer'}}>
-            Get started — it's free
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-          </button>
-          <div style={{display:'flex', gap:18, flexWrap:'wrap', marginTop:26}}>
-            {TRUST.map(t => (
-              <span key={t} style={{...type.caption, color:C.subtle, display:'flex',
-                alignItems:'center', gap:6}}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.subtle} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                {t}
-              </span>
+
+          {/* Product preview */}
+          <div style={{flex:'1 1 360px', minWidth:300, maxWidth:430}}>
+            <div style={{background:C.surface, border:`1px solid ${C.border}`, borderRadius:16,
+              padding:20, boxShadow:'0 24px 70px rgba(0,0,0,0.45)'}}>
+              <div style={{...type.eyebrow, color:C.subtle, marginBottom:10}}>Battle readiness</div>
+              <div style={{display:'flex', alignItems:'flex-end', gap:12, marginBottom:8}}>
+                <div style={{fontSize:46, fontWeight:800, color:C.text, lineHeight:1, letterSpacing:'-0.03em', fontFamily:mono}}>74</div>
+                <div style={{fontSize:13, color:C.success, fontWeight:600, marginBottom:8}}>On track</div>
+              </div>
+              <div style={{height:6, background:C.card2, borderRadius:3, overflow:'hidden', marginBottom:18}}>
+                <div style={{width:'74%', height:'100%', background:C.accent, borderRadius:3}}/>
+              </div>
+              {[['Further Maths','A* target','#a855f7',86],['Chemistry','A target','#ec4899',71],['Computer Science','A* target','#10b981',79]].map(([n,t,col,v])=>(
+                <div key={n} style={{display:'flex', alignItems:'center', gap:10, padding:'9px 0', borderTop:`1px solid ${C.border}`}}>
+                  <span style={{width:8, height:8, borderRadius:'50%', background:col, flexShrink:0}}/>
+                  <div style={{flex:1, minWidth:0}}>
+                    <div style={{fontSize:13, color:C.text, fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{n}</div>
+                    <div style={{fontSize:11, color:C.subtle}}>{t}</div>
+                  </div>
+                  <div style={{width:54, height:4, background:C.card2, borderRadius:2, overflow:'hidden', flexShrink:0}}><div style={{width:`${v}%`, height:'100%', background:col, borderRadius:2}}/></div>
+                  <span style={{fontSize:12, fontWeight:700, color:C.text, width:32, textAlign:'right', fontFamily:mono}}>{v}%</span>
+                </div>
+              ))}
+              <div style={{marginTop:14, padding:'10px 12px', background:C.card2, borderRadius:8,
+                display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                <span style={{fontSize:12, color:C.muted}}>Last paper · Pure 1</span>
+                <span style={{fontSize:12, fontWeight:700, color:C.text}}>82% <span style={{color:C.success}}>→ A</span></span>
+              </div>
+            </div>
+            <div style={{...type.caption, fontSize:11, color:C.subtle, textAlign:'center', marginTop:10}}>
+              A snapshot of your dashboard. Sample data shown.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section style={{borderTop:`1px solid ${C.border}`, background:C.surface}}>
+        <div style={{maxWidth:1100, margin:'0 auto', padding:'64px 24px'}}>
+          <div style={{...type.eyebrow, color:C.accent, marginBottom:10}}>How it works</div>
+          <h2 style={{...type.h2, fontSize:'clamp(24px, 3vw, 32px)', color:C.text, margin:'0 0 36px', maxWidth:560}}>
+            From "I think I'm fine" to knowing exactly where you stand.
+          </h2>
+          <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))', gap:'28px 40px'}}>
+            {STEPS.map(s => (
+              <div key={s.n}>
+                <div style={{display:'flex', alignItems:'center', gap:10, marginBottom:12}}>
+                  <div style={{width:30, height:30, borderRadius:8, border:`1px solid ${C.accent}`,
+                    color:C.accent, display:'flex', alignItems:'center', justifyContent:'center',
+                    fontFamily:mono, fontWeight:700, fontSize:14}}>{s.n}</div>
+                  <div style={{...type.h3, color:C.text}}>{s.title}</div>
+                </div>
+                <p style={{...type.body, fontSize:14, color:C.muted, margin:0}}>{s.desc}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Features — asymmetric: intro column + a structured list, not a card grid */}
-      <section style={{maxWidth:1040, margin:'0 auto', padding:'8px 24px 96px'}}>
+      {/* Features */}
+      <section style={{maxWidth:1100, margin:'0 auto', padding:'72px 24px'}}>
         <div style={{display:'flex', flexWrap:'wrap', gap:'48px 56px', alignItems:'flex-start'}}>
           <div style={{flex:'1 1 240px', minWidth:0, maxWidth:340}}>
             <h2 style={{...type.h2, fontSize:'clamp(24px, 3vw, 32px)', color:C.text, margin:'0 0 12px'}}>
               Everything you need to walk in ready.
             </h2>
             <p style={{...type.body, color:C.muted, margin:0}}>
-              Four tools, one place. Built around how marks are actually won and lost.
+              Built around how marks are actually won and lost — not another to-do list.
             </p>
           </div>
           <div style={{flex:'2 1 460px', minWidth:0}}>
             {FEATURES.map((f, i) => (
               <div key={f.title} style={{display:'flex', gap:18, alignItems:'flex-start',
                 padding:'22px 0', borderTop:i===0 ? 'none' : `1px solid ${C.border}`}}>
-                <div style={{color:C.subtle, flexShrink:0, marginTop:1}}>{f.icon}</div>
+                <div style={{color:C.accent, flexShrink:0, marginTop:1}}>{f.icon}</div>
                 <div>
                   <div style={{...type.h3, color:C.text, marginBottom:5}}>{f.title}</div>
                   <div style={{...type.body, fontSize:13.5, color:C.muted, maxWidth:520}}>{f.desc}</div>
@@ -6264,29 +6346,92 @@ function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
-      {/* Bottom CTA — flat band, left/right rhythm (not centered) */}
+      {/* Trust */}
       <section style={{borderTop:`1px solid ${C.border}`, background:C.surface}}>
-        <div style={{maxWidth:1040, margin:'0 auto', padding:'52px 24px',
+        <div style={{maxWidth:1100, margin:'0 auto', padding:'64px 24px'}}>
+          <div style={{...type.eyebrow, color:C.accent, marginBottom:10}}>Why you can trust it</div>
+          <h2 style={{...type.h2, fontSize:'clamp(24px, 3vw, 32px)', color:C.text, margin:'0 0 32px', maxWidth:560}}>
+            No gimmicks. Just an honest tool for your grades.
+          </h2>
+          <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:14, marginBottom:28}}>
+            {TRUST.map(t => (
+              <div key={t.title} style={{background:C.bg, border:`1px solid ${C.border}`,
+                borderRadius:12, padding:'18px 18px'}}>
+                <div style={{...type.h3, fontSize:14, color:C.text, marginBottom:6}}>{t.title}</div>
+                <div style={{...type.body, fontSize:13, color:C.muted}}>{t.desc}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{display:'flex', gap:14, alignItems:'flex-start', maxWidth:640,
+            padding:'16px 18px', background:`${C.accent}0f`, border:`1px solid ${C.accent}33`, borderRadius:12}}>
+            <div style={{width:34, height:34, borderRadius:9, background:C.accent, flexShrink:0,
+              display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:800, fontFamily:mono, fontSize:13}}>A*</div>
+            <div style={{...type.body, fontSize:13.5, color:C.muted}}>
+              <span style={{color:C.text, fontWeight:600}}>Made by a student who just sat their A-Levels.</span>{' '}
+              Built out of frustration with revision that felt busy but not effective — and shaped around what actually moves a grade.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section style={{maxWidth:1100, margin:'0 auto', padding:'72px 24px'}}>
+        <h2 style={{...type.h2, fontSize:'clamp(24px, 3vw, 32px)', color:C.text, margin:'0 0 32px'}}>
+          Questions, answered.
+        </h2>
+        <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(300px, 1fr))', gap:'4px 48px'}}>
+          {FAQ.map((f, i) => (
+            <div key={f.q} style={{padding:'20px 0', borderTop:i<2 ? 'none' : `1px solid ${C.border}`}}>
+              <div style={{...type.h3, fontSize:15, color:C.text, marginBottom:7}}>{f.q}</div>
+              <div style={{...type.body, fontSize:13.5, color:C.muted}}>{f.a}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section style={{borderTop:`1px solid ${C.border}`, background:C.surface}}>
+        <div style={{maxWidth:1100, margin:'0 auto', padding:'56px 24px',
           display:'flex', justifyContent:'space-between', alignItems:'center',
           gap:'28px 40px', flexWrap:'wrap'}}>
           <div style={{maxWidth:520}}>
             <div style={{...type.h2, fontSize:'clamp(22px, 2.6vw, 30px)', color:C.text, margin:'0 0 8px'}}>
-              Exams are in weeks. Start now.
+              Your exams won't wait. Start today.
             </div>
             <div style={{...type.caption, color:C.subtle}}>
-              Supports AQA · Edexcel · OCR · WJEC · A-Levels &amp; GCSEs
+              Two-minute setup · free during beta · no card
             </div>
           </div>
           <button onClick={onGetStarted}
-            style={{display:'inline-flex', alignItems:'center', gap:8, padding:'13px 24px',
-              background:'transparent', border:`1px solid ${C.accent}`,
-              borderRadius:6, color:C.accent, fontSize:14, fontWeight:600,
+            style={{display:'inline-flex', alignItems:'center', gap:8, padding:'14px 26px',
+              background:C.accent, border:'none',
+              borderRadius:6, color:'#fff', fontSize:15, fontWeight:600,
               fontFamily:font, cursor:'pointer', flexShrink:0}}>
-            Set up your account — 2 minutes
+            Get started — it's free
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </button>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer style={{borderTop:`1px solid ${C.border}`}}>
+        <div style={{maxWidth:1100, margin:'0 auto', padding:'28px 24px',
+          display:'flex', justifyContent:'space-between', alignItems:'center', gap:'14px 24px', flexWrap:'wrap'}}>
+          <div style={{display:'flex', alignItems:'center', gap:9}}>
+            <div style={{width:22, height:22, borderRadius:5, background:C.accent,
+              display:'flex', alignItems:'center', justifyContent:'center',
+              fontFamily:mono, fontWeight:800, fontSize:9, color:'#fff'}}>A*</div>
+            <span style={{...type.caption, color:C.subtle}}>A* Battle Plan · AQA · Edexcel · OCR · WJEC</span>
+          </div>
+          <div style={{display:'flex', alignItems:'center', gap:18, flexWrap:'wrap'}}>
+            <button onClick={()=>setShowTerms(true)} style={{background:'none', border:'none',
+              color:C.muted, fontSize:13, fontFamily:font, cursor:'pointer', padding:0}}>
+              Terms &amp; Privacy
+            </button>
+            <a href="mailto:51r4h100@gmail.com" style={{color:C.muted, fontSize:13, textDecoration:'none'}}>Contact</a>
+          </div>
+        </div>
+      </footer>
 
     </div>
   );
