@@ -85,6 +85,14 @@ YOU CAN
 - Reflect a student's recent progress (papers logged, weak topics) shown in context.
 - Suggest concrete next actions (e.g. "log one past paper today on your weakest topic").
 
+USING THE CONTEXT
+- The CONTEXT block below is a live snapshot of THIS student's whole revision system: per-subject averages/grades/projections/targets, RAG topic ratings (red = weak), study time per subject + streak, recently logged mistakes, and upcoming exams.
+- Use it. When they ask "what should I focus on?", "how am I doing?", or "am I on track?", ground your answer in their actual numbers — name the specific weak subject, the gap to their target, the red topics, or the exam that's closest.
+- Spot patterns they might miss: a subject far below target, a subject getting lots of study time but still weak (or strong but barely revised), a declining trend, a long gap since they last logged anything, an exam approaching for a weak subject.
+- Be specific over generic: "Your FM projection is a B but you're targeting A* and 3 mechanics topics are red — do an M1 paper today" beats "keep revising".
+- Don't dump the whole dataset back at them or read it out like a report. Pull the 1-2 things that matter for what they asked.
+- If a number isn't in context (e.g. they've logged no papers for a subject), say so honestly rather than inventing it.
+
 YOU MUST NEVER
 - Do the student's coursework or NEA for them. Coursework = produce a finished artefact they hand in. Teaching them a technique with a small example is fine; writing their NEA is not. If they ask you to "do my coursework / NEA / EPQ" refuse and offer to explain the technique instead.
 - Give the exact mark scheme to a specific named past paper. Worked examples on similar questions are fine.
@@ -104,28 +112,74 @@ CONTEXT (about this student, may be partial)
 
 Reply concisely, with empathy where due, and a clear next step when relevant.`;
 
-function buildContext({subjects=[], scores=[], rag={}, examLevel='alevel', nextExam=null}) {
+// Renders the full study-system snapshot the client sends into a compact,
+// model-readable text block. Falls back gracefully to the older thin shape so a
+// stale client never breaks. No PII is ever included (client strips it).
+function buildContext(ctx = {}) {
+  const lvl = ctx.examLevel === 'gcse' ? 'GCSE' : ctx.examLevel === 'aslevel' ? 'AS-Level' : 'A-Level';
   const lines = [];
-  lines.push(`Exam level: ${examLevel === 'gcse' ? 'GCSE' : examLevel === 'aslevel' ? 'AS-Level' : 'A-Level'}`);
-  if (subjects.length) lines.push(`Subjects: ${subjects.slice(0, 6).map(s => s.name || s).join(', ')}`);
+  lines.push(`Exam level: ${lvl}`);
 
-  // Recent score summary (last 3, no PII)
+  // ── RICH SHAPE ────────────────────────────────────────────────────────────
+  if (Array.isArray(ctx.subjects) && ctx.subjects.length && typeof ctx.subjects[0] === 'object' && 'papers' in ctx.subjects[0]) {
+    if (ctx.battleReadiness) lines.push(`Battle readiness: ${ctx.battleReadiness.score}/100 (${ctx.battleReadiness.label})`);
+    if (ctx.overallAvg != null) lines.push(`Overall average: ${ctx.overallAvg}% across ${ctx.totalPapers} papers`);
+
+    if (ctx.studyTime) {
+      const st = ctx.studyTime;
+      const per = st.perSubjectMins && Object.keys(st.perSubjectMins).length
+        ? ' — by subject: ' + Object.entries(st.perSubjectMins).map(([k, v]) => `${k} ${v}m`).join(', ')
+        : '';
+      lines.push(`Study time: ${st.totalMins}m total, ${st.thisWeekMins}m this week, ${st.streakDays}-day streak${per}`);
+    }
+
+    lines.push('Subjects:');
+    for (const s of ctx.subjects.slice(0, 8)) {
+      const bits = [];
+      bits.push(`${s.papers||0} paper${s.papers===1?'':'s'}`);
+      if (s.avg != null) bits.push(`avg ${s.avg}%${s.grade ? ` (${s.grade})` : ''}`);
+      if (s.latest != null) bits.push(`latest ${s.latest}%`);
+      if (s.best != null) bits.push(`best ${s.best}%`);
+      if (s.projected) bits.push(`projected ${s.projected}${s.trend && s.trend !== 'stable' ? ` & ${s.trend}` : ''}`);
+      if (s.target) bits.push(`target ${s.target}`);
+      const rag = s.topicsRated;
+      if (rag && (rag.red || rag.amber || rag.green)) bits.push(`topics R${rag.red}/A${rag.amber}/G${rag.green}`);
+      let line = `  • ${s.name}: ${bits.join(', ')}`;
+      if (Array.isArray(s.weakTopics) && s.weakTopics.length) line += `\n    weak (red): ${s.weakTopics.join('; ')}`;
+      lines.push(line);
+    }
+
+    if (Array.isArray(ctx.recentErrors) && ctx.recentErrors.length) {
+      const errs = ctx.recentErrors.slice(0, 8)
+        .map(e => `${e.subject||'?'}${e.topic ? ` – ${e.topic}` : ''}${e.type ? ` (${e.type})` : ''}`)
+        .join('; ');
+      lines.push(`Recent logged mistakes: ${errs}`);
+    }
+
+    if (Array.isArray(ctx.upcomingExams) && ctx.upcomingExams.length) {
+      const ex = ctx.upcomingExams.slice(0, 5)
+        .map(e => `${e.subject} ${e.paper||''} in ${e.daysAway}d`).join('; ');
+      lines.push(`Upcoming exams: ${ex}`);
+    }
+
+    return lines.join('\n');
+  }
+
+  // ── LEGACY THIN SHAPE (older client) ──────────────────────────────────────
+  const { subjects = [], scores = [], rag = {}, nextExam = null } = ctx;
+  if (subjects.length) lines.push(`Subjects: ${subjects.slice(0, 6).map(s => s.name || s).join(', ')}`);
   const recent = scores.slice(-3);
   if (recent.length) {
     const summary = recent.map(s => `${s.subject||'?'} ${Math.round(s.pct||0)}%${s.grade?' ('+s.grade+')':''}`).join('; ');
     lines.push(`Recent papers: ${summary}`);
   }
-
-  // Red RAG topics (weak)
   const reds = Object.entries(rag).filter(([, v]) => v === 'red').map(([k]) => k.split('_').slice(1).join(' ')).slice(0, 4);
   if (reds.length) lines.push(`Weakest topics flagged red: ${reds.join(', ')}`);
-
   if (nextExam) {
     const days = Math.ceil((new Date(nextExam.date) - Date.now()) / 86400000);
     if (days >= 0) lines.push(`Next exam: ${nextExam.paper||nextExam.subject} in ${days} day${days===1?'':'s'}`);
   }
-
-  return lines.length ? lines.join('\n') : 'No detailed context available.';
+  return lines.length > 1 ? lines.join('\n') : 'No detailed context available.';
 }
 
 // Map our message format to Gemini's

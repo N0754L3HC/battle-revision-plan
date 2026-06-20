@@ -2222,7 +2222,7 @@ function getCharacterReply(input, {subjects, scores, sessions, examSched}) {
   return fallbacks[Math.floor(Math.random()*fallbacks.length)];
 }
 
-function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},examLevel='alevel',C,font,onClose}) {
+function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},examLevel='alevel',errors=[],targets={},C,font,onClose}) {
   ensureAnimStyles();
   const [messages,setMessages] = useState([{
     from:'char',
@@ -2245,16 +2245,69 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
     setInput('');
     setSending(true);
 
-    // Build minimal context — no PII, just stats Caps needs for grounded replies
-    const nextExam = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId,s.options))
-      .map(e=>({...e, t: new Date(e.date).getTime()}))
-      .filter(e=>e.t>=Date.now()).sort((a,b)=>a.t-b.t)[0] || null;
+    // Build FULL context — the whole study system so Caps can reason properly.
+    // No PII (no real name, school, address) — just the student's revision data.
+    const nowMs = Date.now();
+    const GB = Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
+    const subjById = Object.fromEntries(subjects.map(s=>[s.id,s]));
+
+    // Per-subject summary: scores, grades, projection, RAG, weak topics
+    const subjSummary = subjects.map(s=>{
+      const ss = [...scores].filter(x=>x.subject===s.name).sort((a,b)=>(a.ts||a.id)-(b.ts||b.id));
+      const cnt = ss.length;
+      const avg = cnt ? Math.round(ss.reduce((a,x)=>a+x.pct,0)/cnt) : null;
+      const pred = predictedGrade(scores, s.name, GB);
+      const topics = SPEC_TOPICS[s.id]||[];
+      let r=0,a=0,g=0;
+      topics.forEach((t,i)=>{ const v=rag[`${s.id}_${i}`]; if(v==='red')r++; else if(v==='amber')a++; else if(v==='green')g++; });
+      const weak = topics.filter((t,i)=>rag[`${s.id}_${i}`]==='red').slice(0,5);
+      return {
+        name:s.name, papers:cnt,
+        avg, grade: avg!=null?getSubjectGrade(avg,s.name,GB):null,
+        best: cnt?Math.max(...ss.map(x=>x.pct)):null,
+        latest: cnt?ss[cnt-1].pct:null,
+        target: targets[s.name]||null,
+        projected: pred?pred.grade:null, trend: pred?pred.trend:null,
+        topicsRated:{red:r,amber:a,green:g}, weakTopics:weak,
+      };
+    });
+
+    // Study time + streak
+    const secsBySubj={}; let totalSecs=0, weekSecs=0;
+    sessions.forEach(se=>{
+      const t=se.ts??se.id; totalSecs+=se.secs||0;
+      if(nowMs-t<7*86400000) weekSecs+=se.secs||0;
+      const sub=subjById[se.subjectId]; if(sub) secsBySubj[sub.name]=(secsBySubj[sub.name]||0)+(se.secs||0);
+    });
+    const activeDays = studyActivityDays({sessions,scores,errors});
+    let streak=0; { const d=new Date(); d.setHours(0,0,0,0); while(activeDays.has(d.getTime())){ streak++; d.setDate(d.getDate()-1); } }
+
+    const upcoming = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId,s.options)
+        .map(e=>({...e,subjectName:s.name})))
+      .map(e=>({...e, d:Math.ceil((new Date(e.date)-nowMs)/86400000)}))
+      .filter(e=>e.d>=0).sort((a,b)=>a.d-b.d).slice(0,5)
+      .map(e=>({paper:e.paper, subject:e.subjectName, date:e.date, daysAway:e.d}));
+
+    const br = calcBattleReadiness(scores, errors);
+
     const ctx = {
-      subjects: subjects.map(s=>({name:s.name})),
-      scores: scores.slice(-3).map(s=>({subject:s.subject, pct:s.pct, grade:s.grade})),
-      rag,
       examLevel,
-      nextExam: nextExam ? {paper:nextExam.paper, subject:nextExam.subjectName, date:nextExam.date} : null,
+      battleReadiness: {score:br.total, label:br.label},
+      overallAvg: scores.length ? Math.round(scores.reduce((a,s)=>a+s.pct,0)/scores.length) : null,
+      totalPapers: scores.length,
+      studyTime: {
+        totalMins: Math.round(totalSecs/60),
+        thisWeekMins: Math.round(weekSecs/60),
+        streakDays: streak,
+        perSubjectMins: Object.fromEntries(Object.entries(secsBySubj).map(([k,v])=>[k,Math.round(v/60)])),
+      },
+      subjects: subjSummary,
+      recentErrors: errors.slice(0,8).map(e=>({subject:e.subject, topic:e.topic, type:e.type})),
+      upcomingExams: upcoming,
+      // legacy fields kept for backward-compat with the server context builder
+      rag,
+      scores: scores.slice(-3).map(s=>({subject:s.subject, pct:s.pct, grade:s.grade})),
+      nextExam: upcoming[0] ? {paper:upcoming[0].paper, subject:upcoming[0].subject, date:upcoming[0].date} : null,
     };
 
     let replyText = null;
@@ -3404,125 +3457,118 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
   const [chartSubject,setChartSubject] = useState(subjects[0]?.name??'');
 
   const br = calcBattleReadiness(scores, errors);
+  const now = Date.now();
 
-  const subjectAvg = name => {
-    const ss=scores.filter(x=>x.subject===name);
-    return ss.length ? Math.round(ss.reduce((a,x)=>a+x.pct,0)/ss.length) : null;
+  // ── Time helpers ──────────────────────────────────────────────────────────
+  const fmtMins = secs => {
+    const m = Math.round(secs/60);
+    if (m < 60) return `${m}m`;
+    const h = m/60;
+    return `${h % 1 === 0 ? h : h.toFixed(1)}h`;
   };
+  const subjById = Object.fromEntries(subjects.map(s=>[s.id,s]));
+  const sessTs   = x => x.ts ?? x.id;
+  const totalSecs = sessions.reduce((a,s)=>a+(s.secs||0),0);
+  const weekSecs  = sessions.filter(s=>now-sessTs(s)<7*86400000).reduce((a,s)=>a+(s.secs||0),0);
+  const secsBySubj = {};
+  sessions.forEach(s=>{ const sub=subjById[s.subjectId]; if(sub) secsBySubj[sub.name]=(secsBySubj[sub.name]||0)+(s.secs||0); });
 
+  // ── Per-subject rollup (the analytical core) ──────────────────────────────
+  const rows = subjects.map(s=>{
+    const ss   = [...scores].filter(x=>x.subject===s.name).sort((a,b)=>(a.ts||a.id)-(b.ts||b.id));
+    const cnt  = ss.length;
+    const avg  = cnt ? Math.round(ss.reduce((a,x)=>a+x.pct,0)/cnt) : null;
+    const grade= avg!=null ? getSubjectGrade(avg, s.name, GRADE_BOUNDS) : null;
+    const target = targets[s.name] || (isGcse?'9':isAS?'A':'A*');
+    const targetPct = (s.gradeBoundaries?.[target]) || 80;
+    const progress  = avg!=null ? Math.min(100,Math.round((avg/targetPct)*100)) : 0;
+    const trend = cnt>=2 ? ss[cnt-1].pct - ss[cnt-2].pct : null;
+    const pred  = predictedGrade(scores, s.name, GRADE_BOUNDS);
+    const timeSecs = secsBySubj[s.name] || 0;
+    const timeShare = totalSecs>0 ? timeSecs/totalSecs : 0;
+    const gap = avg!=null ? avg - targetPct : null;           // +ve = above target
+    return {s, ss, cnt, avg, grade, target, targetPct, progress, trend, pred, timeSecs, timeShare, gap};
+  });
+
+  // ── Headline stats ────────────────────────────────────────────────────────
+  const overallAvg = scores.length ? Math.round(scores.reduce((a,s)=>a+s.pct,0)/scores.length) : null;
+  const onTarget   = rows.filter(r=>r.avg!=null && r.gap!=null && r.gap>=0).length;
+  const ratedSubs  = rows.filter(r=>r.avg!=null).length;
+
+  // Activity / streak (counts every kind of study action, not just the timer)
+  const activeDays = studyActivityDays({sessions,scores,errors});
+  let streak=0; { const d=new Date(); d.setHours(0,0,0,0); while(activeDays.has(d.getTime())){ streak++; d.setDate(d.getDate()-1); } }
+  const weekBars=[];
+  for(let w=7; w>=0; w--){
+    const end=new Date(); end.setHours(0,0,0,0); end.setDate(end.getDate()-w*7);
+    const start=new Date(end); start.setDate(start.getDate()-6);
+    let days=0; activeDays.forEach(t=>{ if(t>=start.getTime() && t<=end.getTime()) days++; });
+    weekBars.push(days);
+  }
+
+  // Next exam
   const allUpcoming = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId,s.options))
-    .map(e=>({...e,d:Math.ceil((new Date(e.date)-Date.now())/86400000)}))
+    .map(e=>({...e,d:Math.ceil((new Date(e.date)-now)/86400000)}))
     .filter(e=>e.d>=0).sort((a,b)=>a.d-b.d);
+  const nextExam = allUpcoming[0] || null;
   const isOffSeason = allUpcoming.length===0 || allUpcoming[0].d>90;
 
-  const redTopics = isOffSeason ? subjects.flatMap(s=>
-    (SPEC_TOPICS[s.id]||[]).map((topic,i)=>({topic,s,key:`${s.id}_${i}`}))
-  ).filter(t=>rag[t.key]==='red').slice(0,6) : [];
+  // Biggest mover (largest single-subject trend, needs >=2 papers)
+  const movers = rows.filter(r=>r.trend!=null).sort((a,b)=>Math.abs(b.trend)-Math.abs(a.trend));
+  const topMover = movers[0] || null;
+
+  // Under-invested: below target AND a below-average slice of study time
+  const evenShare = subjects.length ? 1/subjects.length : 0;
+  const underInvested = rows.filter(r=>r.avg!=null && r.gap!=null && r.gap<-3 && (totalSecs===0 || r.timeShare<evenShare*0.8))
+    .sort((a,b)=>a.gap-b.gap);
+
+  // Error hotspots — last 21 days, grouped by topic (fallback subject)
+  const recentErrs = errors.filter(e=>now-(e.ts||e.id)<21*86400000);
+  const hotMap={}; recentErrs.forEach(e=>{ const k=(e.topic&&e.topic.trim())||e.subject||'General'; hotMap[k]=(hotMap[k]||0)+1; });
+  const hotspots = Object.entries(hotMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
 
   const hour = new Date().getHours();
   const greeting = hour<5?'Night ops':hour<12?'Morning briefing':hour<17?'Afternoon briefing':'Evening briefing';
 
+  const cardSx = {background:C.surface,border:`1px solid ${C.border}`,borderRadius:10};
+  const Eyebrow = ({children}) => <div style={{...type.eyebrow,color:C.subtle,marginBottom:12}}>{children}</div>;
+
   return (
     <div>
-      <div style={{marginBottom:20}}>
+      <div style={{marginBottom:18}}>
         <div style={{...type.eyebrow,color:C.accent,marginBottom:6}}>
           {isOffSeason?'Foundation Mode':greeting}
         </div>
-        <h1 style={{...type.h1,color:C.text,margin:0}}>
-          {isOffSeason?'Build Your Foundation':'Performance Dashboard'}
-        </h1>
+        <h1 style={{...type.h1,color:C.text,margin:0}}>Performance</h1>
         <p style={{...type.caption,color:C.muted,margin:'4px 0 0'}}>
-          {isOffSeason
-            ? allUpcoming.length>0
-              ? `${allUpcoming[0].d} days until your first exam. Build the habits that will carry you through.`
-              : 'No exams scheduled yet. Set your subjects up in Account and start logging papers.'
-            : 'Track your scores and readiness across all subjects.'}
+          {scores.length===0
+            ? 'Log your first past paper to start building your picture.'
+            : isOffSeason
+              ? (nextExam ? `${nextExam.d} days to first exam. Build the habits now.` : 'Off-season — build the foundation.')
+              : 'Where you stand across every subject, right now.'}
         </p>
       </div>
 
-      {/* ── Exam countdown / off-season strip ───────────────────────────── */}
-      {isOffSeason ? (
-        <>
-          {allUpcoming.length>0&&(
-            <div style={{background:C.surface,border:`1px solid ${C.border}`,
-              borderRadius:10,padding:'14px 16px',marginBottom:12}}>
-              <div style={{...type.eyebrow,color:C.subtle,marginBottom:8}}>Season countdown</div>
-              <div style={{display:'flex',alignItems:'center',gap:16}}>
-                <div>
-                  <div style={{fontSize:36,fontWeight:900,color:C.accent,lineHeight:1}}>{allUpcoming[0].d}</div>
-                  <div style={{fontSize:11,color:C.muted,marginTop:2}}>days to go</div>
-                </div>
-                <div style={{flex:1,fontSize:13,color:C.muted,lineHeight:1.55}}>
-                  {Math.floor(allUpcoming[0].d/7)} week{allUpcoming[0].d>=14?'s':''} to build solid habits.
-                  Log past papers regularly and watch your readiness climb.
-                </div>
-              </div>
-            </div>
-          )}
-          {redTopics.length>0&&(
-            <div style={{background:C.surface,border:`1px solid ${C.border}`,
-              borderRadius:10,padding:'14px 16px',marginBottom:12}}>
-              <div style={{...type.eyebrow,color:C.subtle,marginBottom:10}}>Topics to master before exam season</div>
-              <div style={{display:'flex',flexDirection:'column',gap:6}}>
-                {redTopics.map(t=>(
-                  <div key={t.key} style={{display:'flex',alignItems:'center',gap:10}}>
-                    <div style={{width:8,height:8,borderRadius:'50%',background:t.s.color,flexShrink:0}}/>
-                    <span style={{fontSize:12,color:C.muted,flex:1}}>{t.topic}</span>
-                    <span style={{fontSize:10,color:t.s.color,fontWeight:600}}>{t.s.name.split(' ')[0]}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {redTopics.length===0&&Object.keys(rag).length===0&&(
-            <div style={{background:C.surface,border:`1px solid ${C.border}`,
-              borderRadius:10,padding:'14px 16px',marginBottom:12}}>
-              <div style={{...type.body,color:C.muted}}>
-                Go to <strong style={{color:C.text}}>Topics</strong> and mark your spec topics.
-                Red items will appear here so you know exactly what to focus on before exam season.
-              </div>
-            </div>
-          )}
-        </>
-      ):(
-        (()=>{
-          const now=new Date(); now.setHours(0,0,0,0);
-          const upcoming=subjects.flatMap(s=>
-            getSubjectExams(examSched,s.id,s.boardId,s.options).map(e=>({...e,subjectName:s.name,color:s.color}))
-          ).map(e=>({...e,d:Math.ceil((new Date(e.date)-now)/86400000)}))
-           .filter(e=>e.d>=0).sort((a,b)=>a.d-b.d);
-          if(!upcoming.length) return null;
-          const thisWeek=upcoming.filter(e=>e.d<=7);
-          return (
-            <div style={{background:C.surface,border:`1px solid ${C.border}`,
-              borderRadius:10,padding:'12px 16px',marginBottom:12}}>
-              <div style={{...type.eyebrow,color:C.subtle,marginBottom:10}}>
-                {thisWeek.length>1?`${thisWeek.length} exams this week`:'Next exam'}
-              </div>
-              <div style={{display:'flex',gap:8,overflowX:'auto',paddingBottom:2,scrollbarWidth:'none'}}>
-                {upcoming.slice(0,6).map(e=>(
-                  <div key={e.code} style={{flexShrink:0,background:`${e.color}12`,
-                    border:`1px solid ${e.d<=7?e.color+'55':e.color+'22'}`,
-                    borderRadius:10,padding:'8px 12px',minWidth:72,textAlign:'center'}}>
-                    <div style={{fontSize:10,fontWeight:700,color:e.color,marginBottom:3,
-                      whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',maxWidth:80}}>
-                      {e.subjectName.split(' ')[0]}
-                    </div>
-                    <div style={{fontSize:e.d===0?18:26,fontWeight:900,color:e.d<=7?e.color:C.text,lineHeight:1}}>
-                      {e.d===0?'Today':e.d}
-                    </div>
-                    {e.d>0&&<div style={{fontSize:9,color:C.muted,fontWeight:600,letterSpacing:0.5,marginTop:1}}>DAYS</div>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })()
-      )}
+      {/* ── KPI strip ─────────────────────────────────────────────────────── */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,marginBottom:12}}>
+        {[
+          {l:'Avg score', v: overallAvg!=null?`${overallAvg}%`:'—', sub:`${scores.length} paper${scores.length===1?'':'s'}`, c:C.text},
+          {l:'On target', v: ratedSubs?`${onTarget}/${ratedSubs}`:'—', sub:'subjects at/above', c: ratedSubs&&onTarget===ratedSubs?(C.success||'#22c55e'):C.text},
+          {l:'Study time', v: totalSecs?fmtMins(totalSecs):'0m', sub:`${fmtMins(weekSecs)} this week`, c:C.text},
+          nextExam
+            ? {l:'Next exam', v:`${nextExam.d}d`, sub:'until first paper', c:C.accent}
+            : {l:'Streak', v:`${streak}`, sub:`day${streak===1?'':'s'} active`, c: streak>0?C.accent:C.subtle},
+        ].map(k=>(
+          <div key={k.l} style={{...cardSx,padding:'11px 13px',minWidth:0}}>
+            <div style={{...type.eyebrow,color:C.subtle,marginBottom:6,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{k.l}</div>
+            <div style={{fontSize:23,fontWeight:800,color:k.c,lineHeight:1,letterSpacing:'-0.02em'}}>{k.v}</div>
+            <div style={{fontSize:11,color:C.muted,marginTop:4,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{k.sub}</div>
+          </div>
+        ))}
+      </div>
 
-      {/* ── Battle readiness gauge ───────────────────────────────────────── */}
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,
-        padding:'16px 18px',marginBottom:12,display:'flex',gap:20,alignItems:'center',flexWrap:'wrap'}}>
+      {/* ── Battle readiness gauge (protected) ────────────────────────────── */}
+      <div style={{...cardSx,padding:'16px 18px',marginBottom:12,display:'flex',gap:20,alignItems:'center',flexWrap:'wrap'}}>
         <div style={{display:'flex',flexDirection:'column',alignItems:'center',flexShrink:0}}>
           <div style={{...type.eyebrow,color:C.subtle,marginBottom:6}}>Battle Readiness</div>
           <BattleGauge score={br.total} label={br.label} labelColor={br.labelColor} textColor={C.text} mutedColor={C.muted}/>
@@ -3545,96 +3591,163 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
         </div>
       </div>
 
-      {/* ── Share card ───────────────────────────────────────────────────── */}
-      {scores.length>0&&<ShareReadinessCard br={br} subjects={subjects} scores={scores} C={C} font={font}
-        shareTheme={shareTheme} setShareTheme={setShareTheme}
-        shareAspect={shareAspect} setShareAspect={setShareAspect}/>}
-
-      {/* ── Per-subject cards ─────────────────────────────────────────────── */}
-      <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:16}}>
-        {subjects.map(s=>{
-          const avg      = subjectAvg(s.name);
-          const grade    = avg!=null ? getSubjectGrade(avg, s.name, GRADE_BOUNDS) : null;
-          const cnt      = scores.filter(x=>x.subject===s.name).length;
-          const target   = targets[s.name]||'A*';
-          const targetPct = (s.gradeBoundaries?.[target])||80;
-          const progress  = avg!=null ? Math.min(100,Math.round((avg/targetPct)*100)) : 0;
-          const ss=[...scores].filter(x=>x.subject===s.name).reverse();
-          const trend=ss.length>=2 ? ss[ss.length-1].pct - ss[ss.length-2].pct : null;
-          const pred=predictedGrade(scores, s.name, GRADE_BOUNDS);
-          return (
-            <div key={s.name} style={{
-              background:C.surface,
-              borderRadius:8,padding:'12px 16px',
-              border:`1px solid ${C.border}`,
-              borderLeft:`3px solid ${s.color}`,
-            }}>
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
-                <div>
-                  <div style={{display:'flex',alignItems:'center',gap:8}}>
-                    <div style={{fontSize:12,color:s.color,fontWeight:700,textTransform:'uppercase',letterSpacing:0.3}}>{s.name}</div>
+      {/* ── Subject performance table ─────────────────────────────────────── */}
+      <div style={{...cardSx,padding:'14px 16px 6px',marginBottom:12}}>
+        <Eyebrow>Subjects</Eyebrow>
+        {scores.length===0 ? (
+          <div style={{...type.caption,color:C.muted,paddingBottom:12}}>No papers logged yet.</div>
+        ) : (
+          <>
+            <div style={{display:'grid',gridTemplateColumns:'1.6fr 52px 56px 64px 1fr',gap:8,alignItems:'center',
+              padding:'0 0 8px',borderBottom:`1px solid ${C.border}`}}>
+              {['Subject','Avg','Proj','Target','vs target'].map((h,i)=>(
+                <div key={h} style={{...type.eyebrow,color:C.subtle,textAlign:i===0?'left':i===4?'left':'center'}}>{h}</div>
+              ))}
+            </div>
+            {rows.map(r=>(
+              <div key={r.s.name} style={{display:'grid',gridTemplateColumns:'1.6fr 52px 56px 64px 1fr',gap:8,
+                alignItems:'center',padding:'10px 0',borderBottom:`1px solid ${C.border}`}}>
+                {/* subject + sparkline */}
+                <div style={{minWidth:0}}>
+                  <div style={{display:'flex',alignItems:'center',gap:7}}>
+                    <span style={{width:8,height:8,borderRadius:'50%',background:r.s.color,flexShrink:0}}/>
+                    <span style={{fontSize:13,fontWeight:600,color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{r.s.name}</span>
                   </div>
-                  <div style={{display:'flex',alignItems:'baseline',gap:6,marginTop:2}}>
-                    <span style={{fontSize:30,fontWeight:900,color:grade?gradeColor(grade):'#888',lineHeight:1}}>{grade||'—'}</span>
-                    {avg!=null&&<span style={{fontSize:14,color:C.muted}}>{avg}% avg</span>}
-                    {trend!=null&&(
-                      <span style={{fontSize:13,fontWeight:700,color:trend>=0?'#22c55e':'#ef4444'}}>
-                        {trend>=0?'▲':'▼'}{Math.abs(trend)}%
-                      </span>
-                    )}
+                  <div style={{fontSize:10,color:C.subtle,marginTop:2,paddingLeft:15}}>
+                    {r.cnt} paper{r.cnt===1?'':'s'}{r.timeSecs>0?` · ${fmtMins(r.timeSecs)}`:''}
                   </div>
-                  {pred&&(
-                    <div style={{fontSize:11,color:C.muted,marginTop:3,display:'flex',alignItems:'center',gap:4}}>
-                      <span style={{color:C.subtle}}>Projected:</span>
-                      <span style={{fontWeight:700,color:gradeColor(pred.grade)}}>{pred.grade}</span>
-                      <span style={{color:C.subtle}}>({pred.pct}%)</span>
-                      <span style={{color:pred.trend==='up'?'#22c55e':pred.trend==='down'?'#ef4444':C.subtle,fontSize:10}}>
-                        {pred.trend==='up'?'↗ improving':pred.trend==='down'?'↘ declining':'→ stable'}
-                      </span>
+                </div>
+                {/* avg */}
+                <div style={{textAlign:'center'}}>
+                  <span style={{fontSize:15,fontWeight:700,color:r.grade?gradeColor(r.grade):C.subtle}}>{r.avg!=null?r.avg:'—'}</span>
+                  {r.trend!=null&&Math.abs(r.trend)>=1&&(
+                    <div style={{fontSize:10,fontWeight:700,color:r.trend>=0?(C.success||'#22c55e'):(C.danger||'#ef4444')}}>
+                      {r.trend>=0?'▲':'▼'}{Math.abs(r.trend)}
                     </div>
                   )}
                 </div>
-                <div style={{textAlign:'right'}}>
-                  <div style={{fontSize:12,color:C.muted,marginBottom:6}}>
-                    {cnt} paper{cnt!==1?'s':''} · Target:
-                    <select value={target} onChange={e=>setTargets(p=>({...p,[s.name]:e.target.value}))}
-                      style={{background:'transparent',border:'none',color:gradeColor(target),
-                        fontSize:13,fontWeight:700,fontFamily:'inherit',cursor:'pointer',outline:'none',marginLeft:4}}>
-                      {(isGcse?['9','8','7','6','5']:isAS?['A','B','C','D']:['A*','A','B','C']).map(g=><option key={g} value={g}>{g}</option>)}
-                    </select>
-                  </div>
-                  <div style={{display:'flex',alignItems:'center',gap:6,justifyContent:'flex-end'}}>
-                    <div style={{width:80,height:5,borderRadius:3,background:C.border,overflow:'hidden'}}>
-                      <div style={{height:'100%',width:`${progress}%`,background:s.color,borderRadius:3,transition:'width 1.2s ease'}}/>
+                {/* projected */}
+                <div style={{textAlign:'center'}}>
+                  {r.pred ? (
+                    <span style={{fontSize:14,fontWeight:700,color:gradeColor(r.pred.grade)}}>{r.pred.grade}</span>
+                  ) : <span style={{fontSize:12,color:C.subtle}}>—</span>}
+                  {r.pred&&r.pred.trend!=='stable'&&(
+                    <div style={{fontSize:10,color:r.pred.trend==='up'?(C.success||'#22c55e'):(C.danger||'#ef4444')}}>
+                      {r.pred.trend==='up'?'↗':'↘'}
                     </div>
-                    <span style={{fontSize:12,fontWeight:700,color:progress>=100?'#22c55e':s.color}}>{progress}%</span>
+                  )}
+                </div>
+                {/* target select */}
+                <div style={{textAlign:'center'}}>
+                  <select value={r.target} onChange={e=>setTargets(p=>({...p,[r.s.name]:e.target.value}))}
+                    style={{background:'transparent',border:`1px solid ${C.border}`,borderRadius:6,
+                      color:gradeColor(r.target),fontSize:13,fontWeight:700,fontFamily:'inherit',
+                      cursor:'pointer',outline:'none',padding:'2px 4px'}}>
+                    {(isGcse?['9','8','7','6','5']:isAS?['A','B','C','D']:['A*','A','B','C']).map(g=><option key={g} value={g}>{g}</option>)}
+                  </select>
+                </div>
+                {/* vs target bar */}
+                <div style={{display:'flex',alignItems:'center',gap:6}}>
+                  <div style={{flex:1,height:5,borderRadius:3,background:C.border,overflow:'hidden'}}>
+                    <div style={{height:'100%',width:`${r.progress}%`,
+                      background:r.progress>=100?(C.success||'#22c55e'):r.s.color,borderRadius:3,transition:'width 1s ease'}}/>
                   </div>
+                  <span style={{fontSize:11,fontWeight:700,color:r.progress>=100?(C.success||'#22c55e'):C.muted,width:30,textAlign:'right'}}>{r.avg!=null?`${r.progress}%`:'—'}</span>
                 </div>
               </div>
-              {ss.length>=2&&(()=>{
-                const minP=Math.min(...ss.map(d=>d.pct))-5;
-                const maxP=Math.min(100,Math.max(...ss.map(d=>d.pct))+5);
-                const W2=200,H2=28;
-                const x2=i=>(i/(ss.length-1))*W2;
-                const y2=v=>H2-(((v-minP)/(maxP-minP))*H2);
-                const poly2=ss.map((d,i)=>`${x2(i)},${y2(d.pct)}`).join(' ');
-                return (
-                  <svg viewBox={`0 0 ${W2} ${H2}`} style={{width:'100%',height:28,display:'block',marginTop:4}}>
-                    <polyline points={poly2} fill="none" stroke={s.color} strokeWidth="1.5" strokeLinejoin="round" opacity="0.6"/>
-                    {ss.map((d,i)=><circle key={i} cx={x2(i)} cy={y2(d.pct)} r="2.5" fill={s.color} opacity="0.8"/>)}
-                  </svg>
-                );
-              })()}
-            </div>
-          );
-        })}
+            ))}
+          </>
+        )}
       </div>
 
-      {/* Score trend chart */}
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:18,marginBottom:12}}>
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
-          <div style={{...type.eyebrow,color:C.subtle}}>Score Trend Chart</div>
-          <div style={{display:'flex',gap:4}}>
+      {/* ── Insights row: consistency + where time goes ───────────────────── */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:12}}>
+        {/* Consistency */}
+        <div style={{...cardSx,padding:'14px 16px'}}>
+          <Eyebrow>Consistency · 8 weeks</Eyebrow>
+          <div style={{display:'flex',alignItems:'flex-end',gap:5,height:54}}>
+            {weekBars.map((d,i)=>(
+              <div key={i} style={{flex:1,display:'flex',flexDirection:'column',justifyContent:'flex-end',height:'100%'}}>
+                <div title={`${d}/7 days active`} style={{height:`${Math.max(6,(d/7)*100)}%`,
+                  background:d===0?C.border:(i===weekBars.length-1?C.accent:C.subtle),
+                  borderRadius:3,minHeight:3}}/>
+              </div>
+            ))}
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between',marginTop:8}}>
+            <span style={{fontSize:12,color:C.muted}}>Current streak</span>
+            <span style={{fontSize:12,fontWeight:700,color:streak>0?C.accent:C.subtle}}>{streak} day{streak===1?'':'s'}</span>
+          </div>
+        </div>
+        {/* Where time goes */}
+        <div style={{...cardSx,padding:'14px 16px'}}>
+          <Eyebrow>Where time goes</Eyebrow>
+          {totalSecs===0 ? (
+            <div style={{...type.caption,color:C.muted}}>No study time logged yet. Use the timer or log papers.</div>
+          ) : (
+            <div style={{display:'flex',flexDirection:'column',gap:7}}>
+              {[...rows].filter(r=>r.timeSecs>0).sort((a,b)=>b.timeSecs-a.timeSecs).slice(0,5).map(r=>(
+                <div key={r.s.name} style={{display:'flex',alignItems:'center',gap:8}}>
+                  <span style={{fontSize:11,color:C.muted,width:64,flexShrink:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{r.s.name}</span>
+                  <div style={{flex:1,height:5,borderRadius:3,background:C.border,overflow:'hidden'}}>
+                    <div style={{height:'100%',width:`${Math.round(r.timeShare*100)}%`,background:r.s.color,borderRadius:3}}/>
+                  </div>
+                  <span style={{fontSize:11,fontWeight:600,color:C.muted,width:32,textAlign:'right'}}>{Math.round(r.timeShare*100)}%</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Coach: under-invested + biggest mover ─────────────────────────── */}
+      {(underInvested.length>0 || topMover) && (
+        <div style={{...cardSx,padding:'14px 16px',marginBottom:12}}>
+          <Eyebrow>What the numbers say</Eyebrow>
+          <div style={{display:'flex',flexDirection:'column',gap:9}}>
+            {underInvested.slice(0,2).map(r=>(
+              <div key={r.s.name} style={{display:'flex',alignItems:'flex-start',gap:9}}>
+                <span style={{width:8,height:8,borderRadius:'50%',background:r.s.color,flexShrink:0,marginTop:5}}/>
+                <span style={{fontSize:13,color:C.muted,lineHeight:1.5}}>
+                  <strong style={{color:C.text}}>{r.s.name}</strong> is {Math.abs(r.gap)}% below your {r.target} target but only {Math.round(r.timeShare*100)}% of your study time. Under-invested — give it more sessions.
+                </span>
+              </div>
+            ))}
+            {topMover && Math.abs(topMover.trend)>=2 && (
+              <div style={{display:'flex',alignItems:'flex-start',gap:9}}>
+                <span style={{width:8,height:8,borderRadius:'50%',background:topMover.s.color,flexShrink:0,marginTop:5}}/>
+                <span style={{fontSize:13,color:C.muted,lineHeight:1.5}}>
+                  <strong style={{color:C.text}}>{topMover.s.name}</strong> {topMover.trend>0?'jumped':'dropped'} {Math.abs(topMover.trend)}% on your last paper{topMover.trend>0?' — keep that momentum.':' — worth a review.'}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Error hotspots ────────────────────────────────────────────────── */}
+      {hotspots.length>0 && (
+        <div style={{...cardSx,padding:'14px 16px',marginBottom:12}}>
+          <Eyebrow>Error hotspots · last 3 weeks</Eyebrow>
+          <div style={{display:'flex',flexDirection:'column',gap:7}}>
+            {hotspots.map(([topic,n])=>(
+              <div key={topic} style={{display:'flex',alignItems:'center',gap:10}}>
+                <span style={{fontSize:13,color:C.text,flex:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{topic}</span>
+                <div style={{flex:1,height:5,borderRadius:3,background:C.border,overflow:'hidden',maxWidth:120}}>
+                  <div style={{height:'100%',width:`${(n/hotspots[0][1])*100}%`,background:C.accent,borderRadius:3}}/>
+                </div>
+                <span style={{fontSize:11,fontWeight:700,color:C.muted,width:48,textAlign:'right'}}>{n}×</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Score trend chart ─────────────────────────────────────────────── */}
+      <div style={{...cardSx,padding:18,marginBottom:12}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14,flexWrap:'wrap',gap:8}}>
+          <div style={{...type.eyebrow,color:C.subtle}}>Score trend</div>
+          <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
             {subjects.map(s=>(
               <button key={s.name} onClick={()=>setChartSubject(s.name)}
                 style={{background:chartSubject===s.name?`${s.color}14`:'transparent',
@@ -3660,6 +3773,11 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
           ))}
         </div>
       </div>
+
+      {/* ── Share card ───────────────────────────────────────────────────── */}
+      {scores.length>0&&<ShareReadinessCard br={br} subjects={subjects} scores={scores} C={C} font={font}
+        shareTheme={shareTheme} setShareTheme={setShareTheme}
+        shareAspect={shareAspect} setShareAspect={setShareAspect}/>}
 
       <InsuranceEligibilityCard scores={scores} uid={uid} C={C} font={font} noted={insNoted} setNoted={setInsNoted}/>
     </div>
@@ -7009,6 +7127,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
       {companionChat&&(
         <CompanionChat companion={companion} subjects={subjects} scores={scores}
           sessions={sessions} examSched={examSched} rag={rag} examLevel={examLevel}
+          errors={errors} targets={targets}
           C={C} font={font}
           onClose={()=>setCompanionChat(false)}/>
       )}
