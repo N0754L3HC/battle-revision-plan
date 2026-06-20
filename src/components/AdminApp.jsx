@@ -6,11 +6,23 @@ import { EXAM_SCHEDULE } from '../App';
 // Admin status is enforced server-side via user_profiles.is_admin (set via SQL).
 // This list is informational only — used in the access-denied screen.
 const ADMIN_EMAILS = ['51r4h100@gmail.com'];
-const mono = "'JetBrains Mono','SF Mono','Fira Code',monospace";
-const GC = { 'A*':'#00E676', A:'#69F0AE', B:'#FFD600', C:'#FF9100', D:'#FF6D00', E:'#FF3D00', U:'#555' };
-const SC = { maths:'#3b82f6','further-maths':'#E040FB',cs:'#00E676',chemistry:'#FF4081',physics:'#40C4FF',economics:'#FFD600',biology:'#84cc16',history:'#fb923c',psychology:'#a78bfa',geography:'#22d3ee' };
+// ── Corporate console design tokens (acquisition-ready: clean slate + indigo) ──
+const FONT  = "'Inter','SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+const mono  = FONT;              // legacy name kept; now corporate sans so all text reads professionally
+const numF  = "'SF Mono','JetBrains Mono',ui-monospace,monospace"; // tabular figures only
+const BG     = '#0b0d12';
+const PANEL  = '#13161d';
+const PANEL2 = '#1a1e27';
+const BORDER = 'rgba(255,255,255,0.08)';
+const ACCENT = '#6366f1';        // indigo brand accent (replaces the hacker red)
+const ACCENT_SOFT = 'rgba(99,102,241,0.13)';
+const TXT    = '#e8eaed';
+const TXT2   = '#aeb4c0';
+const OK = '#22c55e', WARN = '#f59e0b', BAD = '#ef4444';
+const GC = { 'A*':'#22c55e', A:'#4ade80', B:'#eab308', C:'#f59e0b', D:'#f97316', E:'#ef4444', U:'#64748b' };
+const SC = { maths:'#3b82f6','further-maths':'#a855f7',cs:'#10b981',chemistry:'#ec4899',physics:'#38bdf8',economics:'#eab308',biology:'#84cc16',history:'#fb923c',psychology:'#a78bfa',geography:'#22d3ee' };
 const GRADE_BOUNDS = { Maths:{'A*':80,A:70,B:60,C:50,D:40,E:30},'Further Maths':{'A*':83,A:72,B:60,C:50,D:40,E:30},CS:{'A*':75,A:65,B:55,C:45,D:35,E:25},Chemistry:{'A*':80,A:70,B:60,C:50,D:40,E:30},Physics:{'A*':80,A:70,B:60,C:50,D:40,E:30},Economics:{'A*':75,A:65,B:55,C:45,D:35,E:25} };
-const R = (r) => r>=80?'#00E676':r>=60?'#FFD600':r>=40?'#FF9100':'#FF3D00';
+const R = (r) => r>=80?'#22c55e':r>=60?'#eab308':r>=40?'#f59e0b':'#ef4444';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const fmtDate = iso => iso ? new Date(iso).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'}) : '—';
@@ -36,13 +48,13 @@ function gradeFromPct(pct,subject='') {
 }
 
 // ── Shared input style ─────────────────────────────────────────────────────
-const iS = {background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:6,padding:'10px 14px',color:'#ddd',fontSize:13,fontFamily:mono,outline:'none',width:'100%',boxSizing:'border-box'};
-const card = {background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:8};
-const btn = (col='#FF3D00',fill=false) => ({background:fill?col:'transparent',border:`1px solid ${col}66`,color:fill?'#fff':col,padding:'6px 14px',borderRadius:5,cursor:'pointer',fontSize:11,fontWeight:700,fontFamily:mono,letterSpacing:1,transition:'all 0.15s'});
-// colour tokens — all readable on #050508 background
-const DIM = '#5a5550';   // timestamps, ranks, footnotes
-const MUT = '#8a8480';   // secondary labels, sub-text
-const SEC = '#b04020';   // section header labels (red-ish but legible)
+const iS = {background:'#0f1218',border:`1px solid ${BORDER}`,borderRadius:8,padding:'9px 12px',color:TXT,fontSize:13,fontFamily:FONT,outline:'none',width:'100%',boxSizing:'border-box'};
+const card = {background:PANEL,border:`1px solid ${BORDER}`,borderRadius:12};
+const btn = (col=ACCENT,fill=false) => ({background:fill?col:'transparent',border:`1px solid ${fill?col:BORDER}`,color:fill?'#fff':col,padding:'7px 14px',borderRadius:8,cursor:'pointer',fontSize:12,fontWeight:600,fontFamily:FONT,letterSpacing:0,transition:'all 0.15s'});
+// neutral greys — readable on the slate background
+const DIM = '#6b7280';   // timestamps, ranks, footnotes
+const MUT = '#9aa3b2';   // secondary labels, sub-text
+const SEC = '#7c8598';   // section header labels (neutral)
 
 // ── Cursor ─────────────────────────────────────────────────────────────────
 function Cursor() {
@@ -94,37 +106,41 @@ function LoginScreen({onAuth}) {
   };
 
   return (
-    <div style={{minHeight:'100vh',background:'#050508',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:mono,padding:16,position:'relative',overflow:'hidden'}}>
-      <div style={{position:'fixed',top:'22%',left:'50%',transform:'translate(-50%,-50%)',width:900,height:500,borderRadius:'50%',background:'radial-gradient(ellipse,rgba(255,30,0,0.05) 0%,transparent 70%)',pointerEvents:'none'}}/>
-      <div style={{width:'100%',maxWidth:380,position:'relative',zIndex:1}}>
-        <div style={{textAlign:'center',marginBottom:44}}>
-          <div style={{fontSize:9,letterSpacing:5,color:'#3d1810',marginBottom:16,fontWeight:700}}>▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓</div>
-          <div style={{fontSize:34,fontWeight:900,color:'#FF3D00',letterSpacing:10,marginBottom:4}}>GOD MODE</div>
-          <div style={{fontSize:9,letterSpacing:3,color:'#cc4422',marginTop:2}}>A* BATTLE PLAN · RESTRICTED SYSTEM ACCESS</div>
-          <div style={{fontSize:9,letterSpacing:5,color:'#3d1810',marginTop:16,fontWeight:700}}>▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓</div>
-        </div>
-        <div style={{fontSize:11,color:'#cc4422',marginBottom:18,letterSpacing:1,minHeight:18}}>
-          {status==='checking'?'// VERIFYING CREDENTIALS...':status==='denied'?'// ACCESS DENIED — UNAUTHORIZED':status==='ok'?'// ACCESS GRANTED — LOADING...':(<>// ENTER CREDENTIALS <Cursor/></>)}
-        </div>
-        {status==='denied'&&<div style={{background:'rgba(255,0,0,0.06)',border:'1px solid rgba(255,0,0,0.2)',borderRadius:6,padding:'12px 14px',marginBottom:14,fontSize:12,color:'#FF3D00',letterSpacing:0.5}}>⛔ ADMINISTRATOR PRIVILEGES REQUIRED</div>}
-        {err&&status==='idle'&&<div style={{color:'#FF6D00',fontSize:12,marginBottom:12}}>{err}</div>}
-        <div style={{opacity:status!=='idle'?0.3:1,transition:'opacity 0.3s',pointerEvents:status!=='idle'?'none':'auto'}}>
-          <div style={{fontSize:9,color:'#cc4422',letterSpacing:2,marginBottom:5,fontWeight:700}}>EMAIL</div>
-          <input style={{...iS,marginBottom:11,border:'1px solid rgba(255,61,0,0.25)',background:'rgba(255,61,0,0.04)'}} type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==='Enter'&&attempt()} autoComplete="username" placeholder="admin@example.com"/>
-          <div style={{fontSize:9,color:'#cc4422',letterSpacing:2,marginBottom:5,fontWeight:700}}>PASSWORD</div>
-          <input style={{...iS,marginBottom:20,border:'1px solid rgba(255,61,0,0.25)',background:'rgba(255,61,0,0.04)'}} type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==='Enter'&&attempt()} autoComplete="current-password" placeholder="················"/>
-          <button onClick={attempt} disabled={loading} style={{width:'100%',padding:'13px',background:'rgba(255,61,0,0.9)',border:'1px solid rgba(255,61,0,0.6)',borderRadius:6,color:'#fff',fontSize:12,fontWeight:800,fontFamily:mono,letterSpacing:3,cursor:'pointer'}}>
-            {status==='checking'?'VERIFYING...':status==='ok'?'GRANTED ✓':'ACCESS SYSTEM →'}
-          </button>
-          <div style={{display:'flex',alignItems:'center',gap:10,margin:'16px 0'}}>
-            <div style={{flex:1,height:1,background:'rgba(255,61,0,0.12)'}}/><div style={{fontSize:9,color:'#aa4422',letterSpacing:2}}>OR</div><div style={{flex:1,height:1,background:'rgba(255,61,0,0.12)'}}/>
+    <div style={{minHeight:'100vh',background:BG,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:FONT,padding:16}}>
+      <div style={{width:'100%',maxWidth:380}}>
+        <div style={{marginBottom:28}}>
+          <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:18}}>
+            <div style={{width:34,height:34,borderRadius:9,background:ACCENT,display:'flex',alignItems:'center',justifyContent:'center',
+              color:'#fff',fontSize:16,fontWeight:800}}>B</div>
+            <div>
+              <div style={{fontSize:15,fontWeight:700,color:TXT,letterSpacing:'-0.01em'}}>Battle Plan</div>
+              <div style={{fontSize:11,color:MUT}}>Admin Console</div>
+            </div>
           </div>
-          <button onClick={googleLogin} disabled={loading} style={{width:'100%',padding:'12px',background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,61,0,0.14)',borderRadius:6,color:'#cc7755',fontSize:11,fontWeight:700,fontFamily:mono,letterSpacing:2,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
-            <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#EA4335" d="M5.27 9.76A7.08 7.08 0 0 1 19.07 12H12v4h7.93A8 8 0 1 1 12 4a7.93 7.93 0 0 1 5.4 2.1L14.93 8.6A4.5 4.5 0 0 0 12 7.5a4.49 4.49 0 0 0-4.24 3L5.27 9.76Z"/></svg>
-            CONTINUE WITH GOOGLE
+          <div style={{fontSize:20,fontWeight:700,color:TXT,letterSpacing:'-0.02em'}}>Sign in</div>
+          <div style={{fontSize:13,color:MUT,marginTop:4}}>
+            {status==='checking'?'Verifying your credentials…':status==='ok'?'Verified — loading console…':'Administrator access only.'}
+          </div>
+        </div>
+        {status==='denied'&&<div style={{background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:8,padding:'11px 14px',marginBottom:14,fontSize:13,color:BAD}}>Administrator privileges required for this account.</div>}
+        {err&&status==='idle'&&<div style={{color:BAD,fontSize:13,marginBottom:12}}>{err}</div>}
+        <div style={{opacity:status!=='idle'?0.4:1,transition:'opacity 0.3s',pointerEvents:status!=='idle'?'none':'auto'}}>
+          <label style={{fontSize:12,fontWeight:600,color:TXT2,display:'block',marginBottom:6}}>Email</label>
+          <input style={{...iS,marginBottom:14}} type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==='Enter'&&attempt()} autoComplete="username" placeholder="you@company.com"/>
+          <label style={{fontSize:12,fontWeight:600,color:TXT2,display:'block',marginBottom:6}}>Password</label>
+          <input style={{...iS,marginBottom:20}} type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==='Enter'&&attempt()} autoComplete="current-password" placeholder="••••••••••••"/>
+          <button onClick={attempt} disabled={loading} style={{width:'100%',padding:'11px',background:ACCENT,border:'none',borderRadius:8,color:'#fff',fontSize:14,fontWeight:600,fontFamily:FONT,cursor:'pointer'}}>
+            {status==='checking'?'Verifying…':status==='ok'?'Signed in':'Sign in'}
+          </button>
+          <div style={{display:'flex',alignItems:'center',gap:12,margin:'18px 0'}}>
+            <div style={{flex:1,height:1,background:BORDER}}/><div style={{fontSize:12,color:DIM}}>or</div><div style={{flex:1,height:1,background:BORDER}}/>
+          </div>
+          <button onClick={googleLogin} disabled={loading} style={{width:'100%',padding:'10px',background:'transparent',border:`1px solid ${BORDER}`,borderRadius:8,color:TXT,fontSize:13,fontWeight:600,fontFamily:FONT,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+            <svg width="15" height="15" viewBox="0 0 24 24"><path fill="#EA4335" d="M5.27 9.76A7.08 7.08 0 0 1 19.07 12H12v4h7.93A8 8 0 1 1 12 4a7.93 7.93 0 0 1 5.4 2.1L14.93 8.6A4.5 4.5 0 0 0 12 7.5a4.49 4.49 0 0 0-4.24 3L5.27 9.76Z"/></svg>
+            Continue with Google
           </button>
         </div>
-        <div style={{fontSize:9,color:'#6a3020',marginTop:28,textAlign:'center',letterSpacing:1.5}}>UNAUTHORIZED ACCESS IS PROHIBITED AND MONITORED</div>
+        <div style={{fontSize:11,color:DIM,marginTop:26,textAlign:'center'}}>Access is restricted and all actions are logged.</div>
       </div>
     </div>
   );
@@ -1179,11 +1195,111 @@ function WaitlistPanel() {
 }
 
 // ── Dashboard ──────────────────────────────────────────────────────────────
+// ── Finance ─────────────────────────────────────────────────────────────────
+function FinanceSection({users=[],waitlist=[]}) {
+  const PRICE=4.99;
+  const now=Date.now();
+  const active   = users.filter(u=>u.subscription_status==='active');
+  const trialing = users.filter(u=>u.subscription_status==='trialing');
+  const churned  = users.filter(u=>['canceled','cancelled','past_due'].includes(u.subscription_status));
+  const granted  = users.filter(u=>u.referral_pro_until && new Date(u.referral_pro_until).getTime()>now && !['active','trialing'].includes(u.subscription_status));
+  const free     = Math.max(0, users.length-active.length-trialing.length-granted.length);
+  const mrr = active.length*PRICE;
+  const arr = mrr*12;
+  const arpu = users.length? mrr/users.length : 0;
+  const conv = users.length? (active.length/users.length)*100 : 0;
+  const activated = users.filter(u=>u.totalScores>0).length;
+  const waitN = waitlist.length;
+  const waitPending = waitlist.filter(w=>!w.notified_at).length;
+
+  const Kpi=({v,l,sub,c})=>(
+    <div style={{...card,padding:'16px 18px'}}>
+      <div style={{fontSize:13,color:MUT,marginBottom:8}}>{l}</div>
+      <div style={{fontSize:27,fontWeight:700,color:c||TXT,lineHeight:1,letterSpacing:'-0.02em',fontFamily:numF}}>{v}</div>
+      {sub&&<div style={{fontSize:12,color:DIM,marginTop:6}}>{sub}</div>}
+    </div>
+  );
+  const breakdown=[
+    {l:'Paying (active)',v:active.length,c:OK},
+    {l:'Trialing',v:trialing.length,c:ACCENT},
+    {l:'Admin-granted',v:granted.length,c:'#a855f7'},
+    {l:'Churned / past due',v:churned.length,c:BAD},
+    {l:'Free',v:free,c:MUT},
+  ];
+  const maxB=Math.max(1,...breakdown.map(b=>b.v));
+  const funnel=[
+    {l:'Total users',v:users.length},
+    {l:'Activated (logged a paper)',v:activated},
+    {l:'Pro waitlist',v:waitN},
+    {l:'Paying subscribers',v:active.length},
+  ];
+  const maxF=Math.max(1,users.length);
+
+  return (
+    <div>
+      <div style={{...card,padding:'12px 16px',marginBottom:16,borderColor:'rgba(245,158,11,0.35)',background:'rgba(245,158,11,0.06)',display:'flex',gap:10,alignItems:'baseline',flexWrap:'wrap'}}>
+        <span style={{fontSize:13,color:WARN,fontWeight:700}}>Estimated</span>
+        <span style={{fontSize:13,color:TXT2}}>Revenue is derived from active subscriptions at £{PRICE.toFixed(2)}/mo. Live Stripe figures populate here once payments go live.</span>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:10}}>
+        <Kpi l="MRR" v={`£${mrr.toFixed(2)}`} sub={`${active.length} paying × £${PRICE}`} c={OK}/>
+        <Kpi l="ARR (run-rate)" v={`£${arr.toFixed(0)}`} sub="MRR × 12"/>
+        <Kpi l="Paying subscribers" v={active.length} sub={`${trialing.length} on trial`} c={ACCENT}/>
+        <Kpi l="ARPU" v={`£${arpu.toFixed(2)}`} sub="MRR ÷ all users"/>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:20}}>
+        <Kpi l="Free → Pro conversion" v={`${conv.toFixed(1)}%`}/>
+        <Kpi l="Pro waitlist" v={waitN} sub={`${waitPending} not yet notified`} c={WARN}/>
+        <Kpi l="Admin-granted Pro" v={granted.length} sub="non-revenue comps"/>
+        <Kpi l="Churned" v={churned.length} c={BAD}/>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+        <div style={{...card,padding:20}}>
+          <div style={{fontSize:13,fontWeight:600,color:TXT,marginBottom:16}}>Subscriber breakdown</div>
+          {breakdown.map(b=>(
+            <div key={b.l} style={{marginBottom:12}}>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:5}}>
+                <span style={{color:TXT2}}>{b.l}</span>
+                <span style={{color:TXT,fontWeight:600,fontFamily:numF}}>{b.v}</span>
+              </div>
+              <div style={{height:6,background:PANEL2,borderRadius:4,overflow:'hidden'}}>
+                <div style={{height:'100%',width:`${(b.v/maxB)*100}%`,background:b.c,borderRadius:4}}/>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{...card,padding:20}}>
+          <div style={{fontSize:13,fontWeight:600,color:TXT,marginBottom:16}}>Conversion funnel</div>
+          {funnel.map((f,i)=>{
+            const pct=(f.v/maxF)*100;
+            const prev=i>0?funnel[i-1].v:f.v;
+            const step=prev>0?Math.round((f.v/prev)*100):0;
+            return (
+              <div key={f.l} style={{marginBottom:14}}>
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:5}}>
+                  <span style={{color:TXT2}}>{f.l}</span>
+                  <span style={{color:TXT,fontWeight:600}}><span style={{fontFamily:numF}}>{f.v}</span>{i>0&&<span style={{color:DIM,marginLeft:6}}>{step}%</span>}</span>
+                </div>
+                <div style={{height:8,background:PANEL2,borderRadius:4,overflow:'hidden'}}>
+                  <div style={{height:'100%',width:`${pct}%`,background:ACCENT,borderRadius:4}}/>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Dashboard({adminUser,adminProfile,onLogout}) {
   const [users,setUsers]=useState([]);
   const [referrals,setReferrals]=useState([]);
   const [groups,setGroups]=useState([]);
   const [groupMembers,setGroupMembers]=useState([]);
+  const [waitlist,setWaitlist]=useState([]);
   const [loading,setLoading]=useState(true);
   const [search,setSearch]=useState('');
   const [sort,setSort]=useState({col:'created_at',dir:-1});
@@ -1202,16 +1318,19 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
       {data:refRows},
       {data:groupRows},
       {data:memberRows},
+      {data:waitRows},
     ]=await Promise.all([
       supabase.from('user_profiles').select('*').order('created_at',{ascending:false}),
       supabase.from('user_data').select('*'),
       supabase.from('referrals').select('referrer_code,referred_user_id,created_at'),
       supabase.from('study_groups').select('id,name,created_by,created_at'),
       supabase.from('group_members').select('group_id,user_id'),
+      supabase.from('pro_waitlist').select('id,created_at,notified_at'),
     ]);
     setReferrals(refRows||[]);
     setGroups(groupRows||[]);
     setGroupMembers(memberRows||[]);
+    setWaitlist(waitRows||[]);
     if (!profiles) { setLoading(false); return; }
     const merged=profiles.map(p=>{
       const rows=(userData||[]).filter(d=>d.user_id===p.id);
@@ -1310,64 +1429,89 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
   const topByReadiness=[...users].sort((a,b)=>b.readiness-a.readiness).slice(0,5);
   const recentSignups=[...users].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5);
 
-  const TABS=['overview','myplan','users','analytics','query','exams','resources','broadcast','waitlist','system'];
+
+  const NAV=[
+    {group:'Insights',items:[['overview','Overview'],['finance','Finance'],['analytics','Analytics']]},
+    {group:'People',items:[['users','Users'],['waitlist','Pro waitlist']]},
+    {group:'Operations',items:[['exams','Exam schedule'],['resources','Resources'],['broadcast','Messaging'],['query','Data explorer'],['system','System']]},
+    {group:'Personal',items:[['myplan','My revision plan']]},
+  ];
+  const TITLES={overview:'Overview',finance:'Finance',analytics:'Analytics',users:'Users',waitlist:'Pro waitlist',exams:'Exam schedule',resources:'Resources',broadcast:'Messaging',query:'Data explorer',system:'System',myplan:'My revision plan'};
 
   return (
     <>
       {selected&&<UserDetail u={selected} onClose={()=>setSelected(null)} onToggleAdmin={toggleAdmin} onTogglePro={togglePro} onDeleteUser={deleteUser}/>}
-      <div style={{minHeight:'100vh',background:'#050508',color:'#d0ccc8',fontFamily:mono}}>
-        {/* Top bar */}
-        <div style={{position:'sticky',top:0,zIndex:50,background:'rgba(5,5,8,0.98)',backdropFilter:'blur(20px)',borderBottom:'1px solid rgba(255,61,0,0.1)',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 24px',height:50}}>
-          <div style={{display:'flex',alignItems:'center',gap:14}}>
-            <span style={{fontSize:14,fontWeight:900,color:'#FF3D00',letterSpacing:5}}>GOD MODE</span>
-            <span style={{background:'rgba(255,61,0,0.1)',border:'1px solid rgba(255,61,0,0.25)',color:'#FF3D00',fontSize:8,fontWeight:900,letterSpacing:2,padding:'2px 7px',borderRadius:3}}>ADMIN</span>
-            <div style={{display:'flex',gap:1,marginLeft:6}}>
-              {TABS.map(t=>(
-                <button key={t} onClick={()=>setTab(t)} style={{background:tab===t?'rgba(255,61,0,0.1)':'transparent',border:'none',borderBottom:`2px solid ${tab===t?'#FF3D00':'transparent'}`,color:tab===t?'#FF3D00':'#7a7570',padding:'0 12px',height:50,cursor:'pointer',fontSize:10,fontFamily:mono,letterSpacing:1,fontWeight:700,transition:'all 0.15s'}}>
-                  {t==='myplan'?'★ MY PLAN':t.toUpperCase()}
-                </button>
-              ))}
+      <div style={{minHeight:'100vh',background:BG,color:TXT,fontFamily:FONT,display:'flex'}}>
+        {/* Sidebar nav */}
+        <aside style={{width:222,flexShrink:0,background:PANEL,borderRight:`1px solid ${BORDER}`,position:'sticky',top:0,height:'100vh',display:'flex',flexDirection:'column',overflowY:'auto'}}>
+          <div style={{padding:'18px 18px 14px',display:'flex',alignItems:'center',gap:10,borderBottom:`1px solid ${BORDER}`}}>
+            <div style={{width:30,height:30,borderRadius:8,background:ACCENT,display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:800,fontSize:15}}>B</div>
+            <div>
+              <div style={{fontSize:13,fontWeight:700,color:TXT,lineHeight:1.15}}>Battle Plan</div>
+              <div style={{fontSize:10,color:MUT}}>Admin Console</div>
             </div>
           </div>
-          <div style={{display:'flex',alignItems:'center',gap:10}}>
-            {lastRefresh&&<span style={{fontSize:9,color:'#8a4030'}}>↺ {timeSince(lastRefresh)}</span>}
-            <button onClick={loadData} disabled={loading} style={btn()}>REFRESH</button>
-            <button onClick={exportCSV} style={btn('#00E676')}>↓ CSV</button>
-            <span style={{fontSize:10,color:DIM,maxWidth:160,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{adminProfile?.email||adminUser?.email}</span>
-            <button onClick={onLogout} style={btn('#FF3D00')}>LOGOUT</button>
+          <div style={{flex:1,padding:'12px 10px'}}>
+            {NAV.map(grp=>(
+              <div key={grp.group} style={{marginBottom:14}}>
+                <div style={{fontSize:10,fontWeight:700,color:DIM,letterSpacing:0.6,textTransform:'uppercase',padding:'0 8px 6px'}}>{grp.group}</div>
+                {grp.items.map(([id,label])=>(
+                  <button key={id} onClick={()=>setTab(id)} style={{width:'100%',textAlign:'left',display:'flex',alignItems:'center',gap:9,padding:'8px 10px',marginBottom:1,borderRadius:7,border:'none',cursor:'pointer',background:tab===id?ACCENT_SOFT:'transparent',color:tab===id?'#fff':TXT2,fontSize:13,fontWeight:tab===id?600:500,fontFamily:FONT}}>
+                    <span style={{width:6,height:6,borderRadius:'50%',background:tab===id?ACCENT:'transparent',border:tab===id?'none':`1px solid ${BORDER}`,flexShrink:0}}/>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            ))}
           </div>
-        </div>
+          <div style={{padding:'12px 14px',borderTop:`1px solid ${BORDER}`}}>
+            <div style={{fontSize:11,color:TXT2,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',marginBottom:8}}>{adminProfile?.email||adminUser?.email}</div>
+            <button onClick={onLogout} style={{...btn(),width:'100%'}}>Sign out</button>
+          </div>
+        </aside>
 
-        <div style={{maxWidth:1280,margin:'0 auto',padding:'24px 24px 80px'}}>
-          {/* Stat cards — always visible */}
-          <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:8,marginBottom:8}}>
+        {/* Main column */}
+        <div style={{flex:1,minWidth:0,display:'flex',flexDirection:'column'}}>
+          <div style={{position:'sticky',top:0,zIndex:50,background:'rgba(11,13,18,0.88)',backdropFilter:'blur(12px)',borderBottom:`1px solid ${BORDER}`,display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 24px',height:56}}>
+            <div style={{fontSize:16,fontWeight:700,color:TXT,letterSpacing:'-0.01em'}}>{TITLES[tab]||'Console'}</div>
+            <div style={{display:'flex',alignItems:'center',gap:10}}>
+              {lastRefresh&&<span style={{fontSize:11,color:DIM}}>Updated {timeSince(lastRefresh)}</span>}
+              <button onClick={loadData} disabled={loading} style={btn()}>Refresh</button>
+              <button onClick={exportCSV} style={btn(OK)}>Export CSV</button>
+            </div>
+          </div>
+
+          <div style={{padding:'24px',maxWidth:1180,width:'100%',boxSizing:'border-box'}}>
+          {tab==='overview'&&(<>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:10,marginBottom:10}}>
             {[
-              {v:stats.total,l:'USERS',c:'#FF3D00'},
-              {v:stats.activeWeek,l:'ACTIVE / WEEK',c:stats.activeWeek>0?'#00E676':'#555'},
-              {v:stats.newWeek,l:'NEW / WEEK',c:stats.newWeek>0?'#FFD600':'#555'},
-              {v:stats.activated,l:'ACTIVATED',c:'#40C4FF'},
-              {v:stats.admins,l:'ADMINS',c:'#FF3D00'},
+              {v:stats.total,l:'Total users'},
+              {v:stats.activeWeek,l:'Active · 7d',c:OK},
+              {v:stats.newWeek,l:'New · 7d',c:ACCENT},
+              {v:stats.activated,l:'Activated'},
+              {v:stats.admins,l:'Admins'},
             ].map(({v,l,c})=>(
-              <div key={l} style={{...card,padding:'12px 14px'}}>
-                <div style={{fontSize:24,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
-                <div style={{fontSize:9,color:'#b07060',letterSpacing:1.5,marginTop:4}}>{l}</div>
+              <div key={l} style={{...card,padding:'14px 16px'}}>
+                <div style={{fontSize:24,fontWeight:700,color:c||TXT,lineHeight:1,letterSpacing:'-0.02em',fontFamily:numF}}>{v}</div>
+                <div style={{fontSize:12,color:MUT,marginTop:6}}>{l}</div>
               </div>
             ))}
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:8,marginBottom:20}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:10,marginBottom:20}}>
             {[
-              {v:stats.totalPapers,l:'PAPERS',c:'#fff'},
-              {v:`${stats.totalStudyHours}h`,l:'STUDY HOURS',c:'#00E676'},
-              {v:stats.totalErrors,l:'ERRORS',c:'#FF9100'},
-              {v:stats.avgReadiness,l:'AVG READINESS',c:R(stats.avgReadiness)},
-              {v:`£${(stats.pro*4.99).toFixed(0)}`,l:'MRR (EST.)',c:'#FFD600'},
+              {v:stats.totalPapers,l:'Papers logged'},
+              {v:`${stats.totalStudyHours}h`,l:'Study hours',c:OK},
+              {v:stats.totalErrors,l:'Errors logged',c:WARN},
+              {v:stats.avgReadiness,l:'Avg readiness',c:R(stats.avgReadiness)},
+              {v:`£${(stats.pro*4.99).toFixed(0)}`,l:'Est. MRR',c:ACCENT},
             ].map(({v,l,c})=>(
-              <div key={l} style={{...card,padding:'12px 14px'}}>
-                <div style={{fontSize:24,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
-                <div style={{fontSize:9,color:'#b07060',letterSpacing:1.5,marginTop:4}}>{l}</div>
+              <div key={l} style={{...card,padding:'14px 16px'}}>
+                <div style={{fontSize:24,fontWeight:700,color:c||TXT,lineHeight:1,letterSpacing:'-0.02em',fontFamily:numF}}>{v}</div>
+                <div style={{fontSize:12,color:MUT,marginTop:6}}>{l}</div>
               </div>
             ))}
           </div>
+          </>)}
 
           {/* OVERVIEW */}
           {tab==='overview'&&(
@@ -1437,47 +1581,47 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
           {/* USERS */}
           {tab==='users'&&(
             <>
-              <div style={{display:'flex',gap:8,marginBottom:10,alignItems:'center'}}>
-                <input style={{...iS,flex:1}} placeholder="// search by email, name, or subject..." value={search} onChange={e=>setSearch(e.target.value)}/>
-                <button onClick={()=>setFilterAdmin(p=>!p)} style={{...btn('#FF3D00'),background:filterAdmin?'rgba(255,61,0,0.12)':'transparent',whiteSpace:'nowrap'}}>ADMINS ONLY</button>
-                <button onClick={()=>setFilterActive(p=>!p)} style={{...btn('#00E676'),background:filterActive?'rgba(0,230,118,0.1)':'transparent',whiteSpace:'nowrap'}}>ACTIVE WEEK</button>
-                <span style={{fontSize:10,color:DIM,whiteSpace:'nowrap'}}>{filtered.length} / {users.length}</span>
+              <div style={{display:'flex',gap:8,marginBottom:12,alignItems:'center'}}>
+                <input style={{...iS,flex:1}} placeholder="Search by email, name, or subject…" value={search} onChange={e=>setSearch(e.target.value)}/>
+                <button onClick={()=>setFilterAdmin(p=>!p)} style={{...btn(ACCENT),background:filterAdmin?ACCENT_SOFT:'transparent',whiteSpace:'nowrap'}}>Admins only</button>
+                <button onClick={()=>setFilterActive(p=>!p)} style={{...btn(OK),background:filterActive?'rgba(34,197,94,0.12)':'transparent',whiteSpace:'nowrap'}}>Active this week</button>
+                <span style={{fontSize:12,color:MUT,whiteSpace:'nowrap'}}>{filtered.length} / {users.length}</span>
               </div>
-              {loading?<div style={{color:'#cc4422',fontSize:12,padding:40,textAlign:'center',letterSpacing:2}}>// LOADING USER DATA...</div>:(
+              {loading?<div style={{color:MUT,fontSize:13,padding:40,textAlign:'center'}}>Loading user data…</div>:(
                 <div style={{...card,overflow:'hidden'}}>
                   <table style={{width:'100%',borderCollapse:'collapse'}}>
                     <thead>
-                      <tr style={{borderBottom:'1px solid rgba(255,61,0,0.1)'}}>
-                        {[{k:'email',l:'USER'},{k:'created_at',l:'JOINED'},{k:'lastActive',l:'LAST ACTIVE'},{k:'totalScores',l:'PAPERS'},{k:'avgScore',l:'AVG'},{k:'readiness',l:'READINESS'},{k:'totalErrors',l:'ERRORS'},{k:'tos_agreed_at',l:'ToS'},{k:'is_admin',l:'ROLE'}].map(({k,l})=>(
-                          <th key={k} onClick={()=>cycleSort(k)} style={{textAlign:'left',padding:'10px 14px',fontSize:10,color:'#c05030',letterSpacing:1.5,fontWeight:700,cursor:'pointer',userSelect:'none',whiteSpace:'nowrap'}}>
-                            {l} <span style={{opacity:0.5,fontSize:9}}>{sa(k)}</span>
+                      <tr style={{borderBottom:`1px solid ${BORDER}`,background:'rgba(255,255,255,0.02)'}}>
+                        {[{k:'email',l:'User'},{k:'created_at',l:'Joined'},{k:'lastActive',l:'Last active'},{k:'totalScores',l:'Papers'},{k:'avgScore',l:'Avg'},{k:'readiness',l:'Readiness'},{k:'totalErrors',l:'Errors'},{k:'tos_agreed_at',l:'ToS'},{k:'is_admin',l:'Role'}].map(({k,l})=>(
+                          <th key={k} onClick={()=>cycleSort(k)} style={{textAlign:'left',padding:'11px 14px',fontSize:11,color:SEC,fontWeight:600,cursor:'pointer',userSelect:'none',whiteSpace:'nowrap'}}>
+                            {l} <span style={{opacity:0.5,fontSize:10}}>{sa(k)}</span>
                           </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {filtered.length===0&&<tr><td colSpan={9} style={{padding:'32px 14px',color:DIM,fontSize:12,textAlign:'center'}}>No users found.</td></tr>}
+                      {filtered.length===0&&<tr><td colSpan={9} style={{padding:'32px 14px',color:DIM,fontSize:13,textAlign:'center'}}>No users found.</td></tr>}
                       {filtered.map(u=>(
                         <tr key={u.id} onClick={()=>setSelected(u)} onMouseEnter={()=>setHover(u.id)} onMouseLeave={()=>setHover(null)}
-                          style={{background:hover===u.id?'rgba(255,61,0,0.04)':'transparent',cursor:'pointer',borderBottom:'1px solid rgba(255,255,255,0.025)',transition:'background 0.1s'}}>
-                          <td style={{padding:'10px 14px'}}>
-                            <div style={{fontSize:12,fontWeight:600,color:'#ddd'}}>{u.display_name||<span style={{color:MUT}}>—</span>}</div>
-                            <div style={{fontSize:9,color:DIM,marginTop:1}}>{u.email}</div>
-                            <div style={{display:'flex',gap:3,flexWrap:'wrap',marginTop:3}}>{(u.subjectList||[]).slice(0,3).map(s=><span key={s} style={{fontSize:7,color:'#FF3D00',background:'rgba(255,61,0,0.08)',border:'1px solid rgba(255,61,0,0.18)',padding:'1px 4px',borderRadius:2,textTransform:'capitalize'}}>{s.replace(/-/g,' ')}</span>)}</div>
+                          style={{background:hover===u.id?PANEL2:'transparent',cursor:'pointer',borderBottom:`1px solid ${BORDER}`,transition:'background 0.1s'}}>
+                          <td style={{padding:'11px 14px'}}>
+                            <div style={{fontSize:13,fontWeight:600,color:TXT}}>{u.display_name||<span style={{color:MUT}}>—</span>}</div>
+                            <div style={{fontSize:11,color:DIM,marginTop:1}}>{u.email}</div>
+                            <div style={{display:'flex',gap:4,flexWrap:'wrap',marginTop:4}}>{(u.subjectList||[]).slice(0,3).map(s=><span key={s} style={{fontSize:9,color:SC[s]||MUT,background:`${SC[s]||'#888'}1a`,border:`1px solid ${SC[s]||'#888'}33`,padding:'1px 5px',borderRadius:4,textTransform:'capitalize'}}>{s.replace(/-/g,' ')}</span>)}</div>
                           </td>
-                          <td style={{padding:'10px 14px',fontSize:10,color:MUT,whiteSpace:'nowrap'}}>{fmtDate(u.created_at)}</td>
-                          <td style={{padding:'10px 14px',fontSize:10,color:MUT,whiteSpace:'nowrap'}}>{timeSince(u.lastActive)}</td>
-                          <td style={{padding:'10px 14px',fontSize:14,fontWeight:800,color:'#fff'}}>{u.totalScores}</td>
-                          <td style={{padding:'10px 14px',fontSize:12,fontWeight:700,color:u.avgScore>=70?'#00E676':u.avgScore>=50?'#FFD600':'#FF3D00'}}>{u.avgScore?`${u.avgScore}%`:'—'}</td>
-                          <td style={{padding:'10px 14px'}}>
-                            <div style={{display:'flex',alignItems:'center',gap:7}}>
-                              <div style={{width:36,height:3,background:'rgba(255,255,255,0.05)',borderRadius:2,overflow:'hidden'}}><div style={{width:`${u.readiness}%`,height:'100%',background:R(u.readiness)}}/></div>
-                              <span style={{fontSize:11,fontWeight:700,color:R(u.readiness)}}>{u.readiness}</span>
+                          <td style={{padding:'11px 14px',fontSize:12,color:MUT,whiteSpace:'nowrap',fontFamily:numF}}>{fmtDate(u.created_at)}</td>
+                          <td style={{padding:'11px 14px',fontSize:12,color:MUT,whiteSpace:'nowrap'}}>{timeSince(u.lastActive)}</td>
+                          <td style={{padding:'11px 14px',fontSize:14,fontWeight:700,color:TXT,fontFamily:numF}}>{u.totalScores}</td>
+                          <td style={{padding:'11px 14px',fontSize:13,fontWeight:600,fontFamily:numF,color:u.avgScore>=70?OK:u.avgScore>=50?WARN:u.avgScore?BAD:DIM}}>{u.avgScore?`${u.avgScore}%`:'—'}</td>
+                          <td style={{padding:'11px 14px'}}>
+                            <div style={{display:'flex',alignItems:'center',gap:8}}>
+                              <div style={{width:42,height:5,background:PANEL2,borderRadius:3,overflow:'hidden'}}><div style={{width:`${u.readiness}%`,height:'100%',background:R(u.readiness)}}/></div>
+                              <span style={{fontSize:12,fontWeight:700,color:R(u.readiness),fontFamily:numF}}>{u.readiness}</span>
                             </div>
                           </td>
-                          <td style={{padding:'10px 14px',fontSize:12,color:u.totalErrors>10?'#FF9100':'#666'}}>{u.totalErrors}</td>
-                          <td style={{padding:'10px 14px'}}>{u.tos_agreed_at?<span style={pill('#00E676',true)}>✓</span>:<span style={pill('#555',true)}>—</span>}</td>
-                          <td style={{padding:'10px 14px'}}>{u.is_admin?<span style={pill('#FF3D00')}>ADMIN</span>:<span style={pill('#444',true)}>USER</span>}</td>
+                          <td style={{padding:'11px 14px',fontSize:13,fontFamily:numF,color:u.totalErrors>10?WARN:MUT}}>{u.totalErrors}</td>
+                          <td style={{padding:'11px 14px'}}>{u.tos_agreed_at?<span style={pill(OK,true)}>Yes</span>:<span style={pill('#64748b',true)}>—</span>}</td>
+                          <td style={{padding:'11px 14px'}}>{u.is_admin?<span style={pill(ACCENT)}>Admin</span>:<span style={pill('#64748b',true)}>User</span>}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1486,6 +1630,9 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
               )}
             </>
           )}
+
+          {/* FINANCE */}
+          {tab==='finance'&&<FinanceSection users={users} waitlist={waitlist}/>}
 
           {/* ANALYTICS */}
           {tab==='analytics'&&<AnalyticsDashboard users={users} referrals={referrals} groups={groups} groupMembers={groupMembers}/>}
@@ -1559,8 +1706,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
             </div>
           )}
 
-          <div style={{fontSize:9,color:'#5a3020',marginTop:24,textAlign:'center',letterSpacing:2}}>
-            // A* BATTLE PLAN · GOD MODE · ALL ACTIONS LOGGED //
+          <div style={{fontSize:11,color:DIM,marginTop:28,textAlign:'center'}}>Battle Plan · Admin Console · all actions are logged</div>
           </div>
         </div>
       </div>
