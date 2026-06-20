@@ -2222,6 +2222,71 @@ function getCharacterReply(input, {subjects, scores, sessions, examSched}) {
   return fallbacks[Math.floor(Math.random()*fallbacks.length)];
 }
 
+// Full study-system snapshot for Caps (chat + daily briefing). No PII —
+// just the student's revision data. Shared so chat and briefings stay in sync.
+function buildCapsContext({subjects=[],scores=[],sessions=[],errors=[],targets={},rag={},examSched=EXAM_SCHEDULE,examLevel='alevel'}={}) {
+  const nowMs = Date.now();
+  const GB = Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
+  const subjById = Object.fromEntries(subjects.map(s=>[s.id,s]));
+
+  const subjSummary = subjects.map(s=>{
+    const ss = [...scores].filter(x=>x.subject===s.name).sort((a,b)=>(a.ts||a.id)-(b.ts||b.id));
+    const cnt = ss.length;
+    const avg = cnt ? Math.round(ss.reduce((a,x)=>a+x.pct,0)/cnt) : null;
+    const pred = predictedGrade(scores, s.name, GB);
+    const topics = SPEC_TOPICS[s.id]||[];
+    let r=0,a=0,g=0;
+    topics.forEach((t,i)=>{ const v=rag[`${s.id}_${i}`]; if(v==='red')r++; else if(v==='amber')a++; else if(v==='green')g++; });
+    const weak = topics.filter((t,i)=>rag[`${s.id}_${i}`]==='red').slice(0,5);
+    return {
+      name:s.name, papers:cnt,
+      avg, grade: avg!=null?getSubjectGrade(avg,s.name,GB):null,
+      best: cnt?Math.max(...ss.map(x=>x.pct)):null,
+      latest: cnt?ss[cnt-1].pct:null,
+      target: targets[s.name]||null,
+      projected: pred?pred.grade:null, trend: pred?pred.trend:null,
+      topicsRated:{red:r,amber:a,green:g}, weakTopics:weak,
+    };
+  });
+
+  const secsBySubj={}; let totalSecs=0, weekSecs=0;
+  sessions.forEach(se=>{
+    const t=se.ts??se.id; totalSecs+=se.secs||0;
+    if(nowMs-t<7*86400000) weekSecs+=se.secs||0;
+    const sub=subjById[se.subjectId]; if(sub) secsBySubj[sub.name]=(secsBySubj[sub.name]||0)+(se.secs||0);
+  });
+  const activeDays = studyActivityDays({sessions,scores,errors});
+  let streak=0; { const d=new Date(); d.setHours(0,0,0,0); while(activeDays.has(d.getTime())){ streak++; d.setDate(d.getDate()-1); } }
+
+  const upcoming = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId,s.options)
+      .map(e=>({...e,subjectName:s.name})))
+    .map(e=>({...e, d:Math.ceil((new Date(e.date)-nowMs)/86400000)}))
+    .filter(e=>e.d>=0).sort((a,b)=>a.d-b.d).slice(0,5)
+    .map(e=>({paper:e.paper, subject:e.subjectName, date:e.date, daysAway:e.d}));
+
+  const br = calcBattleReadiness(scores, errors);
+
+  return {
+    examLevel,
+    battleReadiness: {score:br.total, label:br.label},
+    overallAvg: scores.length ? Math.round(scores.reduce((a,s)=>a+s.pct,0)/scores.length) : null,
+    totalPapers: scores.length,
+    studyTime: {
+      totalMins: Math.round(totalSecs/60),
+      thisWeekMins: Math.round(weekSecs/60),
+      streakDays: streak,
+      perSubjectMins: Object.fromEntries(Object.entries(secsBySubj).map(([k,v])=>[k,Math.round(v/60)])),
+    },
+    subjects: subjSummary,
+    recentErrors: errors.slice(0,8).map(e=>({subject:e.subject, topic:e.topic, type:e.type})),
+    upcomingExams: upcoming,
+    // legacy fields kept for backward-compat with the server context builder
+    rag,
+    scores: scores.slice(-3).map(s=>({subject:s.subject, pct:s.pct, grade:s.grade})),
+    nextExam: upcoming[0] ? {paper:upcoming[0].paper, subject:upcoming[0].subject, date:upcoming[0].date} : null,
+  };
+}
+
 function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},examLevel='alevel',errors=[],targets={},applyAction=()=>({ok:false,message:'unavailable'}),C,font,onClose}) {
   ensureAnimStyles();
   const [messages,setMessages] = useState([{
@@ -2246,69 +2311,7 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
     setSending(true);
 
     // Build FULL context — the whole study system so Caps can reason properly.
-    // No PII (no real name, school, address) — just the student's revision data.
-    const nowMs = Date.now();
-    const GB = Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
-    const subjById = Object.fromEntries(subjects.map(s=>[s.id,s]));
-
-    // Per-subject summary: scores, grades, projection, RAG, weak topics
-    const subjSummary = subjects.map(s=>{
-      const ss = [...scores].filter(x=>x.subject===s.name).sort((a,b)=>(a.ts||a.id)-(b.ts||b.id));
-      const cnt = ss.length;
-      const avg = cnt ? Math.round(ss.reduce((a,x)=>a+x.pct,0)/cnt) : null;
-      const pred = predictedGrade(scores, s.name, GB);
-      const topics = SPEC_TOPICS[s.id]||[];
-      let r=0,a=0,g=0;
-      topics.forEach((t,i)=>{ const v=rag[`${s.id}_${i}`]; if(v==='red')r++; else if(v==='amber')a++; else if(v==='green')g++; });
-      const weak = topics.filter((t,i)=>rag[`${s.id}_${i}`]==='red').slice(0,5);
-      return {
-        name:s.name, papers:cnt,
-        avg, grade: avg!=null?getSubjectGrade(avg,s.name,GB):null,
-        best: cnt?Math.max(...ss.map(x=>x.pct)):null,
-        latest: cnt?ss[cnt-1].pct:null,
-        target: targets[s.name]||null,
-        projected: pred?pred.grade:null, trend: pred?pred.trend:null,
-        topicsRated:{red:r,amber:a,green:g}, weakTopics:weak,
-      };
-    });
-
-    // Study time + streak
-    const secsBySubj={}; let totalSecs=0, weekSecs=0;
-    sessions.forEach(se=>{
-      const t=se.ts??se.id; totalSecs+=se.secs||0;
-      if(nowMs-t<7*86400000) weekSecs+=se.secs||0;
-      const sub=subjById[se.subjectId]; if(sub) secsBySubj[sub.name]=(secsBySubj[sub.name]||0)+(se.secs||0);
-    });
-    const activeDays = studyActivityDays({sessions,scores,errors});
-    let streak=0; { const d=new Date(); d.setHours(0,0,0,0); while(activeDays.has(d.getTime())){ streak++; d.setDate(d.getDate()-1); } }
-
-    const upcoming = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId,s.options)
-        .map(e=>({...e,subjectName:s.name})))
-      .map(e=>({...e, d:Math.ceil((new Date(e.date)-nowMs)/86400000)}))
-      .filter(e=>e.d>=0).sort((a,b)=>a.d-b.d).slice(0,5)
-      .map(e=>({paper:e.paper, subject:e.subjectName, date:e.date, daysAway:e.d}));
-
-    const br = calcBattleReadiness(scores, errors);
-
-    const ctx = {
-      examLevel,
-      battleReadiness: {score:br.total, label:br.label},
-      overallAvg: scores.length ? Math.round(scores.reduce((a,s)=>a+s.pct,0)/scores.length) : null,
-      totalPapers: scores.length,
-      studyTime: {
-        totalMins: Math.round(totalSecs/60),
-        thisWeekMins: Math.round(weekSecs/60),
-        streakDays: streak,
-        perSubjectMins: Object.fromEntries(Object.entries(secsBySubj).map(([k,v])=>[k,Math.round(v/60)])),
-      },
-      subjects: subjSummary,
-      recentErrors: errors.slice(0,8).map(e=>({subject:e.subject, topic:e.topic, type:e.type})),
-      upcomingExams: upcoming,
-      // legacy fields kept for backward-compat with the server context builder
-      rag,
-      scores: scores.slice(-3).map(s=>({subject:s.subject, pct:s.pct, grade:s.grade})),
-      nextExam: upcoming[0] ? {paper:upcoming[0].paper, subject:upcoming[0].subject, date:upcoming[0].date} : null,
-    };
+    const ctx = buildCapsContext({subjects,scores,sessions,errors,targets,rag,examSched,examLevel});
 
     let replyText = null;
     let serverActions = [];
@@ -6661,6 +6664,54 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   useEffect(()=>ls.set(`rbp_share_aspect_${uid}`,shareAspect),[shareAspect,uid]);
   const [myPlan, setMyPlan] = useState(()=>ls.get(`rbp_my_plan_${uid}`,[]));
   useEffect(()=>ls.set(`rbp_my_plan_${uid}`,myPlan),[myPlan,uid]);
+
+  // ── Caps daily briefing — AI-written, fetched at most once per day (Pro) ──
+  const todayKey = new Date().toISOString().slice(0,10);
+  const [briefing, setBriefing] = useState(()=>ls.get(`rbp_briefing_${uid}`,null));
+  const [briefingLoading, setBriefingLoading] = useState(false);
+  const briefingTriedRef = useRef('');
+  const briefHasData = !!(scores.length || sessions.length || myPlan.length);
+  useEffect(()=>{
+    if (!isPro) return;
+    if (briefing && briefing.date===todayKey) return;        // already have today's
+    if (!briefHasData) return;                                // nothing to brief on yet
+    if (briefingTriedRef.current===todayKey) return;         // already attempted today
+    briefingTriedRef.current = todayKey;
+    let cancelled=false;
+    (async()=>{
+      try {
+        const {data:{session}} = await supabase.auth.getSession();
+        if (!session || cancelled) return;
+        setBriefingLoading(true);
+        const ctx = buildCapsContext({subjects,scores,sessions,errors,targets,rag,examSched,examLevel});
+        const r = await fetch('/api/mascot-chat',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`},
+          body: JSON.stringify({ messages:[{from:'user', text:"Give me my briefing for today in 2-3 short sentences: the most important things to focus on right now, specific to my data. If useful, propose a couple of plan tasks."}], context: ctx }),
+        });
+        if (!r.ok || cancelled) return;
+        const d = await r.json();
+        if (d.reply) {
+          const b = {date:todayKey, text:d.reply, actions:Array.isArray(d.actions)?d.actions:[]};
+          setBriefing(b); ls.set(`rbp_briefing_${uid}`,b);
+        }
+      } catch {/* offline — keep the rule-based message */}
+      finally { if(!cancelled) setBriefingLoading(false); }
+    })();
+    return ()=>{ cancelled=true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[isPro,todayKey,uid,briefHasData]);
+  const todaysBriefing = (briefing && briefing.date===todayKey) ? briefing : null;
+  const applyBriefingAction = (actIdx) => {
+    if (!todaysBriefing) return;
+    const act = todaysBriefing.actions?.[actIdx];
+    if (!act || act._applied) return;
+    const res = applyCapsAction(act);
+    setBriefing(prev=>{
+      const next = {...prev, actions: prev.actions.map((a,j)=> j!==actIdx ? a : {...a,_applied:res.ok,_failed:!res.ok,_result:res.message})};
+      ls.set(`rbp_briefing_${uid}`,next); return next;
+    });
+  };
   useEffect(()=>{
     if (!user?.id||!isSupabaseConfigured()) { setSyncLoaded(true); return; }
     const localScores    = ls.get(`rbp_scores_${uid}`,[]);
@@ -6937,7 +6988,41 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
               style={{marginLeft:'auto',background:'transparent',border:'none',color:C.subtle,
                 cursor:'pointer',fontSize:14,lineHeight:1,padding:'0 2px'}}>✕</button>
           </div>
-          <p style={{fontSize:13,color:C.muted,lineHeight:1.65,margin:'0 0 10px'}}>{message}</p>
+          {todaysBriefing ? (
+            <div style={{margin:'0 0 10px'}}>
+              <div style={{...type.eyebrow,color:C.accent,marginBottom:5}}>Today's briefing</div>
+              <p style={{fontSize:13,color:C.text,lineHeight:1.6,margin:0,whiteSpace:'pre-wrap'}}>{todaysBriefing.text}</p>
+              {Array.isArray(todaysBriefing.actions)&&todaysBriefing.actions.length>0&&(
+                <div style={{display:'flex',flexDirection:'column',gap:6,marginTop:8}}>
+                  {todaysBriefing.actions.map((a,j)=>{
+                    const lbl = a.type==='set_target'?`Set ${a.subject} target → ${a.grade}`
+                      : a.type==='mark_topics'?`Mark ${a.topics?.length||0} ${a.subject} topic${(a.topics?.length||0)>1?'s':''} as ${a.level==='red'?'weak':a.level}`
+                      : a.type==='add_plan_task'?`Plan · ${a.day}: ${a.subject}${a.topic?` — ${a.topic}`:''}`
+                      : 'Apply change';
+                    return (
+                      <div key={j} style={{display:'flex',alignItems:'center',gap:8,
+                        background:C.card2,borderRadius:8,padding:'7px 9px',
+                        border:`1px solid ${a._applied?(C.success||'#22c55e')+'66':a._failed?(C.danger||'#ef4444')+'66':C.border}`}}>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:11.5,fontWeight:600,color:C.text,lineHeight:1.35}}>{lbl}</div>
+                          {a._result&&<div style={{fontSize:10,marginTop:1,color:a._failed?(C.danger||'#ef4444'):(C.success||'#22c55e')}}>{a._result}</div>}
+                        </div>
+                        {a._applied
+                          ? <span style={{fontSize:10,fontWeight:700,color:C.success||'#22c55e',flexShrink:0}}>Applied</span>
+                          : <button onClick={()=>applyBriefingAction(j)} style={{flexShrink:0,padding:'4px 10px',
+                              background:C.accent,border:'none',borderRadius:6,color:'#fff',fontSize:11,fontWeight:700,
+                              fontFamily:font,cursor:'pointer'}}>{a._failed?'Retry':'Apply'}</button>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ) : (
+            <p style={{fontSize:13,color:C.muted,lineHeight:1.65,margin:'0 0 10px'}}>
+              {briefingLoading ? `${companion.name} is reading your stats…` : message}
+            </p>
+          )}
 
           {mascotNots.length>0&&(
             <div style={{margin:'0 0 10px',padding:'8px 10px',background:C.card2,
