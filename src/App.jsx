@@ -6605,7 +6605,6 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   const mood    = getCompanionMood({sessions,scores,examSched,subjects});
   const message = getCompanionMessage({mood,sessions,scores,subjects,examSched,name:companion.name});
   const moodC      = {happy:'#22c55e',excited:'#fbbf24',worried:'#f97316',neutral:C.accent,sleepy:'#64748b'}[mood]||C.accent;
-  const moodLabel  = {happy:'Happy',excited:'Pumped',worried:'Worried',neutral:'Ready',sleepy:'Sleepy'}[mood]||'Ready';
   const streakDays = (()=>{ const d=studyActivityDays({sessions,scores,errors}); let n=0; const t=new Date(); t.setHours(0,0,0,0); while(d.has(t.getTime())){ n++; t.setDate(t.getDate()-1); } return n; })();
 
   useEffect(()=>{
@@ -7027,6 +7026,21 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
             </p>
           )}
 
+          {/* Tap-the-mascot → something to do */}
+          <div style={{display:'flex',flexWrap:'wrap',gap:6,margin:'0 0 10px'}}>
+            {[
+              {label:'Log a paper',  fn:()=>{setShowBubble(false); setQuickLogOpen(true);}},
+              {label:'Start a timer',fn:()=>{setShowBubble(false); setView('timer');}},
+              {label:'Weak topics',  fn:()=>{setShowBubble(false); setView('resources');}},
+            ].map(q=>(
+              <button key={q.label} onClick={q.fn}
+                style={{fontSize:11,fontWeight:600,background:C.card2,border:`1px solid ${C.border}`,
+                  borderRadius:14,padding:'5px 11px',color:C.text,fontFamily:font,cursor:'pointer'}}>
+                {q.label}
+              </button>
+            ))}
+          </div>
+
           {mascotNots.length>0&&(
             <div style={{margin:'0 0 10px',padding:'8px 10px',background:C.card2,
               borderRadius:8,border:`1px solid ${C.border}`,display:'flex',flexDirection:'column',gap:6}}>
@@ -7155,49 +7169,51 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
         ):(
           /* ── FULL (tablet/desktop): avatar + labels ── */
           <>
-            <div style={{padding:'14px 12px',borderBottom:`1px solid ${C.border}`,cursor:'pointer'}}
+            <div style={{padding:'16px 14px 12px',borderBottom:`1px solid ${C.border}`,
+              display:'flex',flexDirection:'column',alignItems:'center',gap:5,cursor:'pointer'}}
               onClick={()=>setShowBubble(v=>!v)}>
-              <div style={{display:'flex',alignItems:'center',gap:10}}>
-                <div style={{position:'relative',flexShrink:0}}>
-                  <div style={{width:44,height:44,borderRadius:'50%',overflow:'hidden',background:C.card2,
-                    display:'flex',alignItems:'center',justifyContent:'center'}}>
-                    <CompanionAvatar
-                      skin={companion.skin} hair={companion.hair} hairStyle={companion.hairStyle}
-                      eyeColor={companion.eyeColor??0} outfitColor={companion.outfitColor??0}
-                      accessory={companion.accessory??0} mood={mood}
-                      pose={showBubble?'wave':'idle'} size={40}/>
+              <div style={{position:'relative'}}>
+                <CompanionAvatar
+                  skin={companion.skin} hair={companion.hair} hairStyle={companion.hairStyle}
+                  eyeColor={companion.eyeColor??0} outfitColor={companion.outfitColor??0}
+                  accessory={companion.accessory??0} mood={mood}
+                  pose={showBubble?'wave':'idle'} size={68}/>
+                <div style={{position:'absolute',bottom:8,right:-2,width:11,height:11,borderRadius:'50%',
+                  background:moodC,
+                  border:`2px solid ${C.nav}`}}/>
+                {mascotNots.length>0&&(
+                  <div style={{position:'absolute',top:-2,right:-4,minWidth:16,height:16,
+                    borderRadius:8,background:'#ef4444',color:'#fff',fontSize:10,fontWeight:800,
+                    display:'flex',alignItems:'center',justifyContent:'center',padding:'0 4px',
+                    border:`2px solid ${C.nav}`,lineHeight:1}}>
+                    {mascotNots.length}
                   </div>
-                  <div style={{position:'absolute',bottom:0,right:0,width:10,height:10,borderRadius:'50%',
-                    background:moodC,border:`2px solid ${C.nav}`}}/>
-                  {mascotNots.length>0&&(
-                    <div style={{position:'absolute',top:-3,right:-3,minWidth:15,height:15,borderRadius:8,
-                      background:'#ef4444',color:'#fff',fontSize:9,fontWeight:800,display:'flex',
-                      alignItems:'center',justifyContent:'center',padding:'0 3px',border:`2px solid ${C.nav}`,lineHeight:1}}>
-                      {mascotNots.length}
-                    </div>
-                  )}
-                </div>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:14,fontWeight:600,color:C.text,letterSpacing:'-0.01em',
-                    whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{companion.name}</div>
-                  <div style={{fontSize:11,color:C.muted,marginTop:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
-                    {streakDays>0 ? `${streakDays}-day streak` : moodLabel}
-                  </div>
-                </div>
-                <span style={{flexShrink:0,color:C.subtle,fontSize:15,lineHeight:1,
-                  transform:showBubble?'rotate(90deg)':'none',transition:'transform 0.15s'}}>›</span>
+                )}
               </div>
-              <div style={{display:'flex',alignItems:'center',gap:8,marginTop:10}}>
-                <span title="Earn coins by logging papers (+5 each) and study time (+1/min). Spend them in Customise."
-                  style={{fontSize:11,fontWeight:600,color:C.text}}>
-                  {computeCoins(scores,sessions,companion?.spent_coins||0).available}
-                  <span style={{color:C.subtle,fontWeight:400}}> coins</span>
-                </span>
+              <div style={{display:'flex',alignItems:'center',gap:5}}>
+                <div style={{fontSize:13,fontWeight:700,color:C.text,letterSpacing:0.1}}>{companion.name}</div>
+                <span style={{fontSize:8,fontWeight:800,color:C.accent,background:C.accentSoft,
+                  border:`1px solid ${C.accent}55`,borderRadius:5,padding:'1px 5px',letterSpacing:0.4}}>BETA</span>
+              </div>
+              <div title="Earn coins by logging papers (+5 each) and study time (+1/min). Spend them in Customise." style={{display:'flex',alignItems:'center',gap:4,fontSize:12,fontWeight:700,color:C.accent}}>
+                {computeCoins(scores,sessions,companion?.spent_coins||0).available} 🪙
+                <span style={{color:C.muted,fontWeight:500}}>coins</span>
+              </div>
+              <div style={{fontSize:10,color:C.subtle,marginTop:1}}>
+                {streakDays>0 ? `${streakDays}-day streak · tap me` : 'Tap me'}
+              </div>
+              <div style={{display:'flex',gap:5,flexWrap:'wrap',justifyContent:'center'}}>
                 <button onClick={e=>{e.stopPropagation();setCompanionDraft(companion.name);setCustomising(true);}}
-                  style={{marginLeft:'auto',fontSize:11,color:C.muted,background:'transparent',
-                    border:`1px solid ${C.border}`,borderRadius:6,padding:'3px 11px',
+                  style={{fontSize:10,color:C.muted,background:'transparent',
+                    border:`1px solid ${C.border}`,borderRadius:5,padding:'3px 8px',
                     fontFamily:font,cursor:'pointer',fontWeight:500}}>
                   Customise
+                </button>
+                <button onClick={e=>{e.stopPropagation(); isPro?setCompanionChat(true):addToast('Companion chat is a Pro feature — payments are launching soon. Join the waitlist in Account → Settings.','info');}}
+                  style={{fontSize:10,color:C.accent,background:C.accentSoft,
+                    border:`1px solid ${C.accent}44`,borderRadius:5,padding:'3px 8px',
+                    fontFamily:font,cursor:'pointer',fontWeight:600}}>
+                  {isPro?'Chat':<span style={{display:'flex',alignItems:'center',gap:3}}>Chat<Lock size={9} strokeWidth={2.5}/></span>}
                 </button>
               </div>
             </div>
