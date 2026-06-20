@@ -4,6 +4,7 @@ import AuthGate from './components/AuthGate';
 import SubjectPicker from './components/SubjectPicker';
 import GroupsView from './components/GroupsView';
 import TermsOfService from './components/TermsOfService';
+import CapsMark from './components/CapsMark';
 import { subjectsFromSelection, GCSE_CATALOG } from './data/subjects';
 import { BarChart3, PenLine, CalendarDays, ClipboardList, Trophy, Users, Timer, BookOpen, User, Sun, Moon, Lock, Pencil, GraduationCap, FileText, TrendingUp, Zap, Star, ArrowUpRight, Target, Shield, CheckCircle, Calendar, Search, Grid3x3, PanelLeftClose, PanelLeftOpen, UserPlus } from 'lucide-react';
 
@@ -6200,9 +6201,7 @@ function LandingPage({ onGetStarted }) {
         height:56, display:'flex', alignItems:'center', padding:'0 24px',
         justifyContent:'space-between'}}>
         <div style={{display:'flex', alignItems:'center', gap:10}}>
-          <div style={{width:26, height:26, borderRadius:6, background:C.accent,
-            display:'flex', alignItems:'center', justifyContent:'center',
-            fontFamily:mono, fontWeight:800, fontSize:11, color:'#fff'}}>A*</div>
+          <CapsMark size={30}/>
           <span style={{fontFamily:display, fontSize:17, fontWeight:600, color:C.text, letterSpacing:'-0.01em'}}>Battle Plan</span>
         </div>
         <button onClick={onGetStarted}
@@ -6409,10 +6408,8 @@ function LandingPage({ onGetStarted }) {
         <div style={{maxWidth:1100, margin:'0 auto', padding:'28px 24px',
           display:'flex', justifyContent:'space-between', alignItems:'center', gap:'14px 24px', flexWrap:'wrap'}}>
           <div style={{display:'flex', alignItems:'center', gap:9}}>
-            <div style={{width:22, height:22, borderRadius:5, background:C.accent,
-              display:'flex', alignItems:'center', justifyContent:'center',
-              fontFamily:mono, fontWeight:800, fontSize:9, color:'#fff'}}>A*</div>
-            <span style={{...type.caption, color:C.subtle}}>A* Battle Plan · AQA · Edexcel · OCR · WJEC</span>
+            <CapsMark size={24}/>
+            <span style={{...type.caption, color:C.subtle}}>Battle Plan · AQA · Edexcel · OCR · WJEC</span>
           </div>
           <div style={{display:'flex', alignItems:'center', gap:18, flexWrap:'wrap'}}>
             <button onClick={()=>setShowTerms(true)} style={{background:'none', border:'none',
@@ -7604,11 +7601,7 @@ function LevelPicker({ onComplete }) {
       justifyContent:'center', fontFamily:font, padding:24 }}>
       <div style={{ width:'100%', maxWidth:560 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:40 }}>
-          <div style={{ width:26, height:26, borderRadius:6, background:C.accent,
-            display:'flex', alignItems:'center', justifyContent:'center',
-            fontWeight:900, fontSize:11, color:'#fff', fontFamily:"'JetBrains Mono',monospace" }}>
-            A*
-          </div>
+          <CapsMark size={30}/>
           <span style={{ fontFamily:FONT_DISPLAY, fontSize:16, fontWeight:600, color:C.text, letterSpacing:'-0.01em' }}>Battle Plan</span>
         </div>
 
@@ -7849,9 +7842,7 @@ export default function App() {
   const loading=(
     <div style={{minHeight:'100vh',background:C.bg,display:'flex',alignItems:'center',
       justifyContent:'center',flexDirection:'column',gap:16,fontFamily:font}}>
-      <div style={{width:36,height:36,borderRadius:10,background:C.accent,display:'flex',
-        alignItems:'center',justifyContent:'center',fontSize:14,fontWeight:900,color:'#fff',
-        fontFamily:"'JetBrains Mono',monospace"}}>A*</div>
+      <CapsMark size={44}/>
       <div style={{fontSize:13,color:C.muted}}>Loading…</div>
     </div>
   );

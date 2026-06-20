@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import CapsMark from './CapsMark';
 import { EXAM_SCHEDULE } from '../App';
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -110,8 +111,7 @@ function LoginScreen({onAuth}) {
       <div style={{width:'100%',maxWidth:380}}>
         <div style={{marginBottom:28}}>
           <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:18}}>
-            <div style={{width:34,height:34,borderRadius:9,background:ACCENT,display:'flex',alignItems:'center',justifyContent:'center',
-              color:'#fff',fontSize:16,fontWeight:800}}>B</div>
+            <CapsMark size={36}/>
             <div>
               <div style={{fontSize:15,fontWeight:700,color:TXT,letterSpacing:'-0.01em'}}>Battle Plan</div>
               <div style={{fontSize:11,color:MUT}}>Admin Console</div>
@@ -1445,7 +1445,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
         {/* Sidebar nav */}
         <aside style={{width:222,flexShrink:0,background:PANEL,borderRight:`1px solid ${BORDER}`,position:'sticky',top:0,height:'100vh',display:'flex',flexDirection:'column',overflowY:'auto'}}>
           <div style={{padding:'18px 18px 14px',display:'flex',alignItems:'center',gap:10,borderBottom:`1px solid ${BORDER}`}}>
-            <div style={{width:30,height:30,borderRadius:8,background:ACCENT,display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:800,fontSize:15}}>B</div>
+            <CapsMark size={30}/>
             <div>
               <div style={{fontSize:13,fontWeight:700,color:TXT,lineHeight:1.15}}>Battle Plan</div>
               <div style={{fontSize:10,color:MUT}}>Admin Console</div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import CapsMark from './CapsMark';
 
 const font = "'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
 const mono = "'JetBrains Mono','SF Mono',ui-monospace,monospace";
@@ -136,9 +137,7 @@ export default function AuthGate({ onAuth }) {
         {/* Hero */}
         <div style={{ padding:'52px 24px 28px', flex:'0 0 auto' }}>
           <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:24 }}>
-            <div style={{ width:32, height:32, borderRadius:8, background:C.accent,
-              display:'flex', alignItems:'center', justifyContent:'center',
-              fontFamily:mono, fontWeight:900, fontSize:13, color:'#fff' }}>A*</div>
+            <CapsMark size={34}/>
             <span style={{ fontSize:15, fontWeight:700, color:C.text, letterSpacing:0.2 }}>Battle Plan</span>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16,
@@ -303,9 +302,7 @@ export default function AuthGate({ onAuth }) {
         borderRight:`1px solid ${C.border}`, flexShrink:0 }}>
 
         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:40 }}>
-          <div style={{ width:30, height:30, borderRadius:8, background:C.accent,
-            display:'flex', alignItems:'center', justifyContent:'center',
-            fontFamily:mono, fontWeight:900, fontSize:13, color:'#fff' }}>A*</div>
+          <CapsMark size={32}/>
           <span style={{ fontSize:15, fontWeight:700, color:C.text, letterSpacing:0.2 }}>Battle Plan</span>
         </div>
 

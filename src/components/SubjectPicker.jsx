@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { SUBJECT_CATALOG, GCSE_CATALOG } from '../data/subjects';
 import { supabase } from '../lib/supabase';
 import TermsOfService from './TermsOfService';
+import CapsMark from './CapsMark';
 
 const TERMS_VERSION = '2026-05-31';
 
@@ -399,15 +400,7 @@ export default function SubjectPicker({ user, onComplete, examLevel = 'alevel' }
       <div style={{ width: '100%', maxWidth: 640 }}>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 36 }}>
-          <div style={{
-            width: 26, height: 26, borderRadius: 6,
-            background: colors.accent,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: 900, fontSize: 11, color: '#fff',
-            fontFamily: "'JetBrains Mono', monospace",
-          }}>
-            A*
-          </div>
+          <CapsMark size={28}/>
           <span style={{ fontSize: 14, fontWeight: 600, color: colors.text, letterSpacing: 0.2 }}>
             Battle Plan
           </span>
