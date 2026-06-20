@@ -3695,6 +3695,7 @@ function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font}) {
   const [errNote,      setErrNote]      = useState('');
   const [efilt,        setEfilt]        = useState('All');
   const [confirmDel,   setConfirmDel]   = useState(null);
+  const [tab,          setTab]          = useState('papers'); // papers | errors
 
   const nextSuggested = (PAPER_SUGGS[scoreSubject]||[]).find(p=>
     !scores.filter(s=>s.subject===scoreSubject).map(s=>s.paper).includes(p)
@@ -3733,25 +3734,34 @@ function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font}) {
 
   return (
     <div>
-      <div style={{marginBottom:20}}>
+      <div style={{marginBottom:16}}>
         <h1 style={{...type.h1,color:C.text,margin:'0 0 4px'}}>Tracker</h1>
-        <p style={{fontSize:13,color:C.muted,margin:0}}>Log past papers and errors. Synced to your account automatically.</p>
+        <p style={{...type.caption,color:C.muted,margin:0}}>Log past papers and errors — synced automatically.</p>
       </div>
 
+      {/* Papers / Errors tabs */}
+      <div style={{display:'flex',gap:22,borderBottom:`1px solid ${C.border}`,marginBottom:18}}>
+        {[['papers','Papers',scores.length],['errors','Errors',errors.length]].map(([id,lbl,n])=>(
+          <button key={id} onClick={()=>setTab(id)} style={{background:'none',border:'none',
+            cursor:'pointer',fontFamily:'inherit',padding:'0 0 9px',marginBottom:-1,fontSize:14,
+            fontWeight:tab===id?600:500,color:tab===id?C.text:C.muted,
+            borderBottom:`2px solid ${tab===id?C.text:'transparent'}`}}>
+            {lbl}{n>0&&<span style={{color:C.subtle,fontWeight:500}}> · {n}</span>}
+          </button>
+        ))}
+      </div>
+
+      {tab==='papers'&&(<>
       {/* Log a past paper */}
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:16,marginBottom:12}}>
-        <div style={{fontSize:12,fontWeight:600,color:C.muted,marginBottom:10}}>Log a past paper</div>
+      <div style={{background:C.card2,border:`1px solid ${C.border}`,borderRadius:8,padding:12,marginBottom:20}}>
         {nextSuggested&&(
-          <div onClick={()=>setScorePaper(nextSuggested)} style={{display:'flex',alignItems:'center',gap:10,
-            padding:'10px 12px',borderRadius:8,background:'rgba(34,197,94,0.05)',
-            border:'1px solid rgba(34,197,94,0.14)',marginBottom:10,cursor:'pointer'}}>
-            <div style={{width:6,height:6,borderRadius:'50%',background:'#22c55e',flexShrink:0}}/>
-            <div style={{flex:1}}>
-              <div style={{fontSize:11,fontWeight:600,color:'#22c55e',textTransform:'uppercase',letterSpacing:0.5,marginBottom:2}}>Suggested next</div>
-              <div style={{fontSize:13,color:C.text}}>{nextSuggested}</div>
-            </div>
-            <span style={{fontSize:12,color:C.muted}}>Tap to fill</span>
-          </div>
+          <button onClick={()=>setScorePaper(nextSuggested)} style={{display:'flex',alignItems:'center',gap:9,
+            width:'100%',textAlign:'left',padding:'8px 10px',borderRadius:6,background:'transparent',
+            border:`1px solid ${C.border}`,marginBottom:8,cursor:'pointer',fontFamily:'inherit'}}>
+            <span style={{...type.eyebrow,color:C.subtle,flexShrink:0}}>Next</span>
+            <span style={{fontSize:13,color:C.text,flex:1,minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{nextSuggested}</span>
+            <span style={{fontSize:12,color:C.accent,fontWeight:600,flexShrink:0}}>Use</span>
+          </button>
         )}
         <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
           <select value={scoreSubject} onChange={e=>{setScoreSubject(e.target.value);setScorePaper('');}}
@@ -3764,17 +3774,17 @@ function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font}) {
             placeholder="Score" type="number" style={{...iS,flex:'0 0 60px'}}/>
           <input value={scoreMax} onChange={e=>setScoreMax(e.target.value)}
             placeholder="/Max" type="number" style={{...iS,flex:'0 0 60px'}}/>
-          <button onClick={addScore} style={{background:'#22c55e',border:'none',color:'#fff',
-            padding:'8px 16px',borderRadius:7,cursor:'pointer',fontSize:13,fontWeight:600,fontFamily:'inherit'}}>
-            Save
+          <button onClick={addScore} style={{background:C.accent,border:'none',color:'#fff',
+            padding:'8px 18px',borderRadius:6,cursor:'pointer',fontSize:13,fontWeight:600,fontFamily:'inherit'}}>
+            Log
           </button>
         </div>
       </div>
 
       {/* Paper history */}
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:16,marginBottom:12}}>
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
-          <div style={{fontSize:12,fontWeight:600,color:C.muted}}>Paper history ({filteredScores.length})</div>
+      <div style={{marginBottom:12}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:6}}>
+          <div style={{...type.eyebrow,color:C.subtle}}>History · {filteredScores.length}</div>
           <div style={{display:'flex',gap:3,flexWrap:'wrap'}}>
             {['All',...SUBJECTS].map(s=>(
               <button key={s} onClick={()=>setSfilt(s)}
@@ -3828,10 +3838,11 @@ function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font}) {
           );
         })}
       </div>
+      </>)}
 
+      {tab==='errors'&&(<>
       {/* Log an error */}
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:16,marginBottom:12}}>
-        <div style={{fontSize:12,fontWeight:600,color:C.muted,marginBottom:10}}>Log an error</div>
+      <div style={{background:C.card2,border:`1px solid ${C.border}`,borderRadius:8,padding:12,marginBottom:20}}>
         <div style={{display:'flex',gap:5,flexWrap:'wrap',marginBottom:8}}>
           <select value={errSubject} onChange={e=>setErrSubject(e.target.value)}
             style={{...iS,flex:'1 1 90px'}}>
@@ -3847,17 +3858,17 @@ function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font}) {
         <div style={{display:'flex',gap:5}}>
           <input value={errNote} onChange={e=>setErrNote(e.target.value)}
             placeholder="What specifically went wrong? (optional)" style={{...iS,flex:1}}/>
-          <button onClick={addError} style={{background:'#ef4444',border:'none',color:'#fff',
-            padding:'8px 16px',borderRadius:7,cursor:'pointer',fontSize:13,fontWeight:600,fontFamily:'inherit'}}>
-            Save
+          <button onClick={addError} style={{background:C.accent,border:'none',color:'#fff',
+            padding:'8px 18px',borderRadius:6,cursor:'pointer',fontSize:13,fontWeight:600,fontFamily:'inherit'}}>
+            Log
           </button>
         </div>
       </div>
 
       {/* Error log */}
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,padding:16}}>
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
-          <div style={{fontSize:12,fontWeight:600,color:C.muted}}>Error log ({filteredErrors.length})</div>
+      <div>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:6}}>
+          <div style={{...type.eyebrow,color:C.subtle}}>Logged errors · {filteredErrors.length}</div>
           <div style={{display:'flex',gap:3,flexWrap:'wrap'}}>
             {['All',...SUBJECTS].map(s=>(
               <button key={s} onClick={()=>setEfilt(s)}
@@ -3870,14 +3881,15 @@ function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font}) {
           </div>
         </div>
         {errors.length>=3&&(
-          <div style={{display:'flex',gap:3,marginBottom:10,flexWrap:'wrap'}}>
+          <div style={{display:'flex',gap:6,marginBottom:10,flexWrap:'wrap'}}>
             {ERROR_TYPES.map(et=>{
               const cnt=filteredErrors.filter(e=>e.type===et.id).length;
               if (!cnt) return null;
               return (
-                <div key={et.id} style={{fontSize:13,padding:'3px 7px',borderRadius:4,
-                  background:`${et.color}12`,color:et.color,fontWeight:700}}>
-                  {et.label}: {cnt}
+                <div key={et.id} style={{display:'flex',alignItems:'center',gap:5,fontSize:12,
+                  padding:'3px 9px',borderRadius:5,border:`1px solid ${C.border}`,color:C.muted}}>
+                  <span style={{width:6,height:6,borderRadius:'50%',background:et.color}}/>
+                  {et.label} <span style={{color:C.text,fontWeight:600}}>{cnt}</span>
                 </div>
               );
             })}
@@ -3913,6 +3925,7 @@ function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font}) {
           })}
         </div>
       </div>
+      </>)}
     </div>
   );
 }
@@ -3982,29 +3995,29 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE,yearGroup=''}) {
   const ExamRow=({e})=>{
     const days=daysUntil(e.date);
     const done=days<0;
-    const urgent=days>=0&&days<=14;
+    const d=new Date(e.date);
     return (
-      <div style={{background:C.surface,border:`1px solid ${urgent?e.color+'22':done?'rgba(0,0,0,0.02)':C.border}`,
-        borderRadius:8,padding:'9px 12px',display:'flex',alignItems:'center',gap:10,
-        opacity:done?0.3:1}}>
-        <div style={{width:4,height:30,borderRadius:2,background:done?C.subtle:e.color,flexShrink:0}}/>
+      <div style={{display:'flex',alignItems:'center',gap:12,padding:'12px 0',
+        borderTop:`1px solid ${C.border}`,opacity:done?0.45:1}}>
+        {/* date column */}
+        <div style={{width:38,flexShrink:0}}>
+          <div style={{...type.eyebrow,color:C.subtle,fontSize:10}}>{d.toLocaleDateString('en-GB',{month:'short'})}</div>
+          <div style={{fontSize:18,fontWeight:700,color:done?C.muted:C.text,lineHeight:1.1}}>{d.getDate()}</div>
+        </div>
+        <span style={{width:8,height:8,borderRadius:'50%',background:done?C.subtle:e.color,flexShrink:0}}/>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:14,fontWeight:600,color:done?C.muted:C.text,
+          <div style={{fontSize:14,fontWeight:500,color:done?C.muted:C.text,
             textDecoration:done?'line-through':'none',
             whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
             {e.subjectName}: {e.paper.split(':')[1]?.trim()||e.paper}
           </div>
-          <div style={{fontSize:12,color:C.muted,marginTop:2}}>
+          <div style={{...type.caption,color:C.muted,marginTop:1}}>
             {e.code} · {e.time} · {e.duration}
           </div>
         </div>
-        <div style={{textAlign:'right',flexShrink:0}}>
-          <div style={{fontSize:12,color:C.muted}}>
-            {new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}
-          </div>
-          <div style={{fontSize:14,fontWeight:700,color:days<=7?'#ef4444':days<=30?'#f97316':e.color}}>
-            {days>0?`${days}d`:days===0?'Today':'Done'}
-          </div>
+        <div style={{fontSize:14,fontWeight:700,flexShrink:0,
+          color:done?C.subtle:days<=7?C.danger:days<=30?C.warn:C.text}}>
+          {days>0?`${days}d`:days===0?'Today':'Done'}
         </div>
       </div>
     );
@@ -4012,23 +4025,27 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE,yearGroup=''}) {
 
   return (
     <div>
-      {/* Next exam hero */}
+      {/* Next exam — compact, left-aligned */}
       {next&&(
-        <div style={{textAlign:'center',marginBottom:28,padding:'28px 0'}}>
-          <div style={{fontSize:11,fontWeight:600,color:C.muted,letterSpacing:0.5,textTransform:'uppercase',marginBottom:12}}>
-            {daysUntil(next.date)===0?'Today':'First exam in'}
+        <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:22,
+          padding:'16px 18px',background:C.surface,border:`1px solid ${C.border}`,borderRadius:10}}>
+          <div style={{textAlign:'center',flexShrink:0,minWidth:58}}>
+            <div style={{fontSize:36,fontWeight:700,color:C.accent,lineHeight:1}}>
+              {daysUntil(next.date)===0?'!':daysUntil(next.date)}
+            </div>
+            <div style={{...type.eyebrow,color:C.subtle,marginTop:3}}>
+              {daysUntil(next.date)===0?'today':'days'}
+            </div>
           </div>
-          <div style={{fontSize:68,fontWeight:700,color:C.text,lineHeight:1}}>
-            {daysUntil(next.date)===0?'!':daysUntil(next.date)}
-          </div>
-          {daysUntil(next.date)>0&&(
-            <div style={{fontSize:13,color:C.muted,marginTop:4}}>days</div>
-          )}
-          <div style={{fontSize:14,color:C.muted,marginTop:12}}>
-            {next.subjectName} · {next.paper.split(':')[1]?.trim()||next.paper}
-          </div>
-          <div style={{fontSize:13,color:C.text,marginTop:4,fontWeight:600}}>
-            {new Date(next.date).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})} · {next.time}
+          <div style={{width:1,alignSelf:'stretch',background:C.border}}/>
+          <div style={{minWidth:0}}>
+            <div style={{...type.eyebrow,color:C.muted,marginBottom:5}}>Next exam</div>
+            <div style={{fontSize:15,fontWeight:600,color:C.text}}>
+              {next.subjectName}: {next.paper.split(':')[1]?.trim()||next.paper}
+            </div>
+            <div style={{...type.caption,color:C.muted,marginTop:2}}>
+              {new Date(next.date).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})} · {next.time}
+            </div>
           </div>
         </div>
       )}
@@ -4036,15 +4053,14 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE,yearGroup=''}) {
       {/* All exams done — celebratory close-out (current-year students only;
           Y12/Y10 return early above, and the empty-schedule case is handled too). */}
       {!next&&(
-        <div style={{textAlign:'center',marginBottom:28,padding:'32px 24px',
-          background:`linear-gradient(160deg, ${C.accent}1a, ${C.card2})`,
-          border:`1px solid ${C.accent}33`,borderRadius:14}}>
-          <div style={{fontSize:44,lineHeight:1,marginBottom:10}}>🎉</div>
-          <div style={{fontSize:22,fontWeight:800,color:C.text,marginBottom:8}}>That's a wrap — exams done!</div>
-          <div style={{fontSize:14,color:C.muted,lineHeight:1.6,maxWidth:360,margin:'0 auto'}}>
+        <div style={{marginBottom:24,padding:'26px 22px',background:C.surface,
+          border:`1px solid ${C.border}`,borderRadius:10}}>
+          <div style={{...type.eyebrow,color:C.accent,marginBottom:10}}>That's a wrap</div>
+          <div style={{...type.h1,fontSize:25,color:C.text,margin:'0 0 8px'}}>Exams done.</div>
+          <div style={{...type.body,color:C.muted,maxWidth:420}}>
             Every paper on your schedule is behind you. However they went, the hard part is over — and that took real graft.
           </div>
-          <div style={{fontSize:13,color:C.text,fontWeight:600,marginTop:14}}>
+          <div style={{fontSize:14,color:C.text,fontWeight:600,marginTop:14}}>
             Results land in August. Until then, rest — you've earned it.
           </div>
         </div>
@@ -4054,38 +4070,33 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE,yearGroup=''}) {
           is the one mistake you can't recover from; once everything's done it's
           just noise, so we drop it. */}
       {upcoming.length>0&&(
-        <div style={{marginBottom:20,padding:'11px 14px',background:'rgba(249,115,22,0.10)',
-          border:'1px solid rgba(249,115,22,0.35)',borderRadius:8,fontSize:12.5,
-          color:C.text,lineHeight:1.55,display:'flex',gap:9,alignItems:'flex-start'}}>
-          <span style={{fontSize:15,lineHeight:1}}>⚠️</span>
-          <span><strong>Double-check every date and time against your own school exam timetable.</strong> Boards occasionally move papers, and your centre's start times are the ones that count — never rely on this app alone to decide when to turn up.</span>
+        <div style={{marginBottom:20,padding:'10px 14px',background:C.card2,
+          borderLeft:`2px solid ${C.warn}`,borderRadius:'0 6px 6px 0',fontSize:12.5,
+          color:C.muted,lineHeight:1.55}}>
+          <strong style={{color:C.text}}>Double-check every date and time against your own school timetable.</strong> Boards occasionally move papers, and your centre's start times are the ones that count.
         </div>
       )}
 
-      {/* All exams list */}
+      {/* All exams timeline */}
       {upcoming.length>0&&(
         <div style={{marginBottom:20}}>
-          <div style={{fontSize:12,fontWeight:600,color:C.muted,marginBottom:10}}>All exams</div>
-          <div style={{display:'flex',flexDirection:'column',gap:4}}>
-            {allExams.map((e,i)=><ExamRow key={i} e={e}/>)}
-          </div>
+          <div style={{...type.eyebrow,color:C.subtle,marginBottom:2}}>All exams</div>
+          <div>{allExams.map((e,i)=><ExamRow key={i} e={e}/>)}</div>
         </div>
       )}
 
       {upcoming.length===0&&past.length>0&&(
         <div>
-          <div style={{fontSize:12,fontWeight:600,color:C.muted,marginBottom:10}}>Completed</div>
-          <div style={{display:'flex',flexDirection:'column',gap:4}}>
-            {past.map((e,i)=><ExamRow key={i} e={e}/>)}
-          </div>
+          <div style={{...type.eyebrow,color:C.subtle,marginBottom:2}}>Completed</div>
+          <div>{past.map((e,i)=><ExamRow key={i} e={e}/>)}</div>
         </div>
       )}
 
-      <div style={{marginTop:20,padding:'10px 14px',background:C.card2,borderRadius:8,
-        border:`1px solid ${C.border}`,fontSize:11,color:C.subtle,lineHeight:1.6}}>
-        Exam dates shown are based on 2026 timetables and are provided for guidance only.
-        Always verify dates with your school and the official board website before making decisions.
-        A* Battle Plan is not responsible for errors or changes to the exam schedule.
+      <div style={{marginTop:22,paddingTop:14,borderTop:`1px solid ${C.border}`,
+        ...type.caption,color:C.subtle,lineHeight:1.6}}>
+        Exam dates are based on 2026 timetables and provided for guidance only.
+        Always verify with your school and the official board website before making decisions.
+        A* Battle Plan is not responsible for changes to the exam schedule.
       </div>
     </div>
   );
