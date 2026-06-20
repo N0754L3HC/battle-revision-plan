@@ -2379,6 +2379,7 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
     return 'Apply change';
   };
   const QUICK = {
+    'Quiz me':'Quiz me on my weakest topics — one question at a time, exam style. Wait for my answer before the next one.',
     'Plan my week':'Plan my week — build a revision schedule across the next 7 days based on my weakest subjects and nearest exams.',
     'What should I do today?':'Based on my data, what are the 2-3 most useful things I should do today?',
     'Find my weak spots':'Look at my scores and topic ratings and tell me my biggest weak spots — mark them red if it helps.',
@@ -5712,54 +5713,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       </div>
       )}
 
-      {/* Referral */}
-      {referralCode&&(
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
-        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
-          <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5}}>Refer a friend</div>
-          <span style={{fontSize:10,fontWeight:700,color:'#fbbf24',background:'rgba(251,191,36,0.12)',border:'1px solid rgba(251,191,36,0.32)',borderRadius:4,padding:'1px 6px',letterSpacing:0.3}}>EARN PRO</span>
-        </div>
-        <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginBottom:12}}>
-          Every <strong style={{color:C.text}}>3 friends</strong> who sign up via your link earns you{' '}
-          <strong style={{color:C.text}}>1 free week of Pro</strong>. Stack them up.
-        </div>
-        <div style={{display:'flex',gap:8,marginBottom:10}}>
-          <div style={{flex:1,background:C.card2,border:`1px solid ${C.border}`,borderRadius:8,
-            padding:'9px 12px',fontSize:12,color:C.muted,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',
-            fontFamily:"'JetBrains Mono',monospace"}}>
-            beattheexam.org/?ref={referralCode}
-          </div>
-          <button onClick={shareReferralLink}
-            style={{flexShrink:0,padding:'9px 16px',background:copySuccess?'rgba(74,222,128,0.1)':C.accentSoft,
-              border:`1px solid ${copySuccess?'rgba(74,222,128,0.3)':C.accent}44`,borderRadius:8,
-              color:copySuccess?C.success:C.accent,fontSize:12,fontWeight:600,fontFamily:font,cursor:'pointer',
-              transition:'all 0.15s'}}>
-            {copySuccess?'Copied!':'Share link'}
-          </button>
-        </div>
-        {referralProDays>0&&(
-          <div style={{background:'rgba(251,191,36,0.07)',border:'1px solid rgba(251,191,36,0.28)',
-            borderRadius:8,padding:'8px 12px',marginBottom:10,fontSize:12,color:C.text}}>
-            <strong style={{color:'#fbbf24'}}>🎉 Pro active</strong> for the next <strong>{referralProDays} day{referralProDays!==1?'s':''}</strong> via referrals.
-          </div>
-        )}
-        {referralCount!==null&&(
-          <>
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
-              <div style={{fontSize:12,color:C.subtle,flex:1}}>
-                {referralCount===0?'No referrals yet — share your link to get started.'
-                  :`${referralCount} joined · ${refsToNextReward} more to unlock the next week`}
-              </div>
-              <div style={{fontSize:11,fontWeight:700,color:C.accent}}>{referralCount}/{Math.ceil((referralCount+1)/3)*3}</div>
-            </div>
-            <div style={{height:6,background:C.border,borderRadius:3,overflow:'hidden'}}>
-              <div style={{height:'100%',width:`${((referralCount%3)/3)*100}%`,background:C.accent,
-                borderRadius:3,transition:'width 0.4s'}}/>
-            </div>
-          </>
-        )}
-      </div>
-      )}
+      {/* Referral moved to the Groups page (it's social) */}
 
       {/* School leaderboard opt-in */}
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
@@ -7370,7 +7324,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
         {view==='exams'        && <Exams        {...vp}/>}
         {view==='plan'         && <Schedule     {...vp}/>}
         {view==='achievements' && <AchievementsView {...vp} unlockedIds={unlockedIds}/>}
-        {view==='groups'       && <GroupsView    user={user} scores={scores} uid={uid} C={C} font={font} addToast={addToast}/>}
+        {view==='groups'       && <GroupsView    user={user} scores={scores} uid={uid} C={C} font={font} addToast={addToast} referralCode={referralCode}/>}
         {view==='timer'        && <StudyTimer    subjects={subjects} uid={uid} C={C} font={font} sessions={sessions} setSessions={setSessions} scores={scores} errors={errors} rag={rag}/>}
         {view==='resources'    && <Resources    {...vp}/>}
         {view==='account'      && <Account      {...vp} user={user} selection={selection}

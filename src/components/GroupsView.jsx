@@ -22,7 +22,7 @@ function extractCode(raw) {
   return m ? m[1] : '';
 }
 
-export default function GroupsView({ user, scores = [], uid, C, font, addToast }) {
+export default function GroupsView({ user, scores = [], uid, C, font, addToast, referralCode }) {
   const [groups, setGroups]       = useState([]);
   const [loading, setLoading]     = useState(true);
 
@@ -167,6 +167,26 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast }
     }
     setSchoolsLoading(false);
   }, []);
+
+  // Referral (moved here from Account — it's social)
+  const [refCount, setRefCount] = useState(null);
+  const [refCopied, setRefCopied] = useState(false);
+  useEffect(() => {
+    if (!referralCode) return;
+    supabase.from('referrals').select('id', { count: 'exact', head: true })
+      .eq('referrer_code', referralCode)
+      .then(({ count }) => { if (count != null) setRefCount(count); })
+      .catch(() => {});
+  }, [referralCode]);
+  const shareReferral = async () => {
+    const link = `https://beattheexam.org/?ref=${referralCode}`;
+    const text = `I'm using Battle Plan to track my revision and predict my grades — give it a go:`;
+    try {
+      if (navigator.share) { await navigator.share({ title: 'Battle Plan', text, url: link }); return; }
+    } catch (e) { if (e?.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(link); setRefCopied(true); setTimeout(() => setRefCopied(false), 2000); }
+    catch { addToast(`Share this link: ${link}`, 'info'); }
+  };
 
   const handleToggleSchools = () => {
     const next = !schoolsOpen;
@@ -359,6 +379,29 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast }
             );
           })}
         </>
+      )}
+
+      {/* Refer a friend (social) */}
+      {referralCode && (
+        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '18px 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5 }}>Refer a friend</div>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#fbbf24', background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.32)', borderRadius: 4, padding: '1px 6px', letterSpacing: 0.3 }}>EARN PRO</span>
+          </div>
+          <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.6, marginBottom: 12 }}>
+            Every <strong style={{ color: C.text }}>3 friends</strong> who sign up via your link earns you <strong style={{ color: C.text }}>1 free week of Pro</strong>.
+            {refCount != null && refCount > 0 && <> You've referred <strong style={{ color: C.text }}>{refCount}</strong> so far.</>}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ flex: 1, background: C.card2, border: `1px solid ${C.border}`, borderRadius: 8, padding: '9px 12px', fontSize: 12, color: C.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: "'JetBrains Mono','SF Mono',monospace" }}>
+              beattheexam.org/?ref={referralCode}
+            </div>
+            <button onClick={shareReferral}
+              style={{ flexShrink: 0, padding: '9px 16px', background: refCopied ? 'rgba(74,222,128,0.12)' : C.accentSoft, border: `1px solid ${refCopied ? 'rgba(74,222,128,0.3)' : C.accent + '44'}`, borderRadius: 8, color: refCopied ? '#22c55e' : C.accent, fontSize: 12, fontWeight: 600, fontFamily: font, cursor: 'pointer' }}>
+              {refCopied ? 'Copied!' : 'Share link'}
+            </button>
+          </div>
+        </div>
       )}
 
       {/* School leaderboard */}
