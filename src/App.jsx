@@ -6134,7 +6134,13 @@ function LandingPage({ onGetStarted }) {
   const font = FONT_BODY;
   const display = FONT_DISPLAY;
   const mono = FONT_MONO;
-  const C = T.dark;
+  // Light, airy Notion-style palette (landing only)
+  const C = {
+    bg:'#f6f3ed', surface:'#ffffff', nav:'rgba(246,243,237,0.82)',
+    border:'rgba(0,0,0,0.10)', card2:'rgba(0,0,0,0.035)',
+    text:'#1a1712', muted:'#5c544a', subtle:'#948b7d', accent:'#b5735a',
+    success:'#15803d',
+  };
   const [showTerms, setShowTerms] = useState(false);
   const ic = d => (
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{d}</svg>
@@ -6211,17 +6217,17 @@ function LandingPage({ onGetStarted }) {
       <section>
         <div style={{maxWidth:820, margin:'0 auto', padding:'132px 24px 0', textAlign:'center'}}>
           <div style={{display:'inline-flex', alignItems:'center', gap:8, padding:'5px 13px',
-            borderRadius:999, border:`1px solid ${C.border}`, marginBottom:30}}>
+            borderRadius:999, border:`1px solid ${C.border}`, background:C.surface, marginBottom:28}}>
             <span style={{width:6, height:6, borderRadius:'50%', background:C.accent}}/>
-            <span style={{...type.caption, color:C.muted}}>Free while in beta · A-Levels &amp; GCSEs</span>
+            <span style={{...type.caption, color:C.muted}}>Free · A-Levels &amp; GCSEs</span>
           </div>
-          <h1 style={{fontFamily:display, fontWeight:600, fontSize:'clamp(40px, 6.2vw, 66px)',
-            color:C.text, margin:'0 0 24px', letterSpacing:'-0.035em', lineHeight:1.05}}>
-            Know exactly where<br/>you're losing marks.
+          <h1 style={{fontFamily:display, fontWeight:700, fontSize:'clamp(44px, 7.4vw, 78px)',
+            color:C.text, margin:'0 0 22px', letterSpacing:'-0.04em', lineHeight:0.98}}>
+            Stop guessing.<br/>Know your <span style={{color:C.accent}}>real grade.</span>
           </h1>
-          <p style={{...type.body, fontSize:'clamp(16px, 1.7vw, 19px)', color:C.muted, margin:'0 auto 36px', maxWidth:540}}>
-            The revision tracker that turns past papers into a real grade, a clear trajectory,
-            and a short list of what to fix next. Free for A-Level and GCSE students.
+          <p style={{...type.body, fontSize:'clamp(17px, 1.9vw, 21px)', color:C.muted, margin:'0 auto 36px', maxWidth:530, lineHeight:1.5}}>
+            Log one past paper and instantly see your real grade, your weakest topics, and exactly
+            what to revise next. Free for every A-Level and GCSE student.
           </p>
           <div style={{display:'flex', gap:10, justifyContent:'center', flexWrap:'wrap'}}>
             <button onClick={onGetStarted}
@@ -6242,7 +6248,7 @@ function LandingPage({ onGetStarted }) {
         {/* Windowed product shot */}
         <div style={{position:'relative', maxWidth:960, margin:'56px auto 0', padding:'0 24px'}}>
           <div style={{background:C.surface, border:`1px solid ${C.border}`, borderRadius:'14px 14px 0 0',
-            boxShadow:'0 40px 120px rgba(0,0,0,0.55)', overflow:'hidden'}}>
+            boxShadow:'0 30px 80px rgba(40,30,18,0.14)', overflow:'hidden'}}>
             <div style={{display:'flex', alignItems:'center', gap:7, padding:'11px 14px',
               borderBottom:`1px solid ${C.border}`, background:C.card2}}>
               {['#ff5f57','#febc2e','#28c840'].map(c=><span key={c} style={{width:11, height:11, borderRadius:'50%', background:c}}/>)}
@@ -6256,7 +6262,7 @@ function LandingPage({ onGetStarted }) {
                 {[['Avg score','78%'],['Papers logged','24'],['Battle readiness','74']].map(([l,v])=>(
                   <div key={l} style={{background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:'12px 14px', textAlign:'left'}}>
                     <div style={{fontSize:11, color:C.subtle, marginBottom:7}}>{l}</div>
-                    <div style={{fontSize:23, fontWeight:800, color:C.text, fontFamily:mono, letterSpacing:'-0.02em', lineHeight:1}}>{v}</div>
+                    <div style={{fontSize:23, fontWeight:800, color:l==='Battle readiness'?C.accent:C.text, fontFamily:mono, letterSpacing:'-0.02em', lineHeight:1}}>{v}</div>
                   </div>
                 ))}
               </div>
@@ -6271,7 +6277,7 @@ function LandingPage({ onGetStarted }) {
                       <polyline points={String(pts).split(',').map((y,j)=>`${j*14},${22-(+y/60)*22}`).join(' ')}
                         fill="none" stroke={C.muted} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                    <span style={{fontSize:12, fontWeight:700, color:C.text, width:24, textAlign:'center'}}>{g}</span>
+                    <span style={{fontSize:12, fontWeight:800, color:gradeColor(g), width:24, textAlign:'center'}}>{g}</span>
                     <span style={{fontSize:12, fontWeight:600, color:C.muted, width:34, textAlign:'right', fontFamily:mono}}>{v}%</span>
                   </div>
                 ))}
@@ -6324,8 +6330,9 @@ function LandingPage({ onGetStarted }) {
         <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))',
           gap:1, background:C.border, border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden'}}>
           {FEATURES.map(f => (
-            <div key={f.title} style={{background:C.bg, padding:'30px 28px'}}>
-              <div style={{color:C.muted, marginBottom:18}}>{f.icon}</div>
+            <div key={f.title} style={{background:C.surface, padding:'30px 28px'}}>
+              <div style={{width:38, height:38, borderRadius:10, background:`${C.accent}14`, color:C.accent,
+                display:'flex', alignItems:'center', justifyContent:'center', marginBottom:18}}>{f.icon}</div>
               <div style={{...type.h3, color:C.text, marginBottom:8}}>{f.title}</div>
               <div style={{...type.body, fontSize:14, color:C.muted, lineHeight:1.6}}>{f.desc}</div>
             </div>
@@ -7686,7 +7693,8 @@ export default function App() {
   // the themed canvas (which read as a fragile "slate floating on white").
   useEffect(()=>{
     const PHASE_BG = {
-      landing: T.dark.bg, anon: T.dark.bg,          // dark marketing + sign-in
+      landing: '#f6f3ed',                            // light marketing page
+      anon: T.dark.bg,                               // dark sign-in
       'level-pick': '#e8e4dd', onboarding: '#e8e4dd', // light onboarding
     };
     const bg = PHASE_BG[phase] || C.bg;             // loading + app use the user's theme
