@@ -61,25 +61,23 @@ const T = {
 };
 
 // ── Type system ──────────────────────────────────────────────────────────────
-// One distinctive display face (Fraunces — warm editorial serif) carries the
-// character on headings; a clean body face (Inter) does the reading work. This
-// is the hierarchy backbone — sizes/weights are deliberately far apart so an
-// h1 never blurs into body. Colours are applied by callers, never baked in here.
-const FONT_DISPLAY = "'Fraunces','Iowan Old Style',Georgia,serif";
+// ONE font family across the entire app (Notion model). Hierarchy comes from
+// size, weight and colour only — never a second typeface. This is what makes
+// the UI read as a single owned system rather than an assembled template.
 const FONT_BODY    = "'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+const FONT_DISPLAY = FONT_BODY;   // alias: same family, kept so callers needn't change
 const FONT_MONO    = "'JetBrains Mono','SF Mono',ui-monospace,monospace";
 
-// Reusable heading styles — spread into inline styles, override colour per use.
-// Values are the locked spec: page titles 2rem display/600, card titles ~1.4rem,
-// eyebrows 0.7rem sans, body ~0.95rem at 1.55 line-height, caption 0.8rem.
+// Reusable text styles — spread into inline styles, override colour per use.
+// Notion-tuned: bold-but-not-huge headings, calm 1.5 body, subtle eyebrows.
 const type = {
-  display: { fontFamily:FONT_DISPLAY, fontWeight:600, letterSpacing:'-0.025em', lineHeight:1.05 },
-  h1:      { fontFamily:FONT_DISPLAY, fontWeight:600, fontSize:32, letterSpacing:'-0.02em', lineHeight:1.15 },
-  h2:      { fontFamily:FONT_DISPLAY, fontWeight:600, fontSize:22, letterSpacing:'-0.01em', lineHeight:1.2 },
-  h3:      { fontFamily:FONT_BODY,    fontWeight:700, fontSize:15, letterSpacing:'-0.005em', lineHeight:1.3 },
-  body:    { fontFamily:FONT_BODY,    fontWeight:400, fontSize:15, lineHeight:1.55 },
-  caption: { fontFamily:FONT_BODY,    fontWeight:400, fontSize:13, lineHeight:1.5 },
-  eyebrow: { fontFamily:FONT_BODY,    fontWeight:600, fontSize:11, letterSpacing:'0.08em', textTransform:'uppercase' },
+  display: { fontFamily:FONT_BODY, fontWeight:700, letterSpacing:'-0.022em', lineHeight:1.1 },
+  h1:      { fontFamily:FONT_BODY, fontWeight:700, fontSize:27, letterSpacing:'-0.02em',  lineHeight:1.2 },
+  h2:      { fontFamily:FONT_BODY, fontWeight:600, fontSize:19, letterSpacing:'-0.013em', lineHeight:1.25 },
+  h3:      { fontFamily:FONT_BODY, fontWeight:600, fontSize:15, letterSpacing:'-0.006em', lineHeight:1.3 },
+  body:    { fontFamily:FONT_BODY, fontWeight:400, fontSize:15, lineHeight:1.5 },
+  caption: { fontFamily:FONT_BODY, fontWeight:400, fontSize:13, lineHeight:1.45 },
+  eyebrow: { fontFamily:FONT_BODY, fontWeight:600, fontSize:11, letterSpacing:'0.05em', textTransform:'uppercase' },
 };
 
 // ── Exam schedule (subjectId → boardId → exams) ────────────────────────────
