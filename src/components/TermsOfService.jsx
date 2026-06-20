@@ -35,7 +35,7 @@ export default function TermsOfService({ onClose }) {
       <div style={S.box}>
         <div style={S.header}>
           <span style={S.h1}>Terms of Service &amp; Privacy Policy</span>
-          <span style={{ color: '#555', fontSize: 11 }}>Last updated: 31 May 2026</span>
+          <span style={{ color: '#555', fontSize: 11 }}>Last updated: 20 June 2026</span>
         </div>
 
         <div style={S.body}>
@@ -253,6 +253,53 @@ export default function TermsOfService({ onClose }) {
             A* Battle Plan makes no guarantee of accuracy. Always verify exam dates with your school and the official
             exam board. Predicted grades are estimates only and should not be relied upon for university applications
             or other decisions.
+          </p>
+
+          <h2 style={S.h2}>18. Billing, Subscriptions, Cancellation &amp; Refunds</h2>
+          <p style={S.p}>
+            The core App is free. <strong style={{ color: '#ddd' }}>A* Battle Plan Pro</strong> is an optional paid
+            subscription that unlocks additional features (including the AI companion chat and its planning tools).
+            Payments are processed by <strong style={{ color: '#ddd' }}>Stripe</strong>; we never see or store your full
+            card details.
+          </p>
+          <p style={{ ...S.p, color: '#ddd', fontWeight: 700, marginTop: 12 }}>Price &amp; billing</p>
+          <p style={{ ...S.p, paddingLeft: 12 }}>
+            • The price and billing interval (e.g. monthly or annual) are shown clearly on the Stripe checkout page
+            before you pay. By subscribing you authorise that recurring charge.<br />
+            • <strong style={{ color: '#ddd' }}>Auto-renewal:</strong> subscriptions renew automatically at the end of
+            each billing period at the same price, until cancelled. We will email a receipt for each payment.<br />
+            • The charge appears on your statement as <strong style={{ color: '#ddd' }}>BEATTHEEXAM.ORG</strong>.<br />
+            • If a payment fails, your access may be downgraded to the free tier until payment succeeds.
+          </p>
+          <p style={{ ...S.p, color: '#ddd', fontWeight: 700, marginTop: 12 }}>Cancelling</p>
+          <p style={{ ...S.p, paddingLeft: 12 }}>
+            • You can cancel any time from <strong style={{ color: '#ddd' }}>Account → Manage billing</strong>, which
+            opens the Stripe customer portal.<br />
+            • When you cancel, you keep Pro access until the end of the period you have already paid for; it then does
+            not renew. We do not charge a cancellation fee.
+          </p>
+          <p style={{ ...S.p, color: '#ddd', fontWeight: 700, marginTop: 12 }}>Your 14-day cancellation right &amp; refunds</p>
+          <p style={{ ...S.p, paddingLeft: 12 }}>
+            • Under the UK Consumer Contracts Regulations 2013 you normally have 14 days to cancel a new subscription
+            for a refund.<br />
+            • Because Pro features are digital content made available immediately, by subscribing you request immediate
+            access and acknowledge that your right to a refund is lost once the service has been supplied during this
+            period — except where required by law or at our discretion.<br />
+            • If you are charged in error, charged after cancelling, or cannot access features you paid for, email
+            <strong style={{ color: '#ddd' }}> 51r4h100@gmail.com</strong> and we will investigate and, where
+            appropriate, refund you. We aim to respond within 5 working days.<br />
+            • We do not generally refund part-used billing periods, but we will always act fairly and in line with your
+            statutory rights, which these Terms do not affect.
+          </p>
+          <p style={{ ...S.p, color: '#ddd', fontWeight: 700, marginTop: 12 }}>Under-18s &amp; the cardholder</p>
+          <p style={S.p}>
+            If you are under 18, you must have the bill-payer's (e.g. a parent or guardian's) permission to subscribe,
+            and they agree to these billing terms. The person whose payment card is used is responsible for the charge
+            and may contact us about cancellation or refunds on the account's behalf.
+          </p>
+          <p style={S.p}>
+            We may change Pro pricing or features in future; any price change will be notified in advance and will only
+            apply from your next renewal, never mid-period.
           </p>
 
           <p style={{ ...S.p, marginTop: 24, color: '#555' }}>
