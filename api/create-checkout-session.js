@@ -7,7 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 let _stripe;
 const getStripe = () => (_stripe ??= new Stripe(process.env.STRIPE_SECRET_KEY));
 const PRO_PRICE_ID = process.env.STRIPE_PRO_PRICE_ID;
-const APP_URL = process.env.APP_URL ?? 'https://beattheexam.org';
+const APP_URL = process.env.APP_URL ?? 'https://www.beattheexam.org';
 const TRIAL_DAYS = parseInt(process.env.TRIAL_DAYS ?? '3', 10);
 
 const admin = createClient(
@@ -79,43 +79,49 @@ export default async function handler(req, res) {
   // the request body is never trusted to choose a Stripe customer.
   const { data: profile } = await admin.from('user_profiles')
     .select('stripe_customer_id, subscription_status').eq('id', userId).single();
-  const customerId = profile?.stripe_customer_id ?? null;
+  let customerId = profile?.stripe_customer_id ?? null;
 
-  // ── No double-subscriptions ────────────────────────────────────────────────
-  // If the user is already a paying subscriber, refuse to open a second checkout
-  // (which would create a duplicate subscription and double-charge them). Send
-  // them to the billing portal instead. We check our own record first, then ask
-  // Stripe directly as the source of truth (covers the window before the webhook
-  // has written subscription_status).
+  // Fast reject if our own record already says they're subscribed.
   if (['pro', 'active', 'trialing', 'past_due'].includes(profile?.subscription_status)) {
-    return res.status(409).json({ error: 'You already have an active subscription.', code: 'already_subscribed' });
+    return res.status(409).json({ error: "You're already on Pro.", code: 'already_subscribed' });
   }
 
   try {
     const stripe = getStripe();
 
-    if (customerId) {
-      const existing = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 20 });
-      const live = existing.data.find(s => ['active', 'trialing', 'past_due', 'unpaid'].includes(s.status));
-      if (live) {
-        return res.status(409).json({ error: 'You already have an active subscription.', code: 'already_subscribed' });
-      }
+    // Ensure EXACTLY ONE Stripe customer per user, persisted before checkout.
+    // Without this, the customer_email path makes Stripe mint a fresh customer on
+    // every click → duplicate customers → duplicate subscriptions (double charge)
+    // and an unreliable trial. Creating + saving the customer once fixes both.
+    if (!customerId) {
+      const customer = await stripe.customers.create({ email, metadata: { userId } });
+      customerId = customer.id;
+      await admin.from('user_profiles').update({ stripe_customer_id: customerId }).eq('id', userId);
+    }
+
+    // Source of truth: does this customer already have a live subscription?
+    const existing = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 20 });
+    const live = existing.data.find(s => ['active', 'trialing', 'past_due', 'unpaid'].includes(s.status));
+    if (live) {
+      // Covers rapid double-clicks AND "switch to paid while still in trial" —
+      // never open a second checkout or take a second payment.
+      return res.status(409).json({ error: "You're already on Pro.", code: 'already_subscribed' });
     }
 
     // Stripe Checkout needs a PRICE id (price_…). If the env var was set to a
-    // PRODUCT id (prod_…) by mistake, resolve it to the product's active price
-    // so checkout still works instead of failing with "No such price".
+    // PRODUCT id (prod_…) by mistake, resolve it to the product's active price.
     const priceId = await resolvePriceId(stripe, PRO_PRICE_ID);
     if (!priceId) return res.status(503).json({ error: 'No active price is configured for Pro. Set STRIPE_PRO_PRICE_ID to a price_… id.' });
 
-    // The trial is offered only when explicitly requested AND the user is a
-    // first-time subscriber (no Stripe customer yet). One trial per person; the
-    // required card on file blocks trial-farming via throwaway accounts.
-    const applyTrial = wantTrial && !customerId && TRIAL_DAYS > 0;
+    // Trial only when explicitly requested AND this customer has NEVER had any
+    // subscription before. One trial per person; the required card blocks farming.
+    const everSubscribed = existing.data.length > 0;
+    const applyTrial = wantTrial && !everSubscribed && TRIAL_DAYS > 0;
 
     const params = {
       mode: 'subscription',
       payment_method_types: ['card'],
+      customer: customerId,
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${APP_URL}/account?upgraded=1`,
       cancel_url: `${APP_URL}/account`,
@@ -129,12 +135,6 @@ export default async function handler(req, res) {
       payment_method_collection: 'always',
       allow_promotion_codes: true,
     };
-
-    if (customerId) {
-      params.customer = customerId;
-    } else {
-      params.customer_email = email;
-    }
 
     const session = await stripe.checkout.sessions.create(params);
     return res.status(200).json({ url: session.url });

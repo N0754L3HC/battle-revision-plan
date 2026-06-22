@@ -4162,7 +4162,7 @@ function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font,onMarkPa
               style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,width:'100%',
                 padding:'12px',marginBottom:18,background:C.accent,border:'none',borderRadius:10,
                 color:'#fff',fontSize:14,fontWeight:700,fontFamily:'inherit',cursor:'pointer'}}>
-              📸 Mark a past paper with AI
+              <FileText size={16} strokeWidth={2.5}/> Mark a past paper with AI
               <span style={{fontSize:10,fontWeight:800,background:'rgba(255,255,255,0.22)',borderRadius:4,padding:'1px 6px',letterSpacing:0.4}}>PRO</span>
             </button>
           )}
@@ -5496,7 +5496,7 @@ function Resources({subjects,uid,C,font,rag,setRag,ragNotes,setRagNotes}) {
 }
 
 // ── Account ────────────────────────────────────────────────────────────────
-function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,font,examSched,scores=[],rag={},isPro=false,stripeCustomerId=null,referralCode=null,analyticsConsent=true,setAnalyticsConsent=()=>{},yearGroup='',setYearGroup=()=>{}}) {
+function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,font,examSched,scores=[],rag={},isPro=false,stripeCustomerId=null,subscriptionStatus=null,referralCode=null,analyticsConsent=true,setAnalyticsConsent=()=>{},addToast=()=>{},yearGroup='',setYearGroup=()=>{}}) {
   const [emailSending, setEmailSending] = useState(false);
   const [emailState, setEmailState] = useState('idle'); // 'idle'|'sent'|'error'
   const [emailMsg, setEmailMsg] = useState('');
@@ -5757,6 +5757,33 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
     }
   };
 
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelMsg, setCancelMsg]   = useState('');
+  const isTrialing = subscriptionStatus === 'trialing';
+  const handleCancel = async () => {
+    const ok = window.confirm(isTrialing
+      ? "Cancel your free trial now? You won't be charged anything."
+      : "Cancel your subscription? You'll keep Pro until the end of your current billing period.");
+    if (!ok) return;
+    setCancelling(true); setUpgradeError(''); setCancelMsg('');
+    try {
+      const { data:{ session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error('Please sign in again');
+      const r = await fetch('/api/cancel-subscription', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json', Authorization:`Bearer ${token}`},
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Failed to cancel');
+      setCancelMsg(d.message || 'Subscription cancelled.');
+      addToast(d.message || 'Subscription cancelled.', 'success');
+    } catch(err) {
+      setUpgradeError(err.message);
+    }
+    setCancelling(false);
+  };
+
   const [accountTab, setAccountTab] = useState('settings');
   const TABS = [
     ['settings','Settings'],
@@ -5813,16 +5840,27 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
               You have access to all Pro features — email reports, companion chat, and priority updates.
             </div>
             {stripeCustomerId ? (
-              <button onClick={handleManageBilling} disabled={portalLoading}
-                style={{padding:'9px 16px',background:'transparent',border:`1px solid ${C.border}`,
-                  borderRadius:8,color:C.muted,fontSize:12,fontWeight:600,fontFamily:font,
-                  cursor:portalLoading?'not-allowed':'pointer'}}>
-                {portalLoading?'Opening…':'Manage subscription'}
-              </button>
+              <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+                <button onClick={handleManageBilling} disabled={portalLoading||cancelling}
+                  style={{padding:'9px 16px',background:'transparent',border:`1px solid ${C.border}`,
+                    borderRadius:8,color:C.muted,fontSize:12,fontWeight:600,fontFamily:font,
+                    cursor:portalLoading?'not-allowed':'pointer'}}>
+                  {portalLoading?'Opening…':'Manage subscription'}
+                </button>
+                <button onClick={handleCancel} disabled={cancelling||portalLoading}
+                  style={{padding:'9px 16px',background:'transparent',border:`1px solid ${C.danger||'#ef4444'}55`,
+                    borderRadius:8,color:C.danger||'#ef4444',fontSize:12,fontWeight:600,fontFamily:font,
+                    cursor:cancelling?'wait':'pointer'}}>
+                  {cancelling ? 'Cancelling…' : (isTrialing ? 'Cancel free trial' : 'Cancel subscription')}
+                </button>
+              </div>
             ) : (
               <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>
                 Your Pro access isn't a paid Stripe subscription (granted or trial) — there's nothing to manage here.
               </div>
+            )}
+            {cancelMsg&&(
+              <div style={{fontSize:12,color:C.success||'#22c55e',marginTop:10,lineHeight:1.5}}>{cancelMsg}</div>
             )}
             {upgradeError&&(
               <div style={{fontSize:12,color:C.danger,marginTop:10,lineHeight:1.5}}>{upgradeError}</div>
@@ -6786,7 +6824,7 @@ function QuickLog({subjects,scores,setScores,uid,C,font,onClose,onSaved}){
 }
 
 // ── Main shell ─────────────────────────────────────────────────────────────
-function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjects,examSched=EXAM_SCHEDULE,isPro=false,stripeCustomerId=null,referralCode=null}) {
+function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjects,examSched=EXAM_SCHEDULE,isPro=false,stripeCustomerId=null,subscriptionStatus=null,referralCode=null}) {
   const [dark,setDark]     = useState(()=>ls.get('rbp_dark',false));
   const [view,setView]     = useState('analytics');
   const [isMobile,setIsMobile] = useState(()=>window.innerWidth<640);
@@ -7569,7 +7607,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
         {view==='timer'        && <StudyTimer    subjects={subjects} uid={uid} C={C} font={font} sessions={sessions} setSessions={setSessions} scores={scores} errors={errors} rag={rag}/>}
         {view==='resources'    && <Resources    {...vp}/>}
         {view==='account'      && <Account      {...vp} user={user} selection={selection}
-                                    dark={dark} setDark={setDark} onSignOut={onSignOut} onResetSubjects={onResetSubjects} isPro={isPro} stripeCustomerId={stripeCustomerId}/>}
+                                    dark={dark} setDark={setDark} onSignOut={onSignOut} onResetSubjects={onResetSubjects} isPro={isPro} stripeCustomerId={stripeCustomerId} subscriptionStatus={subscriptionStatus}/>}
         </div>
       </main>
 
@@ -7831,6 +7869,7 @@ export default function App() {
   const [examSched,setExamSched]   = useState(EXAM_SCHEDULE);
   const [isPro,setIsPro]           = useState(false);
   const [stripeCustomerId,setStripeCustomerId] = useState(null);
+  const [subscriptionStatus,setSubscriptionStatus] = useState(null);
   const [referralCode,setReferralCode] = useState(null);
   const [splash,setSplash] = useState(true);
   useEffect(()=>{ const t=setTimeout(()=>setSplash(false),1500); return ()=>clearTimeout(t); },[]);
@@ -7907,6 +7946,7 @@ export default function App() {
         // Admins always get Pro for free.
         if (stripePro || referralPro || data?.is_admin) setIsPro(true);
         if (data?.stripe_customer_id) setStripeCustomerId(data.stripe_customer_id);
+        if (data?.subscription_status) setSubscriptionStatus(data.subscription_status);
         // referral_code is auto-assigned by the column DEFAULT on insert.
         // If still null on an existing row, re-read after a short pause —
         // the row was likely created by handle_new_user mid-boot.
@@ -8026,7 +8066,7 @@ export default function App() {
   if (phase==='onboarding') return <ErrorBoundary><SubjectPicker user={user} onComplete={handleSubjectsDone} examLevel={examLevel}/></ErrorBoundary>;
   return (
     <ErrorBoundary>
-      <RevisionPlan user={user} selection={selection} examLevel={examLevel} onSignOut={handleSignOut} onResetSubjects={handleResetSubjects} examSched={examSched} isPro={isPro} stripeCustomerId={stripeCustomerId} referralCode={referralCode}/>
+      <RevisionPlan user={user} selection={selection} examLevel={examLevel} onSignOut={handleSignOut} onResetSubjects={handleResetSubjects} examSched={examSched} isPro={isPro} stripeCustomerId={stripeCustomerId} subscriptionStatus={subscriptionStatus} referralCode={referralCode}/>
     </ErrorBoundary>
   );
 }
