@@ -5880,7 +5880,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
           <span style={{fontSize:18,lineHeight:1,flexShrink:0}}>🎉</span>
           <div>
             <div style={{fontSize:13,fontWeight:700,color:C.success,marginBottom:3}}>Payment received!</div>
-            <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>Your Pro access is activating — refresh the page in a moment to unlock all Pro features.</div>
+            <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>Activating your Pro access now — this unlocks automatically in a few seconds.</div>
           </div>
         </div>
       )}
@@ -7936,6 +7936,28 @@ export default function App() {
   const [subscriptionStatus,setSubscriptionStatus] = useState(null);
   const [referralCode,setReferralCode] = useState(null);
   const [splash,setSplash] = useState(true);
+
+  // After returning from Stripe checkout (?upgraded=1), the webhook may take a
+  // second or two to mark the account Pro. Poll briefly so Pro lights up on its
+  // own — no manual reload, no awkward "still free" flash.
+  useEffect(()=>{
+    if (!user || isPro) return;
+    if (new URLSearchParams(window.location.search).get('upgraded')!=='1') return;
+    let alive=true, tries=0;
+    const tick=async()=>{
+      const {data}=await supabase.from('user_profiles')
+        .select('subscription_status,stripe_customer_id,referral_pro_until,is_admin').eq('id',user.id).single();
+      if(!alive) return;
+      if (data?.stripe_customer_id) setStripeCustomerId(data.stripe_customer_id);
+      if (data?.subscription_status) setSubscriptionStatus(data.subscription_status);
+      const pro = data?.is_admin || ['pro','trialing','active'].includes(data?.subscription_status)
+        || (data?.referral_pro_until && new Date(data.referral_pro_until).getTime()>Date.now());
+      if (pro) { setIsPro(true); return; }
+      if (++tries < 6) setTimeout(tick, 2000);
+    };
+    const t=setTimeout(tick, 1500);
+    return ()=>{ alive=false; clearTimeout(t); };
+  },[user, isPro]);
   useEffect(()=>{ const t=setTimeout(()=>setSplash(false),1500); return ()=>clearTimeout(t); },[]);
 
   const dark = ls.get('rbp_dark',false);
