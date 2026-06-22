@@ -5412,6 +5412,30 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
     } catch {}
   };
 
+  // Authenticated JSON POST: these endpoints derive the user from the verified
+  // JWT, so the access token MUST be sent or they 401. Refreshes a stale token
+  // and retries once on 401.
+  const authedPost = async (path, body) => {
+    let { data: { session } } = await supabase.auth.getSession();
+    let token = session?.access_token;
+    if (!token) { const { data } = await supabase.auth.refreshSession(); token = data?.session?.access_token; }
+    if (!token) throw new Error('Please sign out and back in, then try again.');
+    const opts = t => ({
+      method: 'POST', cache: 'no-store',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+      body: JSON.stringify(body),
+    });
+    let r = await fetch(path, opts(token));
+    if (r.status === 401) {
+      const { data } = await supabase.auth.refreshSession();
+      const fresh = data?.session?.access_token;
+      if (fresh) r = await fetch(path, opts(fresh));
+    }
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || `Failed (HTTP ${r.status})`);
+    return d;
+  };
+
   const sendSchedule = async () => {
     if (!user?.email) return;
     setEmailSending(true); setEmailState('idle'); setEmailMsg('');
@@ -5419,14 +5443,13 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
     const exams = subjects.flatMap(s =>
       getSubjectExams(examSched, s.id, s.boardId, s.options).map(e => ({ subject: s.name, ...e }))
     ).filter(e => e.date >= today).sort((a, b) => a.date.localeCompare(b.date));
+    if (exams.length === 0) {
+      setEmailSending(false); setEmailState('error');
+      setEmailMsg('No upcoming exams in your schedule to send.');
+      return;
+    }
     try {
-      const r = await fetch('/api/send-schedule', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user.email, exams }),
-      });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || 'Failed');
+      await authedPost('/api/send-schedule', { email: user.email, exams });
       setEmailState('sent');
     } catch (err) {
       setEmailState('error'); setEmailMsg(err.message);
@@ -5439,13 +5462,11 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
     if (!user?.email) return;
     setDigestSending(true); setDigestState('idle'); setDigestMsg('');
     try {
-      const r = await fetch('/api/weekly-digest', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user.email, scores, subjects: subjects.map(s=>({id:s.id,name:s.name,color:s.color,board:s.board})), rag }),
+      await authedPost('/api/weekly-digest', {
+        email: user.email, scores,
+        subjects: subjects.map(s => ({ id: s.id, name: s.name, color: s.color, board: s.board })),
+        rag,
       });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || 'Failed');
       setDigestState('sent');
     } catch (err) {
       setDigestState('error'); setDigestMsg(err.message);
