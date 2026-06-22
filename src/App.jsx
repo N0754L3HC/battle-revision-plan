@@ -2293,6 +2293,123 @@ function buildCapsContext({subjects=[],scores=[],sessions=[],errors=[],targets={
   };
 }
 
+function StudyPlanner({subjects=[],scores=[],errors=[],sessions=[],rag={},targets={},examSched=EXAM_SCHEDULE,examLevel='alevel',applyAction=()=>({ok:false}),addToast=()=>{},goToRag=()=>{},C,font,onClose}) {
+  ensureAnimStyles();
+  const ratedCount = Object.values(rag).filter(v=>v==='red'||v==='amber'||v==='green').length;
+  const redCount   = Object.values(rag).filter(v=>v==='red').length;
+  const enoughRag  = ratedCount >= 3;
+
+  const [hours,setHours]=useState(10);
+  const [busy,setBusy]=useState(false);
+  const [err,setErr]=useState('');
+  const [summary,setSummary]=useState('');
+  const [actions,setActions]=useState([]);
+  const [added,setAdded]=useState(false);
+
+  const generate=async()=>{
+    setErr(''); setSummary(''); setActions([]); setAdded(false); setBusy(true);
+    try{
+      const {data:{session}}=await supabase.auth.getSession();
+      const token=session?.access_token;
+      if(!token) throw new Error('Please sign in again.');
+      const context=buildCapsContext({subjects,scores,sessions,errors,targets,rag,examSched,examLevel});
+      const r=await fetch('/api/study-plan',{method:'POST',
+        headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},
+        body:JSON.stringify({context,hoursPerWeek:hours})});
+      const d=await r.json();
+      if(!r.ok||d.error) throw new Error(d.error||'Planning failed');
+      setSummary(d.summary||''); setActions(d.actions||[]);
+    }catch(e){ setErr(e.message); }
+    setBusy(false);
+  };
+
+  const applyAll=()=>{
+    let ok=0; actions.forEach(a=>{ const res=applyAction(a); if(res?.ok) ok++; });
+    setAdded(true);
+    addToast(`Added ${ok} task${ok===1?'':'s'} to your plan.`,'success');
+  };
+
+  const labelStyle={fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.4,marginBottom:5,display:'block'};
+
+  return (
+    <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:300,background:'rgba(0,0,0,0.5)',
+      display:'flex',alignItems:'flex-start',justifyContent:'center',overflowY:'auto',padding:'24px 12px'}}>
+      <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:520,background:C.bg,
+        border:`1px solid ${C.border}`,borderRadius:16,padding:'20px',animation:'rbp-pop 0.2s ease'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+          <div style={{fontSize:17,fontWeight:800,color:C.text}}>Build my week with AI</div>
+          <button onClick={onClose} style={{background:'transparent',border:'none',color:C.subtle,fontSize:18,cursor:'pointer'}}>✕</button>
+        </div>
+
+        {!enoughRag ? (
+          <>
+            <div style={{fontSize:13,color:C.muted,lineHeight:1.6,margin:'8px 0 16px'}}>
+              Caps builds your plan around your <b>weak topics</b> — so first, rate your topics red / amber / green.
+              You've rated <b>{ratedCount}</b> so far (need at least 3).
+            </div>
+            <button onClick={goToRag} style={{width:'100%',padding:'12px',background:C.accent,border:'none',
+              borderRadius:9,color:'#fff',fontSize:14,fontWeight:700,fontFamily:font,cursor:'pointer'}}>
+              Rate my topics →
+            </button>
+          </>
+        ) : !summary ? (
+          <>
+            <div style={{fontSize:13,color:C.muted,lineHeight:1.6,margin:'8px 0 16px'}}>
+              Caps will plan your week around your <b>{redCount} red</b> and other weak topics, your targets and upcoming exams.
+            </div>
+            <label style={labelStyle}>Roughly how many hours this week?</label>
+            <div style={{display:'flex',gap:8,marginBottom:16,flexWrap:'wrap'}}>
+              {[5,10,15,20].map(h=>(
+                <button key={h} onClick={()=>setHours(h)} style={{flex:1,minWidth:60,padding:'9px',
+                  background:hours===h?C.accent:C.card2,border:`1px solid ${hours===h?C.accent:C.border}`,borderRadius:8,
+                  color:hours===h?'#fff':C.text,fontSize:13,fontWeight:700,fontFamily:font,cursor:'pointer'}}>{h}h</button>
+              ))}
+            </div>
+            {err&&<div style={{fontSize:12,color:C.danger||'#ef4444',marginBottom:10,lineHeight:1.5}}>{err}</div>}
+            {busy ? (
+              <div style={{background:C.card2,borderRadius:12,padding:'16px 18px',display:'flex',alignItems:'center',gap:10}}>
+                <span style={{width:16,height:16,borderRadius:'50%',border:`2px solid ${C.accent}40`,borderTopColor:C.accent,
+                  display:'inline-block',animation:'rbp-spin 0.7s linear infinite',flexShrink:0}}/>
+                <span style={{fontSize:13,fontWeight:600,color:C.text}}>Caps is planning your week…</span>
+              </div>
+            ) : (
+              <button onClick={generate} style={{width:'100%',padding:'12px',background:C.accent,border:'none',
+                borderRadius:9,color:'#fff',fontSize:14,fontWeight:700,fontFamily:font,cursor:'pointer'}}>
+                Generate my week
+              </button>
+            )}
+          </>
+        ) : (
+          <>
+            <div style={{fontSize:13,color:C.text,lineHeight:1.6,margin:'10px 0 12px'}}>{summary}</div>
+            <div style={labelStyle}>{actions.length} task{actions.length===1?'':'s'}</div>
+            <div style={{maxHeight:240,overflowY:'auto',marginBottom:14}}>
+              {actions.map((a,i)=>(
+                <div key={i} style={{display:'flex',justifyContent:'space-between',gap:8,fontSize:12,color:C.muted,
+                  padding:'7px 0',borderBottom:`1px solid ${C.border}`}}>
+                  <span><b style={{color:C.text}}>{a.subject}</b>{a.topic?` — ${a.topic}`:''}</span>
+                  <span style={{flexShrink:0,color:C.subtle}}>{a.day} · {a.duration_min}m</span>
+                </div>
+              ))}
+            </div>
+            {added ? (
+              <div style={{display:'flex',gap:8}}>
+                <div style={{flex:1,padding:'11px',textAlign:'center',background:C.card2,borderRadius:9,color:C.success||'#22c55e',fontSize:13,fontWeight:700}}>✓ Added to your plan</div>
+                <button onClick={onClose} style={{flex:1,padding:'11px',background:C.accent,border:'none',borderRadius:9,color:'#fff',fontSize:13,fontWeight:700,fontFamily:font,cursor:'pointer'}}>Done</button>
+              </div>
+            ) : (
+              <div style={{display:'flex',gap:8}}>
+                <button onClick={()=>{setSummary('');setActions([]);}} style={{padding:'11px 14px',background:'transparent',border:`1px solid ${C.border}`,borderRadius:9,color:C.muted,fontSize:13,fontWeight:600,fontFamily:font,cursor:'pointer'}}>Redo</button>
+                <button onClick={applyAll} style={{flex:1,padding:'11px',background:C.accent,border:'none',borderRadius:9,color:'#fff',fontSize:13,fontWeight:700,fontFamily:font,cursor:'pointer'}}>Add all to my plan</button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}),addToast=()=>{},C,font,onClose}) {
   ensureAnimStyles();
   const BOARDS=['AQA','Edexcel','OCR','OCR A','OCR B','WJEC / Eduqas','CIE / CAIE','Other'];
@@ -3167,7 +3284,7 @@ function StreakBanner({scores, C}) {
 }
 
 // ── Schedule component ─────────────────────────────────────────────────────
-function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, rag={}, targets={}, myPlan=[], setMyPlan=()=>{}}) {
+function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, rag={}, targets={}, myPlan=[], setMyPlan=()=>{}, onBuildPlan, isPro=false}) {
   const [dayIdx, setDayIdx] = useState(0);
   const days = generateSchedule(subjects, scores, errors, examSched, rag, targets);
   const DAY_NAMES   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -3330,14 +3447,23 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
                 </div>
               )}
 
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12,gap:8}}>
                 <div style={{...type.eyebrow,color:C.subtle}}>Suggested focus</div>
-                <button onClick={openAdd}
-                  style={{fontSize:12,fontWeight:600,fontFamily:font,
-                    padding:'5px 11px',background:'transparent',color:C.accent,
-                    border:`1px solid ${C.accent}55`,borderRadius:6,cursor:'pointer'}}>
-                  + Add task
-                </button>
+                <div style={{display:'flex',gap:8,flexShrink:0}}>
+                  {onBuildPlan&&(
+                    <button onClick={onBuildPlan}
+                      style={{fontSize:12,fontWeight:700,fontFamily:font,padding:'5px 11px',
+                        background:C.accent,color:'#fff',border:`1px solid ${C.accent}`,borderRadius:6,cursor:'pointer'}}>
+                      Build week with AI{!isPro&&' (Pro)'}
+                    </button>
+                  )}
+                  <button onClick={openAdd}
+                    style={{fontSize:12,fontWeight:600,fontFamily:font,
+                      padding:'5px 11px',background:'transparent',color:C.accent,
+                      border:`1px solid ${C.accent}55`,borderRadius:6,cursor:'pointer'}}>
+                    + Add task
+                  </button>
+                </div>
               </div>
               <div>
                 {day.slots.map((s,j)=>{
@@ -7005,6 +7131,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   const [companionDraft,setCompanionDraft] = useState(companion.name);
   const [companionChat, setCompanionChat]= useState(false);
   const [paperMarker, setPaperMarker]= useState(false);
+  const [planBuilder, setPlanBuilder]= useState(false);
 
   const mood    = getCompanionMood({sessions,scores,examSched,subjects});
   const message = getCompanionMessage({mood,sessions,scores,subjects,examSched,name:companion.name});
@@ -7385,7 +7512,8 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   };
 
   const onMarkPaper=()=> isPro ? setPaperMarker(true) : addToast('Paper marking is a Pro feature — unlock it in Account → Settings.','info');
-  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse,isAS,analyticsConsent,setAnalyticsConsent,insNoted,setInsNoted,myPlan,setMyPlan,shareTheme,setShareTheme,shareAspect,setShareAspect,yearGroup,setYearGroup,onMarkPaper};
+  const onBuildPlan=()=> isPro ? setPlanBuilder(true) : addToast('AI study plans are a Pro feature — unlock it in Account → Settings.','info');
+  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse,isAS,analyticsConsent,setAnalyticsConsent,insNoted,setInsNoted,myPlan,setMyPlan,shareTheme,setShareTheme,shareAspect,setShareAspect,yearGroup,setYearGroup,onMarkPaper,onBuildPlan};
 
   return (
     <div style={{minHeight:'100vh',background:C.bg,fontFamily:font,color:C.text}}>
@@ -7849,6 +7977,13 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
       {paperMarker&&(
         <PaperMarker subjects={subjects} examLevel={examLevel} applyAction={applyCapsAction}
           addToast={addToast} C={C} font={font} onClose={()=>setPaperMarker(false)}/>
+      )}
+      {planBuilder&&(
+        <StudyPlanner subjects={subjects} scores={scores} errors={errors} sessions={sessions}
+          rag={rag} targets={targets} examSched={examSched} examLevel={examLevel}
+          applyAction={applyCapsAction} addToast={addToast}
+          goToRag={()=>{ setPlanBuilder(false); setView('resources'); }}
+          C={C} font={font} onClose={()=>setPlanBuilder(false)}/>
       )}
     </div>
   );
