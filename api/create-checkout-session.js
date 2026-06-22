@@ -48,22 +48,33 @@ export default async function handler(req, res) {
   const email  = user.email;
   if (!email) return res.status(400).json({ error: 'Account has no email' });
 
-  // customerId may optionally be provided but must match the authenticated user's profile
-  const { customerId: bodyCustomerId } = req.body ?? {};
-  let customerId = null;
+  // The customer is ALWAYS derived from the authenticated user's own profile —
+  // the request body is never trusted to choose a Stripe customer.
+  const { data: profile } = await admin.from('user_profiles')
+    .select('stripe_customer_id, subscription_status').eq('id', userId).single();
+  const customerId = profile?.stripe_customer_id ?? null;
 
-  if (bodyCustomerId) {
-    const { data: profile } = await admin.from('user_profiles')
-      .select('stripe_customer_id').eq('id', userId).single();
-    // Reject if the claimed customerId doesn't match what we have on record
-    if (profile?.stripe_customer_id && profile.stripe_customer_id !== bodyCustomerId) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-    customerId = profile?.stripe_customer_id ?? null;
+  // ── No double-subscriptions ────────────────────────────────────────────────
+  // If the user is already a paying subscriber, refuse to open a second checkout
+  // (which would create a duplicate subscription and double-charge them). Send
+  // them to the billing portal instead. We check our own record first, then ask
+  // Stripe directly as the source of truth (covers the window before the webhook
+  // has written subscription_status).
+  if (['pro', 'active', 'trialing', 'past_due'].includes(profile?.subscription_status)) {
+    return res.status(409).json({ error: 'You already have an active subscription.', code: 'already_subscribed' });
   }
 
   try {
     const stripe = getStripe();
+
+    if (customerId) {
+      const existing = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 20 });
+      const live = existing.data.find(s => ['active', 'trialing', 'past_due', 'unpaid'].includes(s.status));
+      if (live) {
+        return res.status(409).json({ error: 'You already have an active subscription.', code: 'already_subscribed' });
+      }
+    }
+
     const params = {
       mode: 'subscription',
       payment_method_types: ['card'],

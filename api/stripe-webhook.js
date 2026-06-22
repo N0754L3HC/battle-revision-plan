@@ -47,32 +47,79 @@ export default async function handler(req, res) {
         if (session.mode !== 'subscription' || session.payment_status !== 'paid') break;
         const userId = session.metadata?.userId ?? session.client_reference_id;
         if (!userId) { console.error('checkout.session.completed: no userId in metadata'); break; }
+
+        // Record the surviving subscription FIRST, so that when the duplicate
+        // cleanup below fires customer.subscription.deleted events, the deleted
+        // handler sees subscription_id already points at the survivor and ignores
+        // them (it only downgrades the tracked subscription).
         const { error } = await supabase.from('user_profiles').update({
           stripe_customer_id: session.customer,
           subscription_status: 'pro',
           subscription_id: session.subscription,
         }).eq('id', userId);
         if (error) console.error('Supabase update error (checkout.session.completed):', error.message);
+
+        // Belt-and-braces against duplicate subscriptions: if a race created more
+        // than one subscription on this customer, keep the one we just activated
+        // and cancel the rest so the user is never charged twice.
+        try {
+          const others = await getStripe().subscriptions.list({ customer: session.customer, status: 'all', limit: 20 });
+          for (const s of others.data) {
+            if (s.id !== session.subscription && ['active', 'trialing', 'past_due', 'unpaid'].includes(s.status)) {
+              await getStripe().subscriptions.cancel(s.id);
+              console.warn(`Cancelled duplicate subscription ${s.id} for customer ${session.customer}`);
+            }
+          }
+        } catch (e) {
+          console.error('Duplicate-subscription cleanup failed:', e.message);
+        }
         break;
       }
 
       case 'customer.subscription.updated': {
         const sub = event.data.object;
-        const status = sub.status === 'active' || sub.status === 'trialing' ? 'pro' : 'free';
-        const { error } = await supabase.from('user_profiles').update({
-          subscription_status: status,
-          subscription_id: sub.id,
-        }).eq('stripe_customer_id', sub.customer);
-        if (error) console.error('Supabase update error (subscription.updated):', error.message);
+        const isActive = sub.status === 'active' || sub.status === 'trialing';
+        const { data: prof } = await supabase.from('user_profiles')
+          .select('id, subscription_id').eq('stripe_customer_id', sub.customer).single();
+        if (!prof) { console.error('subscription.updated: no profile for customer', sub.customer); break; }
+        if (isActive) {
+          // This subscription is live — adopt it as the tracked one and grant Pro.
+          const { error } = await supabase.from('user_profiles').update({
+            subscription_status: 'pro',
+            subscription_id: sub.id,
+          }).eq('id', prof.id);
+          if (error) console.error('Supabase update error (subscription.updated/active):', error.message);
+        } else {
+          // Non-active (canceled, unpaid, incomplete_expired…). Only downgrade if
+          // this is the subscription we currently track — ignore stale/duplicate
+          // subscriptions so cleaning one up can't revoke a valid Pro.
+          if (prof.subscription_id && prof.subscription_id !== sub.id) {
+            console.warn(`Ignoring non-active update for untracked sub ${sub.id} (customer ${sub.customer})`);
+            break;
+          }
+          const { error } = await supabase.from('user_profiles').update({
+            subscription_status: 'free',
+          }).eq('id', prof.id);
+          if (error) console.error('Supabase update error (subscription.updated/inactive):', error.message);
+        }
         break;
       }
 
       case 'customer.subscription.deleted': {
         const sub = event.data.object;
+        const { data: prof } = await supabase.from('user_profiles')
+          .select('id, subscription_id').eq('stripe_customer_id', sub.customer).single();
+        if (!prof) { console.error('subscription.deleted: no profile for customer', sub.customer); break; }
+        // Only downgrade if the deleted subscription is the one we track. A
+        // duplicate being cleaned up must NOT revoke Pro from the survivor.
+        if (prof.subscription_id && prof.subscription_id !== sub.id) {
+          console.warn(`Ignoring deletion of untracked sub ${sub.id} (customer ${sub.customer})`);
+          break;
+        }
         const { error } = await supabase.from('user_profiles').update({
           subscription_status: 'free',
           subscription_id: null,
-        }).eq('stripe_customer_id', sub.customer);
+        }).eq('id', prof.id);
         if (error) console.error('Supabase update error (subscription.deleted):', error.message);
         break;
       }

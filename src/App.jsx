@@ -5522,6 +5522,12 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
         body: JSON.stringify({customerId:stripeCustomerId||undefined}),
       });
       const d = await r.json();
+      // Already a paying subscriber — don't open a second checkout (no double charge).
+      if (r.status === 409 || d.code === 'already_subscribed') {
+        setUpgrading(false);
+        addToast("You already have an active subscription. Manage it under Billing.", 'success');
+        return;
+      }
       if (!r.ok) throw new Error(d.error || 'Failed');
       window.location.href = d.url;
     } catch(err) {
