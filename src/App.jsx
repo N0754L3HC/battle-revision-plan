@@ -2309,6 +2309,16 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
   const [result,setResult]=useState(null);
   const [actions,setActions]=useState([]);
   const [logged,setLogged]=useState(false);
+  const [stage,setStage]=useState(0);
+  const MARK_STAGES=[
+    'Reading the questions…',
+    'Looking at your answers…',
+    'Finding a suitable mark scheme…',
+    'Marking against the scheme…',
+    'Counting up your score…',
+    'Double-checking the marks…',
+    'Writing your feedback…',
+  ];
   const level=examLevel==='gcse'?'GCSE':examLevel==='aslevel'?'AS-Level':'A-Level';
 
   const readDataUrl=f=>new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>res(null);r.readAsDataURL(f);});
@@ -2349,7 +2359,12 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
     setErr(''); setResult(null); setActions([]); setLogged(false);
     if(!subject||!board){setErr('Pick a subject and exam board.');return;}
     if(!att.length&&!answersText.trim()){setErr('Add a photo, PDF or Word file of your answers — or type them.');return;}
-    setBusy(true);
+    setBusy(true); setStage(0);
+    // Advance the status messages so the wait feels alive (the API isn't staged;
+    // this is purely reassurance so users don't think it froze). Holds on the
+    // last stage until the real response lands.
+    let s=0;
+    const iv=setInterval(()=>{ s=Math.min(s+1,MARK_STAGES.length-1); setStage(s); }, 1700);
     try{
       const {data:{session}}=await supabase.auth.getSession();
       const token=session?.access_token;
@@ -2362,6 +2377,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
       if(!r.ok||d.error) throw new Error(d.error||'Marking failed');
       setResult(d.result); setActions(d.actions||[]);
     }catch(e){setErr(e.message);}
+    clearInterval(iv);
     setBusy(false);
   };
 
@@ -2470,11 +2486,28 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
             )}
 
             {err&&<div style={{fontSize:12,color:C.danger||'#ef4444',marginBottom:10,lineHeight:1.5}}>{err}</div>}
-            <button onClick={mark} disabled={busy} style={{width:'100%',padding:'12px',background:busy?C.card2:C.accent,
-              border:`1px solid ${busy?C.border:C.accent}`,borderRadius:9,color:busy?C.muted:'#fff',
-              fontSize:14,fontWeight:700,fontFamily:font,cursor:busy?'wait':'pointer'}}>
-              {busy?'Caps is marking… this can take a moment':'Mark my paper'}
-            </button>
+            {busy ? (
+              <div style={{background:C.card2,borderRadius:12,padding:'16px 18px'}}>
+                <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
+                  <span style={{width:16,height:16,borderRadius:'50%',border:`2px solid ${C.accent}40`,
+                    borderTopColor:C.accent,display:'inline-block',animation:'rbp-spin 0.7s linear infinite',flexShrink:0}}/>
+                  <span style={{fontSize:13.5,fontWeight:700,color:C.text}}>{MARK_STAGES[stage]}</span>
+                </div>
+                <div style={{height:6,background:C.surface,borderRadius:3,overflow:'hidden'}}>
+                  <div style={{height:'100%',width:`${Math.round(((stage+1)/MARK_STAGES.length)*100)}%`,
+                    background:C.accent,borderRadius:3,transition:'width 0.6s ease'}}/>
+                </div>
+                <div style={{fontSize:11,color:C.subtle,marginTop:8,lineHeight:1.5}}>
+                  Caps is marking your paper — this usually takes 10–30 seconds. Hang tight.
+                </div>
+              </div>
+            ) : (
+              <button onClick={mark} style={{width:'100%',padding:'12px',background:C.accent,
+                border:`1px solid ${C.accent}`,borderRadius:9,color:'#fff',
+                fontSize:14,fontWeight:700,fontFamily:font,cursor:'pointer'}}>
+                Mark my paper
+              </button>
+            )}
           </>
         ) : (
           <>
