@@ -6,7 +6,7 @@ import GroupsView from './components/GroupsView';
 import TermsOfService from './components/TermsOfService';
 import CapsMark from './components/CapsMark';
 import { subjectsFromSelection, GCSE_CATALOG } from './data/subjects';
-import { BarChart3, PenLine, CalendarDays, ClipboardList, Trophy, Users, Timer, BookOpen, User, Sun, Moon, Lock, Pencil, GraduationCap, FileText, TrendingUp, Zap, Star, ArrowUpRight, Target, Shield, CheckCircle, Calendar, Search, Grid3x3, PanelLeftClose, PanelLeftOpen, UserPlus } from 'lucide-react';
+import { BarChart3, PenLine, CalendarDays, ClipboardList, Trophy, Users, Timer, BookOpen, User, Sun, Moon, Lock, Pencil, GraduationCap, FileText, TrendingUp, Zap, Star, ArrowUpRight, Target, Shield, CheckCircle, Calendar, Search, Grid3x3, PanelLeftClose, PanelLeftOpen, UserPlus, Camera, Upload } from 'lucide-react';
 
 // ── Error boundary ─────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
@@ -2302,7 +2302,8 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
   const [answersText,setAnswersText]=useState('');
   const [markSchemeText,setMarkSchemeText]=useState('');
   const [showMS,setShowMS]=useState(false);
-  const [images,setImages]=useState([]);
+  const [att,setAtt]=useState([]);      // answer attachments: {kind:'image'|'pdf', name, data(dataURL)}
+  const [msAtt,setMsAtt]=useState([]);  // mark-scheme attachments
   const [busy,setBusy]=useState(false);
   const [err,setErr]=useState('');
   const [result,setResult]=useState(null);
@@ -2310,17 +2311,44 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
   const [logged,setLogged]=useState(false);
   const level=examLevel==='gcse'?'GCSE':examLevel==='aslevel'?'AS-Level':'A-Level';
 
-  const onFiles=(files)=>{
-    const list=Array.from(files||[]).slice(0,12);
-    Promise.all(list.map(f=>new Promise(res=>{
-      const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>res(null); r.readAsDataURL(f);
-    }))).then(arr=>setImages(prev=>[...prev,...arr.filter(Boolean)].slice(0,12)));
+  const readDataUrl=f=>new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>res(null);r.readAsDataURL(f);});
+  // Images + PDFs go straight to Caps (it reads both). Word (.docx) is converted
+  // to text in the browser so we never upload the file itself.
+  const readFiles=async(fileList,target)=>{
+    setErr('');
+    const setList=target==='ms'?setMsAtt:setAtt;
+    const setText=target==='ms'?setMarkSchemeText:setAnswersText;
+    for (const f of Array.from(fileList||[])){
+      const isImg=f.type.startsWith('image/');
+      const isPdf=f.type==='application/pdf'||/\.pdf$/i.test(f.name);
+      const isDocx=/\.docx$/i.test(f.name);
+      const isDoc=/\.doc$/i.test(f.name)&&!isDocx;
+      if (isImg||isPdf){
+        const data=await readDataUrl(f); if(!data) continue;
+        if (data.length>9_000_000){ setErr(`${f.name} is too large (max ~6MB).`); continue; }
+        setList(p=>[...p,{kind:isPdf?'pdf':'image',name:f.name,data}].slice(0,12));
+      } else if (isDocx){
+        try{
+          const arrayBuffer=await f.arrayBuffer();
+          const m=await import(/* @vite-ignore */ 'https://esm.sh/mammoth@1.6.0?bundle');
+          const extract=m.extractRawText||m.default?.extractRawText;
+          const {value}=await extract({arrayBuffer});
+          const text=(value||'').trim();
+          if(!text){ setErr(`Couldn't read text from ${f.name}.`); continue; }
+          setText(p=>(p?p+'\n\n':'')+text);
+        }catch{ setErr(`Couldn't read ${f.name} — try exporting it as a PDF.`); }
+      } else if (isDoc){
+        setErr("Old .doc files aren't supported — save as .docx or PDF.");
+      } else {
+        setErr('Use an image, PDF, or Word (.docx) file.');
+      }
+    }
   };
 
   const mark=async()=>{
     setErr(''); setResult(null); setActions([]); setLogged(false);
     if(!subject||!board){setErr('Pick a subject and exam board.');return;}
-    if(!images.length&&!answersText.trim()){setErr('Add a photo of your paper or type your answers.');return;}
+    if(!att.length&&!answersText.trim()){setErr('Add a photo, PDF or Word file of your answers — or type them.');return;}
     setBusy(true);
     try{
       const {data:{session}}=await supabase.auth.getSession();
@@ -2328,7 +2356,8 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
       if(!token) throw new Error('Please sign in again.');
       const r=await fetch('/api/mark-paper',{method:'POST',
         headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},
-        body:JSON.stringify({subject,board,paperCode,level,answersText,markSchemeText,images})});
+        body:JSON.stringify({subject,board,paperCode,level,answersText,markSchemeText,
+          attachments:att.map(a=>a.data), msAttachments:msAtt.map(a=>a.data)})});
       const d=await r.json();
       if(!r.ok||d.error) throw new Error(d.error||'Marking failed');
       setResult(d.result); setActions(d.actions||[]);
@@ -2345,6 +2374,36 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
   const inputStyle={width:'100%',padding:'9px 11px',background:C.card2,border:`1px solid ${C.border}`,
     borderRadius:8,color:C.text,fontSize:13,fontFamily:font,boxSizing:'border-box'};
   const labelStyle={fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.4,marginBottom:5,display:'block'};
+  const uploadBtn={display:'inline-flex',alignItems:'center',gap:6,padding:'9px 14px',background:C.card2,
+    border:`1px dashed ${C.border}`,borderRadius:8,color:C.text,fontSize:12.5,fontWeight:600,fontFamily:font,cursor:'pointer'};
+
+  const renderUpload=(target)=>(
+    <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+      <label style={uploadBtn}><Upload size={14} strokeWidth={2.5}/> Choose file
+        <input type="file" accept="image/*,application/pdf,.doc,.docx" multiple
+          onChange={e=>{readFiles(e.target.files,target); e.target.value='';}} style={{display:'none'}}/></label>
+      <label style={uploadBtn}><Camera size={14} strokeWidth={2.5}/> Take a photo
+        <input type="file" accept="image/*" capture="environment"
+          onChange={e=>{readFiles(e.target.files,target); e.target.value='';}} style={{display:'none'}}/></label>
+    </div>
+  );
+  const renderChips=(list,setList)=> list.length>0 ? (
+    <div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:8}}>
+      {list.map((a,i)=>(
+        <div key={i} style={{position:'relative'}}>
+          {a.kind==='image'
+            ? <img src={a.data} alt="" style={{width:54,height:54,objectFit:'cover',borderRadius:6,border:`1px solid ${C.border}`}}/>
+            : <div style={{width:54,height:54,borderRadius:6,border:`1px solid ${C.border}`,background:C.card2,
+                display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2,padding:3,overflow:'hidden'}}>
+                <FileText size={16} strokeWidth={2} color={C.accent}/>
+                <span style={{fontSize:7,color:C.muted,textAlign:'center',lineHeight:1.1,maxHeight:16,overflow:'hidden'}}>{a.name.slice(0,14)}</span>
+              </div>}
+          <button onClick={()=>setList(p=>p.filter((_,j)=>j!==i))} style={{position:'absolute',top:-6,right:-6,
+            background:C.danger||'#ef4444',color:'#fff',border:'none',borderRadius:'50%',width:16,height:16,fontSize:10,cursor:'pointer',lineHeight:1}}>✕</button>
+        </div>
+      ))}
+    </div>
+  ) : null;
 
   return (
     <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:300,background:'rgba(0,0,0,0.5)',
@@ -2384,25 +2443,15 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
             </div>
 
             <div style={{marginBottom:12}}>
-              <label style={labelStyle}>Photos of your answers</label>
-              <input type="file" accept="image/*" multiple capture="environment" onChange={e=>onFiles(e.target.files)} style={{fontSize:12,color:C.muted}}/>
-              {images.length>0&&(
-                <div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:8}}>
-                  {images.map((src,i)=>(
-                    <div key={i} style={{position:'relative'}}>
-                      <img src={src} alt="" style={{width:54,height:54,objectFit:'cover',borderRadius:6,border:`1px solid ${C.border}`}}/>
-                      <button onClick={()=>setImages(images.filter((_,j)=>j!==i))} style={{position:'absolute',top:-6,right:-6,
-                        background:C.danger||'#ef4444',color:'#fff',border:'none',borderRadius:'50%',width:16,height:16,fontSize:10,cursor:'pointer',lineHeight:1}}>✕</button>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <label style={labelStyle}>Your answers — photo, PDF or Word</label>
+              {renderUpload('answers')}
+              {renderChips(att,setAtt)}
             </div>
 
             <div style={{marginBottom:12}}>
-              <label style={labelStyle}>…or type your answers</label>
-              <textarea value={answersText} onChange={e=>setAnswersText(e.target.value)} rows={4}
-                placeholder="Paste or type your answers here" style={{...inputStyle,resize:'vertical',lineHeight:1.5}}/>
+              <label style={labelStyle}>…or type / paste your answers</label>
+              <textarea value={answersText} onChange={e=>setAnswersText(e.target.value)} rows={3}
+                placeholder="Type or paste your answers here" style={{...inputStyle,resize:'vertical',lineHeight:1.5}}/>
             </div>
 
             <button onClick={()=>setShowMS(v=>!v)} style={{background:'transparent',border:'none',color:C.accent,
@@ -2411,8 +2460,12 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
             </button>
             {showMS&&(
               <div style={{marginBottom:14}}>
-                <textarea value={markSchemeText} onChange={e=>setMarkSchemeText(e.target.value)} rows={4}
-                  placeholder="Paste the mark scheme text (your own copy). Caps aligns to it — we never store it." style={{...inputStyle,resize:'vertical',lineHeight:1.5}}/>
+                <label style={labelStyle}>Mark scheme — photo, PDF or Word</label>
+                {renderUpload('ms')}
+                {renderChips(msAtt,setMsAtt)}
+                <textarea value={markSchemeText} onChange={e=>setMarkSchemeText(e.target.value)} rows={3}
+                  placeholder="…or paste the mark scheme text (your own copy). Caps aligns to it — we never store it."
+                  style={{...inputStyle,resize:'vertical',lineHeight:1.5,marginTop:8}}/>
               </div>
             )}
 
@@ -2457,13 +2510,24 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
               </div>
             )}
 
+            {!logged&&actions.length>0&&(
+              <div style={{background:C.card2,borderRadius:10,padding:'12px 14px',marginBottom:12}}>
+                <div style={{fontSize:11,fontWeight:700,color:C.accent,marginBottom:6}}>Caps will log this for you — confirm:</div>
+                {(()=>{const p=actions.filter(a=>a.type==='log_paper').length,e=actions.filter(a=>a.type==='log_error').length,t=actions.filter(a=>a.type==='add_plan_task').length;
+                  return <div style={{fontSize:12,color:C.muted,lineHeight:1.7}}>
+                    {p>0&&<div>• Paper logged to your tracker ({result.estimatedPercent}%{result.estimatedGrade?`, ≈${result.estimatedGrade}`:''})</div>}
+                    {e>0&&<div>• {e} error{e===1?'':'s'} added to your error log</div>}
+                    {t>0&&<div>• {t} revision task{t===1?'':'s'} added to your plan</div>}
+                  </div>;})()}
+              </div>
+            )}
             <div style={{fontSize:11,color:C.subtle,lineHeight:1.5,marginBottom:12}}>
-              This is an AI estimate for revision, not an official mark. Confirm to log the paper, the errors, and a starter plan to your tracker.
+              This is an AI estimate for revision, not an official mark. Nothing is saved until you confirm.
             </div>
             {logged ? (
               <div style={{display:'flex',gap:8}}>
                 <div style={{flex:1,padding:'11px',textAlign:'center',background:C.card2,borderRadius:9,color:C.success||'#22c55e',fontSize:13,fontWeight:700}}>✓ Logged</div>
-                <button onClick={()=>{setResult(null);setImages([]);setAnswersText('');setMarkSchemeText('');setLogged(false);}}
+                <button onClick={()=>{setResult(null);setAtt([]);setMsAtt([]);setAnswersText('');setMarkSchemeText('');setLogged(false);}}
                   style={{flex:1,padding:'11px',background:C.accent,border:'none',borderRadius:9,color:'#fff',fontSize:13,fontWeight:700,fontFamily:font,cursor:'pointer'}}>Mark another</button>
               </div>
             ) : (

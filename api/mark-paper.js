@@ -38,6 +38,7 @@ const MARK_DAY_USER  = parseInt(process.env.MARK_DAY_PER_USER  || '20', 10);
 const MAX_IMAGES = 12;
 const MAX_TEXT   = 16000;       // chars of typed answers / mark scheme
 const MAX_IMG_B64 = 5_000_000;  // ~3.7MB decoded per image
+const MAX_DOC_B64 = 14_000_000; // ~10MB decoded per PDF
 
 const MARK_SYSTEM = `You are an experienced UK GCSE/A-Level examiner marking a student's OWN attempt at a past paper, for revision feedback. You are NOT producing an official result.
 
@@ -70,6 +71,17 @@ function toImageBlock(input) {
   if (m) { media = m[1]; b64 = m[3]; }
   if (!b64 || b64.length > MAX_IMG_B64) return null;
   return { type: 'image', source: { type: 'base64', media_type: media, data: b64 } };
+}
+
+// Turn a data URL into an Anthropic content block — image OR PDF (document).
+function toAttachmentBlock(input) {
+  if (typeof input !== 'string') return null;
+  const pdf = input.match(/^data:application\/pdf;base64,(.+)$/);
+  if (pdf) {
+    if (pdf[1].length > MAX_DOC_B64) return null;
+    return { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: pdf[1] } };
+  }
+  return toImageBlock(input);
 }
 
 async function callClaudeMark({ userBlocks }) {
@@ -133,7 +145,7 @@ export default async function handler(req, res) {
     if (!take(userDay, uid, MARK_DAY_USER, DAY))     return res.status(429).json({ error: `Daily marking limit reached (${MARK_DAY_USER}/day).` });
   }
 
-  const { subject, board, paperCode, level, answersText, markSchemeText, images } = req.body ?? {};
+  const { subject, board, paperCode, level, answersText, markSchemeText, images, attachments, msAttachments } = req.body ?? {};
   if (!subject || !board) return res.status(400).json({ error: 'Subject and exam board are required' });
 
   // Build the user content for Claude: a header, then text answers and/or images.
@@ -146,22 +158,38 @@ export default async function handler(req, res) {
 
   const blocks = [{ type: 'text', text: `Mark this student's attempt.\n${header}` }];
 
+  // ── Mark scheme (text + any image/PDF the student supplied) ──
   if (markSchemeText && String(markSchemeText).trim()) {
     blocks.push({ type: 'text', text: `Student-supplied mark scheme (use to align marking):\n${clampText(markSchemeText)}` });
   }
+  if (Array.isArray(msAttachments) && msAttachments.length) {
+    let added = 0;
+    for (const a of msAttachments.slice(0, MAX_IMAGES)) {
+      const b = toAttachmentBlock(a);
+      if (b) { blocks.push(b); added++; }
+    }
+    if (added) blocks.push({ type: 'text', text: 'The file(s) above are the student-supplied mark scheme — align your marking to it.' });
+  }
+
+  // ── The student's answers (text + image/PDF attachments) ──
   if (answersText && String(answersText).trim()) {
     blocks.push({ type: 'text', text: `Student's typed answers:\n${clampText(answersText)}` });
   }
-  if (Array.isArray(images) && images.length) {
+  // Accept the new `attachments` (mixed image/PDF) and the legacy `images` array.
+  const answerFiles = [
+    ...(Array.isArray(attachments) ? attachments : []),
+    ...(Array.isArray(images) ? images : []),
+  ].slice(0, MAX_IMAGES);
+  if (answerFiles.length) {
     let added = 0;
-    for (const img of images.slice(0, MAX_IMAGES)) {
-      const b = toImageBlock(img);
+    for (const a of answerFiles) {
+      const b = toAttachmentBlock(a);
       if (b) { blocks.push(b); added++; }
     }
-    if (added) blocks.push({ type: 'text', text: 'The images above are photos/scans of the student\'s handwritten answers — read and mark them.' });
+    if (added) blocks.push({ type: 'text', text: "The file(s) above are the student's own completed answers (photos/scans/PDF) — read and mark them." });
   }
 
-  if (blocks.length === 1) return res.status(400).json({ error: 'Provide typed answers or photos of the paper.' });
+  if (blocks.length === 1) return res.status(400).json({ error: 'Provide typed answers, or a photo/PDF/Word file of the paper.' });
 
   try {
     const text = await callClaudeMark({ userBlocks: blocks });
