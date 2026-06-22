@@ -5488,6 +5488,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
   // pro_waitlist capture (no charges) if you need to pause monetization.
   const BETA_WAITLIST = false;
   const [waitlistJoined, setWaitlistJoined] = useState(false);
+  const [upgradeKind, setUpgradeKind] = useState(null); // 'trial' | 'sub' — which checkout button is loading
   useEffect(()=>{
     if (!BETA_WAITLIST || !uid) return;
     (async()=>{
@@ -5496,8 +5497,9 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
     })();
   },[uid]);
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = async (opts = {}) => {
     if (!user?.email) return;
+    const trial = !!opts.trial;
     if (BETA_WAITLIST) {
       setUpgrading(true); setUpgradeError('');
       const {error}=await supabase.from('pro_waitlist')
@@ -5509,7 +5511,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       addToast("You're on the list — we'll email you when Pro launches.", 'success');
       return;
     }
-    setUpgrading(true); setUpgradeError('');
+    setUpgrading(true); setUpgradeKind(trial?'trial':'sub'); setUpgradeError('');
     try {
       // The API derives userId/email from the verified JWT (it ignores the body
       // for security), so we MUST send the access token or it 401s.
@@ -5519,12 +5521,12 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       const r = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: {'Content-Type':'application/json', Authorization:`Bearer ${token}`},
-        body: JSON.stringify({customerId:stripeCustomerId||undefined}),
+        body: JSON.stringify({ trial }),
       });
       const d = await r.json();
       // Already a paying subscriber — don't open a second checkout (no double charge).
       if (r.status === 409 || d.code === 'already_subscribed') {
-        setUpgrading(false);
+        setUpgrading(false); setUpgradeKind(null);
         addToast("You already have an active subscription. Manage it under Billing.", 'success');
         return;
       }
@@ -5532,7 +5534,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       window.location.href = d.url;
     } catch(err) {
       setUpgradeError(err.message);
-      setUpgrading(false);
+      setUpgrading(false); setUpgradeKind(null);
     }
   };
 
@@ -5612,12 +5614,21 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
             <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginBottom:12}}>
               You have access to all Pro features — email reports, companion chat, and priority updates.
             </div>
-            <button onClick={handleManageBilling} disabled={portalLoading||!stripeCustomerId}
-              style={{padding:'9px 16px',background:'transparent',border:`1px solid ${C.border}`,
-                borderRadius:8,color:C.muted,fontSize:12,fontWeight:600,fontFamily:font,
-                cursor:portalLoading||!stripeCustomerId?'not-allowed':'pointer'}}>
-              {portalLoading?'Opening…':'Manage subscription'}
-            </button>
+            {stripeCustomerId ? (
+              <button onClick={handleManageBilling} disabled={portalLoading}
+                style={{padding:'9px 16px',background:'transparent',border:`1px solid ${C.border}`,
+                  borderRadius:8,color:C.muted,fontSize:12,fontWeight:600,fontFamily:font,
+                  cursor:portalLoading?'not-allowed':'pointer'}}>
+                {portalLoading?'Opening…':'Manage subscription'}
+              </button>
+            ) : (
+              <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>
+                Your Pro access isn't a paid Stripe subscription (granted or trial) — there's nothing to manage here.
+              </div>
+            )}
+            {upgradeError&&(
+              <div style={{fontSize:12,color:C.danger,marginTop:10,lineHeight:1.5}}>{upgradeError}</div>
+            )}
           </>
         ):(
           <>
@@ -5638,17 +5649,37 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
             {upgradeError&&(
               <div style={{fontSize:12,color:C.danger,marginBottom:10,lineHeight:1.5}}>{upgradeError}</div>
             )}
-            <button onClick={handleUpgrade} disabled={upgrading||!user||(BETA_WAITLIST&&waitlistJoined)}
-              style={{width:'100%',padding:'11px',
-                background:(BETA_WAITLIST&&waitlistJoined)?C.card2:(upgrading?C.card2:C.accent),
-                border:`1px solid ${(BETA_WAITLIST&&waitlistJoined)?C.border:(upgrading?C.border:C.accent)}`,borderRadius:8,
-                color:(BETA_WAITLIST&&waitlistJoined)?C.muted:(upgrading?C.muted:'#fff'),
-                fontSize:14,fontWeight:700,fontFamily:font,
-                cursor:upgrading||!user||(BETA_WAITLIST&&waitlistJoined)?'not-allowed':'pointer',transition:'background 0.15s'}}>
-              {BETA_WAITLIST
-                ? (waitlistJoined ? "✓ You're on the waitlist" : (upgrading ? 'Adding you…' : 'Join the Pro waitlist'))
-                : (upgrading ? 'Redirecting to checkout…' : (stripeCustomerId ? 'Upgrade to Pro — £4.99/mo' : 'Start 3-day free trial'))}
-            </button>
+            {BETA_WAITLIST ? (
+              <button onClick={()=>handleUpgrade()} disabled={upgrading||!user||waitlistJoined}
+                style={{width:'100%',padding:'11px',background:waitlistJoined?C.card2:(upgrading?C.card2:C.accent),
+                  border:`1px solid ${waitlistJoined?C.border:(upgrading?C.border:C.accent)}`,borderRadius:8,
+                  color:waitlistJoined?C.muted:(upgrading?C.muted:'#fff'),fontSize:14,fontWeight:700,fontFamily:font,
+                  cursor:upgrading||!user||waitlistJoined?'not-allowed':'pointer'}}>
+                {waitlistJoined ? "✓ You're on the waitlist" : (upgrading ? 'Adding you…' : 'Join the Pro waitlist')}
+              </button>
+            ) : stripeCustomerId ? (
+              <button onClick={()=>handleUpgrade({trial:false})} disabled={upgrading||!user}
+                style={{width:'100%',padding:'11px',background:upgrading?C.card2:C.accent,
+                  border:`1px solid ${upgrading?C.border:C.accent}`,borderRadius:8,color:upgrading?C.muted:'#fff',
+                  fontSize:14,fontWeight:700,fontFamily:font,cursor:upgrading||!user?'not-allowed':'pointer',transition:'background 0.15s'}}>
+                {upgrading ? 'Opening secure checkout…' : 'Upgrade to Pro — £4.99/mo'}
+              </button>
+            ) : (
+              <>
+                <button onClick={()=>handleUpgrade({trial:true})} disabled={upgrading||!user}
+                  style={{width:'100%',padding:'11px',background:upgrading?C.card2:C.accent,
+                    border:`1px solid ${upgrading?C.border:C.accent}`,borderRadius:8,color:upgrading?C.muted:'#fff',
+                    fontSize:14,fontWeight:700,fontFamily:font,cursor:upgrading||!user?'not-allowed':'pointer',transition:'background 0.15s'}}>
+                  {(upgrading&&upgradeKind==='trial') ? 'Opening secure checkout…' : 'Start 3-day free trial'}
+                </button>
+                <button onClick={()=>handleUpgrade({trial:false})} disabled={upgrading||!user}
+                  style={{width:'100%',marginTop:8,padding:'10px',background:'transparent',
+                    border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,fontSize:13,fontWeight:600,
+                    fontFamily:font,cursor:upgrading||!user?'not-allowed':'pointer'}}>
+                  {(upgrading&&upgradeKind==='sub') ? 'Opening secure checkout…' : 'Or subscribe now — £4.99/mo (skip trial)'}
+                </button>
+              </>
+            )}
           </>
         )}
       </div>

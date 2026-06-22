@@ -31,6 +31,29 @@ async function getAuthUser(req) {
   return error ? null : user;
 }
 
+// Checkout requires a price_… id. Accept a price id directly, or resolve a
+// product id (prod_…) to its active price. Cached after first lookup.
+let _resolvedPrice;
+async function resolvePriceId(stripe, id) {
+  if (!id) return null;
+  if (id.startsWith('price_')) return id;
+  if (_resolvedPrice) return _resolvedPrice;
+  if (id.startsWith('prod_')) {
+    try {
+      const product = await stripe.products.retrieve(id);
+      let pid = product?.default_price;
+      pid = typeof pid === 'string' ? pid : pid?.id;
+      if (!pid) {
+        const prices = await stripe.prices.list({ product: id, active: true, limit: 1 });
+        pid = prices.data[0]?.id ?? null;
+      }
+      _resolvedPrice = pid;
+      return pid;
+    } catch { return null; }
+  }
+  return id;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   if (!process.env.STRIPE_SECRET_KEY || !PRO_PRICE_ID) {
@@ -48,6 +71,9 @@ export default async function handler(req, res) {
   const userId = user.id;
   const email  = user.email;
   if (!email) return res.status(400).json({ error: 'Account has no email' });
+
+  // Only the trial flag is read from the body; everything else comes from the JWT.
+  const wantTrial = req.body?.trial === true;
 
   // The customer is ALWAYS derived from the authenticated user's own profile —
   // the request body is never trusted to choose a Stripe customer.
@@ -76,21 +102,28 @@ export default async function handler(req, res) {
       }
     }
 
+    // Stripe Checkout needs a PRICE id (price_…). If the env var was set to a
+    // PRODUCT id (prod_…) by mistake, resolve it to the product's active price
+    // so checkout still works instead of failing with "No such price".
+    const priceId = await resolvePriceId(stripe, PRO_PRICE_ID);
+    if (!priceId) return res.status(503).json({ error: 'No active price is configured for Pro. Set STRIPE_PRO_PRICE_ID to a price_… id.' });
+
+    // The trial is offered only when explicitly requested AND the user is a
+    // first-time subscriber (no Stripe customer yet). One trial per person; the
+    // required card on file blocks trial-farming via throwaway accounts.
+    const applyTrial = wantTrial && !customerId && TRIAL_DAYS > 0;
+
     const params = {
       mode: 'subscription',
       payment_method_types: ['card'],
-      line_items: [{ price: PRO_PRICE_ID, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${APP_URL}/account?upgraded=1`,
       cancel_url: `${APP_URL}/account`,
       client_reference_id: userId,
       metadata: { userId },
       subscription_data: {
         metadata: { userId },
-        // First-time subscribers get a card-required free trial. Returning
-        // customers (already have a Stripe customer on file) do NOT — one trial
-        // per person, and the required card on file blocks trial-farming via
-        // throwaway accounts.
-        ...(!customerId && TRIAL_DAYS > 0 ? { trial_period_days: TRIAL_DAYS } : {}),
+        ...(applyTrial ? { trial_period_days: TRIAL_DAYS } : {}),
       },
       // Always collect a card, even for the trial (this is the anti-farm).
       payment_method_collection: 'always',

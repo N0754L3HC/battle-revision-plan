@@ -47,7 +47,11 @@ export default async function handler(req, res) {
     });
     return res.status(200).json({ url: session.url });
   } catch (err) {
-    console.error('Portal error:', err.message);
-    return res.status(500).json({ error: 'Failed to open billing portal' });
+    console.error('Portal error:', err.type, err.message);
+    // Surface Stripe's own message (e.g. "No configuration provided" when the
+    // customer portal hasn't been activated in the Stripe dashboard) so it's
+    // diagnosable instead of a generic failure.
+    const isStripe = typeof err?.type === 'string' && err.type.startsWith('Stripe');
+    return res.status(500).json({ error: isStripe ? `Billing portal error: ${err.message}` : 'Failed to open billing portal' });
   }
 }
