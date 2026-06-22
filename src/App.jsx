@@ -2293,6 +2293,194 @@ function buildCapsContext({subjects=[],scores=[],sessions=[],errors=[],targets={
   };
 }
 
+function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}),addToast=()=>{},C,font,onClose}) {
+  ensureAnimStyles();
+  const BOARDS=['AQA','Edexcel','OCR','OCR A','OCR B','WJEC / Eduqas','CIE / CAIE','Other'];
+  const [subject,setSubject]=useState(subjects[0]?.name||'');
+  const [board,setBoard]=useState(subjects[0]?.board||'AQA');
+  const [paperCode,setPaperCode]=useState('');
+  const [answersText,setAnswersText]=useState('');
+  const [markSchemeText,setMarkSchemeText]=useState('');
+  const [showMS,setShowMS]=useState(false);
+  const [images,setImages]=useState([]);
+  const [busy,setBusy]=useState(false);
+  const [err,setErr]=useState('');
+  const [result,setResult]=useState(null);
+  const [actions,setActions]=useState([]);
+  const [logged,setLogged]=useState(false);
+  const level=examLevel==='gcse'?'GCSE':examLevel==='aslevel'?'AS-Level':'A-Level';
+
+  const onFiles=(files)=>{
+    const list=Array.from(files||[]).slice(0,12);
+    Promise.all(list.map(f=>new Promise(res=>{
+      const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>res(null); r.readAsDataURL(f);
+    }))).then(arr=>setImages(prev=>[...prev,...arr.filter(Boolean)].slice(0,12)));
+  };
+
+  const mark=async()=>{
+    setErr(''); setResult(null); setActions([]); setLogged(false);
+    if(!subject||!board){setErr('Pick a subject and exam board.');return;}
+    if(!images.length&&!answersText.trim()){setErr('Add a photo of your paper or type your answers.');return;}
+    setBusy(true);
+    try{
+      const {data:{session}}=await supabase.auth.getSession();
+      const token=session?.access_token;
+      if(!token) throw new Error('Please sign in again.');
+      const r=await fetch('/api/mark-paper',{method:'POST',
+        headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},
+        body:JSON.stringify({subject,board,paperCode,level,answersText,markSchemeText,images})});
+      const d=await r.json();
+      if(!r.ok||d.error) throw new Error(d.error||'Marking failed');
+      setResult(d.result); setActions(d.actions||[]);
+    }catch(e){setErr(e.message);}
+    setBusy(false);
+  };
+
+  const confirmLog=()=>{
+    let ok=0; actions.forEach(a=>{const res=applyAction(a); if(res?.ok) ok++;});
+    setLogged(true);
+    addToast(`Logged ${ok} item${ok===1?'':'s'} to your tracker & plan.`,'success');
+  };
+
+  const inputStyle={width:'100%',padding:'9px 11px',background:C.card2,border:`1px solid ${C.border}`,
+    borderRadius:8,color:C.text,fontSize:13,fontFamily:font,boxSizing:'border-box'};
+  const labelStyle={fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.4,marginBottom:5,display:'block'};
+
+  return (
+    <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:300,background:'rgba(0,0,0,0.5)',
+      display:'flex',alignItems:'flex-start',justifyContent:'center',overflowY:'auto',padding:'24px 12px'}}>
+      <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:560,background:C.bg,
+        border:`1px solid ${C.border}`,borderRadius:16,padding:'20px',animation:'rbp-pop 0.2s ease'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
+          <div style={{fontSize:17,fontWeight:800,color:C.text}}>Mark a past paper</div>
+          <button onClick={onClose} style={{background:'transparent',border:'none',color:C.subtle,fontSize:18,cursor:'pointer'}}>✕</button>
+        </div>
+        <div style={{fontSize:12,color:C.muted,lineHeight:1.6,marginBottom:16}}>
+          Caps marks your own attempt in your board's style and gives an <b>estimated</b> grade (not an official result), then logs your paper, errors and a revision plan.
+        </div>
+
+        {!result ? (
+          <>
+            <div style={{display:'flex',gap:10,marginBottom:12}}>
+              <div style={{flex:1}}>
+                <label style={labelStyle}>Subject</label>
+                {subjects.length
+                  ? <select value={subject} onChange={e=>{setSubject(e.target.value); const s=subjects.find(x=>x.name===e.target.value); if(s?.board) setBoard(s.board);}} style={inputStyle}>
+                      {subjects.map(s=><option key={s.name} value={s.name}>{s.name}</option>)}
+                    </select>
+                  : <input value={subject} onChange={e=>setSubject(e.target.value)} placeholder="e.g. Physics" style={inputStyle}/>}
+              </div>
+              <div style={{flex:1}}>
+                <label style={labelStyle}>Exam board</label>
+                <select value={board} onChange={e=>setBoard(e.target.value)} style={inputStyle}>
+                  {BOARDS.map(b=><option key={b} value={b}>{b}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div style={{marginBottom:12}}>
+              <label style={labelStyle}>Paper (optional)</label>
+              <input value={paperCode} onChange={e=>setPaperCode(e.target.value)} placeholder="e.g. Paper 1, June 2022" style={inputStyle}/>
+            </div>
+
+            <div style={{marginBottom:12}}>
+              <label style={labelStyle}>Photos of your answers</label>
+              <input type="file" accept="image/*" multiple capture="environment" onChange={e=>onFiles(e.target.files)} style={{fontSize:12,color:C.muted}}/>
+              {images.length>0&&(
+                <div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:8}}>
+                  {images.map((src,i)=>(
+                    <div key={i} style={{position:'relative'}}>
+                      <img src={src} alt="" style={{width:54,height:54,objectFit:'cover',borderRadius:6,border:`1px solid ${C.border}`}}/>
+                      <button onClick={()=>setImages(images.filter((_,j)=>j!==i))} style={{position:'absolute',top:-6,right:-6,
+                        background:C.danger||'#ef4444',color:'#fff',border:'none',borderRadius:'50%',width:16,height:16,fontSize:10,cursor:'pointer',lineHeight:1}}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div style={{marginBottom:12}}>
+              <label style={labelStyle}>…or type your answers</label>
+              <textarea value={answersText} onChange={e=>setAnswersText(e.target.value)} rows={4}
+                placeholder="Paste or type your answers here" style={{...inputStyle,resize:'vertical',lineHeight:1.5}}/>
+            </div>
+
+            <button onClick={()=>setShowMS(v=>!v)} style={{background:'transparent',border:'none',color:C.accent,
+              fontSize:12,fontWeight:600,fontFamily:font,cursor:'pointer',padding:0,marginBottom:showMS?8:14}}>
+              {showMS?'– Hide mark scheme':'+ Add the mark scheme (more accurate)'}
+            </button>
+            {showMS&&(
+              <div style={{marginBottom:14}}>
+                <textarea value={markSchemeText} onChange={e=>setMarkSchemeText(e.target.value)} rows={4}
+                  placeholder="Paste the mark scheme text (your own copy). Caps aligns to it — we never store it." style={{...inputStyle,resize:'vertical',lineHeight:1.5}}/>
+              </div>
+            )}
+
+            {err&&<div style={{fontSize:12,color:C.danger||'#ef4444',marginBottom:10,lineHeight:1.5}}>{err}</div>}
+            <button onClick={mark} disabled={busy} style={{width:'100%',padding:'12px',background:busy?C.card2:C.accent,
+              border:`1px solid ${busy?C.border:C.accent}`,borderRadius:9,color:busy?C.muted:'#fff',
+              fontSize:14,fontWeight:700,fontFamily:font,cursor:busy?'wait':'pointer'}}>
+              {busy?'Caps is marking… this can take a moment':'Mark my paper'}
+            </button>
+          </>
+        ) : (
+          <>
+            <div style={{display:'flex',alignItems:'center',gap:14,background:C.card2,borderRadius:12,padding:'14px 16px',marginBottom:12}}>
+              <div style={{fontSize:32,fontWeight:900,color:C.accent,lineHeight:1}}>{result.estimatedPercent}%</div>
+              <div>
+                {result.estimatedGrade&&<div style={{fontSize:18,fontWeight:800,color:C.text,lineHeight:1.1}}>≈ {result.estimatedGrade}</div>}
+                <div style={{fontSize:11,color:C.muted}}>estimated · {result.confidence||'medium'} confidence</div>
+              </div>
+            </div>
+            {result.summary&&<div style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:12}}>{result.summary}</div>}
+
+            {Array.isArray(result.questions)&&result.questions.length>0&&(
+              <div style={{marginBottom:12}}>
+                <div style={labelStyle}>Question breakdown</div>
+                {result.questions.slice(0,30).map((q,i)=>(
+                  <div key={i} style={{display:'flex',gap:8,fontSize:12,color:C.muted,padding:'6px 0',borderBottom:`1px solid ${C.border}`}}>
+                    <span style={{fontWeight:700,color:C.text,flexShrink:0}}>{q.q} {q.earned!=null&&q.available!=null?`${q.earned}/${q.available}`:''}</span>
+                    <span style={{lineHeight:1.5}}>{q.feedback}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {Array.isArray(result.errors)&&result.errors.length>0&&(
+              <div style={{marginBottom:14}}>
+                <div style={labelStyle}>Errors to fix</div>
+                {result.errors.slice(0,12).map((e,i)=>(
+                  <div key={i} style={{fontSize:12,color:C.muted,padding:'4px 0',lineHeight:1.5}}>
+                    <b style={{color:C.text}}>{e.topic}</b>{e.type?` · ${e.type}`:''} — {e.note}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{fontSize:11,color:C.subtle,lineHeight:1.5,marginBottom:12}}>
+              This is an AI estimate for revision, not an official mark. Confirm to log the paper, the errors, and a starter plan to your tracker.
+            </div>
+            {logged ? (
+              <div style={{display:'flex',gap:8}}>
+                <div style={{flex:1,padding:'11px',textAlign:'center',background:C.card2,borderRadius:9,color:C.success||'#22c55e',fontSize:13,fontWeight:700}}>✓ Logged</div>
+                <button onClick={()=>{setResult(null);setImages([]);setAnswersText('');setMarkSchemeText('');setLogged(false);}}
+                  style={{flex:1,padding:'11px',background:C.accent,border:'none',borderRadius:9,color:'#fff',fontSize:13,fontWeight:700,fontFamily:font,cursor:'pointer'}}>Mark another</button>
+              </div>
+            ) : (
+              <div style={{display:'flex',gap:8}}>
+                <button onClick={()=>setResult(null)} style={{padding:'11px 14px',background:'transparent',border:`1px solid ${C.border}`,borderRadius:9,color:C.muted,fontSize:13,fontWeight:600,fontFamily:font,cursor:'pointer'}}>Back</button>
+                <button onClick={confirmLog} style={{flex:1,padding:'11px',background:C.accent,border:'none',borderRadius:9,color:'#fff',fontSize:13,fontWeight:700,fontFamily:font,cursor:'pointer'}}>
+                  Confirm &amp; log {actions.length>0?`(${actions.length})`:''}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},examLevel='alevel',errors=[],targets={},applyAction=()=>({ok:false,message:'unavailable'}),C,font,onClose}) {
   ensureAnimStyles();
   const [messages,setMessages] = useState([{
@@ -3883,7 +4071,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
 }
 
 // ── Tracker ────────────────────────────────────────────────────────────────
-function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font}) {
+function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font,onMarkPaper}) {
   const SUBJECTS      = subjects.map(s=>s.name);
   const GRADE_BOUNDS  = Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
   const PAPER_SUGGS   = Object.fromEntries(subjects.map(s=>[s.name,getPaperSuggestions(s)]));
@@ -3968,6 +4156,16 @@ function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font}) {
             <h1 style={{...type.h1,color:C.text,margin:'0 0 4px'}}>Tracker</h1>
             <p style={{...type.caption,color:C.muted,margin:0}}>Tap a subject to log papers and see its trend.</p>
           </div>
+
+          {onMarkPaper&&(
+            <button onClick={onMarkPaper}
+              style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,width:'100%',
+                padding:'12px',marginBottom:18,background:C.accent,border:'none',borderRadius:10,
+                color:'#fff',fontSize:14,fontWeight:700,fontFamily:'inherit',cursor:'pointer'}}>
+              📸 Mark a past paper with AI
+              <span style={{fontSize:10,fontWeight:800,background:'rgba(255,255,255,0.22)',borderRadius:4,padding:'1px 6px',letterSpacing:0.4}}>PRO</span>
+            </button>
+          )}
 
           <div style={{...type.eyebrow,color:C.subtle,marginBottom:2}}>Subjects</div>
           {subjectStats.map(({sub,count,errCount,avg,latestGrade,pts})=>(
@@ -6671,6 +6869,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   const [customising,   setCustomising]  = useState(false);
   const [companionDraft,setCompanionDraft] = useState(companion.name);
   const [companionChat, setCompanionChat]= useState(false);
+  const [paperMarker, setPaperMarker]= useState(false);
 
   const mood    = getCompanionMood({sessions,scores,examSched,subjects});
   const message = getCompanionMessage({mood,sessions,scores,subjects,examSched,name:companion.name});
@@ -7023,11 +7222,35 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
           topic: a.topic||'', duration_min: a.duration_min||null, note:'', done:false }]);
         return {ok:true, message:`Added to ${a.day}: ${a.topic||subj?.name||'task'}`};
       }
+      if (a.type==='log_paper') {
+        const subj = matchSubject(a.subject);
+        const pct = Math.max(0, Math.min(100, parseInt(a.pct,10)||0));
+        const gb = Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
+        const grade = a.grade || (subj ? getSubjectGrade(pct, subj.name, gb) : null);
+        const entry={ subject: subj?.name || a.subject,
+          paper: a.paperCode || `Marked paper ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`,
+          got:pct, max:100, maxMark:100, pct, grade,
+          date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),
+          id:Date.now()+Math.floor(Math.random()*1000), ts:Date.now() };
+        setScores(prev=>{ const u=[entry,...prev]; ls.set(`rbp_scores_${uid}`,u); return u; });
+        return {ok:true, message:`Logged ${entry.subject} ${pct}%${grade?` (${grade})`:''}`};
+      }
+      if (a.type==='log_error') {
+        const subj = matchSubject(a.subject);
+        const entry={ subject: subj?.name || a.subject, topic: String(a.topic||'').trim(),
+          type: a.errorType || 'Other', note: String(a.note||'').trim(),
+          date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'}),
+          id:Date.now()+Math.floor(Math.random()*1000), ts:Date.now() };
+        if (!entry.topic) return {ok:false, message:'No topic for error'};
+        setErrors(prev=>{ const u=[entry,...prev].slice(0,200); ls.set(`rbp_errors_${uid}`,u); return u; });
+        return {ok:true, message:`Logged error: ${entry.topic}`};
+      }
       return {ok:false, message:'Unknown action'};
     } catch { return {ok:false, message:'Could not apply'}; }
   };
 
-  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse,isAS,analyticsConsent,setAnalyticsConsent,insNoted,setInsNoted,myPlan,setMyPlan,shareTheme,setShareTheme,shareAspect,setShareAspect,yearGroup,setYearGroup};
+  const onMarkPaper=()=> isPro ? setPaperMarker(true) : addToast('Paper marking is a Pro feature — unlock it in Account → Settings.','info');
+  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse,isAS,analyticsConsent,setAnalyticsConsent,insNoted,setInsNoted,myPlan,setMyPlan,shareTheme,setShareTheme,shareAspect,setShareAspect,yearGroup,setYearGroup,onMarkPaper};
 
   return (
     <div style={{minHeight:'100vh',background:C.bg,fontFamily:font,color:C.text}}>
@@ -7487,6 +7710,10 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
           errors={errors} targets={targets} applyAction={applyCapsAction}
           C={C} font={font}
           onClose={()=>setCompanionChat(false)}/>
+      )}
+      {paperMarker&&(
+        <PaperMarker subjects={subjects} examLevel={examLevel} applyAction={applyCapsAction}
+          addToast={addToast} C={C} font={font} onClose={()=>setPaperMarker(false)}/>
       )}
     </div>
   );
