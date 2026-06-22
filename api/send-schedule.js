@@ -75,7 +75,7 @@ function buildHtml(exams) {
 
     <div style="background:#0c0e13;border-radius:14px;padding:32px;margin-bottom:20px;">
       <div style="display:inline-flex;align-items:center;gap:8px;margin-bottom:20px;">
-        <div style="width:32px;height:32px;border-radius:8px;background:#b5735a;display:inline-flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:#fff;font-family:monospace;">A*</div>
+        <img src="https://www.beattheexam.org/favicon-64.png" width="32" height="32" alt="Battle Plan" style="border-radius:8px;display:inline-block;vertical-align:middle;" />
         <span style="font-size:15px;font-weight:700;color:#e4dfd8;letter-spacing:0.2px;">Battle Plan</span>
       </div>
       <h1 style="margin:0 0 8px;font-size:26px;font-weight:800;color:#ffffff;line-height:1.2;">Your exam schedule</h1>
