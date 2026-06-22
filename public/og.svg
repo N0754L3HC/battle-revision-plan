@@ -17,9 +17,19 @@
   <!-- Left border accent -->
   <rect x="0" y="0" width="4" height="630" fill="#b5735a" opacity="0.6"/>
 
-  <!-- Logo badge -->
-  <rect x="60" y="60" width="52" height="52" rx="13" fill="#b5735a"/>
-  <text x="86" y="93" font-family="'JetBrains Mono', monospace" font-size="17" font-weight="900" fill="white" text-anchor="middle">A*</text>
+  <!-- Logo badge (Caps capybara) -->
+  <g transform="translate(60 60) scale(0.8125)">
+    <rect width="64" height="64" rx="14" fill="#b5735a"/>
+    <g transform="translate(0 -1)">
+      <ellipse cx="16" cy="15" rx="8.5" ry="8" fill="#f6efe6"/>
+      <ellipse cx="48" cy="15" rx="8.5" ry="8" fill="#f6efe6"/>
+      <path d="M5 30 Q5 11 24 11 L40 11 Q59 11 59 30 L59 43 Q59 59 40 59 L24 59 Q5 59 5 43 Z" fill="#f6efe6"/>
+      <ellipse cx="32" cy="46" rx="20" ry="11" fill="#e4bca7"/>
+      <ellipse cx="22" cy="32" rx="3.9" ry="4.5" fill="#5a3a28"/>
+      <ellipse cx="42" cy="32" rx="3.9" ry="4.5" fill="#5a3a28"/>
+      <ellipse cx="32" cy="47" rx="5.8" ry="3.7" fill="#5a3a28"/>
+    </g>
+  </g>
 
   <!-- App name -->
   <text x="125" y="87" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="20" font-weight="700" fill="#e8eaf0">Battle Plan</text>
