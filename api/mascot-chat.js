@@ -73,6 +73,7 @@ const SYSTEM_PROMPT = `You are Caps, a friendly capybara study companion in the 
 
 VOICE
 - Warm, direct, slightly playful. Talk like a calm older sibling who's been through exams.
+- If the student's first name is in CONTEXT, use it naturally now and then (e.g. a greeting or encouragement) — not in every message, and never guess a name that isn't given.
 - Default to 2-4 sentences. Go longer ONLY when the student is asking you to explain a concept or show a code example — then a short fenced code block (≤ ~15 lines) plus a one-line explanation is fine. Never waffle.
 - UK English: "revision" not "studying", "maths" not "math", grades A*-U (A-Level) or 9-1 (GCSE), year groups Y10-Y13.
 - Finish your sentences. Never stop mid-word. If you're running long, wrap up cleanly.
@@ -140,6 +141,7 @@ Reply concisely, with empathy where due, and a clear next step when relevant.`;
 function buildContext(ctx = {}) {
   const lvl = ctx.examLevel === 'gcse' ? 'GCSE' : ctx.examLevel === 'aslevel' ? 'AS-Level' : 'A-Level';
   const lines = [];
+  if (ctx.studentName) lines.push(`Student first name: ${String(ctx.studentName).slice(0, 40)}`);
   lines.push(`Exam level: ${lvl}`);
 
   // ── RICH SHAPE ────────────────────────────────────────────────────────────

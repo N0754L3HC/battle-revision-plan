@@ -2230,7 +2230,7 @@ function getCharacterReply(input, {subjects, scores, sessions, examSched}) {
 
 // Full study-system snapshot for Caps (chat + daily briefing). No PII —
 // just the student's revision data. Shared so chat and briefings stay in sync.
-function buildCapsContext({subjects=[],scores=[],sessions=[],errors=[],targets={},rag={},examSched=EXAM_SCHEDULE,examLevel='alevel'}={}) {
+function buildCapsContext({subjects=[],scores=[],sessions=[],errors=[],targets={},rag={},examSched=EXAM_SCHEDULE,examLevel='alevel',studentName=''}={}) {
   const nowMs = Date.now();
   const GB = Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
   const subjById = Object.fromEntries(subjects.map(s=>[s.id,s]));
@@ -2274,6 +2274,7 @@ function buildCapsContext({subjects=[],scores=[],sessions=[],errors=[],targets={
 
   return {
     examLevel,
+    studentName: String(studentName||'').trim().split(/\s+/)[0] || null,
     battleReadiness: {score:br.total, label:br.label},
     overallAvg: scores.length ? Math.round(scores.reduce((a,s)=>a+s.pct,0)/scores.length) : null,
     totalPapers: scores.length,
@@ -2695,11 +2696,12 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
   );
 }
 
-function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},examLevel='alevel',errors=[],targets={},applyAction=()=>({ok:false,message:'unavailable'}),C,font,onClose}) {
+function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},examLevel='alevel',errors=[],targets={},applyAction=()=>({ok:false,message:'unavailable'}),studentName='',C,font,onClose}) {
   ensureAnimStyles();
+  const firstName = String(studentName||'').trim().split(/\s+/)[0] || '';
   const [messages,setMessages] = useState([{
     from:'char',
-    text:`Hey, I'm ${companion.name}. What's on your mind? You can ask me anything — how you're doing, what to focus on, or just vent if you need to.`
+    text:`Hey${firstName?` ${firstName}`:''}, I'm ${companion.name}. What's on your mind? You can ask me anything — how you're doing, what to focus on, or just vent if you need to.`
   }]);
   const [input,setInput] = useState('');
   const [sending,setSending] = useState(false);
@@ -2719,7 +2721,7 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
     setSending(true);
 
     // Build FULL context — the whole study system so Caps can reason properly.
-    const ctx = buildCapsContext({subjects,scores,sessions,errors,targets,rag,examSched,examLevel});
+    const ctx = buildCapsContext({subjects,scores,sessions,errors,targets,rag,examSched,examLevel,studentName});
 
     let replyText = null;
     let serverActions = [];
@@ -5719,7 +5721,7 @@ function Resources({subjects,uid,C,font,rag,setRag,ragNotes,setRagNotes}) {
 }
 
 // ── Account ────────────────────────────────────────────────────────────────
-function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,font,examSched,scores=[],rag={},isPro=false,stripeCustomerId=null,subscriptionStatus=null,referralCode=null,analyticsConsent=true,setAnalyticsConsent=()=>{},addToast=()=>{},yearGroup='',setYearGroup=()=>{}}) {
+function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,font,examSched,scores=[],rag={},isPro=false,stripeCustomerId=null,subscriptionStatus=null,referralCode=null,analyticsConsent=true,setAnalyticsConsent=()=>{},addToast=()=>{},yearGroup='',setYearGroup=()=>{},displayName='',setDisplayName=()=>{}}) {
   const [emailSending, setEmailSending] = useState(false);
   const [emailState, setEmailState] = useState('idle'); // 'idle'|'sent'|'error'
   const [emailMsg, setEmailMsg] = useState('');
@@ -5808,6 +5810,11 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
     setSchoolSaving(true);
     await supabase.from('user_profiles').update({school_name:name||null,school_opt_in:optIn,year_group:yg||null}).eq('id',uid);
     setSchoolSaving(false);
+  };
+  const saveName = async () => {
+    const n = displayName.trim().slice(0,40);
+    setDisplayName(n);
+    await supabase.from('user_profiles').update({display_name:n||null}).eq('id',uid);
   };
 
   const referralProDays = (()=>{
@@ -6043,6 +6050,15 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
           </div>
         </div>
       )}
+
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Your name</div>
+        <input value={displayName} onChange={e=>setDisplayName(e.target.value)} onBlur={saveName}
+          placeholder="First name — so Caps can greet you"
+          style={{width:'100%',padding:'10px 12px',background:C.card2,border:`1px solid ${C.border}`,
+            borderRadius:8,color:C.text,fontSize:14,fontFamily:font,boxSizing:'border-box'}}/>
+        <div style={{fontSize:11,color:C.subtle,marginTop:7,lineHeight:1.5}}>Just your first name is fine. We don't ask for your age or date of birth.</div>
+      </div>
 
       <div style={{background:isPro?'linear-gradient(135deg,rgba(194,124,96,0.08),rgba(251,191,36,0.06))':C.card,
         border:`1px solid ${isPro?C.accent+'55':C.border}`,borderRadius:10,padding:'18px 20px'}}>
@@ -7193,6 +7209,12 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   const [shareTheme, setShareTheme] = useState(()=>ls.get(`rbp_share_theme_${uid}`,'dark'));
   const [shareAspect, setShareAspect] = useState(()=>ls.get(`rbp_share_aspect_${uid}`,'landscape'));
   const [yearGroup, setYearGroup] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  useEffect(()=>{
+    if(!uid||uid==='anon') return;
+    supabase.from('user_profiles').select('display_name').eq('id',uid).single()
+      .then(({data})=>{ if(data?.display_name) setDisplayName(data.display_name); });
+  },[uid]);
   useEffect(()=>ls.set(`rbp_share_theme_${uid}`,shareTheme),[shareTheme,uid]);
   useEffect(()=>ls.set(`rbp_share_aspect_${uid}`,shareAspect),[shareAspect,uid]);
   const [myPlan, setMyPlan] = useState(()=>ls.get(`rbp_my_plan_${uid}`,[]));
@@ -7216,7 +7238,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
         const {data:{session}} = await supabase.auth.getSession();
         if (!session || cancelled) return;
         setBriefingLoading(true);
-        const ctx = buildCapsContext({subjects,scores,sessions,errors,targets,rag,examSched,examLevel});
+        const ctx = buildCapsContext({subjects,scores,sessions,errors,targets,rag,examSched,examLevel,studentName:displayName});
         const r = await fetch('/api/mascot-chat',{
           method:'POST',
           headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`},
@@ -7513,7 +7535,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
 
   const onMarkPaper=()=> isPro ? setPaperMarker(true) : addToast('Paper marking is a Pro feature — unlock it in Account → Settings.','info');
   const onBuildPlan=()=> isPro ? setPlanBuilder(true) : addToast('AI study plans are a Pro feature — unlock it in Account → Settings.','info');
-  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse,isAS,analyticsConsent,setAnalyticsConsent,insNoted,setInsNoted,myPlan,setMyPlan,shareTheme,setShareTheme,shareAspect,setShareAspect,yearGroup,setYearGroup,onMarkPaper,onBuildPlan};
+  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse,isAS,analyticsConsent,setAnalyticsConsent,insNoted,setInsNoted,myPlan,setMyPlan,shareTheme,setShareTheme,shareAspect,setShareAspect,yearGroup,setYearGroup,displayName,setDisplayName,onMarkPaper,onBuildPlan};
 
   return (
     <div style={{minHeight:'100vh',background:C.bg,fontFamily:font,color:C.text}}>
@@ -7971,7 +7993,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
         <CompanionChat companion={companion} subjects={subjects} scores={scores}
           sessions={sessions} examSched={examSched} rag={rag} examLevel={examLevel}
           errors={errors} targets={targets} applyAction={applyCapsAction}
-          C={C} font={font}
+          studentName={displayName} C={C} font={font}
           onClose={()=>setCompanionChat(false)}/>
       )}
       {paperMarker&&(
