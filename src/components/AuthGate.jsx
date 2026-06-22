@@ -252,14 +252,6 @@ export default function AuthGate({ onAuth }) {
             </div>
           )}
 
-          <div style={{ marginTop:14, textAlign:'center' }}>
-            <button onClick={()=>onAuth(null)}
-              style={{ background:'none', border:'none', color:C.muted,
-                fontSize:12, fontFamily:font, cursor:'pointer',
-                textDecoration:'underline', textDecorationColor:'rgba(100,116,139,0.3)' }}>
-              Continue without an account
-            </button>
-          </div>
         </div>
 
         {/* Stats strip */}
@@ -428,14 +420,6 @@ export default function AuthGate({ onAuth }) {
           ))}
         </div>
 
-        <div style={{ marginTop:20, textAlign:'center' }}>
-          <button onClick={()=>onAuth(null)}
-            style={{ background:'none', border:'none', color:C.subtle,
-              fontSize:12, fontFamily:font, cursor:'pointer',
-              textDecoration:'underline', textDecorationColor:'rgba(100,116,139,0.2)' }}>
-            Continue without an account — data saved locally only
-          </button>
-        </div>
       </div>
 
       {/* Right: features panel */}
