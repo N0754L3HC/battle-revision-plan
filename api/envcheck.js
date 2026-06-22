@@ -46,7 +46,29 @@ export default async function handler(req, res) {
     } catch (e) { selfTest.exception = String(e?.message ?? e); }
   }
 
+  // Inspect a real token sent by the browser: decode its issuer/expiry and run getUser on it.
+  let tokenProbe = {};
+  const provided = req.headers.authorization?.replace('Bearer ', '');
+  if (provided && url && key) {
+    try {
+      const payload = JSON.parse(Buffer.from(provided.split('.')[1], 'base64').toString('utf8'));
+      tokenProbe.issuer = payload.iss ?? null;          // which project issued it
+      tokenProbe.ref = payload.ref ?? null;             // project ref
+      tokenProbe.role = payload.role ?? null;
+      tokenProbe.expired = payload.exp ? (payload.exp * 1000 < Date.now()) : null;
+      tokenProbe.expiresAt = payload.exp ? new Date(payload.exp * 1000).toISOString() : null;
+      tokenProbe.issuerMatchesBackend = typeof payload.iss === 'string' && payload.iss.includes(host);
+    } catch (e) { tokenProbe.decodeError = String(e?.message ?? e); }
+    try {
+      const admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+      const { data: gu, error: gErr } = await admin.auth.getUser(provided);
+      tokenProbe.getUserOk = !!gu?.user && !gErr;
+      tokenProbe.getUserError = gErr?.message ?? null;
+    } catch (e) { tokenProbe.exception = String(e?.message ?? e); }
+  }
+
   return res.status(200).json({
+    tokenProbe,
     backendSupabaseHost: host,
     expectedHost: 'denvsqnciiynklvsjxgn.supabase.co',
     hostMatchesFrontend: host === 'denvsqnciiynklvsjxgn.supabase.co',
