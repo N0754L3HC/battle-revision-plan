@@ -106,7 +106,13 @@ export default async function handler(req, res) {
     const session = await stripe.checkout.sessions.create(params);
     return res.status(200).json({ url: session.url });
   } catch (err) {
-    console.error('Checkout error:', err.message);
-    return res.status(500).json({ error: 'Failed to create checkout session' });
+    console.error('Checkout error:', err.type, err.code, err.message);
+    // Surface Stripe's own message for config problems (e.g. a test-mode price
+    // with a live key, or a missing/disabled price) so they're diagnosable
+    // instead of a silent generic failure. Stripe request errors are safe to show.
+    const isStripe = typeof err?.type === 'string' && err.type.startsWith('Stripe');
+    return res.status(500).json({
+      error: isStripe ? `Checkout failed: ${err.message}` : 'Failed to create checkout session',
+    });
   }
 }

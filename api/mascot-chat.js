@@ -340,11 +340,48 @@ async function callClaude({ systemPrompt, contents }) {
   return { reply: text, blocked: false, model };
 }
 
-// Dispatch to Claude when configured, otherwise fall back to Gemini. This lets
-// you switch providers by just setting (or removing) ANTHROPIC_API_KEY in env.
-async function callLLM(args) {
-  if (process.env.ANTHROPIC_API_KEY) return callClaude(args);
-  return callGemini(args);
+// ─── Cost router ────────────────────────────────────────────────────────────
+// Cheap model (Gemini) for simple chat; Claude for anything that needs real
+// reasoning — plans, timetables, whole-system analysis, explanations, quizzes,
+// marking. Keeps spend down without dumbing down the moments that matter.
+const COMPLEX_RE = /\b(plan|timetable|schedule|revis|analys|analyz|assess|how am i|on track|projection|predict|target|strateg|quiz|explain|why|how do i|derive|prove|algorithm|big-?o|normalis|mark this|grade|feedback|improve|focus on|weak|what should i)\b/i;
+function pickModel({ text = '', context = {} }) {
+  const richContext = Array.isArray(context.subjects) && context.subjects.length >= 3;
+  const longMsg = text.length > 200;
+  return (COMPLEX_RE.test(text) || richContext || longMsg) ? 'claude' : 'gemini';
+}
+
+// Dispatch honoring the router. Falls back to whichever provider is configured
+// (so removing ANTHROPIC_API_KEY reverts everything to Gemini automatically).
+async function callLLM({ systemPrompt, contents, prefer }) {
+  const hasClaude = !!process.env.ANTHROPIC_API_KEY;
+  const hasGemini = !!process.env.GEMINI_API_KEY;
+  if (prefer === 'gemini' && hasGemini) return callGemini({ systemPrompt, contents });
+  if (prefer === 'claude' && hasClaude) return callClaude({ systemPrompt, contents });
+  if (hasClaude) return callClaude({ systemPrompt, contents });
+  return callGemini({ systemPrompt, contents });
+}
+
+// ─── Duplicate-request cache ────────────────────────────────────────────────
+// Stops identical re-sends / double-fired proactive briefings from re-billing
+// within a warm instance. Keyed on user + exact message history + context.
+const respCache = new Map();
+const RESP_TTL = 5 * 60 * 1000;
+function cacheKey(uid, systemPrompt, contents) {
+  const s = `${uid}|${systemPrompt.length}|${JSON.stringify(contents)}`;
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return String(h);
+}
+function cacheGet(key) {
+  const e = respCache.get(key);
+  if (!e) return null;
+  if (Date.now() - e.at > RESP_TTL) { respCache.delete(key); return null; }
+  return e.value;
+}
+function cacheSet(key, value) {
+  respCache.set(key, { at: Date.now(), value });
+  if (respCache.size > 500) respCache.delete(respCache.keys().next().value);
 }
 
 // ─── Handler ───────────────────────────────────────────────────────────────
@@ -426,12 +463,23 @@ export default async function handler(req, res) {
   // 4. Build context block
   const contextBlock = buildContext(context || {});
   const sys = SYSTEM_PROMPT.replace('{{CONTEXT}}', contextBlock);
+  const contents = toGeminiContents(trimmed);
 
-  // 5. Call Gemini
+  // 4b. Duplicate-request cache — identical re-sends / double-fired briefings
+  // return the prior answer without re-billing the model.
+  const ck = cacheKey(uid, sys, contents);
+  const hit = cacheGet(ck);
+  if (hit) return res.status(200).json({ ...hit, meta: { ...(hit.meta || {}), cached: true } });
+
+  // 4c. Cost router — cheap model for simple chat, Claude for reasoning.
+  const prefer = pickModel({ text: lastUserMsg.text, context: context || {} });
+
+  // 5. Call model
   try {
     const { reply, blocked, reason } = await callLLM({
       systemPrompt: sys,
-      contents: toGeminiContents(trimmed),
+      contents,
+      prefer,
     });
     if (blocked || !reply) {
       // Safety block — return a neutral fallback rather than echoing the user
@@ -445,11 +493,13 @@ export default async function handler(req, res) {
     const replyText = (clean && clean.length) ? clean
       : (actions.length ? "Here's what I'd do — tap to apply." : reply);
     // Trim defensively — allow code blocks and short explanations but not essays
-    return res.status(200).json({
+    const payload = {
       reply: replyText.slice(0, 1800),
       actions,
-      meta: { source: 'gemini' },
-    });
+      meta: { source: prefer },
+    };
+    cacheSet(ck, payload);
+    return res.status(200).json(payload);
   } catch (err) {
     const msg = err?.message || '';
     console.error('Mascot chat error:', msg);
