@@ -400,12 +400,21 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
   const D1=86400000,D7=D1*7,D14=D1*14,D30=D1*30,D60=D1*60;
 
   const total   = users.length;
-  const pro     = users.filter(u=>u.subscription_status==='active').length;
+  const isActiveGrant = u => u.referral_pro_until && new Date(u.referral_pro_until).getTime() > now;
+  // PAYING = real Stripe money. The webhook writes 'pro' on checkout.session.completed
+  // and 'active' on renewal, so count BOTH (the old code only counted 'active',
+  // which missed every freshly-paid member).
+  const paying  = users.filter(u=>['active','pro'].includes(u.subscription_status)).length;
   const trialing= users.filter(u=>u.subscription_status==='trialing').length;
-  const cancelled=users.filter(u=>u.subscription_status==='canceled'||u.subscription_status==='cancelled').length;
-  const mrr     = +(pro*4.99).toFixed(2);
+  const grantPro= users.filter(u=>isActiveGrant(u) && !['active','pro','trialing'].includes(u.subscription_status)).length;
+  const adminPro= users.filter(u=>u.is_admin).length;
+  // PRO = everyone with Pro access right now — matches the app's actual gate
+  // (admin OR paid OR trialing OR active grant).
+  const pro     = users.filter(u=>u.is_admin || ['active','pro','trialing'].includes(u.subscription_status) || isActiveGrant(u)).length;
+  const cancelled=users.filter(u=>['canceled','cancelled','past_due'].includes(u.subscription_status)).length;
+  const mrr     = +(paying*4.99).toFixed(2);
   const arr     = +(mrr*12).toFixed(0);
-  const conv    = total?Math.round(pro/total*100):0;
+  const conv    = total?Math.round(paying/total*100):0;
 
   const new7    = users.filter(u=>now-new Date(u.created_at)<D7).length;
   const new30   = users.filter(u=>now-new Date(u.created_at)<D30).length;
@@ -504,10 +513,10 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
 
       <div style={{fontSize:9,color:'#FF3D00',letterSpacing:3,fontWeight:800,marginBottom:10,opacity:0.7}}>REVENUE</div>
       <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:14}}>
-        <Kpi v={pro} l="Pro Users" c='#FFD600' sub={`${conv}% conv · ${trialing} trialing · ${cancelled} cancelled`}/>
-        <Kpi v={`£${mrr}`} l="MRR (est.)" c='#FFD600' sub="£4.99/mo per Pro"/>
+        <Kpi v={paying} l="Paying subscribers" c='#FFD600' sub={`${conv}% of users · ${trialing} on trial`}/>
+        <Kpi v={pro} l="Pro access (total)" c='#FFD600' sub={`${paying} paid · ${trialing} trial · ${grantPro} granted · ${adminPro} admin`}/>
+        <Kpi v={`£${mrr}`} l="MRR (est.)" c='#FFD600' sub={`${paying} × £4.99 (paid only)`}/>
         <Kpi v={`£${arr}`} l="ARR (est.)" c='#FFD600' sub="MRR × 12"/>
-        <Kpi v={`£${(total?mrr/total:0).toFixed(2)}`} l="ARPU" c='#FFD600' sub="MRR ÷ all users"/>
       </div>
 
       <div style={{fontSize:9,color:'#FF3D00',letterSpacing:3,fontWeight:800,marginBottom:10,opacity:0.7}}>RETENTION</div>
@@ -531,9 +540,9 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
           <FRow label="Logged 1st paper"       count={act1}  base={total} color='#00E676' prev={total}/>
           <FRow label="5+ papers (engaged)"    count={act5}  base={total} color='#00E676' prev={act1}/>
           <FRow label="10+ papers (power)"     count={act10} base={total} color='#FFD600' prev={act5}/>
-          <FRow label="Upgraded to Pro"        count={pro}   base={total} color='#FF3D00' prev={act10}/>
+          <FRow label="Upgraded to Pro (paid)"  count={paying} base={total} color='#FF3D00' prev={act10}/>
           <div style={{fontSize:10,color:DIM,marginTop:6}}>
-            {act1>0&&pro>0?`${Math.round(pro/act1*100)}% of activated users convert to Pro`:'no data yet'}
+            {act1>0&&paying>0?`${Math.round(paying/act1*100)}% of activated users convert to paid`:'no paid conversions yet'}
           </div>
         </Sec>
 
@@ -1355,6 +1364,12 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
   },[]);
 
   useEffect(()=>{ loadData(); },[loadData]);
+  // Auto-refresh every 60s so new signups / payments surface without a manual
+  // click. Pauses while a user detail is open to avoid yanking the view.
+  useEffect(()=>{
+    const t=setInterval(()=>{ if(!document.hidden) loadData(); },60000);
+    return ()=>clearInterval(t);
+  },[loadData]);
 
   const toggleAdmin=async(u)=>{
     const next=!u.is_admin;
