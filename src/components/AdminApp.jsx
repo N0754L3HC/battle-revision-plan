@@ -11,15 +11,15 @@ const ADMIN_EMAILS = ['51r4h100@gmail.com'];
 const FONT  = "'Inter','SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
 const mono  = FONT;              // legacy name kept; resolves to the app's Inter
 const numF  = "'SF Mono','JetBrains Mono',ui-monospace,monospace"; // tabular figures only
-const BG     = '#1d1916';        // T.dark.bg (warm, synced to prototype)
-const PANEL  = '#272220';        // T.dark.surface
-const PANEL2 = '#2f2925';        // nested / hover
-const BORDER = '#39312b';
-const ACCENT = '#cf8568';        // T.dark.accent — terracotta
-const ACCENT_SOFT = 'rgba(207,133,104,0.15)';
-const TXT    = '#f3ede3';        // T.dark.text
-const TXT2   = '#b3a99c';        // T.dark.muted
-const OK = '#4ade80', WARN = '#fbbf24', BAD = '#f87171';
+const BG     = '#f5f0e8';        // T.light.bg — warm cream
+const PANEL  = '#ffffff';        // white surface
+const PANEL2 = '#f1ebe1';        // nested / hover
+const BORDER = '#e6ddd0';
+const ACCENT = '#b5735a';        // T.light.accent — terracotta
+const ACCENT_SOFT = 'rgba(181,115,90,0.12)';
+const TXT    = '#1d1916';        // warm dark text
+const TXT2   = '#6f6862';        // muted
+const OK = '#16a34a', WARN = '#d97706', BAD = '#dc2626';
 const GC = { 'A*':'#22c55e', A:'#4ade80', B:'#eab308', C:'#f59e0b', D:'#f97316', E:'#ef4444', U:'#64748b' };
 const SC = { maths:'#3b82f6','further-maths':'#a855f7',cs:'#10b981',chemistry:'#ec4899',physics:'#38bdf8',economics:'#eab308',biology:'#84cc16',history:'#fb923c',psychology:'#a78bfa',geography:'#22d3ee' };
 const GRADE_BOUNDS = { Maths:{'A*':80,A:70,B:60,C:50,D:40,E:30},'Further Maths':{'A*':83,A:72,B:60,C:50,D:40,E:30},CS:{'A*':75,A:65,B:55,C:45,D:35,E:25},Chemistry:{'A*':80,A:70,B:60,C:50,D:40,E:30},Physics:{'A*':80,A:70,B:60,C:50,D:40,E:30},Economics:{'A*':75,A:65,B:55,C:45,D:35,E:25} };
@@ -49,25 +49,25 @@ function gradeFromPct(pct,subject='') {
 }
 
 // ── Shared input style ─────────────────────────────────────────────────────
-const iS = {background:'#0f1218',border:`1px solid ${BORDER}`,borderRadius:8,padding:'9px 12px',color:TXT,fontSize:13,fontFamily:FONT,outline:'none',width:'100%',boxSizing:'border-box'};
+const iS = {background:'#faf7f2',border:`1px solid ${BORDER}`,borderRadius:8,padding:'9px 12px',color:TXT,fontSize:13,fontFamily:FONT,outline:'none',width:'100%',boxSizing:'border-box'};
 // De-boxed: borderless panels (PANEL is lighter than BG, so they read without a border).
 const card = {background:PANEL,borderRadius:12};
-const TINTS = ['#322c23','#243029','#222e38']; // cream/sage/sky on warm dark (prototype)
+const TINTS = ['#fbf6ee','#eef6f0','#eef4fb']; // cream/sage/sky on light
 const btn = (col=ACCENT,fill=false) => ({background:fill?col:'transparent',border:`1px solid ${fill?col:BORDER}`,color:fill?'#fff':col,padding:'7px 14px',borderRadius:8,cursor:'pointer',fontSize:12,fontWeight:600,fontFamily:FONT,letterSpacing:0,transition:'all 0.15s'});
 // warm greys — match the student theme
-const DIM = '#6f6862';   // timestamps, ranks, footnotes
-const MUT = '#9b938b';   // secondary labels, sub-text
-const SEC = '#9b938b';   // section header labels
+const DIM = '#9b938b';   // timestamps, ranks, footnotes
+const MUT = '#6f6862';   // secondary labels, sub-text
+const SEC = '#8a8178';   // section header labels
 
 // ── Cursor ─────────────────────────────────────────────────────────────────
 function Cursor() {
   const [on,setOn]=useState(true);
   useEffect(()=>{ const t=setInterval(()=>setOn(p=>!p),530); return ()=>clearInterval(t); },[]);
-  return <span style={{color:'#FF3D00',opacity:on?1:0}}>█</span>;
+  return <span style={{color:'#dc2626',opacity:on?1:0}}>█</span>;
 }
 
 // ── Mini sparkline ─────────────────────────────────────────────────────────
-function Spark({scores,color='#FF3D00',w=80,h=24}) {
+function Spark({scores,color='#dc2626',w=80,h=24}) {
   if (scores.length<2) return <span style={{color:DIM,fontSize:10}}>—</span>;
   const pts=scores.slice(-12);
   const min=Math.min(...pts.map(s=>s.pct)),max=Math.max(...pts.map(s=>s.pct));
@@ -181,23 +181,23 @@ function UserDetail({u,onClose,onToggleAdmin,onTogglePro,onDeleteUser}) {
   const doDelete=async()=>{ await onDeleteUser(u); onClose(); };
 
   return (
-    <div style={{position:'fixed',inset:0,zIndex:200,background:'rgba(0,0,0,0.95)',display:'flex',flexDirection:'column',fontFamily:mono}}>
+    <div style={{position:'fixed',inset:0,zIndex:200,background:'rgba(0,0,0,0.5)',display:'flex',flexDirection:'column',fontFamily:mono}}>
       {/* Top bar */}
-      <div style={{background:'#080810',borderBottom:'1px solid rgba(255,61,0,0.12)',padding:'12px 24px',display:'flex',alignItems:'center',gap:14,flexShrink:0}}>
+      <div style={{background:BG,borderBottom:'1px solid rgba(255,61,0,0.12)',padding:'12px 24px',display:'flex',alignItems:'center',gap:14,flexShrink:0}}>
         <button onClick={onClose} style={btn()}>← BACK</button>
         <div style={{flex:1}}>
-          <div style={{fontSize:15,fontWeight:700,color:'#fff'}}>{u.display_name||<span style={{color:MUT}}>No name</span>} <span style={{fontSize:11,color:MUT,fontWeight:400}}>{u.email}</span></div>
+          <div style={{fontSize:15,fontWeight:700,color:TXT}}>{u.display_name||<span style={{color:MUT}}>No name</span>} <span style={{fontSize:11,color:MUT,fontWeight:400}}>{u.email}</span></div>
           <div style={{fontSize:10,color:DIM,marginTop:2}}>JOINED {fmtDate(u.created_at)} · LAST ACTIVE {timeSince(u.lastActive)} · {u.tos_agreed_at?'ToS ✓':'ToS pending'}</div>
         </div>
-        <button onClick={doTogglePro} disabled={togglingPro} title={proViaStripe?'Stripe-paid Pro — manage in Stripe dashboard':isPro?'Pro until '+new Date(u.referral_pro_until).toLocaleDateString('en-GB'):'Grants 365 days of Pro'} style={btn(isPro?'#FFD600':'#555')}>
+        <button onClick={doTogglePro} disabled={togglingPro} title={proViaStripe?'Stripe-paid Pro — manage in Stripe dashboard':isPro?'Pro until '+new Date(u.referral_pro_until).toLocaleDateString('en-GB'):'Grants 365 days of Pro'} style={btn(isPro?'#b45309':'#555')}>
           {togglingPro?'...':(proViaStripe?'PRO (STRIPE)':proViaGrant?'REVOKE PRO':'GRANT PRO')}
         </button>
-        <button onClick={doToggle} disabled={toggling} style={btn(u.is_admin?'#FF3D00':'#555')}>
+        <button onClick={doToggle} disabled={toggling} style={btn(u.is_admin?'#dc2626':'#555')}>
           {toggling?'...':(u.is_admin?'REVOKE ADMIN':'GRANT ADMIN')}
         </button>
         {confirmDel
-          ? <><button onClick={doDelete} style={btn('#FF3D00',true)}>CONFIRM DELETE</button><button onClick={()=>setConfirmDel(false)} style={btn()}>CANCEL</button></>
-          : <button onClick={()=>setConfirmDel(true)} style={btn('#FF3D00')}>DELETE USER</button>}
+          ? <><button onClick={doDelete} style={btn('#dc2626',true)}>CONFIRM DELETE</button><button onClick={()=>setConfirmDel(false)} style={btn()}>CANCEL</button></>
+          : <button onClick={()=>setConfirmDel(true)} style={btn('#dc2626')}>DELETE USER</button>}
       </div>
       <div style={{overflowY:'auto',flex:1,padding:24,maxWidth:1000,width:'100%',margin:'0 auto'}}>
         {/* Readiness + stats */}
@@ -205,15 +205,15 @@ function UserDetail({u,onClose,onToggleAdmin,onTogglePro,onDeleteUser}) {
           <div style={{...card,padding:'16px 20px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',borderColor:`${R(br.t)}22`}}>
             <div style={{fontSize:48,fontWeight:900,color:R(br.t),lineHeight:1}}>{br.t}</div>
             <div style={{fontSize:9,color:MUT,letterSpacing:2,marginTop:3}}>READINESS</div>
-            <div style={{height:3,width:'80%',background:'rgba(255,255,255,0.05)',borderRadius:2,marginTop:8,overflow:'hidden'}}><div style={{height:'100%',width:`${br.t}%`,background:R(br.t)}}/></div>
+            <div style={{height:3,width:'80%',background:'rgba(0,0,0,0.05)',borderRadius:2,marginTop:8,overflow:'hidden'}}><div style={{height:'100%',width:`${br.t}%`,background:R(br.t)}}/></div>
           </div>
           <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:8}}>
             {[
-              {v:allScores.length,l:'PAPERS',c:'#fff'},
-              {v:allErrors.length,l:'ERRORS',c:allErrors.length>10?'#FF9100':'#fff'},
-              {v:`${br.avg}%`,l:'AVG SCORE',c:br.avg>=70?'#00E676':br.avg>=50?'#FFD600':'#FF3D00'},
-              {v:u.subjectList?.length||0,l:'SUBJECTS',c:'#40C4FF'},
-              {v:`${Math.round((u.totalStudySecs||0)/3600)}h`,l:'STUDY TIME',c:'#00E676'},
+              {v:allScores.length,l:'PAPERS',c:TXT},
+              {v:allErrors.length,l:'ERRORS',c:allErrors.length>10?'#ea580c':TXT},
+              {v:`${br.avg}%`,l:'AVG SCORE',c:br.avg>=70?'#15803d':br.avg>=50?'#b45309':'#dc2626'},
+              {v:u.subjectList?.length||0,l:'SUBJECTS',c:'#0369a1'},
+              {v:`${Math.round((u.totalStudySecs||0)/3600)}h`,l:'STUDY TIME',c:'#15803d'},
             ].map(({v,l,c})=>(
               <div key={l} style={{...card,padding:'14px 16px'}}>
                 <div style={{fontSize:22,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
@@ -231,7 +231,7 @@ function UserDetail({u,onClose,onToggleAdmin,onTogglePro,onDeleteUser}) {
                 <div key={sub} style={{...card,padding:'12px 16px',minWidth:140,flex:'1 1 140px',borderColor:`${SC[sub]||MUT}33`}}>
                   <div style={{fontSize:9,letterSpacing:2,color:MUT,marginBottom:6,textTransform:'uppercase'}}>{sub.replace(/-/g,' ')}</div>
                   <div style={{fontSize:32,fontWeight:900,color:GC[g]||'#555'}}>{g}</div>
-                  <div style={{fontSize:11,color:'#777',marginTop:2}}>{avg}% · {n} paper{n!==1?'s':''}</div>
+                  <div style={{fontSize:11,color:MUT,marginTop:2}}>{avg}% · {n} paper{n!==1?'s':''}</div>
                   <Spark scores={allScores.filter(s=>s.subject===sub)} color={SC[sub]||MUT} w={80} h={20}/>
                 </div>
               ))}
@@ -245,8 +245,8 @@ function UserDetail({u,onClose,onToggleAdmin,onTogglePro,onDeleteUser}) {
             <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
               {Object.entries(errTypes).sort((a,b)=>b[1]-a[1]).map(([t,n])=>(
                 <div key={t} style={{...card,padding:'8px 14px',display:'flex',gap:8,alignItems:'center'}}>
-                  <span style={pill('#FF9100',true)}>{t}</span>
-                  <span style={{fontSize:13,fontWeight:700,color:'#FF9100'}}>{n}×</span>
+                  <span style={pill('#ea580c',true)}>{t}</span>
+                  <span style={{fontSize:13,fontWeight:700,color:'#ea580c'}}>{n}×</span>
                 </div>
               ))}
             </div>
@@ -256,7 +256,7 @@ function UserDetail({u,onClose,onToggleAdmin,onTogglePro,onDeleteUser}) {
         <div style={{...card,padding:'16px 20px',marginBottom:12}}>
           <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:12}}>PAPERS ({allScores.length})</div>
           {allScores.length===0?<div style={{color:DIM,fontSize:12}}>No papers logged.</div>:allScores.slice(0,30).map((sc,i)=>(
-            <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'7px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12}}>
+            <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'7px 0',borderBottom:'1px solid rgba(0,0,0,0.04)',fontSize:12}}>
               <div style={{display:'flex',alignItems:'center',gap:8,flex:1,minWidth:0}}>
                 <span style={pill(SC[sc.subject]||MUT)}>{sc.subject}</span>
                 <span style={{color:MUT,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{sc.paper}</span>
@@ -274,13 +274,13 @@ function UserDetail({u,onClose,onToggleAdmin,onTogglePro,onDeleteUser}) {
         <div style={{...card,padding:'16px 20px',marginBottom:12}}>
           <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:12}}>ERROR LOG ({allErrors.length})</div>
           {allErrors.length===0?<div style={{color:DIM,fontSize:12}}>No errors logged.</div>:allErrors.slice(0,20).map((e,i)=>(
-            <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'6px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12}}>
+            <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'6px 0',borderBottom:'1px solid rgba(0,0,0,0.04)',fontSize:12}}>
               <div style={{display:'flex',alignItems:'center',gap:8}}>
                 <span style={pill(SC[e.subject]||MUT,true)}>{e.subject||'?'}</span>
                 <span style={{color:TXT}}>{e.topic}</span>
                 {e.note&&<span style={{color:MUT,fontSize:11}}>— {e.note}</span>}
               </div>
-              <span style={pill('#FF9100',true)}>{e.type}</span>
+              <span style={pill('#ea580c',true)}>{e.type}</span>
             </div>
           ))}
         </div>
@@ -305,9 +305,9 @@ function UserDetail({u,onClose,onToggleAdmin,onTogglePro,onDeleteUser}) {
               </div>
               <div style={{fontSize:9,letterSpacing:2,color:DIM,marginBottom:8}}>RECENT SESSIONS</div>
               {recent.map((s,i)=>(
-                <div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:11,padding:'5px 0',borderBottom:'1px solid rgba(255,255,255,0.03)'}}>
+                <div key={i} style={{display:'flex',justifyContent:'space-between',fontSize:11,padding:'5px 0',borderBottom:'1px solid rgba(0,0,0,0.03)'}}>
                   <span style={pill(SC[s.subjectId]||MUT,true)}>{(s.subjectId||'?').replace(/-/g,' ')}</span>
-                  <span style={{color:'#bbb'}}>{Math.round((s.secs||0)/60)}m</span>
+                  <span style={{color:MUT}}>{Math.round((s.secs||0)/60)}m</span>
                   <span style={{color:DIM}}>{s.ts?timeSince(new Date(s.ts)):s.id?timeSince(new Date(s.id)):'—'}</span>
                 </div>
               ))}
@@ -326,7 +326,7 @@ function UserDetail({u,onClose,onToggleAdmin,onTogglePro,onDeleteUser}) {
             ['Pro grant until', u.referral_pro_until?fmtDate(u.referral_pro_until):'—'],
             ['Subjects',      (u.subjectList||[]).join(', ')||'—'],
           ].map(([l,v])=>(
-            <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12}}>
+            <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid rgba(0,0,0,0.04)',fontSize:12}}>
               <span style={{color:MUT,fontSize:11}}>{l}</span>
               <span style={{color:TXT,maxWidth:320,textAlign:'right',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{v}</span>
             </div>
@@ -372,13 +372,13 @@ function BroadcastPanel({users}) {
         <div style={{fontSize:9,color:SEC,letterSpacing:2,marginBottom:5}}>MESSAGE</div>
         <textarea style={{...iS,marginBottom:14,height:120,resize:'vertical'}} value={body} onChange={e=>setBody(e.target.value)} placeholder="Message to all users..."/>
         <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:10}}>
-          <button onClick={send} disabled={sending} style={{...btn('#FF3D00',true),padding:'10px 24px'}}>
+          <button onClick={send} disabled={sending} style={{...btn('#dc2626',true),padding:'10px 24px'}}>
             {sending?'SENDING...':sent?'SENT ✓':'BROADCAST TO ALL USERS'}
           </button>
           <span style={{fontSize:10,color:MUT}}>{users.length} recipient{users.length!==1?'s':''}</span>
         </div>
-        {err&&<div style={{fontSize:11,color:'#FF9100'}}>{err}</div>}
-        <div style={{fontSize:10,color:DIM,marginTop:12,borderTop:'1px solid rgba(255,255,255,0.04)',paddingTop:10}}>Broadcasts are stored in the <code style={{color:'#666'}}>broadcasts</code> table. The main app reads them on login and shows as notifications. Requires <code style={{color:'#666'}}>broadcasts</code> table to exist in Supabase.</div>
+        {err&&<div style={{fontSize:11,color:'#ea580c'}}>{err}</div>}
+        <div style={{fontSize:10,color:DIM,marginTop:12,borderTop:'1px solid rgba(0,0,0,0.04)',paddingTop:10}}>Broadcasts are stored in the <code style={{color:DIM}}>broadcasts</code> table. The main app reads them on login and shows as notifications. Requires <code style={{color:DIM}}>broadcasts</code> table to exist in Supabase.</div>
       </div>
       <div style={{...card,padding:20}}>
         <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:14,fontWeight:700}}>RECENT BROADCASTS</div>
@@ -439,7 +439,7 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
   const r30=c30.filter(u=>now-new Date(u.lastActive)<D30).length;
   const ret7=c7.length?Math.round(r7/c7.length*100):null;
   const ret30=c30.length?Math.round(r30/c30.length*100):null;
-  const retC=r=>r===null?'#555':r>=40?'#00E676':r>=20?'#FFD600':'#FF3D00';
+  const retC=r=>r===null?'#555':r>=40?'#15803d':r>=20?'#b45309':'#dc2626';
 
   const signupDays=Array.from({length:30},(_,i)=>{
     const d=new Date(now-(29-i)*D1); d.setHours(0,0,0,0);
@@ -463,7 +463,7 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
       {children}
     </div>
   );
-  const Kpi=({v,l,c='#FF3D00',sub})=>(
+  const Kpi=({v,l,c='#dc2626',sub})=>(
     <div style={{...card,padding:'14px 16px',flex:'1 1 140px'}}>
       <div style={{fontSize:9,color:DIM,letterSpacing:2,fontWeight:700,marginBottom:8,textTransform:'uppercase'}}>{l}</div>
       <div style={{fontSize:26,fontWeight:800,color:c,letterSpacing:-0.5,lineHeight:1}}>{v}</div>
@@ -477,16 +477,16 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
       <div style={{marginBottom:12}}>
         <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:4}}>
           <span style={{color:'#999'}}>{label}</span>
-          <span style={{fontWeight:700,color:'#fff'}}>{count.toLocaleString()} <span style={{color:DIM,fontWeight:400}}>({pct}%)</span>{drop!==null&&drop>0&&<span style={{color:'#FF9100',fontWeight:400,fontSize:10}}> ↓{drop}%</span>}</span>
+          <span style={{fontWeight:700,color:TXT}}>{count.toLocaleString()} <span style={{color:DIM,fontWeight:400}}>({pct}%)</span>{drop!==null&&drop>0&&<span style={{color:'#ea580c',fontWeight:400,fontSize:10}}> ↓{drop}%</span>}</span>
         </div>
-        <div style={{height:6,background:'rgba(255,255,255,0.05)',borderRadius:3,overflow:'hidden'}}>
+        <div style={{height:6,background:'rgba(0,0,0,0.05)',borderRadius:3,overflow:'hidden'}}>
           <div style={{height:'100%',width:`${pct}%`,background:color,borderRadius:3}}/>
         </div>
       </div>
     );
   };
 
-  const SparkBar=({data,color='#00E676',h=52})=>{
+  const SparkBar=({data,color='#15803d',h=52})=>{
     const mx=Math.max(...data.map(d=>d.v),1);
     return (
       <div style={{display:'flex',alignItems:'flex-end',gap:2,height:h,overflow:'hidden'}}>
@@ -503,44 +503,44 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
 
   return (
     <div>
-      <div style={{fontSize:9,color:'#FF3D00',letterSpacing:3,fontWeight:800,marginBottom:10,opacity:0.7}}>ACQUISITION</div>
+      <div style={{fontSize:9,color:'#dc2626',letterSpacing:3,fontWeight:800,marginBottom:10,opacity:0.7}}>ACQUISITION</div>
       <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:14}}>
         <Kpi v={total} l="Total Users" sub={`+${new7} this week · +${new30} this month`}/>
-        <Kpi v={new7} l="New (7d)" c='#00E676' sub={`${new30} this month`}/>
-        <Kpi v={mau} l="MAU" c='#40C4FF' sub={`${wau} wau · ${dau} dau`}/>
-        <Kpi v={`${stick}%`} l="Stickiness DAU/MAU" c='#40C4FF' sub="industry avg ~25%"/>
+        <Kpi v={new7} l="New (7d)" c='#15803d' sub={`${new30} this month`}/>
+        <Kpi v={mau} l="MAU" c='#0369a1' sub={`${wau} wau · ${dau} dau`}/>
+        <Kpi v={`${stick}%`} l="Stickiness DAU/MAU" c='#0369a1' sub="industry avg ~25%"/>
       </div>
 
-      <div style={{fontSize:9,color:'#FF3D00',letterSpacing:3,fontWeight:800,marginBottom:10,opacity:0.7}}>REVENUE</div>
+      <div style={{fontSize:9,color:'#dc2626',letterSpacing:3,fontWeight:800,marginBottom:10,opacity:0.7}}>REVENUE</div>
       <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:14}}>
-        <Kpi v={paying} l="Paying subscribers" c='#FFD600' sub={`${conv}% of users · ${trialing} on trial`}/>
-        <Kpi v={pro} l="Pro access (total)" c='#FFD600' sub={`${paying} paid · ${trialing} trial · ${grantPro} granted · ${adminPro} admin`}/>
-        <Kpi v={`£${mrr}`} l="MRR (est.)" c='#FFD600' sub={`${paying} × £4.99 (paid only)`}/>
-        <Kpi v={`£${arr}`} l="ARR (est.)" c='#FFD600' sub="MRR × 12"/>
+        <Kpi v={paying} l="Paying subscribers" c='#b45309' sub={`${conv}% of users · ${trialing} on trial`}/>
+        <Kpi v={pro} l="Pro access (total)" c='#b45309' sub={`${paying} paid · ${trialing} trial · ${grantPro} granted · ${adminPro} admin`}/>
+        <Kpi v={`£${mrr}`} l="MRR (est.)" c='#b45309' sub={`${paying} × £4.99 (paid only)`}/>
+        <Kpi v={`£${arr}`} l="ARR (est.)" c='#b45309' sub="MRR × 12"/>
       </div>
 
-      <div style={{fontSize:9,color:'#FF3D00',letterSpacing:3,fontWeight:800,marginBottom:10,opacity:0.7}}>RETENTION</div>
+      <div style={{fontSize:9,color:'#dc2626',letterSpacing:3,fontWeight:800,marginBottom:10,opacity:0.7}}>RETENTION</div>
       <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:14}}>
         <Kpi v={ret7!==null?`${ret7}%`:'—'} l="D7 Retention" c={retC(ret7)} sub={`n=${c7.length} · ≥40% good`}/>
         <Kpi v={ret30!==null?`${ret30}%`:'—'} l="D30 Retention" c={retC(ret30)} sub={`n=${c30.length} · ≥25% good`}/>
-        <Kpi v={avgPapers} l="Avg Papers/User" c='#40C4FF' sub={`${totalPapers} total`}/>
-        <Kpi v={`${totalHours}h`} l="Total Study Time" c='#40C4FF' sub="all users combined"/>
+        <Kpi v={avgPapers} l="Avg Papers/User" c='#0369a1' sub={`${totalPapers} total`}/>
+        <Kpi v={`${totalHours}h`} l="Total Study Time" c='#0369a1' sub="all users combined"/>
       </div>
 
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:14}}>
         <Sec title={`DAILY SIGNUPS — 30 DAYS  (peak: ${peakDay}/day)`}>
-          <SparkBar data={signupDays} color='#00E676' h={60}/>
+          <SparkBar data={signupDays} color='#15803d' h={60}/>
           <div style={{display:'flex',justifyContent:'space-between',fontSize:9,color:DIM,marginTop:4}}>
             <span>{signupDays[0].label}</span><span>{signupDays[29].label}</span>
           </div>
         </Sec>
 
         <Sec title="ACTIVATION FUNNEL">
-          <FRow label="Signed up"              count={total} base={total} color='#40C4FF'/>
-          <FRow label="Logged 1st paper"       count={act1}  base={total} color='#00E676' prev={total}/>
-          <FRow label="5+ papers (engaged)"    count={act5}  base={total} color='#00E676' prev={act1}/>
-          <FRow label="10+ papers (power)"     count={act10} base={total} color='#FFD600' prev={act5}/>
-          <FRow label="Upgraded to Pro (paid)"  count={paying} base={total} color='#FF3D00' prev={act10}/>
+          <FRow label="Signed up"              count={total} base={total} color='#0369a1'/>
+          <FRow label="Logged 1st paper"       count={act1}  base={total} color='#15803d' prev={total}/>
+          <FRow label="5+ papers (engaged)"    count={act5}  base={total} color='#15803d' prev={act1}/>
+          <FRow label="10+ papers (power)"     count={act10} base={total} color='#b45309' prev={act5}/>
+          <FRow label="Upgraded to Pro (paid)"  count={paying} base={total} color='#dc2626' prev={act10}/>
           <div style={{fontSize:10,color:DIM,marginTop:6}}>
             {act1>0&&paying>0?`${Math.round(paying/act1*100)}% of activated users convert to paid`:'no paid conversions yet'}
           </div>
@@ -548,16 +548,16 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
 
         <Sec title="USER HEALTH SEGMENTS">
           {[
-            ['Active today',           dau,       '#00E676'],
-            ['Active this week',       wau,       '#00E676'],
-            ['Active this month',      mau,       '#40C4FF'],
-            ['Pro subscribers',        pro,       '#FFD600'],
-            ['Dormant (14d+, 0 papers)',dormant,   '#FF3D00'],
-            ['At-risk (7–30d idle)',    atRisk,    '#FF9100'],
-            ['Churned (30d+ inactive)',churned,    '#FF3D00'],
-            ['School opt-in',          schoolOpt, '#40C4FF'],
+            ['Active today',           dau,       '#15803d'],
+            ['Active this week',       wau,       '#15803d'],
+            ['Active this month',      mau,       '#0369a1'],
+            ['Pro subscribers',        pro,       '#b45309'],
+            ['Dormant (14d+, 0 papers)',dormant,   '#dc2626'],
+            ['At-risk (7–30d idle)',    atRisk,    '#ea580c'],
+            ['Churned (30d+ inactive)',churned,    '#dc2626'],
+            ['School opt-in',          schoolOpt, '#0369a1'],
           ].map(([l,n,c])=>(
-            <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12}}>
+            <div key={l} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid rgba(0,0,0,0.04)',fontSize:12}}>
               <span style={{color:MUT}}>{l}</span>
               <span style={{fontWeight:800,color:c}}>{n} <span style={{color:DIM,fontWeight:400,fontSize:10}}>({total?Math.round(n/total*100):0}%)</span></span>
             </div>
@@ -566,25 +566,25 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
 
         <Sec title="FEATURE ADOPTION">
           {[
-            ['Past paper tracker',  act1,      total, '#00E676'],
-            ['Error log',          usedErr,   total, '#40C4FF'],
-            ['Study timer',        usedTimer, total, '#40C4FF'],
-            ['School opt-in',      schoolOpt, total, '#FFD600'],
+            ['Past paper tracker',  act1,      total, '#15803d'],
+            ['Error log',          usedErr,   total, '#0369a1'],
+            ['Study timer',        usedTimer, total, '#0369a1'],
+            ['School opt-in',      schoolOpt, total, '#b45309'],
           ].map(([l,n,t,c])=>{
             const pct=t?Math.round(n/t*100):0;
             return (
               <div key={l} style={{marginBottom:12}}>
                 <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:4}}>
                   <span style={{color:MUT}}>{l}</span>
-                  <span style={{color:'#fff',fontWeight:700}}>{pct}% <span style={{color:DIM,fontWeight:400}}>({n})</span></span>
+                  <span style={{color:TXT,fontWeight:700}}>{pct}% <span style={{color:DIM,fontWeight:400}}>({n})</span></span>
                 </div>
-                <div style={{height:5,background:'rgba(255,255,255,0.05)',borderRadius:3,overflow:'hidden'}}>
+                <div style={{height:5,background:'rgba(0,0,0,0.05)',borderRadius:3,overflow:'hidden'}}>
                   <div style={{height:'100%',width:`${pct}%`,background:c,borderRadius:3}}/>
                 </div>
               </div>
             );
           })}
-          <div style={{height:1,background:'rgba(255,255,255,0.06)',margin:'12px 0'}}/>
+          <div style={{height:1,background:'rgba(0,0,0,0.06)',margin:'12px 0'}}/>
           <div style={{fontSize:11,color:DIM,lineHeight:1.8}}>
             Total papers: <strong style={{color:TXT}}>{totalPapers.toLocaleString()}</strong><br/>
             Total study hours: <strong style={{color:TXT}}>{totalHours}h</strong>
@@ -596,10 +596,10 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
             <div key={s} style={{marginBottom:10}}>
               <div style={{display:'flex',justifyContent:'space-between',fontSize:10,marginBottom:3}}>
                 <span style={{textTransform:'capitalize',color:SC[s]||MUT}}>{s.replace(/-/g,' ')}</span>
-                <span style={{color:'#FF3D00'}}>{n} <span style={{color:DIM}}>({total?Math.round(n/total*100):0}%)</span></span>
+                <span style={{color:'#dc2626'}}>{n} <span style={{color:DIM}}>({total?Math.round(n/total*100):0}%)</span></span>
               </div>
-              <div style={{height:4,background:'rgba(255,255,255,0.04)',borderRadius:2,overflow:'hidden'}}>
-                <div style={{height:'100%',width:`${(n/maxSub)*100}%`,background:SC[s]||'#FF3D00',borderRadius:2}}/>
+              <div style={{height:4,background:'rgba(0,0,0,0.04)',borderRadius:2,overflow:'hidden'}}>
+                <div style={{height:'100%',width:`${(n/maxSub)*100}%`,background:SC[s]||'#dc2626',borderRadius:2}}/>
               </div>
             </div>
           ))}
@@ -612,7 +612,7 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
                 <div style={{fontSize:9,color:DIM,letterSpacing:2,marginBottom:6}}>{label} RETENTION</div>
                 <div style={{fontSize:30,fontWeight:800,color:retC(rate)}}>{rate!==null?`${rate}%`:'—'}</div>
                 <div style={{fontSize:10,color:DIM,marginTop:3}}>n={size}</div>
-                {rate!==null&&<div style={{height:4,background:'rgba(255,255,255,0.06)',borderRadius:2,overflow:'hidden',marginTop:8}}><div style={{height:'100%',width:`${rate}%`,background:retC(rate)}}/></div>}
+                {rate!==null&&<div style={{height:4,background:'rgba(0,0,0,0.06)',borderRadius:2,overflow:'hidden',marginTop:8}}><div style={{height:'100%',width:`${rate}%`,background:retC(rate)}}/></div>}
               </div>
             ))}
           </div>
@@ -621,7 +621,7 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
       </div>
 
       {/* ── GROWTH ENGINES ───────────────────────────────────────────── */}
-      <div style={{fontSize:9,color:'#FF3D00',letterSpacing:3,fontWeight:800,marginBottom:10,marginTop:14,opacity:0.6}}>GROWTH ENGINES</div>
+      <div style={{fontSize:9,color:'#dc2626',letterSpacing:3,fontWeight:800,marginBottom:10,marginTop:14,opacity:0.6}}>GROWTH ENGINES</div>
       {(()=>{
         const refByCode={};
         for (const r of referrals) refByCode[r.referrer_code]=(refByCode[r.referrer_code]||0)+1;
@@ -651,15 +651,15 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
           <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:10}}>
             <Kpi v={totalRefs} l="Total Referrals" c='#fbbf24' sub={`${referredUsers} unique users referred`}/>
             <Kpi v={topReferrers.length} l="Active Referrers" c='#fbbf24' sub={`avg ${topReferrers.length?(totalRefs/topReferrers.length).toFixed(1):0}/referrer`}/>
-            <Kpi v={activeReferralPro} l="Referral Pro Grants" c='#FFD600' sub="users with active Pro week"/>
-            <Kpi v={totalGroups} l="Study Groups" c='#40C4FF' sub={`${totalMemberships} memberships · avg ${avgGroupSize}/grp`}/>
+            <Kpi v={activeReferralPro} l="Referral Pro Grants" c='#b45309' sub="users with active Pro week"/>
+            <Kpi v={totalGroups} l="Study Groups" c='#0369a1' sub={`${totalMemberships} memberships · avg ${avgGroupSize}/grp`}/>
           </div>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))',gap:10}}>
             {topReferrers.length>0&&(
               <Sec title="TOP REFERRERS">
                 {topReferrers.map((r,i)=>(
-                  <div key={r.code} style={{display:'flex',gap:10,alignItems:'center',padding:'6px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12}}>
-                    <span style={{width:16,textAlign:'center',fontSize:11,color:i<3?'#FFD600':DIM,fontWeight:800}}>{i+1}</span>
+                  <div key={r.code} style={{display:'flex',gap:10,alignItems:'center',padding:'6px 0',borderBottom:'1px solid rgba(0,0,0,0.04)',fontSize:12}}>
+                    <span style={{width:16,textAlign:'center',fontSize:11,color:i<3?'#b45309':DIM,fontWeight:800}}>{i+1}</span>
                     <span style={{flex:1,color:TXT,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.user?.display_name||r.user?.email||r.code}</span>
                     <span style={{fontWeight:700,color:'#fbbf24'}}>{r.count}</span>
                   </div>
@@ -669,11 +669,11 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
             {topSchools.length>0&&(
               <Sec title="TOP SCHOOLS (OPT-IN)">
                 {topSchools.map((s,i)=>(
-                  <div key={s.name} style={{display:'flex',gap:10,alignItems:'center',padding:'6px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:12}}>
-                    <span style={{width:16,textAlign:'center',fontSize:11,color:i<3?'#FFD600':DIM,fontWeight:800}}>{i+1}</span>
+                  <div key={s.name} style={{display:'flex',gap:10,alignItems:'center',padding:'6px 0',borderBottom:'1px solid rgba(0,0,0,0.04)',fontSize:12}}>
+                    <span style={{width:16,textAlign:'center',fontSize:11,color:i<3?'#b45309':DIM,fontWeight:800}}>{i+1}</span>
                     <span style={{flex:1,color:TXT,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s.name}</span>
                     <span style={{fontSize:10,color:DIM,marginRight:5}}>{s.count}u</span>
-                    <span style={{fontWeight:700,color:s.avg>=80?'#00E676':s.avg>=60?'#FFD600':'#FF9100'}}>{s.avg}%</span>
+                    <span style={{fontWeight:700,color:s.avg>=80?'#15803d':s.avg>=60?'#b45309':'#ea580c'}}>{s.avg}%</span>
                   </div>
                 ))}
               </Sec>
@@ -681,14 +681,14 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
             <Sec title="EXAM LEVEL MIX">
               {Object.entries(lvlCount).sort((a,b)=>b[1]-a[1]).map(([k,n])=>{
                 const pct=total?Math.round(n/total*100):0;
-                const c=k==='alevel'?'#40C4FF':k==='aslevel'?'#FF9100':k==='gcse'?'#00E676':'#555';
+                const c=k==='alevel'?'#0369a1':k==='aslevel'?'#ea580c':k==='gcse'?'#15803d':'#555';
                 return (
                   <div key={k} style={{marginBottom:10}}>
                     <div style={{display:'flex',justifyContent:'space-between',fontSize:11,marginBottom:3}}>
                       <span style={{color:MUT,textTransform:'uppercase',letterSpacing:0.5}}>{k}</span>
-                      <span style={{color:'#fff',fontWeight:700}}>{n} <span style={{color:DIM,fontWeight:400,fontSize:10}}>({pct}%)</span></span>
+                      <span style={{color:TXT,fontWeight:700}}>{n} <span style={{color:DIM,fontWeight:400,fontSize:10}}>({pct}%)</span></span>
                     </div>
-                    <div style={{height:4,background:'rgba(255,255,255,0.05)',borderRadius:2,overflow:'hidden'}}>
+                    <div style={{height:4,background:'rgba(0,0,0,0.05)',borderRadius:2,overflow:'hidden'}}>
                       <div style={{height:'100%',width:`${pct}%`,background:c}}/>
                     </div>
                   </div>
@@ -803,11 +803,11 @@ function QueryExplorer({users}) {
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',gap:6}}>
           {PRESETS.map(p=>(
             <button key={p.label} onClick={()=>runPreset(p)} style={{
-              background:activePreset===p.label?'rgba(255,61,0,0.12)':'rgba(255,255,255,0.03)',
-              border:`1px solid ${activePreset===p.label?'rgba(255,61,0,0.4)':'rgba(255,255,255,0.08)'}`,
+              background:activePreset===p.label?'rgba(255,61,0,0.12)':'rgba(0,0,0,0.03)',
+              border:`1px solid ${activePreset===p.label?'rgba(255,61,0,0.4)':'rgba(0,0,0,0.08)'}`,
               borderRadius:6,padding:'10px 14px',cursor:'pointer',textAlign:'left',transition:'all 0.15s',
             }}>
-              <div style={{fontSize:11,fontWeight:700,color:activePreset===p.label?'#FF3D00':TXT,marginBottom:3}}>{p.label}</div>
+              <div style={{fontSize:11,fontWeight:700,color:activePreset===p.label?'#dc2626':TXT,marginBottom:3}}>{p.label}</div>
               <div style={{fontSize:9,color:DIM}}>{p.desc}</div>
             </button>
           ))}
@@ -821,8 +821,8 @@ function QueryExplorer({users}) {
               {activePreset} — {result.length} row{result.length!==1?'s':''}
             </div>
             <div style={{display:'flex',gap:6}}>
-              <button onClick={exportCsv} style={{...btn('#00E676'),fontSize:9,padding:'4px 10px'}}>↓ CSV</button>
-              <button onClick={exportJson} style={{...btn('#40C4FF'),fontSize:9,padding:'4px 10px'}}>↓ JSON</button>
+              <button onClick={exportCsv} style={{...btn('#15803d'),fontSize:9,padding:'4px 10px'}}>↓ CSV</button>
+              <button onClick={exportJson} style={{...btn('#0369a1'),fontSize:9,padding:'4px 10px'}}>↓ JSON</button>
             </div>
           </div>
           {result.length===0?(
@@ -837,8 +837,8 @@ function QueryExplorer({users}) {
                 </thead>
                 <tbody>
                   {result.slice(0,100).map((row,i)=>(
-                    <tr key={i} style={{borderBottom:'1px solid rgba(255,255,255,0.03)',transition:'background 0.1s'}}>
-                      {cols.map(c=><td key={c} style={{padding:'8px 14px',color:'#bbb',maxWidth:280,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{String(row[c]??'—')}</td>)}
+                    <tr key={i} style={{borderBottom:'1px solid rgba(0,0,0,0.03)',transition:'background 0.1s'}}>
+                      {cols.map(c=><td key={c} style={{padding:'8px 14px',color:MUT,maxWidth:280,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{String(row[c]??'—')}</td>)}
                     </tr>
                   ))}
                 </tbody>
@@ -931,18 +931,18 @@ function ExamEditor() {
               background:activeSub===s.id?'rgba(255,61,0,0.12)':'transparent',
               border:activeSub===s.id?'1px solid rgba(255,61,0,0.3)':'1px solid transparent',
               borderRadius:5,cursor:'pointer',marginBottom:2,
-              color:activeSub===s.id?'#FF3D00':'#bbb',fontFamily:mono,fontSize:11,
+              color:activeSub===s.id?'#dc2626':MUT,fontFamily:mono,fontSize:11,
             }}>
               <span>{s.name}</span>
               {schedule[s.id]?.length>0&&<span style={{fontSize:9,color:DIM}}>{schedule[s.id].length}</span>}
             </button>
           ))}
         </div>
-        <div style={{marginTop:10,paddingTop:10,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
+        <div style={{marginTop:10,paddingTop:10,borderTop:'1px solid rgba(0,0,0,0.06)'}}>
           <input style={{...iS,marginBottom:6,fontSize:11}} value={newSubId}
             onChange={e=>setNewSubId(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addSubject()}
             placeholder="new-subject-id"/>
-          <button onClick={addSubject} style={{...btn('#FF3D00'),width:'100%',textAlign:'center',padding:'7px'}}>+ ADD SUBJECT</button>
+          <button onClick={addSubject} style={{...btn('#dc2626'),width:'100%',textAlign:'center',padding:'7px'}}>+ ADD SUBJECT</button>
         </div>
       </div>
 
@@ -956,8 +956,8 @@ function ExamEditor() {
             <span style={{fontSize:10,color:MUT,marginLeft:8}}>{activeExams.length} exam{activeExams.length!==1?'s':''}</span>
           </div>
           <div style={{display:'flex',gap:8}}>
-            <button onClick={addExam} style={btn('#00E676')}>+ ADD EXAM</button>
-            <button onClick={saveSchedule} disabled={saving} style={btn('#FF3D00',true)}>
+            <button onClick={addExam} style={btn('#15803d')}>+ ADD EXAM</button>
+            <button onClick={saveSchedule} disabled={saving} style={btn('#dc2626',true)}>
               {saving?'SAVING...':saved?'SAVED ✓':'SAVE ALL CHANGES'}
             </button>
           </div>
@@ -988,7 +988,7 @@ function ExamEditor() {
                 onChange={ev=>updateExam(activeSub,idx,'duration',ev.target.value)} placeholder="e.g. 2h 30m"/>
               <input style={{...iS,fontSize:11,padding:'7px 10px'}} type="number" value={e.maxMark||''}
                 onChange={ev=>updateExam(activeSub,idx,'maxMark',Number(ev.target.value))} placeholder="Marks"/>
-              <button onClick={()=>deleteExam(activeSub,idx)} style={{...btn('#FF3D00'),padding:'7px 8px',textAlign:'center'}}>✕</button>
+              <button onClick={()=>deleteExam(activeSub,idx)} style={{...btn('#dc2626'),padding:'7px 8px',textAlign:'center'}}>✕</button>
             </div>
             {e.date&&<div style={{fontSize:9,color:DIM,marginTop:5,paddingLeft:2}}>
               {new Date(e.date+' 12:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})} · {e.time||'PM'}
@@ -1064,9 +1064,9 @@ function ResourcesPanel() {
           onDragLeave={()=>setDragOver(false)}
           onDrop={onDrop}
           onClick={()=>fileRef.current?.click()}
-          style={{border:`2px dashed ${dragOver?'#FF3D00':'rgba(255,255,255,0.12)'}`,borderRadius:8,
+          style={{border:`2px dashed ${dragOver?'#dc2626':'rgba(0,0,0,0.15)'}`,borderRadius:8,
             padding:'32px 20px',textAlign:'center',cursor:'pointer',marginBottom:18,
-            background:dragOver?'rgba(255,61,0,0.05)':'rgba(255,255,255,0.02)',transition:'all 0.2s'}}
+            background:dragOver?'rgba(255,61,0,0.05)':'rgba(0,0,0,0.02)',transition:'all 0.2s'}}
         >
           <input ref={fileRef} type="file" style={{display:'none'}} onChange={e=>setFile(e.target.files[0]||null)}/>
           {file?(
@@ -1074,7 +1074,7 @@ function ResourcesPanel() {
               <div style={{fontSize:22,marginBottom:6}}>📄</div>
               <div style={{fontSize:13,color:TXT,fontWeight:600,marginBottom:3}}>{file.name}</div>
               <div style={{fontSize:10,color:MUT}}>{fmtSize(file.size)}</div>
-              <button onClick={e=>{e.stopPropagation();setFile(null);}} style={{...btn('#FF3D00'),marginTop:10,fontSize:10}}>✕ REMOVE</button>
+              <button onClick={e=>{e.stopPropagation();setFile(null);}} style={{...btn('#dc2626'),marginTop:10,fontSize:10}}>✕ REMOVE</button>
             </div>
           ):(
             <div>
@@ -1091,11 +1091,11 @@ function ResourcesPanel() {
         <div style={{fontSize:9,color:SEC,letterSpacing:2,marginBottom:5,fontWeight:700}}>DESCRIPTION</div>
         <textarea style={{...iS,marginBottom:18,height:90,resize:'vertical'}} value={desc}
           onChange={e=>setDesc(e.target.value)} placeholder="What is this? Which students should use it? Key topics covered..."/>
-        <button onClick={handleUpload} disabled={uploading} style={{...btn('#FF3D00',true),padding:'12px',width:'100%',fontSize:12,letterSpacing:2}}>
+        <button onClick={handleUpload} disabled={uploading} style={{...btn('#dc2626',true),padding:'12px',width:'100%',fontSize:12,letterSpacing:2}}>
           {uploading?'UPLOADING...':'↑ UPLOAD RESOURCE'}
         </button>
-        {err&&<div style={{color:'#FF9100',fontSize:11,marginTop:10}}>{err}</div>}
-        <div style={{fontSize:9,color:DIM,marginTop:14,lineHeight:1.8,borderTop:'1px solid rgba(255,255,255,0.05)',paddingTop:12}}>
+        {err&&<div style={{color:'#ea580c',fontSize:11,marginTop:10}}>{err}</div>}
+        <div style={{fontSize:9,color:DIM,marginTop:14,lineHeight:1.8,borderTop:'1px solid rgba(0,0,0,0.05)',paddingTop:12}}>
           Requires Supabase Storage bucket <code style={{color:MUT}}>resources</code> (public) and a <code style={{color:MUT}}>resources</code> table with columns: id, title, description, file_url, file_name, file_size, storage_path, created_at.
         </div>
       </div>
@@ -1115,8 +1115,8 @@ function ResourcesPanel() {
               </div>
               <div style={{display:'flex',gap:5,flexShrink:0}}>
                 <a href={r.file_url} target="_blank" rel="noopener noreferrer"
-                  style={{...btn('#00E676'),textDecoration:'none',padding:'6px 10px',fontSize:13}}>↓</a>
-                <button onClick={()=>handleDelete(r)} style={{...btn('#FF3D00'),padding:'6px 10px'}}>✕</button>
+                  style={{...btn('#15803d'),textDecoration:'none',padding:'6px 10px',fontSize:13}}>↓</a>
+                <button onClick={()=>handleDelete(r)} style={{...btn('#dc2626'),padding:'6px 10px'}}>✕</button>
               </div>
             </div>
           </div>
@@ -1169,7 +1169,7 @@ function WaitlistPanel() {
         <div style={{...card,overflow:'hidden'}}>
           <table style={{width:'100%',borderCollapse:'collapse',fontSize:11,fontFamily:mono}}>
             <thead>
-              <tr style={{borderBottom:'1px solid rgba(255,255,255,0.08)'}}>
+              <tr style={{borderBottom:'1px solid rgba(0,0,0,0.08)'}}>
                 {['Email','Signed up','Notified','Action'].map(h=>(
                   <th key={h} style={{padding:'10px 14px',textAlign:'left',color:MUT,fontWeight:700,fontSize:9,letterSpacing:1}}>{h.toUpperCase()}</th>
                 ))}
@@ -1177,17 +1177,17 @@ function WaitlistPanel() {
             </thead>
             <tbody>
               {rows.map(r=>(
-                <tr key={r.id} style={{borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+                <tr key={r.id} style={{borderBottom:'1px solid rgba(0,0,0,0.04)'}}>
                   <td style={{padding:'10px 14px',color:TXT}}>{r.email}</td>
                   <td style={{padding:'10px 14px',color:DIM}}>{fmtDate(r.created_at)}</td>
                   <td style={{padding:'10px 14px'}}>
                     {r.notified_at
-                      ? <span style={pill('#00E676')}>NOTIFIED {fmtDate(r.notified_at)}</span>
+                      ? <span style={pill('#15803d')}>NOTIFIED {fmtDate(r.notified_at)}</span>
                       : <span style={pill('#fbbf24')}>PENDING</span>}
                   </td>
                   <td style={{padding:'10px 14px'}}>
                     {!r.notified_at&&(
-                      <button onClick={()=>markNotified(r.id)} style={btn('#00E676')}>MARK NOTIFIED</button>
+                      <button onClick={()=>markNotified(r.id)} style={btn('#15803d')}>MARK NOTIFIED</button>
                     )}
                   </td>
                 </tr>
@@ -1367,7 +1367,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
   // Auto-refresh every 60s so new signups / payments surface without a manual
   // click. Pauses while a user detail is open to avoid yanking the view.
   useEffect(()=>{
-    const t=setInterval(()=>{ if(!document.hidden) loadData(); },60000);
+    const t=setInterval(()=>{ if(!document.hidden) loadData(); },30000);
     return ()=>clearInterval(t);
   },[loadData]);
 
@@ -1424,7 +1424,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
   const topSubjects=Object.entries(subjectCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
   const maxSub=topSubjects[0]?.[1]||1;
 
-  const rdist=[{l:'Battle Ready',min:80,c:'#00E676'},{l:'On Track',min:60,c:'#FFD600'},{l:'Building',min:40,c:'#FF9100'},{l:'Just Started',min:0,c:'FF3D00'}];
+  const rdist=[{l:'Battle Ready',min:80,c:'#15803d'},{l:'On Track',min:60,c:'#b45309'},{l:'Building',min:40,c:'#ea580c'},{l:'Just Started',min:0,c:'FF3D00'}];
 
   const cycleSort=col=>setSort(s=>s.col===col?{col,dir:-s.dir}:{col,dir:-1});
   const sa=col=>sort.col===col?(sort.dir===-1?'↓':'↑'):'⇅';
@@ -1489,10 +1489,13 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
 
         {/* Main column */}
         <div style={{flex:1,minWidth:0,display:'flex',flexDirection:'column'}}>
-          <div style={{position:'sticky',top:0,zIndex:50,background:'rgba(11,13,18,0.88)',backdropFilter:'blur(12px)',borderBottom:`1px solid ${BORDER}`,display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 24px',height:56}}>
+          <div style={{position:'sticky',top:0,zIndex:50,background:'rgba(245,240,232,0.88)',backdropFilter:'blur(12px)',borderBottom:`1px solid ${BORDER}`,display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 24px',height:56}}>
             <div style={{fontSize:16,fontWeight:700,color:TXT,letterSpacing:'-0.01em'}}>{TITLES[tab]||'Console'}</div>
             <div style={{display:'flex',alignItems:'center',gap:10}}>
-              {lastRefresh&&<span style={{fontSize:11,color:DIM}}>Updated {timeSince(lastRefresh)}</span>}
+              <span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:11,color:DIM}}>
+                <span style={{width:7,height:7,borderRadius:'50%',background:OK,display:'inline-block'}}/>
+                Live{lastRefresh?` · ${timeSince(lastRefresh)}`:''}
+              </span>
               <button onClick={loadData} disabled={loading} style={btn()}>Refresh</button>
               <button onClick={exportCSV} style={btn(OK)}>Export CSV</button>
             </div>
@@ -1536,14 +1539,14 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
               <div style={{...card,padding:20}}>
                 <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:16,fontWeight:700}}>TOP BY READINESS</div>
                 {topByReadiness.map((u,i)=>(
-                  <div key={u.id} onClick={()=>setSelected(u)} style={{display:'flex',alignItems:'center',gap:12,padding:'9px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',cursor:'pointer'}}>
+                  <div key={u.id} onClick={()=>setSelected(u)} style={{display:'flex',alignItems:'center',gap:12,padding:'9px 0',borderBottom:'1px solid rgba(0,0,0,0.04)',cursor:'pointer'}}>
                     <span style={{fontSize:11,color:DIM,width:16,textAlign:'right'}}>{i+1}</span>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontSize:12,color:TXT,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{u.display_name||u.email}</div>
                       <div style={{fontSize:9,color:MUT,marginTop:1}}>{u.totalScores} papers · {u.avgScore}% avg</div>
                     </div>
                     <div style={{display:'flex',alignItems:'center',gap:8}}>
-                      <div style={{width:40,height:3,background:'rgba(255,255,255,0.05)',borderRadius:2,overflow:'hidden'}}><div style={{width:`${u.readiness}%`,height:'100%',background:R(u.readiness)}}/></div>
+                      <div style={{width:40,height:3,background:'rgba(0,0,0,0.05)',borderRadius:2,overflow:'hidden'}}><div style={{width:`${u.readiness}%`,height:'100%',background:R(u.readiness)}}/></div>
                       <span style={{fontSize:12,fontWeight:800,color:R(u.readiness),minWidth:24,textAlign:'right'}}>{u.readiness}</span>
                     </div>
                   </div>
@@ -1552,11 +1555,11 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
               <div style={{...card,padding:20}}>
                 <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:16,fontWeight:700}}>RECENT SIGN-UPS</div>
                 {recentSignups.map(u=>(
-                  <div key={u.id} onClick={()=>setSelected(u)} style={{display:'flex',alignItems:'center',gap:12,padding:'9px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',cursor:'pointer'}}>
+                  <div key={u.id} onClick={()=>setSelected(u)} style={{display:'flex',alignItems:'center',gap:12,padding:'9px 0',borderBottom:'1px solid rgba(0,0,0,0.04)',cursor:'pointer'}}>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontSize:12,color:TXT,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{u.display_name||u.email}</div>
                       <div style={{display:'flex',gap:4,marginTop:4,flexWrap:'wrap'}}>
-                        {(u.subjectList||[]).slice(0,3).map(s=><span key={s} style={{fontSize:8,color:'#FF3D00',background:'rgba(255,61,0,0.08)',border:'1px solid rgba(255,61,0,0.2)',padding:'1px 5px',borderRadius:3,textTransform:'capitalize'}}>{s.replace(/-/g,' ')}</span>)}
+                        {(u.subjectList||[]).slice(0,3).map(s=><span key={s} style={{fontSize:8,color:'#dc2626',background:'rgba(255,61,0,0.08)',border:'1px solid rgba(255,61,0,0.2)',padding:'1px 5px',borderRadius:3,textTransform:'capitalize'}}>{s.replace(/-/g,' ')}</span>)}
                       </div>
                     </div>
                     <span style={{fontSize:10,color:MUT,flexShrink:0}}>{timeSince(u.created_at)}</span>
@@ -1566,13 +1569,13 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
               <div style={{...card,padding:20}}>
                 <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:16,fontWeight:700}}>ENGAGEMENT METRICS</div>
                 {[
-                  {l:'Activation rate',v:`${users.length?Math.round((stats.activated/users.length)*100):0}%`,c:'#40C4FF'},
+                  {l:'Activation rate',v:`${users.length?Math.round((stats.activated/users.length)*100):0}%`,c:'#0369a1'},
                   {l:'Avg papers / activated user',v:stats.activated?Math.round(stats.totalPapers/stats.activated):0,c:'#fff'},
-                  {l:'Avg errors / activated user',v:stats.activated?Math.round(stats.totalErrors/stats.activated):0,c:'#FF9100'},
-                  {l:'ToS agreed',v:users.filter(u=>u.tos_agreed_at).length,c:'#00E676'},
+                  {l:'Avg errors / activated user',v:stats.activated?Math.round(stats.totalErrors/stats.activated):0,c:'#ea580c'},
+                  {l:'ToS agreed',v:users.filter(u=>u.tos_agreed_at).length,c:'#15803d'},
                   {l:'Users with no papers',v:users.filter(u=>u.totalScores===0).length,c:'#555'},
                 ].map(({l,v,c})=>(
-                  <div key={l} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+                  <div key={l} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:'1px solid rgba(0,0,0,0.04)'}}>
                     <span style={{fontSize:11,color:MUT}}>{l}</span>
                     <span style={{fontSize:14,fontWeight:800,color:c}}>{v}</span>
                   </div>
@@ -1582,12 +1585,12 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
                 <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:16,fontWeight:700}}>SUBJECT POPULARITY</div>
                 {topSubjects.slice(0,6).map(([s,n])=>(
                   <div key={s} style={{marginBottom:10}}>
-                    <div style={{display:'flex',justifyContent:'space-between',fontSize:10,color:'#666',marginBottom:3}}>
+                    <div style={{display:'flex',justifyContent:'space-between',fontSize:10,color:DIM,marginBottom:3}}>
                       <span style={{textTransform:'capitalize',color:SC[s]||MUT}}>{s.replace(/-/g,' ')}</span>
-                      <span style={{color:'#FF3D00'}}>{n}</span>
+                      <span style={{color:'#dc2626'}}>{n}</span>
                     </div>
-                    <div style={{height:3,background:'rgba(255,255,255,0.04)',borderRadius:2,overflow:'hidden'}}>
-                      <div style={{height:'100%',width:`${(n/maxSub)*100}%`,background:SC[s]||'#FF3D00',borderRadius:2,opacity:0.8}}/>
+                    <div style={{height:3,background:'rgba(0,0,0,0.04)',borderRadius:2,overflow:'hidden'}}>
+                      <div style={{height:'100%',width:`${(n/maxSub)*100}%`,background:SC[s]||'#dc2626',borderRadius:2,opacity:0.8}}/>
                     </div>
                   </div>
                 ))}
@@ -1608,7 +1611,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
                 <div style={{...card,overflow:'hidden'}}>
                   <table style={{width:'100%',borderCollapse:'collapse'}}>
                     <thead>
-                      <tr style={{borderBottom:`1px solid ${BORDER}`,background:'rgba(255,255,255,0.02)'}}>
+                      <tr style={{borderBottom:`1px solid ${BORDER}`,background:'rgba(0,0,0,0.02)'}}>
                         {[{k:'email',l:'User'},{k:'created_at',l:'Joined'},{k:'lastActive',l:'Last active'},{k:'totalScores',l:'Papers'},{k:'avgScore',l:'Avg'},{k:'readiness',l:'Readiness'},{k:'totalErrors',l:'Errors'},{k:'tos_agreed_at',l:'ToS'},{k:'is_admin',l:'Role'}].map(({k,l})=>(
                           <th key={k} onClick={()=>cycleSort(k)} style={{textAlign:'left',padding:'11px 14px',fontSize:11,color:SEC,fontWeight:600,cursor:'pointer',userSelect:'none',whiteSpace:'nowrap'}}>
                             {l} <span style={{opacity:0.5,fontSize:10}}>{sa(k)}</span>
@@ -1683,42 +1686,42 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
                   {l:'Users with data rows',v:stats.activated,ok:true},
                   {l:'Admin accounts',v:stats.admins,ok:stats.admins>0},
                 ].map(({l,v,ok})=>(
-                  <div key={l} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'9px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+                  <div key={l} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'9px 0',borderBottom:'1px solid rgba(0,0,0,0.04)'}}>
                     <span style={{fontSize:11,color:MUT}}>{l}</span>
-                    <span style={{fontSize:12,fontWeight:700,color:ok?'#00E676':'#FF3D00'}}>{typeof v==='boolean'?(v?'Yes':'No'):v}</span>
+                    <span style={{fontSize:12,fontWeight:700,color:ok?'#15803d':'#dc2626'}}>{typeof v==='boolean'?(v?'Yes':'No'):v}</span>
                   </div>
                 ))}
               </div>
               <div style={{...card,padding:20}}>
                 <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:16,fontWeight:700}}>ADMIN ACCOUNTS</div>
                 {users.filter(u=>u.is_admin).map(u=>(
-                  <div key={u.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'9px 0',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+                  <div key={u.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'9px 0',borderBottom:'1px solid rgba(0,0,0,0.04)'}}>
                     <div>
                       <div style={{fontSize:12,color:TXT}}>{u.display_name||u.email}</div>
                       <div style={{fontSize:9,color:DIM,marginTop:1}}>{u.email}</div>
                     </div>
                     {u.id!==adminUser?.id&&(
-                      <button onClick={()=>toggleAdmin(u)} style={btn('#FF3D00')}>REVOKE</button>
+                      <button onClick={()=>toggleAdmin(u)} style={btn('#dc2626')}>REVOKE</button>
                     )}
                   </div>
                 ))}
-                <div style={{marginTop:16,paddingTop:12,borderTop:'1px solid rgba(255,255,255,0.05)',fontSize:10,color:DIM,lineHeight:1.7}}>
+                <div style={{marginTop:16,paddingTop:12,borderTop:'1px solid rgba(0,0,0,0.05)',fontSize:10,color:DIM,lineHeight:1.7}}>
                   Hardcoded admin fallback emails:<br/>
-                  {ADMIN_EMAILS.map(e=><span key={e} style={{color:'#FF3D00'}}>{e}</span>)}
+                  {ADMIN_EMAILS.map(e=><span key={e} style={{color:'#dc2626'}}>{e}</span>)}
                 </div>
               </div>
               <div style={{...card,padding:20}}>
                 <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:14,fontWeight:700}}>DANGER ZONE</div>
                 <div style={{fontSize:11,color:MUT,marginBottom:14,lineHeight:1.7}}>Destructive actions. These cannot be undone.</div>
                 <div style={{display:'flex',flexDirection:'column',gap:8}}>
-                  <button onClick={exportCSV} style={{...btn('#00E676'),padding:'10px 16px',textAlign:'left'}}>↓ EXPORT ALL USER DATA (CSV)</button>
+                  <button onClick={exportCSV} style={{...btn('#15803d'),padding:'10px 16px',textAlign:'left'}}>↓ EXPORT ALL USER DATA (CSV)</button>
                 </div>
               </div>
               <div style={{...card,padding:20}}>
                 <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:14,fontWeight:700}}>LOGGED IN AS</div>
                 <div style={{fontSize:13,color:TXT,marginBottom:4}}>{adminProfile?.display_name||'Admin'}</div>
                 <div style={{fontSize:11,color:MUT,marginBottom:16}}>{adminUser?.email}</div>
-                <button onClick={onLogout} style={{...btn('#FF3D00',true),padding:'10px 20px'}}>LOGOUT → SIGN OUT</button>
+                <button onClick={onLogout} style={{...btn('#dc2626',true),padding:'10px 20px'}}>LOGOUT → SIGN OUT</button>
               </div>
             </div>
           )}
@@ -1739,7 +1742,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
 const MY_PLAN_SUBJECTS = [
   {
     key:'csp2', name:'CS Paper 2 — Algorithms & Programming', code:'OCR H446/02',
-    date:'2026-06-17', time:'AM', color:'#00E676',
+    date:'2026-06-17', time:'AM', color:'#15803d',
     topics:[
       'Computational thinking: abstraction, decomposition, thinking ahead/procedurally/logically',
       'Programming techniques: recursion, parameters & scope, OOP (classes, inheritance, encapsulation)',
@@ -1755,7 +1758,7 @@ const MY_PLAN_SUBJECTS = [
   },
   {
     key:'stats', name:'Statistics — Maths Paper 3', code:'Edexcel 9MA0/03',
-    date:'2026-06-18', time:'PM', color:'#40C4FF',
+    date:'2026-06-18', time:'PM', color:'#0369a1',
     topics:[
       'Sampling: random, systematic, stratified, quota, opportunity + the Large Data Set',
       'Data presentation: histograms, box plots, cumulative frequency, outliers',
@@ -1769,7 +1772,7 @@ const MY_PLAN_SUBJECTS = [
   },
   {
     key:'mech', name:'Mechanics — Maths Paper 3', code:'Edexcel 9MA0/03',
-    date:'2026-06-18', time:'PM', color:'#FFD600',
+    date:'2026-06-18', time:'PM', color:'#b45309',
     topics:[
       'Kinematics: suvat (constant acceleration) + motion graphs',
       'Kinematics: variable acceleration with calculus + vectors (i, j)',
@@ -1816,15 +1819,15 @@ function MyRevisionPlan() {
     <div style={{maxWidth:1100}}>
       {/* Banner */}
       <div style={{...card,padding:'18px 22px',marginBottom:16,borderColor:'rgba(255,61,0,0.25)'}}>
-        <div style={{fontSize:18,fontWeight:800,color:'#fff',letterSpacing:0.3}}>MISSION: A* — final push 🎯</div>
+        <div style={{fontSize:18,fontWeight:800,color:TXT,letterSpacing:0.3}}>MISSION: final push</div>
         <div style={{fontSize:12,color:MUT,marginTop:6,lineHeight:1.6}}>
           Your three flagged papers, in date order. Relearn fast with active recall + past papers — reading notes alone won’t move the needle. Tick topics as you genuinely master them (you can redo a paper question on it without notes). Progress saves to this browser.
         </div>
         <div style={{display:'flex',alignItems:'center',gap:12,marginTop:14}}>
-          <div style={{flex:1,height:8,background:'rgba(255,255,255,0.06)',borderRadius:4,overflow:'hidden'}}>
-            <div style={{height:'100%',width:`${overallPct}%`,background:overallPct>=70?'#00E676':overallPct>=40?'#FFD600':'#FF9100',transition:'width 0.3s'}}/>
+          <div style={{flex:1,height:8,background:'rgba(0,0,0,0.07)',borderRadius:4,overflow:'hidden'}}>
+            <div style={{height:'100%',width:`${overallPct}%`,background:overallPct>=70?'#15803d':overallPct>=40?'#b45309':'#ea580c',transition:'width 0.3s'}}/>
           </div>
-          <div style={{fontSize:13,fontWeight:800,color:'#fff'}}>{totalDone}/{totalTopics} <span style={{color:DIM,fontWeight:400}}>({overallPct}%)</span></div>
+          <div style={{fontSize:13,fontWeight:800,color:TXT}}>{totalDone}/{totalTopics} <span style={{color:DIM,fontWeight:400}}>({overallPct}%)</span></div>
         </div>
       </div>
 
@@ -1837,7 +1840,7 @@ function MyRevisionPlan() {
               <div style={{fontSize:10,color:MUT,letterSpacing:1.5,textTransform:'uppercase'}}>{s.code}</div>
               <div style={{fontSize:13,fontWeight:700,color:TXT,margin:'4px 0 8px',lineHeight:1.3}}>{s.name.replace(/ —.*/,'')}</div>
               <div style={{display:'flex',alignItems:'baseline',gap:6}}>
-                <span style={{fontSize:30,fontWeight:900,color:d<=3?'#FF3D00':d<=7?'#FF9100':s.color,lineHeight:1}}>{d>0?d:d===0?'TODAY':'—'}</span>
+                <span style={{fontSize:30,fontWeight:900,color:d<=3?'#dc2626':d<=7?'#ea580c':s.color,lineHeight:1}}>{d>0?d:d===0?'TODAY':'—'}</span>
                 {d>0&&<span style={{fontSize:11,color:DIM}}>days</span>}
               </div>
               <div style={{fontSize:11,color:MUT,marginTop:6}}>{fmtLong(s.date)} · {s.time}</div>
@@ -1858,7 +1861,7 @@ function MyRevisionPlan() {
           ].map(([t,b])=>(
             <div key={t} style={{...card,padding:'12px 14px'}}>
               <div style={{fontSize:12,fontWeight:800,color:'#FF6D00',marginBottom:5}}>{t}</div>
-              <div style={{fontSize:11.5,color:'#bbb',lineHeight:1.6}}>{b}</div>
+              <div style={{fontSize:11.5,color:MUT,lineHeight:1.6}}>{b}</div>
             </div>
           ))}
         </div>
@@ -1877,7 +1880,7 @@ function MyRevisionPlan() {
             <div key={s.key} style={{...card,padding:'16px 18px',borderColor:`${s.color}2a`}}>
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
                 <div style={{fontSize:13,fontWeight:800,color:s.color}}>{s.name}</div>
-                <div style={{fontSize:11,fontWeight:700,color:pct===100?'#00E676':MUT}}>{sDone}/{s.topics.length}</div>
+                <div style={{fontSize:11,fontWeight:700,color:pct===100?'#15803d':MUT}}>{sDone}/{s.topics.length}</div>
               </div>
               <div style={{fontSize:10,color:MUT,marginBottom:12}}>{s.code} · {fmtLong(s.date)} · {s.time}</div>
               <div style={{display:'flex',flexDirection:'column',gap:2}}>
@@ -1896,7 +1899,7 @@ function MyRevisionPlan() {
         })}
       </div>
 
-      <div style={{...card,padding:'12px 16px',marginTop:16,fontSize:11,color:DIM,lineHeight:1.7,borderColor:'rgba(255,255,255,0.06)'}}>
+      <div style={{...card,padding:'12px 16px',marginTop:16,fontSize:11,color:DIM,lineHeight:1.7,borderColor:'rgba(0,0,0,0.06)'}}>
         Topic lists are a strong starting point — open your spec/checklist and add anything missing on paper. If you also have <strong style={{color:MUT}}>CS Paper 1 (10 Jun)</strong> and <strong style={{color:MUT}}>Maths Paper 2 (11 Jun)</strong> on your timetable, those come first — slot them into Phase 1. One bad paper does not sink three A*s; consistent daily reps do the opposite. You’ve got this.
       </div>
     </div>
@@ -1946,7 +1949,7 @@ export default function AdminApp() {
   const handleLogout=async()=>{ await supabase.auth.signOut(); setAdminUser(null); setAdminProfile(null); setPhase('login'); };
 
   if (phase==='init') return (
-    <div style={{minHeight:'100vh',background:'#050508',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:mono,color:'#cc4422',fontSize:11,letterSpacing:3}}>
+    <div style={{minHeight:'100vh',background:BG,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:mono,color:ACCENT,fontSize:11,letterSpacing:3}}>
       // INITIALISING SYSTEM...
     </div>
   );
