@@ -5484,9 +5484,9 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
     }
   };
 
-  // Pro payments aren't live yet — capture interest into pro_waitlist instead.
-  // Flip BETA_WAITLIST back to false (or rip this block) once Stripe is live.
-  const BETA_WAITLIST = true;
+  // Stripe is LIVE — real checkout enabled. Set true again to fall back to the
+  // pro_waitlist capture (no charges) if you need to pause monetization.
+  const BETA_WAITLIST = false;
   const [waitlistJoined, setWaitlistJoined] = useState(false);
   useEffect(()=>{
     if (!BETA_WAITLIST || !uid) return;
