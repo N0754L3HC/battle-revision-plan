@@ -7246,7 +7246,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
                     fontFamily:font,cursor:'pointer',fontWeight:500}}>
                   Customise
                 </button>
-                <button onClick={e=>{e.stopPropagation(); isPro?setCompanionChat(true):addToast('Companion chat is a Pro feature — payments are launching soon. Join the waitlist in Account → Settings.','info');}}
+                <button onClick={e=>{e.stopPropagation(); isPro?setCompanionChat(true):addToast('Companion chat is a Pro feature — unlock it in Account → Settings.','info');}}
                   style={{fontSize:10,color:C.accent,background:C.accentSoft,
                     border:`1px solid ${C.accent}44`,borderRadius:5,padding:'3px 8px',
                     fontFamily:font,cursor:'pointer',fontWeight:600}}>
@@ -7395,7 +7395,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
 
       {/* ── Floating companion chat launcher ── */}
       <button
-        onClick={()=> isPro ? setCompanionChat(true) : addToast('Companion chat is a Pro feature — payments are launching soon. Join the waitlist in Account → Settings.','info')}
+        onClick={()=> isPro ? setCompanionChat(true) : addToast('Companion chat is a Pro feature — unlock it in Account → Settings.','info')}
         aria-label={`Chat with ${companion.name}`}
         style={{position:'fixed',bottom:isMobile?84:88,right:isMobile?20:24,zIndex:91,
           display:'flex',alignItems:'center',gap:9,

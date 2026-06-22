@@ -303,13 +303,57 @@ async function callGemini({systemPrompt, contents}) {
   throw lastErr;
 }
 
+// ─── Claude (Anthropic) ─────────────────────────────────────────────────────
+// Preferred when ANTHROPIC_API_KEY is set. Same return shape as callGemini.
+async function callClaude({ systemPrompt, contents }) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const model = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5';
+  // Convert Gemini-style contents → Anthropic messages.
+  const messages = contents.map(c => ({
+    role: c.role === 'model' ? 'assistant' : 'user',
+    content: c.parts.map(p => p.text).filter(Boolean).join('\n'),
+  })).filter(m => m.content);
+  // Anthropic requires the conversation to start with a user turn.
+  while (messages.length && messages[0].role === 'assistant') messages.shift();
+  if (!messages.length) return { reply: null, blocked: true, reason: 'empty_input', model };
+
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({ model, max_tokens: 600, temperature: 0.7, system: systemPrompt, messages }),
+  });
+  if (!r.ok) {
+    const txt = await r.text();
+    const err = new Error(`Claude ${r.status}: ${txt.slice(0, 200)}`);
+    err.status = r.status;
+    err.model = model;
+    throw err;
+  }
+  const d = await r.json();
+  if (d.stop_reason === 'refusal') return { reply: null, blocked: true, reason: 'refusal', model };
+  const text = (d.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+  if (!text) return { reply: null, blocked: true, reason: 'empty', model };
+  return { reply: text, blocked: false, model };
+}
+
+// Dispatch to Claude when configured, otherwise fall back to Gemini. This lets
+// you switch providers by just setting (or removing) ANTHROPIC_API_KEY in env.
+async function callLLM(args) {
+  if (process.env.ANTHROPIC_API_KEY) return callClaude(args);
+  return callGemini(args);
+}
+
 // ─── Handler ───────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const admin = getAdmin();
   if (!admin) return res.status(503).json({ error: 'Server not configured — SUPABASE_URL or SUPABASE_SERVICE_KEY missing in env' });
-  if (!process.env.GEMINI_API_KEY) return res.status(503).json({ error: 'Chat not configured — GEMINI_API_KEY missing in env' });
+  if (!process.env.ANTHROPIC_API_KEY && !process.env.GEMINI_API_KEY) return res.status(503).json({ error: 'Chat not configured — set ANTHROPIC_API_KEY (preferred) or GEMINI_API_KEY in env' });
 
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ?? req.socket?.remoteAddress ?? 'unknown';
   if (!rateLimitIp(ip)) return res.status(429).json({ error: 'Too many requests' });
@@ -385,7 +429,7 @@ export default async function handler(req, res) {
 
   // 5. Call Gemini
   try {
-    const { reply, blocked, reason } = await callGemini({
+    const { reply, blocked, reason } = await callLLM({
       systemPrompt: sys,
       contents: toGeminiContents(trimmed),
     });
@@ -411,10 +455,10 @@ export default async function handler(req, res) {
     console.error('Mascot chat error:', msg);
     // 429 from Gemini = free-tier quota hit on every fallback model. Surface it
     // explicitly so the user knows it's a quota issue and not a server bug.
-    if (err?.status === 429 || /Gemini 429/.test(msg)) {
+    if (err?.status === 429 || /(Gemini|Claude) 429/.test(msg)) {
       return res.status(200).json({
-        reply: "I'm out of free messages from my AI brain for now — Google's rate limit. Wait a minute and try again (or ask the developer to enable billing on the Gemini API key).",
-        meta: { source: 'error', error: 'gemini_quota' },
+        reply: "I'm getting a lot of messages right now and hit a rate limit. Wait a minute and try again.",
+        meta: { source: 'error', error: 'quota' },
       });
     }
     return res.status(200).json({
