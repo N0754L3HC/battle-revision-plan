@@ -37,7 +37,9 @@ function randomCode() {
 }
 
 export default async function handler(req, res) {
-  if (!process.env.SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'Not configured' });
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+    return res.status(503).json({ error: 'Server not configured', missing: { SUPABASE_URL: !process.env.SUPABASE_URL, SUPABASE_SERVICE_KEY: !process.env.SUPABASE_SERVICE_KEY } });
+  }
 
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ?? req.socket?.remoteAddress ?? 'unknown';
   if (!rateLimitIp(ip)) return res.status(429).json({ error: 'Too many requests' });

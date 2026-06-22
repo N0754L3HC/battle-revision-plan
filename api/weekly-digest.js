@@ -133,6 +133,9 @@ function buildHtml({ scores = [], subjects = [], rag = {} }) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   if (!process.env.RESEND_API_KEY) return res.status(503).json({ error: 'Email service not configured' });
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+    return res.status(503).json({ error: 'Server not configured', missing: { SUPABASE_URL: !process.env.SUPABASE_URL, SUPABASE_SERVICE_KEY: !process.env.SUPABASE_SERVICE_KEY } });
+  }
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ?? req.socket?.remoteAddress ?? 'unknown';
   if (!rateLimit(ip)) return res.status(429).json({ error: 'Too many requests — try again later' });
 
