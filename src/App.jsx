@@ -5624,7 +5624,9 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
             <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginTop:10,marginBottom:14}}>
               {BETA_WAITLIST
                 ? "Pro isn't quite ready yet — payments aren't live during the beta. Join the waitlist and you'll be the first to know when it launches."
-                : "Upgrade to Pro to unlock email reports, companion chat, and more — supporting ongoing development."}
+                : (stripeCustomerId
+                    ? "Upgrade to Pro to unlock email reports, AI companion chat, and more."
+                    : "Try Pro free for 3 days — email reports, AI companion chat, and more. A card is required; cancel anytime before day 3 and you won't be charged. £4.99/mo after.")}
             </div>
             <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:14}}>
               {['Email exam schedule & weekly digest','Companion chat','Priority feature access'].map(f=>(
@@ -5645,7 +5647,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
                 cursor:upgrading||!user||(BETA_WAITLIST&&waitlistJoined)?'not-allowed':'pointer',transition:'background 0.15s'}}>
               {BETA_WAITLIST
                 ? (waitlistJoined ? "✓ You're on the waitlist" : (upgrading ? 'Adding you…' : 'Join the Pro waitlist'))
-                : (upgrading?'Redirecting to checkout…':'Upgrade to Pro — £4.99/mo')}
+                : (upgrading ? 'Redirecting to checkout…' : (stripeCustomerId ? 'Upgrade to Pro — £4.99/mo' : 'Start 3-day free trial'))}
             </button>
           </>
         )}

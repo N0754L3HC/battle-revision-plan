@@ -8,6 +8,7 @@ let _stripe;
 const getStripe = () => (_stripe ??= new Stripe(process.env.STRIPE_SECRET_KEY));
 const PRO_PRICE_ID = process.env.STRIPE_PRO_PRICE_ID;
 const APP_URL = process.env.APP_URL ?? 'https://beattheexam.org';
+const TRIAL_DAYS = parseInt(process.env.TRIAL_DAYS ?? '3', 10);
 
 const admin = createClient(
   process.env.SUPABASE_URL ?? '',
@@ -83,7 +84,16 @@ export default async function handler(req, res) {
       cancel_url: `${APP_URL}/account`,
       client_reference_id: userId,
       metadata: { userId },
-      subscription_data: { metadata: { userId } },
+      subscription_data: {
+        metadata: { userId },
+        // First-time subscribers get a card-required free trial. Returning
+        // customers (already have a Stripe customer on file) do NOT — one trial
+        // per person, and the required card on file blocks trial-farming via
+        // throwaway accounts.
+        ...(!customerId && TRIAL_DAYS > 0 ? { trial_period_days: TRIAL_DAYS } : {}),
+      },
+      // Always collect a card, even for the trial (this is the anti-farm).
+      payment_method_collection: 'always',
       allow_promotion_codes: true,
     };
 
