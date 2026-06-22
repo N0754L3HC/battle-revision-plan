@@ -54,28 +54,27 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
     return token;
   };
 
+  const callGroups = (token, method, body) => fetch('/api/groups', {
+    method,
+    cache: 'no-store',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+
   const apiFetch = useCallback(async (method, body) => {
     const token = await getToken();
     if (!token) return { error: 'Please sign in to use groups' };
-    let r = await fetch('/api/groups', {
-      method,
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      ...(body ? { body: JSON.stringify(body) } : {}),
-    });
-    // One automatic retry on 401 with a freshly refreshed token (covers a token
+    let r = await callGroups(token, method, body);
+    // One automatic retry on 401 with a force-refreshed token (covers a token
     // that expired between fetch and server validation).
     if (r.status === 401) {
       const { data } = await supabase.auth.refreshSession();
       const fresh = data?.session?.access_token;
-      if (fresh && fresh !== token) {
-        r = await fetch('/api/groups', {
-          method,
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${fresh}` },
-          ...(body ? { body: JSON.stringify(body) } : {}),
-        });
-      }
+      if (fresh) r = await callGroups(fresh, method, body);
     }
-    return r.json();
+    if (r.status === 401) return { error: 'Your session expired — please sign out and back in.' };
+    try { return await r.json(); }
+    catch { return { error: `Something went wrong (HTTP ${r.status}).` }; }
   }, []);
 
   const load = useCallback(async () => {

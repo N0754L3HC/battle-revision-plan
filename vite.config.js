@@ -24,14 +24,23 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-        navigateFallbackDenylist: [/^\/hq/],
+        navigateFallbackDenylist: [/^\/hq/, /^\/api\//],
         skipWaiting: true,
         clientsClaim: true,
-        runtimeCaching: [{
-          urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-          handler: 'NetworkFirst',
-          options: { cacheName: 'supabase-cache', networkTimeoutSeconds: 10 }
-        }]
+        cleanupOutdatedCaches: true,
+        runtimeCaching: [
+          {
+            // API calls must ALWAYS hit the network — never serve a cached
+            // (e.g. stale 401) response for authenticated endpoints.
+            urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
+            handler: 'NetworkOnly',
+          },
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+            handler: 'NetworkFirst',
+            options: { cacheName: 'supabase-cache', networkTimeoutSeconds: 10 }
+          }
+        ]
       }
     })
   ],
