@@ -2473,17 +2473,63 @@ function _inlineMd(s){
     .replace(/\*\*([^\n]+?)\*\*/g,'<strong>$1</strong>')
     .replace(/(^|[^*])\*([^*\n]+?)\*(?!\*)/g,'$1<em>$2</em>');
 }
+// Draw a simple chart from a JSON spec as inline SVG (no dependency). Supports
+// line / scatter (series of [x,y] points) and bar (categories + values) — enough
+// for econ supply&demand, biology results, physics, geography data.
+function _renderChart(raw){
+  let spec; try{ spec=JSON.parse(raw); }catch{ return null; }
+  if(!spec||typeof spec!=='object') return null;
+  const fin=n=>Number.isFinite(n);
+  const type=(spec.type||'line').toLowerCase();
+  const W=560,H=260, pad={l:52,r:18,t:spec.title?30:16,b:46};
+  const iw=W-pad.l-pad.r, ih=H-pad.t-pad.b;
+  const COL=i=>['#b5735a','#0369a1','#15803d','#a855f7','#d97706','#dc2626'][i%6];
+  const T=(x,y,t,o={})=>`<text x="${x}" y="${y}" font-size="${o.s||11}" fill="${o.c||'#999'}" text-anchor="${o.a||'middle'}"${o.w?` font-weight="${o.w}"`:''} font-family="system-ui,sans-serif">${_escHtml(t)}</text>`;
+  let svg='';
+  try{
+    if(type==='bar'){
+      const cats=Array.isArray(spec.categories)?spec.categories:[];
+      const series=Array.isArray(spec.series)?spec.series:[];
+      const vals=series.flatMap(s=>(s.values||[]).map(Number)).filter(fin);
+      if(!cats.length||!vals.length) return null;
+      let max=Math.max(0,...vals),min=Math.min(0,...vals); if(max===min)max=min+1;
+      const x0=pad.l,y0=pad.t+ih,gw=iw/cats.length,bw=Math.min(gw*0.7/Math.max(1,series.length),46);
+      for(let k=0;k<=4;k++){ const v=min+(max-min)*k/4,y=y0-(v-min)/(max-min)*ih; svg+=`<line x1="${x0}" y1="${y}" x2="${x0+iw}" y2="${y}" stroke="rgba(127,127,127,0.14)"/>`+T(x0-6,y+3,Math.round(v*100)/100,{a:'end'}); }
+      cats.forEach((c,ci)=>{ series.forEach((s,si)=>{ const v=Number((s.values||[])[ci]); if(!fin(v))return; const h=(v-min)/(max-min)*ih; const bx=x0+ci*gw+gw/2-(series.length*bw)/2+si*bw; svg+=`<rect x="${bx}" y="${y0-Math.max(0,h)}" width="${bw-2}" height="${Math.abs(h)}" fill="${COL(si)}" rx="2"/>`; }); svg+=T(x0+ci*gw+gw/2,y0+16,c,{s:10}); });
+    } else {
+      const series=Array.isArray(spec.series)?spec.series:[];
+      const pts=series.flatMap(s=>(s.points||[])).filter(p=>Array.isArray(p)&&fin(+p[0])&&fin(+p[1]));
+      if(!pts.length) return null;
+      const xs=pts.map(p=>+p[0]),ys=pts.map(p=>+p[1]);
+      let xmin=Math.min(...xs),xmax=Math.max(...xs),ymin=Math.min(...ys),ymax=Math.max(...ys);
+      if(xmin===xmax)xmax=xmin+1; if(ymin===ymax)ymax=ymin+1;
+      const X=x=>pad.l+(x-xmin)/(xmax-xmin)*iw, Y=y=>pad.t+ih-(y-ymin)/(ymax-ymin)*ih;
+      for(let k=0;k<=4;k++){ const gy=pad.t+ih*k/4,v=ymax-(ymax-ymin)*k/4; svg+=`<line x1="${pad.l}" y1="${gy}" x2="${pad.l+iw}" y2="${gy}" stroke="rgba(127,127,127,0.12)"/>`+T(pad.l-6,gy+3,Math.round(v*100)/100,{a:'end'}); }
+      for(let k=0;k<=4;k++){ const gx=pad.l+iw*k/4,v=xmin+(xmax-xmin)*k/4; svg+=T(gx,pad.t+ih+16,Math.round(v*100)/100,{s:10}); }
+      series.forEach((s,si)=>{ const ps=(s.points||[]).filter(p=>Array.isArray(p)&&fin(+p[0])&&fin(+p[1])).map(p=>[X(+p[0]),Y(+p[1])]);
+        if(type!=='scatter'&&ps.length>1) svg+=`<polyline points="${ps.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}" fill="none" stroke="${COL(si)}" stroke-width="2"/>`;
+        ps.forEach(p=>{ svg+=`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${type==='scatter'?2.6:2}" fill="${COL(si)}"/>`; }); });
+    }
+    svg+=`<line x1="${pad.l}" y1="${pad.t}" x2="${pad.l}" y2="${pad.t+ih}" stroke="rgba(127,127,127,0.5)"/><line x1="${pad.l}" y1="${pad.t+ih}" x2="${pad.l+iw}" y2="${pad.t+ih}" stroke="rgba(127,127,127,0.5)"/>`;
+    if(spec.title) svg=T(W/2,18,spec.title,{s:13,c:'currentColor',w:700})+svg;
+    if(spec.xLabel) svg+=T(pad.l+iw/2,H-6,spec.xLabel,{s:11});
+    if(spec.yLabel) svg+=`<text x="14" y="${pad.t+ih/2}" font-size="11" fill="#999" text-anchor="middle" font-family="system-ui,sans-serif" transform="rotate(-90 14 ${pad.t+ih/2})">${_escHtml(spec.yLabel)}</text>`;
+    const names=(spec.series||[]).map(s=>s.name).filter(Boolean);
+    const legend=names.length>1?'<div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:2px">'+names.map((n,i)=>`<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#888"><span style="width:10px;height:10px;border-radius:2px;background:${COL(i)};display:inline-block"></span>${_escHtml(n)}</span>`).join('')+'</div>':'';
+    return `<div style="margin:10px 0"><svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:auto;display:block">${svg}</svg>${legend}</div>`;
+  }catch{ return null; }
+}
 // Full renderer: markdown (bold/italic/code/headings/bullets/rule/TABLES) +
-// fenced CODE blocks (highlighted) + LaTeX. So Caps's replies and the marker's
-// feedback render cleanly across subjects — maths in LaTeX, CS in code blocks,
-// accounting/economics in tables — instead of raw symbols.
+// fenced CODE blocks (highlighted) + CHARTS (```chart JSON) + LaTeX. So Caps's
+// replies and the marker's feedback render cleanly across subjects.
 function _renderRich(text,katex,hljs){
   const parts=[]; const blockIdx=new Set();
   const stash=(html,block)=>{ parts.push(html); if(block) blockIdx.add(parts.length-1); return '[[RB:'+(parts.length-1)+']]'; };
   let t=String(text??'');
 
-  // 1) fenced code blocks ```lang … ```
+  // 1) fenced code blocks ```lang … ``` (and ```chart JSON → SVG graph)
   t=t.replace(/```([a-zA-Z0-9+#._-]*)\n?([\s\S]*?)```/g,(m,lang,code)=>{
+    if(/^(chart|graph)$/i.test(lang||'')){ const c=_renderChart(code.trim()); if(c) return stash(c,true); }
     code=code.replace(/\n+$/,'');
     let inner;
     if(hljs){

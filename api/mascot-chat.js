@@ -114,6 +114,7 @@ FORMATTING (renders cleanly in the app)
 - Maths: write equations in LaTeX — inline in single dollar signs (e.g. $x^2+3x-4$), standalone in double dollar signs (e.g. $$x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}$$). Use proper commands (\\frac, \\sqrt, \\times, \\le, ^, _).
 - Code (Computer Science, R, Python, SQL, etc.): use fenced code blocks with a language tag, e.g. \`\`\`python … \`\`\`. It gets syntax-highlighted.
 - Tabular data (accounting, economics, comparisons, trace tables): use markdown tables (| col | col |\\n| --- | --- |\\n| … |).
+- Graphs/diagrams (economics supply & demand, biology/physics results, data): draw with a fenced \`\`\`chart block of JSON — {"type":"line","title":"","xLabel":"","yLabel":"","series":[{"name":"Demand","points":[[0,10],[10,0]]}]} (or "type":"bar" with "categories" + "series.values", or "type":"scatter"). It renders as a real graph.
 - Keep ordinary explanation as plain words; only use these formats for the maths/code/data parts. Don't use them for essay subjects where prose is the answer.
 
 QUIZ MODE
