@@ -87,6 +87,7 @@ ADAPT TO THE SUBJECT — mark in that subject's exam conventions (work out the s
 - Write ALL mathematics in LaTeX so it renders beautifully: wrap inline maths in single dollar signs (e.g. $x^2+3x-4$) and standalone/displayed equations in double dollar signs (e.g. $$\\int_0^1 x^2\\,dx = \\tfrac{1}{3}$$). Use proper LaTeX commands (\\frac, \\sqrt, \\times, \\le, ^, _, etc.). Apply this in questionText, yourWorking text, modelWorking, feedback, fix and summary. Keep ordinary words as plain English OUTSIDE the dollar signs — only the maths goes in LaTeX. (Remember this is JSON, so every LaTeX backslash must be escaped as \\\\.)
 - Spot recurring mistake patterns (e.g. "unit errors", "didn't show working", "sign error", "misread the command word") so the student can see their habits.
 - Do NOT do the student's coursework/NEA. This is past-paper feedback only.
+- LENGTH: cover EVERY question, but keep each one tight so the whole paper fits in one response — model answers to the essential marking points only, feedback 1-2 sentences. Briefly covering all questions beats exhaustively detailing a few and getting cut off. (This matters most for blank/whole-paper walkthroughs.)
 
 OUTPUT — return ONLY a single JSON object, no prose around it:
 {
@@ -139,9 +140,10 @@ async function callClaudeMark({ userBlocks, model }) {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({
-      // Generous output budget — transcribing working for lost-mark questions is
-      // verbose, and a truncated reply can't be parsed as JSON.
-      model, max_tokens: 16000, temperature: 0.2,
+      // Generous output budget — a full-paper walkthrough (esp. a blank paper
+      // where every answer is modelled) is long, and a truncated reply can't be
+      // parsed as JSON.
+      model, max_tokens: 24000, temperature: 0.2,
       // Cache the long system prompt so repeat marks pay ~90% less for it.
       system: [{ type: 'text', text: MARK_SYSTEM, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: userBlocks }],
@@ -155,7 +157,7 @@ async function callClaudeMark({ userBlocks, model }) {
   }
   const d = await r.json();
   const text = (d.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
-  return { text, usage: d.usage };
+  return { text, usage: d.usage, truncated: d.stop_reason === 'max_tokens' };
 }
 
 // Pull the first JSON object out of the model's reply, defensively.
@@ -318,7 +320,7 @@ export default async function handler(req, res) {
     // students. Cost is held down by prompt caching + only transcribing working
     // on lost-mark questions, not by downgrading the model.
     const model = process.env.ANTHROPIC_MODEL_MARK || 'claude-sonnet-4-6';
-    const { text, usage } = await callClaudeMark({ userBlocks: blocks, model });
+    const { text, usage, truncated } = await callClaudeMark({ userBlocks: blocks, model });
     await logAiUsage(admin, { uid, feature: 'marker', model, usageRaw: usage });
     const result = parseResult(text);
     if (!result) {
@@ -333,6 +335,20 @@ export default async function handler(req, res) {
         });
       }
       return res.status(502).json({ error: 'Caps couldn’t produce feedback this time — please try again in a moment.' });
+    }
+
+    // Drop any half-written trailing question from a truncated reply so the UI
+    // never shows a broken stub card.
+    if (Array.isArray(result.questions)) {
+      result.questions = result.questions.filter(q => q && (
+        q.feedback || (Array.isArray(q.modelWorking) && q.modelWorking.length)
+        || (Array.isArray(q.yourWorking) && q.yourWorking.length) || q.available != null));
+      // If the response hit the token ceiling, tell the student gently rather
+      // than silently stopping mid-paper.
+      if (truncated && result.questions.length) {
+        result.summary = (result.summary || '') +
+          `\n\n_Heads up: this paper was long, so the walkthrough stops after ${result.questions.length} question${result.questions.length === 1 ? '' : 's'}. Upload a few questions at a time to get the full set._`;
+      }
     }
 
     // Build ready-to-Apply actions (client confirms before anything is written),
