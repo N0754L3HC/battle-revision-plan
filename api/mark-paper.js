@@ -1,5 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 
+// A detailed mark of a long paper can take a while — give the function room so it
+// doesn't time out mid-generation (Vercel clamps to the plan's max).
+export const maxDuration = 300;
+
 // Lazy init so missing env vars surface as a clean 503, not a module-load crash.
 let _admin = null;
 function getAdmin() {

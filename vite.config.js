@@ -24,6 +24,10 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        // Don't precache the heavy, on-demand libs (KaTeX maths, pdf.js page
+        // counting, mammoth .docx) — they'd bloat first load for everyone. They
+        // load lazily and are runtime-cached after first use instead.
+        globIgnores: ['**/katex-*.js', '**/pdf-*.js', '**/mammoth*.js'],
         navigateFallbackDenylist: [/^\/hq/, /^\/api\//],
         skipWaiting: true,
         clientsClaim: true,
@@ -34,6 +38,12 @@ export default defineConfig({
             // (e.g. stale 401) response for authenticated endpoints.
             urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
             handler: 'NetworkOnly',
+          },
+          {
+            // Heavy lazy libs + their fonts: cache on first use, fast after.
+            urlPattern: ({ url }) => /\/assets\/(katex|pdf|mammoth)[-.].*\.js$/.test(url.pathname) || /\.(woff2?|ttf)$/i.test(url.pathname),
+            handler: 'CacheFirst',
+            options: { cacheName: 'heavy-libs', expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 * 30 } }
           },
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,

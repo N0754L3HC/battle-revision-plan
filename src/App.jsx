@@ -2419,13 +2419,8 @@ function loadKatex(){
   if(_katex) return Promise.resolve(_katex);
   if(_katexPromise) return _katexPromise;
   _katexPromise=(async()=>{
-    if(typeof document!=='undefined'&&!document.getElementById('katex-css')){
-      const l=document.createElement('link');
-      l.id='katex-css'; l.rel='stylesheet';
-      l.href='https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css';
-      document.head.appendChild(l);
-    }
-    const m=await import(/* @vite-ignore */ 'https://esm.sh/katex@0.16.11');
+    await import('katex/dist/katex.min.css'); // bundled & served from our origin (CSP-safe)
+    const m=await import('katex');
     _katex=m.default||m; return _katex;
   })();
   return _katexPromise;
@@ -2477,6 +2472,8 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
   const [logged,setLogged]=useState(false);
   const [showConfirm,setShowConfirm]=useState(false); // centred "log this?" popup
   const [stage,setStage]=useState(0);
+  const [elapsed,setElapsed]=useState(0);   // seconds since marking began
+  const [estSecs,setEstSecs]=useState(null); // rough estimate based on page count
   const MARK_STAGES=[
     'Reading the questions…',
     'Looking at your answers…',
@@ -2497,8 +2494,9 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
   const countPdfPages=async(file)=>{
     try{
       if(!pdfjsRef.current){
-        const lib=await import(/* @vite-ignore */ 'https://esm.sh/pdfjs-dist@4.7.76/build/pdf.min.mjs');
-        lib.GlobalWorkerOptions.workerSrc='https://esm.sh/pdfjs-dist@4.7.76/build/pdf.worker.min.mjs';
+        const lib=await import('pdfjs-dist');
+        const workerUrl=(await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default;
+        lib.GlobalWorkerOptions.workerSrc=workerUrl;
         pdfjsRef.current=lib;
       }
       const buf=await file.arrayBuffer();
@@ -2537,7 +2535,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
       } else if (isDocx){
         try{
           const arrayBuffer=await f.arrayBuffer();
-          const m=await import(/* @vite-ignore */ 'https://esm.sh/mammoth@1.6.0?bundle');
+          const m=await import('mammoth/mammoth.browser.js');
           const extract=m.extractRawText||m.default?.extractRawText;
           const {value}=await extract({arrayBuffer});
           const text=(value||'').trim();
@@ -2575,12 +2573,17 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
     if(!att.length&&!answersText.trim()){setErr('Add a photo, PDF or Word file of your answers — or type them.');return;}
     const totalPages=[...att,...msAtt].reduce((s,a)=>s+(a.pages||1),0);
     if(totalPages>MAX_PAGES){setErr(`That's ${totalPages} pages in total — the marker takes up to ${MAX_PAGES} at once. Mark one paper at a time, or remove some files.`);return;}
-    setBusy(true); setStage(0);
+    setBusy(true); setStage(0); setElapsed(0);
+    // Rough ETA so students know what to expect: a few seconds of overhead plus
+    // ~2s per page of detailed marking (capped). Detailed marking is slower.
+    setEstSecs(Math.min(120, 10 + Math.round(totalPages*2)));
+    const t0=Date.now();
+    const et=setInterval(()=>setElapsed(Math.round((Date.now()-t0)/1000)),1000);
     // Advance the status messages so the wait feels alive (the API isn't staged;
     // this is purely reassurance so users don't think it froze). Holds on the
     // last stage until the real response lands.
     let s=0;
-    const iv=setInterval(()=>{ s=Math.min(s+1,MARK_STAGES.length-1); setStage(s); }, 1700);
+    const iv=setInterval(()=>{ s=Math.min(s+1,MARK_STAGES.length-1); setStage(s); }, 2200);
     try{
       const {data:{session}}=await supabase.auth.getSession();
       const token=session?.access_token;
@@ -2597,7 +2600,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
       setResult(d.result); setActions(d.actions||[]);
       if((d.actions||[]).length>0) setShowConfirm(true); // surface the log prompt front-and-centre
     }catch(e){setErr(e.message);}
-    clearInterval(iv);
+    clearInterval(iv); clearInterval(et);
     setBusy(false);
   };
 
@@ -2723,11 +2726,16 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
                   <span style={{fontSize:13.5,fontWeight:700,color:C.text}}>{MARK_STAGES[stage]}</span>
                 </div>
                 <div style={{height:6,background:C.surface,borderRadius:3,overflow:'hidden'}}>
-                  <div style={{height:'100%',width:`${Math.round(((stage+1)/MARK_STAGES.length)*100)}%`,
+                  <div style={{height:'100%',width:`${estSecs?Math.min(96,Math.round((elapsed/estSecs)*100)):Math.round(((stage+1)/MARK_STAGES.length)*100)}%`,
                     background:C.accent,borderRadius:3,transition:'width 0.6s ease'}}/>
                 </div>
-                <div style={{fontSize:11,color:C.subtle,marginTop:8,lineHeight:1.5}}>
-                  Caps is marking your paper — this usually takes 10–30 seconds. Hang tight.
+                <div style={{display:'flex',justifyContent:'space-between',gap:8,fontSize:11,color:C.subtle,marginTop:8,lineHeight:1.5}}>
+                  <span>
+                    {elapsed<3?'Caps is reading your paper…'
+                      :estSecs&&elapsed>estSecs+8?'Almost there — a detailed mark is worth the wait.'
+                      :`Marking in detail${estSecs?` — about ${estSecs}s for this paper`:''}.`}
+                  </span>
+                  <span style={{flexShrink:0,fontVariantNumeric:'tabular-nums',color:C.muted}}>{elapsed}s</span>
                 </div>
               </div>
             ) : (
@@ -3056,7 +3064,7 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
                 background:m.from==='user'?C.accent:C.card2,
                 color:m.from==='user'?'#fff':C.text,
                 fontSize:13,lineHeight:1.6,whiteSpace:'pre-wrap'}}>
-                {m.text}
+                <MathText>{m.text}</MathText>
               </div>
               {Array.isArray(m.actions)&&m.actions.length>0&&(
                 <div style={{width:'100%',maxWidth:'92%',display:'flex',flexDirection:'column',gap:6}}>
