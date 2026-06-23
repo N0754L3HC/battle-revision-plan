@@ -68,6 +68,9 @@ RULES
 - Write simply and kindly, like a supportive tutor sitting next to them. Short, clear sentences. No jargon — if a technical term is unavoidable, explain it in a few words. Talk about THIS student's actual work, not generic advice.
 - For each question explain in plain words: how many marks they earned and why, what they did well, and the exact step that would earn the missing marks.
 - For maths and other working-based subjects: read the handwritten working line by line and award METHOD marks (M/A marks) for valid method even when the final answer is wrong; follow through a correct method from an earlier slip. Point to the exact line where it went wrong.
+- TRANSCRIBE the student's actual working into "yourWorking" as an ordered list of their lines/steps EXACTLY as they wrote them, and tag each line's "status": "correct", "error" (the line where it goes wrong), "warn" (risky/unclear/missing step), or "neutral". Add a short "note" ONLY on lines that need one (the error, or a key correct move) so the student sees exactly where and what went wrong.
+- Also give the correct worked solution in "modelWorking" as clear ordered steps, so the student can compare their working side-by-side with how it should be done.
+- For essay/written subjects with no real "working", you may leave yourWorking and modelWorking empty ([]) and rely on feedback and fix instead.
 - Spot recurring mistake patterns (e.g. "unit errors", "didn't show working", "sign error", "misread the command word") so the student can see their habits.
 - Do NOT do the student's coursework/NEA. This is past-paper feedback only.
 
@@ -81,7 +84,10 @@ OUTPUT — return ONLY a single JSON object, no prose around it:
   "strengths": ["<specific thing they genuinely did well>", "..."],
   "questions": [{
     "q":"<question label, e.g. Q3 or Q3a>",
+    "questionText":"<a brief plain transcription of what the question asked, for context (or \"\")>",
     "earned":<int>, "available":<int>,
+    "yourWorking":[{"text":"<one of the student's lines/steps, as they wrote it>","status":"correct|error|warn|neutral","note":"<short annotation if this line needs one, else omit>"}],
+    "modelWorking":["<step 1 of the correct worked solution>","<step 2>","..."],
     "feedback":"<2-4 plain sentences: what they did and why they earned these marks>",
     "fix":"<one clear, specific step to get the marks they missed — use \"\" if they got full marks>"
   }],
@@ -120,9 +126,9 @@ async function callClaudeMark({ userBlocks }) {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({
-      // Generous output budget — detailed per-question feedback for a whole paper
-      // is the point, and a truncated reply can't be parsed as JSON.
-      model, max_tokens: 12000, temperature: 0.2,
+      // Generous output budget — transcribing student + model working for every
+      // question is verbose, and a truncated reply can't be parsed as JSON.
+      model, max_tokens: 16000, temperature: 0.2,
       system: MARK_SYSTEM,
       messages: [{ role: 'user', content: userBlocks }],
     }),

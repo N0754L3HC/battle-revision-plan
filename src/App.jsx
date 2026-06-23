@@ -2599,7 +2599,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
   return (<>
     <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:300,background:'rgba(0,0,0,0.5)',
       display:'flex',alignItems:'flex-start',justifyContent:'center',overflowY:'auto',padding:'24px 12px'}}>
-      <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:560,background:C.bg,
+      <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:result?720:560,background:C.bg,
         border:`1px solid ${C.border}`,borderRadius:16,padding:'20px',animation:'rbp-pop 0.2s ease'}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4}}>
           <div style={{fontSize:17,fontWeight:800,color:C.text}}>Mark a past paper</div>
@@ -2724,7 +2724,13 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
 
             {Array.isArray(result.questions)&&result.questions.length>0&&(
               <div style={{marginBottom:16}}>
-                <div style={{...labelStyle,marginBottom:8}}>Question by question</div>
+                <div style={{...labelStyle,marginBottom:6}}>Question by question</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:12,marginBottom:9,fontSize:11,color:C.muted}}>
+                  <span><b style={{color:C.success||'#22c55e'}}>✓</b> correct</span>
+                  <span><b style={{color:C.danger||'#ef4444'}}>✗</b> where it went wrong</span>
+                  <span><b style={{color:'#f59e0b'}}>!</b> needs care</span>
+                  <span><b style={{color:C.accent}}>↳</b> Caps's note</span>
+                </div>
                 <div style={{display:'flex',flexDirection:'column',gap:10}}>
                   {result.questions.slice(0,60).map((q,i)=>{
                     const hasMarks=q.earned!=null&&q.available!=null;
@@ -2740,6 +2746,40 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
                               background:badge,borderRadius:20,padding:'2px 10px',whiteSpace:'nowrap'}}>{q.earned}/{q.available} marks</span>
                           )}
                         </div>
+                        {q.questionText&&<div style={{fontSize:12,color:C.muted,fontStyle:'italic',lineHeight:1.5,marginBottom:9}}>{q.questionText}</div>}
+                        {((Array.isArray(q.yourWorking)&&q.yourWorking.length>0)||(Array.isArray(q.modelWorking)&&q.modelWorking.length>0))&&(
+                          <div style={{display:'flex',flexWrap:'wrap',gap:10,marginBottom:(q.feedback||q.fix)?9:0}}>
+                            {Array.isArray(q.yourWorking)&&q.yourWorking.length>0&&(
+                              <div style={{flex:'1 1 230px',minWidth:0,background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:'9px 11px'}}>
+                                <div style={{fontSize:10.5,fontWeight:800,color:C.muted,textTransform:'uppercase',letterSpacing:0.4,marginBottom:7}}>Your working</div>
+                                {q.yourWorking.map((ln,j)=>{
+                                  const col=ln.status==='correct'?(C.success||'#22c55e'):ln.status==='error'?(C.danger||'#ef4444'):ln.status==='warn'?'#f59e0b':C.text;
+                                  const mark=ln.status==='correct'?'✓':ln.status==='error'?'✗':ln.status==='warn'?'!':'·';
+                                  return (
+                                    <div key={j} style={{marginBottom:6}}>
+                                      <div style={{display:'flex',gap:6,alignItems:'baseline'}}>
+                                        <span style={{flexShrink:0,fontSize:11.5,color:col,fontWeight:800,width:10,textAlign:'center'}}>{mark}</span>
+                                        <span style={{fontFamily:'ui-monospace,Menlo,Consolas,monospace',fontSize:12.5,color:col,lineHeight:1.5,wordBreak:'break-word'}}>{ln.text}</span>
+                                      </div>
+                                      {ln.note&&<div style={{fontSize:11.5,color:C.accent,lineHeight:1.45,marginLeft:16,marginTop:1}}>↳ {ln.note}</div>}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            {Array.isArray(q.modelWorking)&&q.modelWorking.length>0&&(
+                              <div style={{flex:'1 1 230px',minWidth:0,background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:'9px 11px'}}>
+                                <div style={{fontSize:10.5,fontWeight:800,color:C.muted,textTransform:'uppercase',letterSpacing:0.4,marginBottom:7}}>Worked solution</div>
+                                {q.modelWorking.map((ln,j)=>(
+                                  <div key={j} style={{display:'flex',gap:6,marginBottom:5,alignItems:'baseline'}}>
+                                    <span style={{flexShrink:0,fontSize:11,color:C.muted,fontWeight:700,width:14,textAlign:'right'}}>{j+1}.</span>
+                                    <span style={{fontFamily:'ui-monospace,Menlo,Consolas,monospace',fontSize:12.5,color:C.text,lineHeight:1.5,wordBreak:'break-word'}}>{ln}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
                         {q.feedback&&<div style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:q.fix?8:0}}>{q.feedback}</div>}
                         {q.fix&&(
                           <div style={{display:'flex',gap:7,fontSize:12.5,lineHeight:1.55,
