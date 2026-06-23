@@ -71,6 +71,7 @@ RULES
 
 OUTPUT — return ONLY a single JSON object, no prose around it:
 {
+  "paperName": "<short label for THIS paper, read from the paper itself if a title/code/date is visible (e.g. 'Edexcel Maths Paper 1, June 2022'); otherwise a sensible default like '<subject> practice paper'. Max 60 chars.>",
   "estimatedPercent": <int 0-100>,
   "estimatedGrade": "<board-appropriate grade or null>",
   "confidence": "low|medium|high",
@@ -305,7 +306,12 @@ export default async function handler(req, res) {
     // reusing the same caps-actions shapes the rest of the app already applies.
     const pct = Math.max(0, Math.min(100, parseInt(result.estimatedPercent, 10) || 0));
     const actions = [];
-    actions.push({ type: 'log_paper', subject, board, paperCode: paperCode || null, pct, grade: result.estimatedGrade || null });
+    // Prefer what the student typed; else the name Caps read off the paper; else
+    // let the client fall back to a dated label. So a paper is always named.
+    const resolvedPaper = (paperCode && String(paperCode).trim())
+      || (result.paperName && String(result.paperName).trim().slice(0, 80))
+      || null;
+    actions.push({ type: 'log_paper', subject, board, paperCode: resolvedPaper, pct, grade: result.estimatedGrade || null });
     for (const e of (Array.isArray(result.errors) ? result.errors : []).slice(0, 12)) {
       if (e && (e.topic || e.note)) actions.push({ type: 'log_error', subject, topic: String(e.topic || '').slice(0, 80), errorType: String(e.type || '').slice(0, 40), note: String(e.note || '').slice(0, 160) });
     }

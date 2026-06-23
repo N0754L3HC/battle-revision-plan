@@ -2427,6 +2427,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
   const [result,setResult]=useState(null);
   const [actions,setActions]=useState([]);
   const [logged,setLogged]=useState(false);
+  const [showConfirm,setShowConfirm]=useState(false); // centred "log this?" popup
   const [stage,setStage]=useState(0);
   const MARK_STAGES=[
     'Reading the questions…',
@@ -2546,6 +2547,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
       const d=await r.json();
       if(!r.ok||d.error) throw new Error(d.error||'Marking failed');
       setResult(d.result); setActions(d.actions||[]);
+      if((d.actions||[]).length>0) setShowConfirm(true); // surface the log prompt front-and-centre
     }catch(e){setErr(e.message);}
     clearInterval(iv);
     setBusy(false);
@@ -2553,9 +2555,11 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
 
   const confirmLog=()=>{
     let ok=0; actions.forEach(a=>{const res=applyAction(a); if(res?.ok) ok++;});
-    setLogged(true);
+    setLogged(true); setShowConfirm(false);
     addToast(`Logged ${ok} item${ok===1?'':'s'} to your tracker & plan.`,'success');
   };
+  // The name this paper will be saved under (student's entry → Caps's read → dated default).
+  const paperLabel=(paperCode&&paperCode.trim())||result?.paperName||`Marked paper ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`;
 
   const inputStyle={width:'100%',padding:'9px 11px',background:C.card2,border:`1px solid ${C.border}`,
     borderRadius:8,color:C.text,fontSize:13,fontFamily:font,boxSizing:'border-box'};
@@ -2592,7 +2596,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
     </div>
   ) : null;
 
-  return (
+  return (<>
     <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:300,background:'rgba(0,0,0,0.5)',
       display:'flex',alignItems:'flex-start',justifyContent:'center',overflowY:'auto',padding:'24px 12px'}}>
       <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:560,background:C.bg,
@@ -2754,7 +2758,46 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
         )}
       </div>
     </div>
-  );
+
+    {showConfirm&&result&&actions.length>0&&!logged&&(()=>{
+      const p=actions.filter(a=>a.type==='log_paper').length;
+      const e=actions.filter(a=>a.type==='log_error').length;
+      const t=actions.filter(a=>a.type==='add_plan_task').length;
+      return (
+        <div onClick={()=>setShowConfirm(false)} style={{position:'fixed',inset:0,zIndex:360,background:'rgba(0,0,0,0.55)',
+          display:'flex',alignItems:'center',justifyContent:'center',padding:'24px 16px'}}>
+          <div onClick={ev=>ev.stopPropagation()} style={{width:'100%',maxWidth:400,background:C.bg,
+            border:`1px solid ${C.border}`,borderRadius:18,padding:'22px',animation:'rbp-pop 0.2s ease',
+            boxShadow:'0 20px 60px rgba(0,0,0,0.35)'}}>
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+              <div style={{width:38,height:38,borderRadius:11,background:C.accentSoft||`${C.accent}1e`,
+                display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                <CheckCircle size={20} strokeWidth={2.4} color={C.accent}/>
+              </div>
+              <div style={{fontSize:16,fontWeight:800,color:C.text,lineHeight:1.25}}>Add this to your tracker?</div>
+            </div>
+            <div style={{fontSize:12.5,color:C.muted,lineHeight:1.6,marginBottom:14}}>
+              Caps marked <b style={{color:C.text}}>{subject}</b> — saving as “<b style={{color:C.text}}>{paperLabel}</b>”.
+            </div>
+            <div style={{background:C.card2,borderRadius:12,padding:'12px 14px',marginBottom:16,
+              display:'flex',flexDirection:'column',gap:6,fontSize:12.5,color:C.muted}}>
+              {p>0&&<div>✓ Paper logged{result.estimatedPercent!=null?` — ${result.estimatedPercent}%`:''}{result.estimatedGrade?` (≈${result.estimatedGrade})`:''}</div>}
+              {e>0&&<div>✓ {e} mistake{e===1?'':'s'} added to your error log</div>}
+              {t>0&&<div>✓ {t} revision task{t===1?'':'s'} added to your plan</div>}
+            </div>
+            <button onClick={confirmLog} style={{width:'100%',padding:'13px',background:C.accent,border:'none',
+              borderRadius:11,color:'#fff',fontSize:14,fontWeight:800,fontFamily:font,cursor:'pointer',marginBottom:8}}>
+              Confirm &amp; log it
+            </button>
+            <button onClick={()=>setShowConfirm(false)} style={{width:'100%',padding:'11px',background:'transparent',
+              border:'none',borderRadius:10,color:C.muted,fontSize:12.5,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
+              Review the feedback first
+            </button>
+          </div>
+        </div>
+      );
+    })()}
+  </>);
 }
 
 function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},examLevel='alevel',errors=[],targets={},applyAction=()=>({ok:false,message:'unavailable'}),studentName='',C,font,onClose}) {
