@@ -48,13 +48,21 @@ export default async function handler(req, res) {
         const userId = session.metadata?.userId ?? session.client_reference_id;
         if (!userId) { console.error('checkout.session.completed: no userId in metadata'); break; }
 
+        // Distinguish a free-trial sub from a paying one so usage can be capped
+        // tighter for trials (they aren't paying yet). 'trialing' vs 'pro'.
+        let _status = 'pro';
+        try {
+          const sub0 = await getStripe().subscriptions.retrieve(session.subscription);
+          if (sub0?.status === 'trialing') _status = 'trialing';
+        } catch (e) { console.error('checkout: subscription retrieve failed:', e.message); }
+
         // Record the surviving subscription FIRST, so that when the duplicate
         // cleanup below fires customer.subscription.deleted events, the deleted
         // handler sees subscription_id already points at the survivor and ignores
         // them (it only downgrades the tracked subscription).
         const { error } = await supabase.from('user_profiles').update({
           stripe_customer_id: session.customer,
-          subscription_status: 'pro',
+          subscription_status: _status,
           subscription_id: session.subscription,
         }).eq('id', userId);
         if (error) console.error('Supabase update error (checkout.session.completed):', error.message);
@@ -83,9 +91,10 @@ export default async function handler(req, res) {
           .select('id, subscription_id').eq('stripe_customer_id', sub.customer).single();
         if (!prof) { console.error('subscription.updated: no profile for customer', sub.customer); break; }
         if (isActive) {
-          // This subscription is live — adopt it as the tracked one and grant Pro.
+          // Adopt this as the tracked sub. 'trialing' while in trial (capped
+          // tighter), 'pro' once it's a paying subscription.
           const { error } = await supabase.from('user_profiles').update({
-            subscription_status: 'pro',
+            subscription_status: sub.status === 'trialing' ? 'trialing' : 'pro',
             subscription_id: sub.id,
           }).eq('id', prof.id);
           if (error) console.error('Supabase update error (subscription.updated/active):', error.message);

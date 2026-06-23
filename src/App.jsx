@@ -2631,6 +2631,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
   const [estSecs,setEstSecs]=useState(null); // rough estimate based on page count
   const [dailyUsed,setDailyUsed]=useState(null); // pages marked today (server-tracked)
   const [monthUsed,setMonthUsed]=useState(null); // pages marked this month (fair-use)
+  const [caps,setCaps]=useState(null);           // tier allowance {day,month,req}
   const MARK_STAGES=[
     'Reading the questions…',
     'Looking at your answers…',
@@ -2644,24 +2645,32 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
 
   const MAX_FILES=6;            // per area (answers / mark scheme)
   const MAX_FILE_MB=30;         // matches the Storage bucket limit
-  const MAX_PAGES=40;           // total pages per mark — every page costs Claude tokens
-  const DAILY_PAGE_CAP=60;       // matches backend MARK_PAGES_PER_DAY default
-  const MONTH_PAGE_CAP=300;      // matches backend MARK_PAGES_PER_MONTH default
-  // Pull today's + this month's marking usage so we can show an allowance bar
-  // (Pro only; free users are gated by the weekly free mark instead).
+  // Tiered allowance (mirrors backend): paying full, trial/referral/free tight.
+  const TIER_CAPS={admin:{day:1e9,month:1e9,req:40},paying:{day:60,month:300,req:40},trial:{day:15,month:45,req:40},granted:{day:15,month:60,req:40},free:{day:12,month:60,req:12}};
+  const C_CAPS=caps||(isPro?TIER_CAPS.paying:TIER_CAPS.free);
+  const MAX_PAGES=C_CAPS.req;   // per-mark page cap for this tier
+  const DAILY_PAGE_CAP=C_CAPS.day, MONTH_PAGE_CAP=C_CAPS.month;
+  const unlimited=C_CAPS.day>=1e9;
+  // Resolve the user's tier + today's / month's usage for the allowance bar.
   useEffect(()=>{
-    if(!isPro) return;
     (async()=>{
       const {data:{session}}=await supabase.auth.getSession();
       const uid=session?.user?.id; if(!uid) return;
-      const {data}=await supabase.from('user_profiles').select('mark_files_count,mark_files_date,mark_pages_month,mark_pages_month_key').eq('id',uid).maybeSingle();
-      if(data){
-        const today=new Date().toISOString().slice(0,10), mk=new Date().toISOString().slice(0,7);
-        setDailyUsed(data.mark_files_date===today?(data.mark_files_count||0):0);
-        setMonthUsed(data.mark_pages_month_key===mk?(data.mark_pages_month||0):0);
-      }
+      const {data}=await supabase.from('user_profiles')
+        .select('subscription_status,referral_pro_until,is_admin,mark_files_count,mark_files_date,mark_pages_month,mark_pages_month_key')
+        .eq('id',uid).maybeSingle();
+      if(!data) return;
+      let t='free';
+      if(data.is_admin) t='admin';
+      else if(data.subscription_status==='pro'||data.subscription_status==='active') t='paying';
+      else if(data.subscription_status==='trialing') t='trial';
+      else if(data.referral_pro_until&&new Date(data.referral_pro_until).getTime()>Date.now()) t='granted';
+      setCaps(TIER_CAPS[t]);
+      const today=new Date().toISOString().slice(0,10), mk=new Date().toISOString().slice(0,7);
+      setDailyUsed(data.mark_files_date===today?(data.mark_files_count||0):0);
+      setMonthUsed(data.mark_pages_month_key===mk?(data.mark_pages_month||0):0);
     })();
-  },[isPro]);
+  },[]);
   const readDataUrl=f=>new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>res(null);r.readAsDataURL(f);});
   // Count PDF pages in the browser (lazy pdf.js) so we can cap upload size by pages.
   const pdfjsRef=React.useRef(null);
@@ -2840,7 +2849,12 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
             You get <b>1 free AI mark per week</b>. Upgrade to Pro for unlimited marking.
           </div>
         )}
-        {isPro&&!result&&dailyUsed!=null&&(()=>{
+        {isPro&&!result&&unlimited&&(
+          <div style={{marginBottom:14,background:C.card2,borderRadius:10,padding:'9px 12px',fontSize:11.5,color:C.muted,fontWeight:600}}>
+            Marking allowance · <span style={{color:C.accent,fontWeight:800}}>unlimited</span>
+          </div>
+        )}
+        {isPro&&!result&&!unlimited&&dailyUsed!=null&&(()=>{
           const pct=Math.min(100,Math.round((dailyUsed/DAILY_PAGE_CAP)*100));
           const full=dailyUsed>=DAILY_PAGE_CAP;
           const bar=full?(C.danger||'#ef4444'):pct>=85?'#f59e0b':C.accent;
@@ -6552,7 +6566,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
                 ? "Pro isn't quite ready yet — payments aren't live during the beta. Join the waitlist and you'll be the first to know when it launches."
                 : (stripeCustomerId
                     ? "Upgrade to Pro to unlock email reports, AI companion chat, and more."
-                    : "Try Pro free for 3 days — email reports, AI companion chat, and more. A card is required; cancel anytime before day 3 and you won't be charged. £4.99/mo after.")}
+                    : "Try Pro free for 3 days — email reports, AI companion chat, and more. A card is required; cancel anytime before day 3 and you won't be charged. £6.99/mo after.")}
             </div>
             <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:14}}>
               {['Email exam schedule & weekly digest','Companion chat','Priority feature access'].map(f=>(
@@ -6577,7 +6591,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
                 style={{width:'100%',padding:'11px',background:upgrading?C.card2:C.accent,
                   border:`1px solid ${upgrading?C.border:C.accent}`,borderRadius:8,color:upgrading?C.muted:'#fff',
                   fontSize:14,fontWeight:700,fontFamily:font,cursor:upgrading||!user?'not-allowed':'pointer',transition:'background 0.15s'}}>
-                {upgrading ? 'Opening secure checkout…' : 'Upgrade to Pro — £4.99/mo'}
+                {upgrading ? 'Opening secure checkout…' : 'Upgrade to Pro — £6.99/mo'}
               </button>
             ) : (
               <>
@@ -6591,7 +6605,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
                   style={{width:'100%',marginTop:8,padding:'10px',background:'transparent',
                     border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,fontSize:13,fontWeight:600,
                     fontFamily:font,cursor:upgrading||!user?'not-allowed':'pointer'}}>
-                  {(upgrading&&upgradeKind==='sub') ? 'Opening secure checkout…' : 'Or subscribe now — £4.99/mo (skip trial)'}
+                  {(upgrading&&upgradeKind==='sub') ? 'Opening secure checkout…' : 'Or subscribe now — £6.99/mo (skip trial)'}
                 </button>
               </>
             )}

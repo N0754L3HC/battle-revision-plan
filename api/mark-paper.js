@@ -42,7 +42,26 @@ const MARK_DAY_USER  = parseInt(process.env.MARK_DAY_PER_USER  || '20', 10);
 // since every PDF/image page costs ~1.5-3k Claude tokens.
 const MAX_PAGES_REQ   = parseInt(process.env.MARK_PAGES_PER_REQUEST || '40',  10);
 const MARK_PAGES_DAY  = parseInt(process.env.MARK_PAGES_PER_DAY     || '60',  10);
-const MARK_PAGES_MONTH= parseInt(process.env.MARK_PAGES_PER_MONTH   || '300', 10); // fair-use cap
+const MARK_PAGES_MONTH= parseInt(process.env.MARK_PAGES_PER_MONTH   || '300', 10); // paying fair-use cap
+
+// Tiered caps: paying subscribers get the full allowance; trial / referral-week
+// ("weekly pro") / free users — who aren't paying — are capped tight to bound
+// AI cost. Free is also gated to 1 mark/week elsewhere; here we shrink its size.
+const I = (k, d) => parseInt(process.env[k] || d, 10);
+const TIER_CAPS = {
+  paying:  { day: MARK_PAGES_DAY, month: MARK_PAGES_MONTH,          req: MAX_PAGES_REQ },
+  trial:   { day: I('MARK_TRIAL_DAY','15'),   month: I('MARK_TRIAL_MONTH','45'),  req: MAX_PAGES_REQ },
+  granted: { day: I('MARK_GRANT_DAY','15'),   month: I('MARK_GRANT_MONTH','60'),  req: MAX_PAGES_REQ },
+  free:    { day: I('MARK_FREE_DAY','12'),    month: I('MARK_FREE_MONTH','60'),   req: I('MARK_FREE_REQ','12') },
+};
+function tierOf(prof) {
+  if (prof?.is_admin) return 'admin';
+  const s = prof?.subscription_status;
+  if (s === 'pro' || s === 'active') return 'paying';
+  if (s === 'trialing') return 'trial';
+  if (prof?.referral_pro_until && new Date(prof.referral_pro_until).getTime() > Date.now()) return 'granted';
+  return 'free';
+}
 
 // Limits on the payload Claude sees (cost + abuse control).
 const MAX_IMAGES = 12;
@@ -256,17 +275,25 @@ export default async function handler(req, res) {
   if (fileCount > 2 * MAX_FILES) return res.status(400).json({ error: `Too many files in one go (max ${2 * MAX_FILES}).` });
   const claimedPages = Math.max(0, parseInt(req.body?.pages, 10) || 0);
   const pageUnits = Math.max(claimedPages, fileCount);
-  if (pageUnits > MAX_PAGES_REQ) return res.status(400).json({ error: `That's too many pages at once (max ${MAX_PAGES_REQ}). Mark one paper at a time.`, code: 'pages_req' });
+
+  // Tiered allowance — paying subscribers full, trial/referral/free tight.
+  const tier = tierOf(prof);
+  const caps = tier === 'admin' ? { day: 1e9, month: 1e9, req: MAX_PAGES_REQ } : TIER_CAPS[tier];
+  if (pageUnits > caps.req) {
+    return res.status(400).json({
+      error: tier === 'free'
+        ? `Free marking covers up to ${caps.req} pages — upgrade to Pro to mark full papers in one go.`
+        : `That's too many pages at once (max ${caps.req}). Mark one paper at a time.`,
+      code: 'pages_req' });
+  }
   if (pageUnits > 0) {
     // Record usage for EVERYONE so the allowance bar is consistent across
     // sessions; admins get effectively-infinite caps so they're never blocked.
-    const dayCap   = prof?.is_admin ? 1000000000 : MARK_PAGES_DAY;
-    const monthCap = prof?.is_admin ? 1000000000 : MARK_PAGES_MONTH;
     const { data: code, error: bumpErr } = await admin.rpc('bump_mark_usage',
-      { p_uid: uid, p_add: pageUnits, p_day_cap: dayCap, p_month_cap: monthCap });
+      { p_uid: uid, p_add: pageUnits, p_day_cap: caps.day, p_month_cap: caps.month });
     if (bumpErr) { console.error('bump_mark_usage error:', bumpErr.message); return res.status(500).json({ error: 'Marking failed — try again.' }); }
-    if (code === 'day')   return res.status(429).json({ error: `Daily marking limit reached (${MARK_PAGES_DAY} pages/day). Resets tomorrow — this keeps the service fast for everyone.`, code: 'pages_day' });
-    if (code === 'month') return res.status(429).json({ error: `You've reached this month's fair-use marking limit (${MARK_PAGES_MONTH} pages). It resets at the start of next month.`, code: 'pages_month' });
+    if (code === 'day')   return res.status(429).json({ error: `Daily marking limit reached (${caps.day} pages/day). Resets tomorrow.${tier !== 'paying' ? ' Upgrade to Pro for more.' : ''}`, code: 'pages_day' });
+    if (code === 'month') return res.status(429).json({ error: `You've reached this ${tier === 'paying' ? "month's fair-use" : 'period’s'} marking limit (${caps.month} pages).${tier !== 'paying' ? ' Upgrade to Pro for the full monthly allowance.' : ' Resets next month.'}`, code: 'pages_month' });
   }
 
   // Build the user content for Claude: a header, then text answers and/or images.
