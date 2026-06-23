@@ -110,7 +110,9 @@ async function callClaudeMark({ userBlocks }) {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({
-      model, max_tokens: 2000, temperature: 0.2,
+      // Generous output budget — a full paper's per-question feedback easily
+      // overflows a small cap, and a truncated reply can't be parsed as JSON.
+      model, max_tokens: 8000, temperature: 0.2,
       system: MARK_SYSTEM,
       messages: [{ role: 'user', content: userBlocks }],
     }),
@@ -130,9 +132,31 @@ async function callClaudeMark({ userBlocks }) {
 function parseResult(text) {
   if (!text) return null;
   let raw = text.trim().replace(/^```(json)?/i, '').replace(/```$/, '').trim();
-  const start = raw.indexOf('{'), end = raw.lastIndexOf('}');
-  if (start === -1 || end === -1) return null;
-  try { return JSON.parse(raw.slice(start, end + 1)); } catch { return null; }
+  const start = raw.indexOf('{');
+  if (start === -1) return null;
+  let body = raw.slice(start);
+  const end = body.lastIndexOf('}');
+  let candidate = end !== -1 ? body.slice(0, end + 1) : body;
+
+  const tryParse = (s) => { try { return JSON.parse(s); } catch { return null; } };
+  // 1) straight, 2) with trailing commas stripped.
+  let out = tryParse(candidate) || tryParse(candidate.replace(/,\s*([}\]])/g, '$1'));
+  if (out) return out;
+
+  // 3) Salvage a truncated reply: close any open [ and { (ignoring brackets
+  // inside strings) so a cut-off JSON object still yields usable feedback.
+  const stack = [];
+  let inStr = false, esc = false;
+  for (const ch of body) {
+    if (inStr) { if (esc) esc = false; else if (ch === '\\') esc = true; else if (ch === '"') inStr = false; continue; }
+    if (ch === '"') inStr = true;
+    else if (ch === '{' || ch === '[') stack.push(ch);
+    else if (ch === '}' || ch === ']') stack.pop();
+  }
+  let fixed = body.replace(/,\s*$/, '');
+  if (inStr) fixed += '"';
+  for (let i = stack.length - 1; i >= 0; i--) fixed += stack[i] === '{' ? '}' : ']';
+  return tryParse(fixed.replace(/,\s*([}\]])/g, '$1'));
 }
 
 export default async function handler(req, res) {
@@ -263,7 +287,17 @@ export default async function handler(req, res) {
     const text = await callClaudeMark({ userBlocks: blocks });
     const result = parseResult(text);
     if (!result) {
-      return res.status(502).json({ error: 'Could not read a marking result — try clearer photos or typed answers.' });
+      // Don't dead-end the student — if Caps wrote feedback we just couldn't
+      // structure, show it as-is (nothing auto-logged). Only error on truly empty.
+      const plain = (text || '').replace(/```/g, '').trim();
+      if (plain.length > 40) {
+        return res.status(200).json({
+          result: { estimatedPercent: null, estimatedGrade: null, confidence: 'low',
+            summary: plain.slice(0, 2000), questions: [], errors: [], suggestedTopicsToRevise: [] },
+          actions: [], meta: { estimate: true, free: usingFreeMark, unstructured: true },
+        });
+      }
+      return res.status(502).json({ error: 'Caps couldn’t produce feedback this time — please try again in a moment.' });
     }
 
     // Build ready-to-Apply actions (client confirms before anything is written),

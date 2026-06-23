@@ -2688,13 +2688,15 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
           </>
         ) : (
           <>
-            <div style={{display:'flex',alignItems:'center',gap:14,background:C.card2,borderRadius:12,padding:'14px 16px',marginBottom:12}}>
-              <div style={{fontSize:32,fontWeight:900,color:C.accent,lineHeight:1}}>{result.estimatedPercent}%</div>
-              <div>
-                {result.estimatedGrade&&<div style={{fontSize:18,fontWeight:800,color:C.text,lineHeight:1.1}}>≈ {result.estimatedGrade}</div>}
-                <div style={{fontSize:11,color:C.muted}}>estimated · {result.confidence||'medium'} confidence</div>
+            {result.estimatedPercent!=null&&(
+              <div style={{display:'flex',alignItems:'center',gap:14,background:C.card2,borderRadius:12,padding:'14px 16px',marginBottom:12}}>
+                <div style={{fontSize:32,fontWeight:900,color:C.accent,lineHeight:1}}>{result.estimatedPercent}%</div>
+                <div>
+                  {result.estimatedGrade&&<div style={{fontSize:18,fontWeight:800,color:C.text,lineHeight:1.1}}>≈ {result.estimatedGrade}</div>}
+                  <div style={{fontSize:11,color:C.muted}}>estimated · {result.confidence||'medium'} confidence</div>
+                </div>
               </div>
-            </div>
+            )}
             {result.summary&&<div style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:12}}>{result.summary}</div>}
 
             {Array.isArray(result.questions)&&result.questions.length>0&&(
