@@ -2411,6 +2411,54 @@ function StudyPlanner({subjects=[],scores=[],errors=[],sessions=[],rag={},target
   );
 }
 
+// ── LaTeX rendering (lazy KaTeX) ────────────────────────────────────────────
+// Caps writes maths in LaTeX ($inline$ / $$display$$); we render it beautifully
+// with KaTeX, loaded on demand the first time a result with maths is shown.
+let _katex=null,_katexPromise=null;
+function loadKatex(){
+  if(_katex) return Promise.resolve(_katex);
+  if(_katexPromise) return _katexPromise;
+  _katexPromise=(async()=>{
+    if(typeof document!=='undefined'&&!document.getElementById('katex-css')){
+      const l=document.createElement('link');
+      l.id='katex-css'; l.rel='stylesheet';
+      l.href='https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css';
+      document.head.appendChild(l);
+    }
+    const m=await import(/* @vite-ignore */ 'https://esm.sh/katex@0.16.11');
+    _katex=m.default||m; return _katex;
+  })();
+  return _katexPromise;
+}
+function _escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function _renderMath(text,katex){
+  const re=/(\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\$[^$\n]+?\$|\\\([\s\S]+?\\\))/g;
+  let out='',last=0,m;
+  while((m=re.exec(text))){
+    out+=_escHtml(text.slice(last,m.index));
+    const seg=m[0]; let display=false,body;
+    if(seg.startsWith('$$')){display=true;body=seg.slice(2,-2);}
+    else if(seg.startsWith('\\[')){display=true;body=seg.slice(2,-2);}
+    else if(seg.startsWith('\\(')){body=seg.slice(2,-2);}
+    else {body=seg.slice(1,-1);}
+    try{ out+=katex.renderToString(body,{displayMode:display,throwOnError:false,output:'html'}); }
+    catch{ out+=_escHtml(seg); }
+    last=re.lastIndex;
+  }
+  out+=_escHtml(text.slice(last));
+  return out;
+}
+// Renders a string that may contain LaTeX. Shows raw text until KaTeX is ready.
+function MathText({children,style,as='span'}){
+  const text=String(children??'');
+  const hasMath=/\$|\\\(|\\\[/.test(text);
+  const [k,setK]=useState(_katex);
+  useEffect(()=>{ if(hasMath&&!_katex) loadKatex().then(setK).catch(()=>{}); },[hasMath]);
+  const Tag=as;
+  if(!hasMath||!k) return <Tag style={style}>{text}</Tag>;
+  return <Tag style={style} dangerouslySetInnerHTML={{__html:_renderMath(text,k)}}/>;
+}
+
 function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}),isPro=false,addToast=()=>{},C,font,onClose}) {
   ensureAnimStyles();
   const BOARDS=['AQA','Edexcel','OCR','OCR A','OCR B','WJEC / Eduqas','CIE / CAIE','Other'];
@@ -2702,10 +2750,10 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
               </div>
             )}
             {result.summary&&(
-              <div style={{fontSize:14,color:C.text,lineHeight:1.7,marginBottom:14,
+              <MathText as="div" style={{fontSize:14,color:C.text,lineHeight:1.7,marginBottom:14,
                 background:C.card2,borderRadius:12,padding:'14px 16px',borderLeft:`3px solid ${C.accent}`}}>
                 {result.summary}
-              </div>
+              </MathText>
             )}
 
             {Array.isArray(result.strengths)&&result.strengths.length>0&&(
@@ -2715,7 +2763,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
                   {result.strengths.slice(0,8).map((s,i)=>(
                     <div key={i} style={{display:'flex',gap:8,fontSize:13.5,color:C.text,lineHeight:1.55}}>
                       <CheckCircle size={15} strokeWidth={2.5} color={C.success||'#22c55e'} style={{flexShrink:0,marginTop:2}}/>
-                      <span>{s}</span>
+                      <MathText>{s}</MathText>
                     </div>
                   ))}
                 </div>
@@ -2746,7 +2794,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
                               background:badge,borderRadius:20,padding:'2px 10px',whiteSpace:'nowrap'}}>{q.earned}/{q.available} marks</span>
                           )}
                         </div>
-                        {q.questionText&&<div style={{fontSize:12,color:C.muted,fontStyle:'italic',lineHeight:1.5,marginBottom:9}}>{q.questionText}</div>}
+                        {q.questionText&&<MathText as="div" style={{fontSize:12,color:C.muted,fontStyle:'italic',lineHeight:1.5,marginBottom:9}}>{q.questionText}</MathText>}
                         {((Array.isArray(q.yourWorking)&&q.yourWorking.length>0)||(Array.isArray(q.modelWorking)&&q.modelWorking.length>0))&&(
                           <div style={{display:'flex',flexWrap:'wrap',gap:10,marginBottom:(q.feedback||q.fix)?9:0}}>
                             {Array.isArray(q.yourWorking)&&q.yourWorking.length>0&&(
@@ -2759,9 +2807,9 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
                                     <div key={j} style={{marginBottom:6}}>
                                       <div style={{display:'flex',gap:6,alignItems:'baseline'}}>
                                         <span style={{flexShrink:0,fontSize:11.5,color:col,fontWeight:800,width:10,textAlign:'center'}}>{mark}</span>
-                                        <span style={{fontFamily:'ui-monospace,Menlo,Consolas,monospace',fontSize:12.5,color:col,lineHeight:1.5,wordBreak:'break-word'}}>{ln.text}</span>
+                                        <MathText style={{fontSize:13,color:col,lineHeight:1.5,wordBreak:'break-word'}}>{ln.text}</MathText>
                                       </div>
-                                      {ln.note&&<div style={{fontSize:11.5,color:C.accent,lineHeight:1.45,marginLeft:16,marginTop:1}}>↳ {ln.note}</div>}
+                                      {ln.note&&<div style={{fontSize:11.5,color:C.accent,lineHeight:1.45,marginLeft:16,marginTop:1}}>↳ <MathText>{ln.note}</MathText></div>}
                                     </div>
                                   );
                                 })}
@@ -2773,19 +2821,19 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
                                 {q.modelWorking.map((ln,j)=>(
                                   <div key={j} style={{display:'flex',gap:6,marginBottom:5,alignItems:'baseline'}}>
                                     <span style={{flexShrink:0,fontSize:11,color:C.muted,fontWeight:700,width:14,textAlign:'right'}}>{j+1}.</span>
-                                    <span style={{fontFamily:'ui-monospace,Menlo,Consolas,monospace',fontSize:12.5,color:C.text,lineHeight:1.5,wordBreak:'break-word'}}>{ln}</span>
+                                    <MathText style={{fontSize:13,color:C.text,lineHeight:1.5,wordBreak:'break-word'}}>{ln}</MathText>
                                   </div>
                                 ))}
                               </div>
                             )}
                           </div>
                         )}
-                        {q.feedback&&<div style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:q.fix?8:0}}>{q.feedback}</div>}
+                        {q.feedback&&<MathText as="div" style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:q.fix?8:0}}>{q.feedback}</MathText>}
                         {q.fix&&(
                           <div style={{display:'flex',gap:7,fontSize:12.5,lineHeight:1.55,
                             background:C.accentSoft||`${C.accent}14`,borderRadius:8,padding:'8px 10px'}}>
                             <span style={{fontWeight:800,color:C.accent,flexShrink:0}}>To improve:</span>
-                            <span style={{color:C.text}}>{q.fix}</span>
+                            <MathText style={{color:C.text}}>{q.fix}</MathText>
                           </div>
                         )}
                       </div>
@@ -2802,7 +2850,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
                   {result.errors.slice(0,12).map((e,i)=>(
                     <div key={i} style={{fontSize:13,color:C.text,lineHeight:1.55,padding:'2px 0'}}>
                       <b style={{color:C.text}}>{e.topic}</b>{e.type?<span style={{color:C.muted}}> · {e.type}</span>:''}
-                      {e.note&&<div style={{fontSize:12.5,color:C.muted,lineHeight:1.55,marginTop:2}}>{e.note}</div>}
+                      {e.note&&<MathText as="div" style={{fontSize:12.5,color:C.muted,lineHeight:1.55,marginTop:2}}>{e.note}</MathText>}
                     </div>
                   ))}
                 </div>

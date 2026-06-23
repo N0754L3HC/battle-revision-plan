@@ -71,6 +71,7 @@ RULES
 - TRANSCRIBE the student's actual working into "yourWorking" as an ordered list of their lines/steps EXACTLY as they wrote them, and tag each line's "status": "correct", "error" (the line where it goes wrong), "warn" (risky/unclear/missing step), or "neutral". Add a short "note" ONLY on lines that need one (the error, or a key correct move) so the student sees exactly where and what went wrong.
 - Also give the correct worked solution in "modelWorking" as clear ordered steps, so the student can compare their working side-by-side with how it should be done.
 - For essay/written subjects with no real "working", you may leave yourWorking and modelWorking empty ([]) and rely on feedback and fix instead.
+- Write ALL mathematics in LaTeX so it renders beautifully: wrap inline maths in single dollar signs (e.g. $x^2+3x-4$) and standalone/displayed equations in double dollar signs (e.g. $$\\int_0^1 x^2\\,dx = \\tfrac{1}{3}$$). Use proper LaTeX commands (\\frac, \\sqrt, \\times, \\le, ^, _, etc.). Apply this in questionText, yourWorking text, modelWorking, feedback, fix and summary. Keep ordinary words as plain English OUTSIDE the dollar signs — only the maths goes in LaTeX. (Remember this is JSON, so every LaTeX backslash must be escaped as \\\\.)
 - Spot recurring mistake patterns (e.g. "unit errors", "didn't show working", "sign error", "misread the command word") so the student can see their habits.
 - Do NOT do the student's coursework/NEA. This is past-paper feedback only.
 
