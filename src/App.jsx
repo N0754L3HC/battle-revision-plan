@@ -6174,6 +6174,61 @@ function Resources({subjects,uid,C,font,rag,setRag,ragNotes,setRagNotes}) {
   );
 }
 
+// ── Contact us ───────────────────────────────────────────────────────────────
+// Form → /api/contact emails BOTH inboxes (team + personal). Students only ever
+// see the public team address; the personal one lives server-side.
+function ContactCard({C,font}){
+  const [contact,setContact]=useState('');
+  const [message,setMessage]=useState('');
+  const [sending,setSending]=useState(false);
+  const [sent,setSent]=useState(false);
+  const [err,setErr]=useState('');
+  const inp={width:'100%',padding:'9px 11px',background:C.card2,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:13,fontFamily:font,boxSizing:'border-box'};
+  const submit=async()=>{
+    setErr('');
+    if(message.trim().length<5){ setErr('Please add a bit more detail to your message.'); return; }
+    setSending(true);
+    try{
+      const {data:{session}}=await supabase.auth.getSession();
+      const token=session?.access_token; if(!token) throw new Error('Please sign in again.');
+      const r=await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},
+        body:JSON.stringify({contact:contact.trim(),message:message.trim()})});
+      const d=await r.json();
+      if(!r.ok||d.error) throw new Error(d.error||'Failed to send');
+      setSent(true);
+    }catch(e){ setErr(e.message); }
+    setSending(false);
+  };
+  return (
+    <div style={{background:C.tintCream,borderRadius:14,padding:'18px 20px'}}>
+      <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Contact us</div>
+      {sent ? (
+        <div style={{fontSize:13,color:C.text,lineHeight:1.6}}>
+          ✓ Thanks — your message is on its way and we'll get back to you as soon as we can.
+          <button onClick={()=>{setSent(false);setMessage('');setContact('');}} style={{display:'block',marginTop:10,background:'transparent',border:'none',color:C.accent,fontSize:12,fontWeight:600,fontFamily:font,cursor:'pointer',padding:0}}>Send another</button>
+        </div>
+      ) : (
+        <>
+          <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginBottom:12}}>
+            Question, bug, or feedback? Drop us a message and we'll reply.
+          </div>
+          <input value={contact} onChange={e=>setContact(e.target.value)} placeholder="Your email or phone (so we can reply)" style={{...inp,marginBottom:8}}/>
+          <textarea value={message} onChange={e=>setMessage(e.target.value)} rows={4} placeholder="How can we help?" style={{...inp,resize:'vertical',lineHeight:1.5,marginBottom:err?6:10}}/>
+          {err&&<div style={{fontSize:12,color:C.danger||'#ef4444',marginBottom:10,lineHeight:1.5}}>{err}</div>}
+          <button onClick={submit} disabled={sending}
+            style={{width:'100%',padding:'10px',background:C.accent,border:'none',borderRadius:8,color:'#fff',
+              fontSize:13,fontWeight:700,fontFamily:font,cursor:sending?'wait':'pointer'}}>
+            {sending?'Sending…':'Send message'}
+          </button>
+        </>
+      )}
+      <div style={{fontSize:12,color:C.muted,lineHeight:1.6,marginTop:12}}>
+        Or email us directly at <a href="mailto:contact.battleplan.team@gmail.com" style={{color:C.accent,fontWeight:600}}>contact.battleplan.team@gmail.com</a>
+      </div>
+    </div>
+  );
+}
+
 // ── Account ────────────────────────────────────────────────────────────────
 function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,font,examSched,scores=[],rag={},isPro=false,stripeCustomerId=null,subscriptionStatus=null,referralCode=null,analyticsConsent=true,setAnalyticsConsent=()=>{},addToast=()=>{},yearGroup='',setYearGroup=()=>{},displayName='',setDisplayName=()=>{}}) {
   const [emailSending, setEmailSending] = useState(false);
@@ -6705,6 +6760,8 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
         )}
       </div>
       )}
+
+      <ContactCard C={C} font={font}/>
 
       {/* Referral + school opt-in moved to the Groups page (they're social) */}
       </>}
