@@ -33,6 +33,8 @@ const HOUR = 3600000, DAY = 86400000;
 const MARK_HOUR_IP   = parseInt(process.env.MARK_HOUR_PER_IP   || '15', 10);
 const MARK_HOUR_USER = parseInt(process.env.MARK_HOUR_PER_USER || '6',  10);
 const MARK_DAY_USER  = parseInt(process.env.MARK_DAY_PER_USER  || '20', 10);
+// Daily file budget (DB-backed, survives cold starts) — the real token-drain guard.
+const MARK_FILES_DAY = parseInt(process.env.MARK_FILES_PER_DAY || '40', 10);
 
 // Limits on the payload Claude sees (cost + abuse control).
 const MAX_IMAGES = 12;
@@ -179,6 +181,23 @@ export default async function handler(req, res) {
                         ...(Array.isArray(msAttachmentUrls) ? msAttachmentUrls : [])]
     .map(a => (a && typeof a.path === 'string') ? a.path : null)
     .filter(p => p && p.startsWith(uid + '/'));
+
+  // Daily file budget — every file Claude reads costs tokens. Enforced in the DB
+  // (atomic, survives serverless cold starts) so it can't be reset by retrying.
+  // Counted on attempt, not success, so a failed parse can't be farmed for free.
+  const fileCount =
+      (Array.isArray(attachmentUrls)   ? attachmentUrls.length   : 0)
+    + (Array.isArray(msAttachmentUrls) ? msAttachmentUrls.length : 0)
+    + (Array.isArray(attachments)      ? attachments.length      : 0)
+    + (Array.isArray(images)           ? images.length           : 0)
+    + (Array.isArray(msAttachments)    ? msAttachments.length    : 0);
+  if (fileCount > 2 * MAX_FILES) return res.status(400).json({ error: `Too many files in one go (max ${2 * MAX_FILES}).` });
+  if (!prof?.is_admin && fileCount > 0) {
+    const { data: allowed, error: bumpErr } = await admin.rpc('bump_mark_files',
+      { p_uid: uid, p_add: fileCount, p_cap: MARK_FILES_DAY });
+    if (bumpErr) { console.error('bump_mark_files error:', bumpErr.message); return res.status(500).json({ error: 'Marking failed — try again.' }); }
+    if (allowed === false) return res.status(429).json({ error: `Daily upload limit reached (${MARK_FILES_DAY} files/day). This protects the service — try again tomorrow.`, code: 'files_day' });
+  }
 
   // Build the user content for Claude: a header, then text answers and/or images.
   const header = [
