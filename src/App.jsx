@@ -2439,22 +2439,31 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
   ];
   const level=examLevel==='gcse'?'GCSE':examLevel==='aslevel'?'AS-Level':'A-Level';
 
+  const MAX_FILES=6;            // per area (answers / mark scheme)
+  const MAX_FILE_MB=30;         // matches the Storage bucket limit
   const readDataUrl=f=>new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>res(null);r.readAsDataURL(f);});
-  // Images + PDFs go straight to Caps (it reads both). Word (.docx) is converted
-  // to text in the browser so we never upload the file itself.
+  // Images + PDFs are uploaded to private Storage at mark time and Caps reads them
+  // via a signed URL (so even big question-paper PDFs work — they never go through
+  // the API body). Word (.docx) is converted to text in the browser instead.
   const readFiles=async(fileList,target)=>{
     setErr('');
     const setList=target==='ms'?setMsAtt:setAtt;
     const setText=target==='ms'?setMarkSchemeText:setAnswersText;
-    for (const f of Array.from(fileList||[])){
+    const existing=(target==='ms'?msAtt:att).length;
+    let room=MAX_FILES-existing;
+    const incoming=Array.from(fileList||[]);
+    if(incoming.length>room) setErr(`You can upload up to ${MAX_FILES} files here — extra files were skipped.`);
+    for (const f of incoming){
       const isImg=f.type.startsWith('image/');
       const isPdf=f.type==='application/pdf'||/\.pdf$/i.test(f.name);
       const isDocx=/\.docx$/i.test(f.name);
       const isDoc=/\.doc$/i.test(f.name)&&!isDocx;
       if (isImg||isPdf){
-        const data=await readDataUrl(f); if(!data) continue;
-        if (data.length>9_000_000){ setErr(`${f.name} is too large (max ~6MB).`); continue; }
-        setList(p=>[...p,{kind:isPdf?'pdf':'image',name:f.name,data}].slice(0,12));
+        if(room<=0){ continue; }
+        if (f.size>MAX_FILE_MB*1024*1024){ setErr(`${f.name} is too large (max ${MAX_FILE_MB}MB).`); continue; }
+        const data=isImg?await readDataUrl(f):null; // preview thumbnail for images only
+        setList(p=>[...p,{kind:isPdf?'pdf':'image',name:f.name,file:f,data}].slice(0,MAX_FILES));
+        room--;
       } else if (isDocx){
         try{
           const arrayBuffer=await f.arrayBuffer();
@@ -2473,6 +2482,23 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
     }
   };
 
+  // Upload one area's files to private Storage and return [{url,kind,path}] signed
+  // for ~15 min. Big PDFs go here instead of the API body, dodging Vercel's limit.
+  const uploadFiles=async(list,uid)=>{
+    const out=[];
+    for(const a of list){
+      if(!a.file) continue;
+      const safe=a.name.replace(/[^\w.\-]/g,'_').slice(-60);
+      const path=`${uid}/${Date.now()}-${Math.random().toString(36).slice(2,8)}-${safe}`;
+      const up=await supabase.storage.from('paper-uploads').upload(path,a.file,{contentType:a.file.type||undefined,upsert:false});
+      if(up.error) throw new Error(`Couldn't upload ${a.name}. Try a smaller file.`);
+      const signed=await supabase.storage.from('paper-uploads').createSignedUrl(path,900);
+      if(signed.error||!signed.data?.signedUrl) throw new Error(`Couldn't prepare ${a.name}.`);
+      out.push({url:signed.data.signedUrl,kind:a.kind,path});
+    }
+    return out;
+  };
+
   const mark=async()=>{
     setErr(''); setResult(null); setActions([]); setLogged(false);
     if(!subject||!board){setErr('Pick a subject and exam board.');return;}
@@ -2486,11 +2512,14 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
     try{
       const {data:{session}}=await supabase.auth.getSession();
       const token=session?.access_token;
-      if(!token) throw new Error('Please sign in again.');
+      const uid=session?.user?.id;
+      if(!token||!uid) throw new Error('Please sign in again.');
+      const attUrls=await uploadFiles(att,uid);
+      const msUrls=await uploadFiles(msAtt,uid);
       const r=await fetch('/api/mark-paper',{method:'POST',
         headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},
         body:JSON.stringify({subject,board,paperCode,level,answersText,markSchemeText,
-          attachments:att.map(a=>a.data), msAttachments:msAtt.map(a=>a.data)})});
+          attachmentUrls:attUrls, msAttachmentUrls:msUrls})});
       const d=await r.json();
       if(!r.ok||d.error) throw new Error(d.error||'Marking failed');
       setResult(d.result); setActions(d.actions||[]);
@@ -2583,7 +2612,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
             </div>
 
             <div style={{marginBottom:12}}>
-              <label style={labelStyle}>Your answers — photo, PDF or Word</label>
+              <label style={labelStyle}>Your answers — photo, PDF or Word (up to {MAX_FILES} files)</label>
               {renderUpload('answers')}
               {renderChips(att,setAtt)}
             </div>
@@ -2600,7 +2629,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
             </button>
             {showMS&&(
               <div style={{marginBottom:14}}>
-                <label style={labelStyle}>Mark scheme — photo, PDF or Word</label>
+                <label style={labelStyle}>Mark scheme — photo, PDF or Word (up to {MAX_FILES} files)</label>
                 {renderUpload('ms')}
                 {renderChips(msAtt,setMsAtt)}
                 <textarea value={markSchemeText} onChange={e=>setMarkSchemeText(e.target.value)} rows={3}

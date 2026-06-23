@@ -36,9 +36,24 @@ const MARK_DAY_USER  = parseInt(process.env.MARK_DAY_PER_USER  || '20', 10);
 
 // Limits on the payload Claude sees (cost + abuse control).
 const MAX_IMAGES = 12;
+const MAX_FILES  = 6;           // per area (answers / mark scheme) — matches the UI
 const MAX_TEXT   = 16000;       // chars of typed answers / mark scheme
 const MAX_IMG_B64 = 5_000_000;  // ~3.7MB decoded per image
 const MAX_DOC_B64 = 14_000_000; // ~10MB decoded per PDF
+
+// Large files don't go through this function's body (Vercel caps it at ~4.5MB).
+// The browser uploads them to private Storage and sends a short-lived signed URL,
+// which Claude fetches directly. We only ever accept URLs from our OWN project
+// storage host — an SSRF guard so a crafted request can't make Claude fetch
+// arbitrary internal URLs.
+const SIGN_PREFIX = (process.env.SUPABASE_URL || '').replace(/\/+$/, '') + '/storage/v1/object/sign/paper-uploads/';
+function toUrlBlock(item) {
+  if (!item || typeof item.url !== 'string') return null;
+  if (!item.url.startsWith(SIGN_PREFIX)) return null;
+  return item.kind === 'pdf'
+    ? { type: 'document', source: { type: 'url', url: item.url } }
+    : { type: 'image',    source: { type: 'url', url: item.url } };
+}
 
 const MARK_SYSTEM = `You are an experienced UK GCSE/A-Level examiner marking a student's OWN attempt at a past paper, for revision feedback. You are NOT producing an official result.
 
@@ -155,8 +170,15 @@ export default async function handler(req, res) {
     if (!take(userDay, uid, MARK_DAY_USER, DAY))     return res.status(429).json({ error: `Daily marking limit reached (${MARK_DAY_USER}/day).` });
   }
 
-  const { subject, board, paperCode, level, answersText, markSchemeText, images, attachments, msAttachments } = req.body ?? {};
+  const { subject, board, paperCode, level, answersText, markSchemeText, images, attachments, msAttachments,
+          attachmentUrls, msAttachmentUrls } = req.body ?? {};
   if (!subject || !board) return res.status(400).json({ error: 'Subject and exam board are required' });
+
+  // Paths to remove from Storage once Claude has read them (privacy + housekeeping).
+  const cleanupPaths = [...(Array.isArray(attachmentUrls) ? attachmentUrls : []),
+                        ...(Array.isArray(msAttachmentUrls) ? msAttachmentUrls : [])]
+    .map(a => (a && typeof a.path === 'string') ? a.path : null)
+    .filter(p => p && p.startsWith(uid + '/'));
 
   // Build the user content for Claude: a header, then text answers and/or images.
   const header = [
@@ -172,9 +194,13 @@ export default async function handler(req, res) {
   if (markSchemeText && String(markSchemeText).trim()) {
     blocks.push({ type: 'text', text: `Student-supplied mark scheme (use to align marking):\n${clampText(markSchemeText)}` });
   }
-  if (Array.isArray(msAttachments) && msAttachments.length) {
+  {
     let added = 0;
-    for (const a of msAttachments.slice(0, MAX_IMAGES)) {
+    for (const a of (Array.isArray(msAttachmentUrls) ? msAttachmentUrls : []).slice(0, MAX_FILES)) {
+      const b = toUrlBlock(a);
+      if (b) { blocks.push(b); added++; }
+    }
+    for (const a of (Array.isArray(msAttachments) ? msAttachments : []).slice(0, MAX_IMAGES)) {
       const b = toAttachmentBlock(a);
       if (b) { blocks.push(b); added++; }
     }
@@ -185,14 +211,19 @@ export default async function handler(req, res) {
   if (answersText && String(answersText).trim()) {
     blocks.push({ type: 'text', text: `Student's typed answers:\n${clampText(answersText)}` });
   }
-  // Accept the new `attachments` (mixed image/PDF) and the legacy `images` array.
-  const answerFiles = [
-    ...(Array.isArray(attachments) ? attachments : []),
-    ...(Array.isArray(images) ? images : []),
-  ].slice(0, MAX_IMAGES);
-  if (answerFiles.length) {
+  // Preferred path: signed Storage URLs (handles large PDFs — no body-size limit).
+  // Also accept the legacy inline base64 arrays for older clients.
+  {
     let added = 0;
-    for (const a of answerFiles) {
+    for (const a of (Array.isArray(attachmentUrls) ? attachmentUrls : []).slice(0, MAX_FILES)) {
+      const b = toUrlBlock(a);
+      if (b) { blocks.push(b); added++; }
+    }
+    const legacyFiles = [
+      ...(Array.isArray(attachments) ? attachments : []),
+      ...(Array.isArray(images) ? images : []),
+    ].slice(0, MAX_IMAGES);
+    for (const a of legacyFiles) {
       const b = toAttachmentBlock(a);
       if (b) { blocks.push(b); added++; }
     }
@@ -230,5 +261,11 @@ export default async function handler(req, res) {
     console.error('Mark-paper error:', err.status, err.message);
     if (err.status === 429) return res.status(200).json({ error: 'The marker is busy right now — try again in a minute.' });
     return res.status(500).json({ error: 'Marking failed — try again.' });
+  } finally {
+    // Claude has already fetched the URLs by now — remove the uploaded files.
+    if (cleanupPaths.length) {
+      try { await admin.storage.from('paper-uploads').remove(cleanupPaths); }
+      catch (e) { console.error('Mark-paper cleanup failed:', e?.message); }
+    }
   }
 }
