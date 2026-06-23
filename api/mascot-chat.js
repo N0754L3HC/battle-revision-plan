@@ -30,7 +30,7 @@ const rateLimitUser = uid => take(userBucket, uid, HOUR_USER_CAP);
 
 // Daily caps + message size — enforced via Supabase counters.
 const DAILY_USER_CAP   = parseInt(process.env.CHAT_DAILY_PER_USER || '30',   10);
-const DAILY_GLOBAL_CAP = parseInt(process.env.CHAT_DAILY_GLOBAL   || '5000', 10);
+const DAILY_GLOBAL_CAP = parseInt(process.env.CHAT_DAILY_GLOBAL   || '50000', 10);
 const MSG_MAX_CHARS    = parseInt(process.env.CHAT_MSG_MAX_CHARS  || '600',  10);
 const HISTORY_TURNS    = parseInt(process.env.CHAT_HISTORY_TURNS  || '5',    10);
 

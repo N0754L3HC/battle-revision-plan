@@ -1208,39 +1208,36 @@ function WaitlistPanel() {
 // ── Dashboard ──────────────────────────────────────────────────────────────
 // ── Finance ─────────────────────────────────────────────────────────────────
 function AiUsagePanel({users=[]}) {
-  const [rows,setRows]=useState(null);
+  const [report,setReport]=useState(null);
   const [days,setDays]=useState(30);
   const [loading,setLoading]=useState(true);
   useEffect(()=>{
     let alive=true;
     (async()=>{
       setLoading(true);
-      const since=new Date(Date.now()-days*864e5).toISOString();
-      const {data}=await supabase.from('ai_usage')
-        .select('user_id,feature,model,input_tokens,output_tokens,cost_usd,created_at')
-        .gte('created_at',since).order('created_at',{ascending:false}).limit(20000);
-      if(alive){ setRows(data||[]); setLoading(false); }
+      // Aggregated server-side (no row cap) so totals stay accurate at scale.
+      const {data}=await supabase.rpc('ai_usage_report',{p_days:days});
+      if(alive){ setReport(data||{total:{},byFeature:[],topUsers:[]}); setLoading(false); }
     })();
     return ()=>{alive=false;};
   },[days]);
 
   const USD_GBP=0.79;           // rough $→£ for the profit estimate
-  const r=rows||[];
-  const totalUSD=r.reduce((a,x)=>a+Number(x.cost_usd||0),0);
-  const totalTok=r.reduce((a,x)=>a+(x.input_tokens||0)+(x.output_tokens||0),0);
+  const rep=report||{total:{},byFeature:[],topUsers:[]};
+  const totalUSD=Number(rep.total?.cost||0);
+  const totalTok=Number(rep.total?.tokens||0);
+  const totalCalls=Number(rep.total?.calls||0);
 
   const FEAT={chat:{l:'Mascot chat',c:'#0369a1'},marker:{l:'Paper marker',c:ACCENT},planner:{l:'Study planner',c:'#a855f7'}};
   const byFeature={};
-  r.forEach(x=>{ const f=x.feature||'other'; (byFeature[f]=byFeature[f]||{cost:0,calls:0}); byFeature[f].cost+=Number(x.cost_usd||0); byFeature[f].calls++; });
-  const featRows=Object.entries(byFeature).map(([f,v])=>({f,label:FEAT[f]?.l||f,c:FEAT[f]?.c||MUT,...v})).sort((a,b)=>b.cost-a.cost);
+  (rep.byFeature||[]).forEach(x=>{ byFeature[x.feature]={cost:Number(x.cost||0),calls:Number(x.calls||0)}; });
+  const featRows=(rep.byFeature||[]).map(x=>({f:x.feature,label:FEAT[x.feature]?.l||x.feature,c:FEAT[x.feature]?.c||MUT,cost:Number(x.cost||0),calls:Number(x.calls||0)})).sort((a,b)=>b.cost-a.cost);
   const maxFeat=Math.max(0.000001,...featRows.map(x=>x.cost));
 
   const uFor=id=>users.find(u=>u.id===id);
   const isProFor=id=>{ const u=uFor(id); if(!u) return false; const now=Date.now();
     return u.subscription_status==='active'||u.subscription_status==='trialing'||(u.referral_pro_until&&new Date(u.referral_pro_until).getTime()>now)||u.is_admin; };
-  const byUser={};
-  r.forEach(x=>{ const k=x.user_id||'anon'; (byUser[k]=byUser[k]||{cost:0,calls:0,chat:0,marker:0,planner:0}); byUser[k].cost+=Number(x.cost_usd||0); byUser[k].calls++; if(byUser[k][x.feature]!=null) byUser[k][x.feature]++; });
-  const userRows=Object.entries(byUser).map(([id,v])=>{ const u=uFor(id); return {id,name:u?(u.display_name||u.email):'(unknown / deleted)',pro:isProFor(id),...v}; }).sort((a,b)=>b.cost-a.cost).slice(0,25);
+  const userRows=(rep.topUsers||[]).map(v=>{ const u=uFor(v.user_id); return {id:v.user_id,name:u?(u.display_name||u.email):'(unknown / deleted)',pro:isProFor(v.user_id),cost:Number(v.cost||0),calls:Number(v.calls||0),chat:Number(v.chat||0),marker:Number(v.marker||0),planner:Number(v.planner||0)}; });
 
   const paying=users.filter(u=>u.subscription_status==='active').length;
   const mrrGBP=paying*4.99;
@@ -1265,12 +1262,12 @@ function AiUsagePanel({users=[]}) {
         {[7,30].map(d=>(
           <button key={d} onClick={()=>setDays(d)} style={{...btn(ACCENT),background:days===d?ACCENT_SOFT:'transparent',color:days===d?'#fff':TXT2}}>Last {d} days</button>
         ))}
-        <span style={{fontSize:12,color:DIM}}>{loading?'Loading…':`${r.length} AI calls`}</span>
+        <span style={{fontSize:12,color:DIM}}>{loading?'Loading…':`${totalCalls} AI calls`}</span>
         <span style={{marginLeft:'auto',fontSize:11,color:DIM}}>Cost in USD (Anthropic/Google bill in $); profit converts at ~£{USD_GBP}/$.</span>
       </div>
 
       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:10}}>
-        <Kpi l={`AI spend · ${days}d`} v={$(totalUSD)} sub={`${tok(totalTok)} tokens · ${r.length} calls`} c={WARN}/>
+        <Kpi l={`AI spend · ${days}d`} v={$(totalUSD)} sub={`${tok(totalTok)} tokens · ${totalCalls} calls`} c={WARN}/>
         <Kpi l="Projected monthly spend" v={`£${projMonthGBP.toFixed(2)}`} sub={`${$(projMonthUSD)} / mo`}/>
         <Kpi l="MRR (paying)" v={`£${mrrGBP.toFixed(2)}`} sub={`${paying} × £4.99`} c={OK}/>
         <Kpi l="Profit (est.)" v={`£${profitGBP.toFixed(2)}`} sub="MRR − projected AI cost" c={profitGBP>=0?OK:BAD}/>
@@ -1490,7 +1487,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
   // Auto-refresh every 60s so new signups / payments surface without a manual
   // click. Pauses while a user detail is open to avoid yanking the view.
   useEffect(()=>{
-    const t=setInterval(()=>{ if(!document.hidden) loadData(); },30000);
+    const t=setInterval(()=>{ if(!document.hidden) loadData(); },120000);
     return ()=>clearInterval(t);
   },[loadData]);
 

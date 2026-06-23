@@ -40,8 +40,9 @@ const MARK_HOUR_USER = parseInt(process.env.MARK_HOUR_PER_USER || '6',  10);
 const MARK_DAY_USER  = parseInt(process.env.MARK_DAY_PER_USER  || '20', 10);
 // Page budget (DB-backed, survives cold starts) — the real token-drain guard,
 // since every PDF/image page costs ~1.5-3k Claude tokens.
-const MAX_PAGES_REQ  = parseInt(process.env.MARK_PAGES_PER_REQUEST || '40',  10);
-const MARK_PAGES_DAY = parseInt(process.env.MARK_PAGES_PER_DAY     || '60', 10);
+const MAX_PAGES_REQ   = parseInt(process.env.MARK_PAGES_PER_REQUEST || '40',  10);
+const MARK_PAGES_DAY  = parseInt(process.env.MARK_PAGES_PER_DAY     || '60',  10);
+const MARK_PAGES_MONTH= parseInt(process.env.MARK_PAGES_PER_MONTH   || '300', 10); // fair-use cap
 
 // Limits on the payload Claude sees (cost + abuse control).
 const MAX_IMAGES = 12;
@@ -257,13 +258,15 @@ export default async function handler(req, res) {
   const pageUnits = Math.max(claimedPages, fileCount);
   if (pageUnits > MAX_PAGES_REQ) return res.status(400).json({ error: `That's too many pages at once (max ${MAX_PAGES_REQ}). Mark one paper at a time.`, code: 'pages_req' });
   if (pageUnits > 0) {
-    // Record usage for EVERYONE so the daily-allowance bar is consistent across
-    // sessions; admins use an effectively-infinite cap so they're never blocked.
-    const cap = prof?.is_admin ? 1000000000 : MARK_PAGES_DAY;
-    const { data: allowed, error: bumpErr } = await admin.rpc('bump_mark_files',
-      { p_uid: uid, p_add: pageUnits, p_cap: cap });
-    if (bumpErr) { console.error('bump_mark_files error:', bumpErr.message); return res.status(500).json({ error: 'Marking failed — try again.' }); }
-    if (allowed === false) return res.status(429).json({ error: `Daily marking limit reached (${MARK_PAGES_DAY} pages/day). This protects the service — try again tomorrow.`, code: 'pages_day' });
+    // Record usage for EVERYONE so the allowance bar is consistent across
+    // sessions; admins get effectively-infinite caps so they're never blocked.
+    const dayCap   = prof?.is_admin ? 1000000000 : MARK_PAGES_DAY;
+    const monthCap = prof?.is_admin ? 1000000000 : MARK_PAGES_MONTH;
+    const { data: code, error: bumpErr } = await admin.rpc('bump_mark_usage',
+      { p_uid: uid, p_add: pageUnits, p_day_cap: dayCap, p_month_cap: monthCap });
+    if (bumpErr) { console.error('bump_mark_usage error:', bumpErr.message); return res.status(500).json({ error: 'Marking failed — try again.' }); }
+    if (code === 'day')   return res.status(429).json({ error: `Daily marking limit reached (${MARK_PAGES_DAY} pages/day). Resets tomorrow — this keeps the service fast for everyone.`, code: 'pages_day' });
+    if (code === 'month') return res.status(429).json({ error: `You've reached this month's fair-use marking limit (${MARK_PAGES_MONTH} pages). It resets at the start of next month.`, code: 'pages_month' });
   }
 
   // Build the user content for Claude: a header, then text answers and/or images.

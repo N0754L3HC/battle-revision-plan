@@ -2630,6 +2630,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
   const [elapsed,setElapsed]=useState(0);   // seconds since marking began
   const [estSecs,setEstSecs]=useState(null); // rough estimate based on page count
   const [dailyUsed,setDailyUsed]=useState(null); // pages marked today (server-tracked)
+  const [monthUsed,setMonthUsed]=useState(null); // pages marked this month (fair-use)
   const MARK_STAGES=[
     'Reading the questions…',
     'Looking at your answers…',
@@ -2644,16 +2645,21 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
   const MAX_FILES=6;            // per area (answers / mark scheme)
   const MAX_FILE_MB=30;         // matches the Storage bucket limit
   const MAX_PAGES=40;           // total pages per mark — every page costs Claude tokens
-  const DAILY_PAGE_CAP=60;      // matches backend MARK_PAGES_PER_DAY default
-  // Pull today's marking usage so we can show a daily-allowance bar (Pro only;
-  // free users are gated by the weekly free mark instead). Resets at UTC midnight.
+  const DAILY_PAGE_CAP=60;       // matches backend MARK_PAGES_PER_DAY default
+  const MONTH_PAGE_CAP=300;      // matches backend MARK_PAGES_PER_MONTH default
+  // Pull today's + this month's marking usage so we can show an allowance bar
+  // (Pro only; free users are gated by the weekly free mark instead).
   useEffect(()=>{
     if(!isPro) return;
     (async()=>{
       const {data:{session}}=await supabase.auth.getSession();
       const uid=session?.user?.id; if(!uid) return;
-      const {data}=await supabase.from('user_profiles').select('mark_files_count,mark_files_date').eq('id',uid).maybeSingle();
-      if(data){ const today=new Date().toISOString().slice(0,10); setDailyUsed(data.mark_files_date===today?(data.mark_files_count||0):0); }
+      const {data}=await supabase.from('user_profiles').select('mark_files_count,mark_files_date,mark_pages_month,mark_pages_month_key').eq('id',uid).maybeSingle();
+      if(data){
+        const today=new Date().toISOString().slice(0,10), mk=new Date().toISOString().slice(0,7);
+        setDailyUsed(data.mark_files_date===today?(data.mark_files_count||0):0);
+        setMonthUsed(data.mark_pages_month_key===mk?(data.mark_pages_month||0):0);
+      }
     })();
   },[isPro]);
   const readDataUrl=f=>new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>res(null);r.readAsDataURL(f);});
@@ -2766,7 +2772,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
       const d=await r.json();
       if(!r.ok||d.error) throw new Error(d.error||'Marking failed');
       setResult(d.result); setActions(d.actions||[]);
-      if(isPro) setDailyUsed(u=>(u==null?0:u)+totalPages); // reflect today's spend
+      if(isPro){ setDailyUsed(u=>(u==null?0:u)+totalPages); setMonthUsed(u=>(u==null?0:u)+totalPages); } // reflect spend
       if((d.actions||[]).length>0) setShowConfirm(true); // surface the log prompt front-and-centre
     }catch(e){setErr(e.message);}
     clearInterval(iv); clearInterval(et);
@@ -2849,6 +2855,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
               </div>
               <div style={{fontSize:10,color:C.subtle,marginTop:5}}>
                 {full?"You've reached today's limit — resets tomorrow.":`Resets daily · ${DAILY_PAGE_CAP-dailyUsed} pages left today`}
+                {monthUsed!=null&&` · ${Math.max(0,MONTH_PAGE_CAP-monthUsed)}/${MONTH_PAGE_CAP} left this month`}
               </div>
             </div>
           );
