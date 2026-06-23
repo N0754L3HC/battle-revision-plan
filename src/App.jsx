@@ -2701,28 +2701,71 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
                 </div>
               </div>
             )}
-            {result.summary&&<div style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:12}}>{result.summary}</div>}
+            {result.summary&&(
+              <div style={{fontSize:14,color:C.text,lineHeight:1.7,marginBottom:14,
+                background:C.card2,borderRadius:12,padding:'14px 16px',borderLeft:`3px solid ${C.accent}`}}>
+                {result.summary}
+              </div>
+            )}
+
+            {Array.isArray(result.strengths)&&result.strengths.length>0&&(
+              <div style={{marginBottom:16}}>
+                <div style={{...labelStyle,marginBottom:8}}>What you did well</div>
+                <div style={{display:'flex',flexDirection:'column',gap:7}}>
+                  {result.strengths.slice(0,8).map((s,i)=>(
+                    <div key={i} style={{display:'flex',gap:8,fontSize:13.5,color:C.text,lineHeight:1.55}}>
+                      <CheckCircle size={15} strokeWidth={2.5} color={C.success||'#22c55e'} style={{flexShrink:0,marginTop:2}}/>
+                      <span>{s}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {Array.isArray(result.questions)&&result.questions.length>0&&(
-              <div style={{marginBottom:12}}>
-                <div style={labelStyle}>Question breakdown</div>
-                {result.questions.slice(0,30).map((q,i)=>(
-                  <div key={i} style={{display:'flex',gap:8,fontSize:12,color:C.muted,padding:'6px 0',borderBottom:`1px solid ${C.border}`}}>
-                    <span style={{fontWeight:700,color:C.text,flexShrink:0}}>{q.q} {q.earned!=null&&q.available!=null?`${q.earned}/${q.available}`:''}</span>
-                    <span style={{lineHeight:1.5}}>{q.feedback}</span>
-                  </div>
-                ))}
+              <div style={{marginBottom:16}}>
+                <div style={{...labelStyle,marginBottom:8}}>Question by question</div>
+                <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                  {result.questions.slice(0,60).map((q,i)=>{
+                    const hasMarks=q.earned!=null&&q.available!=null;
+                    const full=hasMarks&&q.earned>=q.available&&q.available>0;
+                    const zero=hasMarks&&q.earned<=0&&q.available>0;
+                    const badge=full?(C.success||'#22c55e'):zero?(C.danger||'#ef4444'):'#f59e0b';
+                    return (
+                      <div key={i} style={{background:C.card2,borderRadius:12,padding:'12px 14px'}}>
+                        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:(q.feedback||q.fix)?7:0}}>
+                          <span style={{fontSize:13.5,fontWeight:800,color:C.text}}>{q.q||`Question ${i+1}`}</span>
+                          {hasMarks&&(
+                            <span style={{marginLeft:'auto',fontSize:11.5,fontWeight:800,color:'#fff',
+                              background:badge,borderRadius:20,padding:'2px 10px',whiteSpace:'nowrap'}}>{q.earned}/{q.available} marks</span>
+                          )}
+                        </div>
+                        {q.feedback&&<div style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:q.fix?8:0}}>{q.feedback}</div>}
+                        {q.fix&&(
+                          <div style={{display:'flex',gap:7,fontSize:12.5,lineHeight:1.55,
+                            background:C.accentSoft||`${C.accent}14`,borderRadius:8,padding:'8px 10px'}}>
+                            <span style={{fontWeight:800,color:C.accent,flexShrink:0}}>To improve:</span>
+                            <span style={{color:C.text}}>{q.fix}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
             {Array.isArray(result.errors)&&result.errors.length>0&&(
-              <div style={{marginBottom:14}}>
-                <div style={labelStyle}>Errors to fix</div>
-                {result.errors.slice(0,12).map((e,i)=>(
-                  <div key={i} style={{fontSize:12,color:C.muted,padding:'4px 0',lineHeight:1.5}}>
-                    <b style={{color:C.text}}>{e.topic}</b>{e.type?` · ${e.type}`:''} — {e.note}
-                  </div>
-                ))}
+              <div style={{marginBottom:16}}>
+                <div style={{...labelStyle,marginBottom:8}}>Mistakes to watch for next time</div>
+                <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                  {result.errors.slice(0,12).map((e,i)=>(
+                    <div key={i} style={{fontSize:13,color:C.text,lineHeight:1.55,padding:'2px 0'}}>
+                      <b style={{color:C.text}}>{e.topic}</b>{e.type?<span style={{color:C.muted}}> · {e.type}</span>:''}
+                      {e.note&&<div style={{fontSize:12.5,color:C.muted,lineHeight:1.55,marginTop:2}}>{e.note}</div>}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
