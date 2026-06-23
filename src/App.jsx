@@ -2466,11 +2466,13 @@ function loadHljs(){
   })();
   return _hljsPromise;
 }
-// Inline markdown only (bold/italic/code) — reused for table cells.
+// Inline markdown (code / bold / highlight / underline / italic) — reused for cells.
 function _inlineMd(s){
   return s
     .replace(/`([^`\n]+)`/g,'<code style="background:rgba(127,127,127,0.16);border-radius:4px;padding:1px 5px;font-size:0.92em">$1</code>')
-    .replace(/\*\*([^\n]+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*\*([^\n]+?)\*\*/g,'<strong style="font-weight:800">$1</strong>')
+    .replace(/==([^=\n]+)==/g,'<mark style="background:rgba(250,204,21,0.40);color:inherit;padding:0 3px;border-radius:3px;font-weight:600">$1</mark>')
+    .replace(/__([^_\n]+)__/g,'<u style="text-decoration-color:rgba(127,127,127,0.6);text-underline-offset:2px">$1</u>')
     .replace(/(^|[^*])\*([^*\n]+?)\*(?!\*)/g,'$1<em>$2</em>');
 }
 // Draw a simple chart from a JSON spec as inline SVG (no dependency). Supports
@@ -2583,8 +2585,9 @@ function _renderRich(text,katex,hljs){
   s=s.replace(/^[ \t]*([-*_])\1{2,}[ \t]*$/gm,'<hr style="border:none;border-top:1px solid currentColor;opacity:0.18;margin:9px 0"/>');
   s=s.replace(/^[ \t]*[-*][ \t]+(.+)$/gm,'<div style="padding-left:14px;text-indent:-9px">&bull; $1</div>');
 
-  // 5) inline markdown + line breaks
+  // 5) inline markdown + line breaks (blank lines become real paragraph gaps)
   s=_inlineMd(s);
+  s=s.replace(/\n{2,}/g,'<div style="height:8px"></div>');
   s=s.replace(/\n/g,'<br/>');
   s=s.replace(/<br\/>(<(?:div|hr|table))/g,'$1').replace(/(<\/div>|<hr[^>]*\/>)<br\/>/g,'$1');
   s=s.replace(/<br\/>(\[\[RB:(\d+)\]\])/g,(m,p,i)=>blockIdx.has(+i)?p:m);
@@ -2914,8 +2917,8 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
               </div>
             )}
             {result.summary&&(
-              <RichText style={{fontSize:14,color:C.text,lineHeight:1.7,marginBottom:14,
-                background:C.card2,borderRadius:12,padding:'14px 16px',borderLeft:`3px solid ${C.accent}`}}>
+              <RichText style={{fontSize:14,color:C.text,lineHeight:1.8,marginBottom:14,
+                background:C.card2,borderRadius:12,padding:'16px 18px',borderLeft:`3px solid ${C.accent}`}}>
                 {result.summary}
               </RichText>
             )}
@@ -2943,16 +2946,16 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
                   <span><b style={{color:'#f59e0b'}}>!</b> needs care</span>
                   <span><b style={{color:C.accent}}>↳</b> Caps's note</span>
                 </div>
-                <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                <div style={{display:'flex',flexDirection:'column',gap:12}}>
                   {result.questions.slice(0,60).map((q,i)=>{
                     const hasMarks=q.earned!=null&&q.available!=null;
                     const full=hasMarks&&q.earned>=q.available&&q.available>0;
                     const zero=hasMarks&&q.earned<=0&&q.available>0;
                     const badge=full?(C.success||'#22c55e'):zero?(C.danger||'#ef4444'):'#f59e0b';
                     return (
-                      <div key={i} style={{background:C.card2,borderRadius:12,padding:'12px 14px'}}>
-                        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:(q.feedback||q.fix)?7:0}}>
-                          <span style={{fontSize:13.5,fontWeight:800,color:C.text}}>{q.q||`Question ${i+1}`}</span>
+                      <div key={i} style={{background:C.card2,borderRadius:12,padding:'14px 16px'}}>
+                        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:(q.feedback||q.fix)?9:0}}>
+                          <span style={{fontSize:14,fontWeight:800,color:C.text}}>{q.q||`Question ${i+1}`}</span>
                           {hasMarks&&(
                             <span style={{marginLeft:'auto',fontSize:11.5,fontWeight:800,color:'#fff',
                               background:badge,borderRadius:20,padding:'2px 10px',whiteSpace:'nowrap'}}>{q.earned}/{q.available} marks</span>
@@ -2992,12 +2995,11 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
                             )}
                           </div>
                         )}
-                        {q.feedback&&<RichText style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:q.fix?8:0}}>{q.feedback}</RichText>}
+                        {q.feedback&&<RichText style={{fontSize:13.5,color:C.text,lineHeight:1.75,marginBottom:q.fix?10:0}}>{q.feedback}</RichText>}
                         {q.fix&&(
-                          <div style={{display:'flex',gap:7,fontSize:12.5,lineHeight:1.55,
-                            background:C.accentSoft||`${C.accent}14`,borderRadius:8,padding:'8px 10px'}}>
-                            <span style={{fontWeight:800,color:C.accent,flexShrink:0}}>To improve:</span>
-                            <MathText style={{color:C.text}}>{q.fix}</MathText>
+                          <div style={{fontSize:12.5,lineHeight:1.6,background:C.accentSoft||`${C.accent}14`,borderRadius:8,padding:'9px 12px'}}>
+                            <div style={{fontWeight:800,color:C.accent,fontSize:10.5,textTransform:'uppercase',letterSpacing:0.5,marginBottom:4}}>To improve</div>
+                            <RichText style={{color:C.text}}>{q.fix}</RichText>
                           </div>
                         )}
                       </div>
