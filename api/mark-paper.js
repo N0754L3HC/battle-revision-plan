@@ -256,9 +256,12 @@ export default async function handler(req, res) {
   const claimedPages = Math.max(0, parseInt(req.body?.pages, 10) || 0);
   const pageUnits = Math.max(claimedPages, fileCount);
   if (pageUnits > MAX_PAGES_REQ) return res.status(400).json({ error: `That's too many pages at once (max ${MAX_PAGES_REQ}). Mark one paper at a time.`, code: 'pages_req' });
-  if (!prof?.is_admin && pageUnits > 0) {
+  if (pageUnits > 0) {
+    // Record usage for EVERYONE so the daily-allowance bar is consistent across
+    // sessions; admins use an effectively-infinite cap so they're never blocked.
+    const cap = prof?.is_admin ? 1000000000 : MARK_PAGES_DAY;
     const { data: allowed, error: bumpErr } = await admin.rpc('bump_mark_files',
-      { p_uid: uid, p_add: pageUnits, p_cap: MARK_PAGES_DAY });
+      { p_uid: uid, p_add: pageUnits, p_cap: cap });
     if (bumpErr) { console.error('bump_mark_files error:', bumpErr.message); return res.status(500).json({ error: 'Marking failed — try again.' }); }
     if (allowed === false) return res.status(429).json({ error: `Daily marking limit reached (${MARK_PAGES_DAY} pages/day). This protects the service — try again tomorrow.`, code: 'pages_day' });
   }
