@@ -2454,13 +2454,48 @@ function MathText({children,style,as='span'}){
   return <Tag style={style} dangerouslySetInnerHTML={{__html:_renderMath(text,k)}}/>;
 }
 
-// Full renderer: markdown (bold/italic/code/headings/bullets/rule) + LaTeX, for
-// Caps chat which replies in markdown. Without this, **bold**, lists and headings
-// show as raw symbols a student would be put off by. Sentinels are private-use
-// chars built at runtime so the source stays plain ASCII.
-function _renderRich(text,katex){
-  const maths=[];
+// Syntax highlighting (lazy highlight.js) for fenced code blocks — CS, R, etc.
+let _hljs=null,_hljsPromise=null;
+function loadHljs(){
+  if(_hljs) return Promise.resolve(_hljs);
+  if(_hljsPromise) return _hljsPromise;
+  _hljsPromise=(async()=>{
+    try{ await import('highlight.js/styles/github-dark.css'); }catch{}
+    const m=await import('highlight.js/lib/common');
+    _hljs=m.default||m; return _hljs;
+  })();
+  return _hljsPromise;
+}
+// Inline markdown only (bold/italic/code) — reused for table cells.
+function _inlineMd(s){
+  return s
+    .replace(/`([^`\n]+)`/g,'<code style="background:rgba(127,127,127,0.16);border-radius:4px;padding:1px 5px;font-size:0.92em">$1</code>')
+    .replace(/\*\*([^\n]+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*\n]+?)\*(?!\*)/g,'$1<em>$2</em>');
+}
+// Full renderer: markdown (bold/italic/code/headings/bullets/rule/TABLES) +
+// fenced CODE blocks (highlighted) + LaTeX. So Caps's replies and the marker's
+// feedback render cleanly across subjects — maths in LaTeX, CS in code blocks,
+// accounting/economics in tables — instead of raw symbols.
+function _renderRich(text,katex,hljs){
+  const parts=[]; const blockIdx=new Set();
+  const stash=(html,block)=>{ parts.push(html); if(block) blockIdx.add(parts.length-1); return '[[RB:'+(parts.length-1)+']]'; };
   let t=String(text??'');
+
+  // 1) fenced code blocks ```lang … ```
+  t=t.replace(/```([a-zA-Z0-9+#._-]*)\n?([\s\S]*?)```/g,(m,lang,code)=>{
+    code=code.replace(/\n+$/,'');
+    let inner;
+    if(hljs){
+      try{ inner=(lang&&hljs.getLanguage&&hljs.getLanguage(lang))
+        ? hljs.highlight(code,{language:lang,ignoreIllegals:true}).value
+        : hljs.highlightAuto(code).value; }
+      catch{ inner=_escHtml(code); }
+    } else inner=_escHtml(code);
+    return stash(`<pre style="margin:9px 0;border-radius:8px;overflow:auto;font-size:12px;line-height:1.55"><code class="hljs language-${_escHtml(lang)}" style="font-family:ui-monospace,Menlo,Consolas,monospace">${inner}</code></pre>`,true);
+  });
+
+  // 2) maths (LaTeX)
   if(katex){
     const re=/(\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\$[^$\n]+?\$|\\\([\s\S]+?\\\))/g;
     t=t.replace(re,(seg)=>{
@@ -2470,30 +2505,59 @@ function _renderRich(text,katex){
       else if(seg.startsWith('\\(')){body=seg.slice(2,-2);}
       else {body=seg.slice(1,-1);}
       let html; try{ html=katex.renderToString(body,{displayMode:display,throwOnError:false,output:'html'}); }catch{ html=_escHtml(seg); }
-      maths.push(html); return '[[MK:'+(maths.length-1)+']]';
+      return stash(html,display);
     });
   }
+
   let s=_escHtml(t);
+
+  // 3) markdown pipe tables
+  s=(function(str){
+    const lines=str.split('\n'), out=[];
+    const isRow=l=>/^\s*\|.*\|\s*$/.test(l);
+    const isSep=l=>/^\s*\|?[\s:|-]+\|?\s*$/.test(l)&&/-/.test(l);
+    const cells=l=>l.trim().replace(/^\|/,'').replace(/\|$/,'').split('|').map(c=>c.trim());
+    for(let i=0;i<lines.length;i++){
+      if(isRow(lines[i])&&i+1<lines.length&&isSep(lines[i+1])){
+        const head=cells(lines[i]); let j=i+2; const body=[];
+        while(j<lines.length&&isRow(lines[j])){ body.push(cells(lines[j])); j++; }
+        const th='<tr>'+head.map(c=>`<th style="text-align:left;padding:6px 10px;border-bottom:1px solid rgba(127,127,127,0.35);font-weight:700;white-space:nowrap">${_inlineMd(c)}</th>`).join('')+'</tr>';
+        const tb=body.map(r=>'<tr>'+r.map(c=>`<td style="padding:6px 10px;border-bottom:1px solid rgba(127,127,127,0.15)">${_inlineMd(c)}</td>`).join('')+'</tr>').join('');
+        out.push(stash(`<div style="overflow-x:auto;margin:8px 0"><table style="border-collapse:collapse;width:100%;font-size:12.5px">${th}${tb}</table></div>`,true));
+        i=j-1;
+      } else out.push(lines[i]);
+    }
+    return out.join('\n');
+  })(s);
+
+  // 4) block markdown
   s=s.replace(/^[ \t]*#{3,6}[ \t]+(.+)$/gm,'<div style="font-weight:800;margin:8px 0 2px">$1</div>')
      .replace(/^[ \t]*##[ \t]+(.+)$/gm,'<div style="font-weight:800;font-size:1.05em;margin:8px 0 2px">$1</div>')
      .replace(/^[ \t]*#[ \t]+(.+)$/gm,'<div style="font-weight:800;font-size:1.1em;margin:8px 0 3px">$1</div>');
   s=s.replace(/^[ \t]*([-*_])\1{2,}[ \t]*$/gm,'<hr style="border:none;border-top:1px solid currentColor;opacity:0.18;margin:9px 0"/>');
   s=s.replace(/^[ \t]*[-*][ \t]+(.+)$/gm,'<div style="padding-left:14px;text-indent:-9px">&bull; $1</div>');
-  s=s.replace(/`([^`\n]+)`/g,'<code style="background:rgba(127,127,127,0.16);border-radius:4px;padding:1px 5px;font-size:0.92em">$1</code>');
-  s=s.replace(/\*\*([^\n]+?)\*\*/g,'<strong>$1</strong>');
-  s=s.replace(/(^|[^*])\*([^*\n]+?)\*(?!\*)/g,'$1<em>$2</em>');
+
+  // 5) inline markdown + line breaks
+  s=_inlineMd(s);
   s=s.replace(/\n/g,'<br/>');
-  s=s.replace(/<br\/>(<(?:div|hr))/g,'$1').replace(/(<\/div>|<hr[^>]*\/>)<br\/>/g,'$1');
-  s=s.replace(/\[\[MK:(\d+)\]\]/g,(_,i)=>maths[i]);
+  s=s.replace(/<br\/>(<(?:div|hr|table))/g,'$1').replace(/(<\/div>|<hr[^>]*\/>)<br\/>/g,'$1');
+  s=s.replace(/<br\/>(\[\[RB:(\d+)\]\])/g,(m,p,i)=>blockIdx.has(+i)?p:m);
+  s=s.replace(/(\[\[RB:(\d+)\]\])<br\/>/g,(m,p,i)=>blockIdx.has(+i)?p:m);
+
+  // 6) restore code / math / tables
+  s=s.replace(/\[\[RB:(\d+)\]\]/g,(_,i)=>parts[i]);
   return s;
 }
 function RichText({children,style}){
   const text=String(children??'');
   const hasMath=/\$|\\\(|\\\[/.test(text);
+  const hasCode=/```/.test(text);
   const [k,setK]=useState(_katex);
+  const [hl,setHl]=useState(_hljs);
   useEffect(()=>{ if(hasMath&&!_katex) loadKatex().then(setK).catch(()=>{}); },[hasMath]);
+  useEffect(()=>{ if(hasCode&&!_hljs) loadHljs().then(setHl).catch(()=>{}); },[hasCode]);
   if(hasMath&&!k) return <div style={style}>{text}</div>; // brief: wait for KaTeX
-  return <div style={style} dangerouslySetInnerHTML={{__html:_renderRich(text,hasMath?k:null)}}/>;
+  return <div style={style} dangerouslySetInnerHTML={{__html:_renderRich(text,hasMath?k:null,hasCode?hl:null)}}/>;
 }
 
 function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}),isPro=false,addToast=()=>{},C,font,onClose}) {
@@ -2804,10 +2868,10 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
               </div>
             )}
             {result.summary&&(
-              <MathText as="div" style={{fontSize:14,color:C.text,lineHeight:1.7,marginBottom:14,
+              <RichText style={{fontSize:14,color:C.text,lineHeight:1.7,marginBottom:14,
                 background:C.card2,borderRadius:12,padding:'14px 16px',borderLeft:`3px solid ${C.accent}`}}>
                 {result.summary}
-              </MathText>
+              </RichText>
             )}
 
             {Array.isArray(result.strengths)&&result.strengths.length>0&&(
@@ -2848,7 +2912,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
                               background:badge,borderRadius:20,padding:'2px 10px',whiteSpace:'nowrap'}}>{q.earned}/{q.available} marks</span>
                           )}
                         </div>
-                        {q.questionText&&<MathText as="div" style={{fontSize:12,color:C.muted,fontStyle:'italic',lineHeight:1.5,marginBottom:9}}>{q.questionText}</MathText>}
+                        {q.questionText&&<RichText style={{fontSize:12,color:C.muted,fontStyle:'italic',lineHeight:1.5,marginBottom:9}}>{q.questionText}</RichText>}
                         {((Array.isArray(q.yourWorking)&&q.yourWorking.length>0)||(Array.isArray(q.modelWorking)&&q.modelWorking.length>0))&&(
                           <div style={{display:'flex',flexWrap:'wrap',gap:10,marginBottom:(q.feedback||q.fix)?9:0}}>
                             {Array.isArray(q.yourWorking)&&q.yourWorking.length>0&&(
@@ -2882,7 +2946,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
                             )}
                           </div>
                         )}
-                        {q.feedback&&<MathText as="div" style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:q.fix?8:0}}>{q.feedback}</MathText>}
+                        {q.feedback&&<RichText style={{fontSize:13,color:C.text,lineHeight:1.6,marginBottom:q.fix?8:0}}>{q.feedback}</RichText>}
                         {q.fix&&(
                           <div style={{display:'flex',gap:7,fontSize:12.5,lineHeight:1.55,
                             background:C.accentSoft||`${C.accent}14`,borderRadius:8,padding:'8px 10px'}}>
@@ -2904,7 +2968,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
                   {result.errors.slice(0,12).map((e,i)=>(
                     <div key={i} style={{fontSize:13,color:C.text,lineHeight:1.55,padding:'2px 0'}}>
                       <b style={{color:C.text}}>{e.topic}</b>{e.type?<span style={{color:C.muted}}> · {e.type}</span>:''}
-                      {e.note&&<MathText as="div" style={{fontSize:12.5,color:C.muted,lineHeight:1.55,marginTop:2}}>{e.note}</MathText>}
+                      {e.note&&<RichText style={{fontSize:12.5,color:C.muted,lineHeight:1.55,marginTop:2}}>{e.note}</RichText>}
                     </div>
                   ))}
                 </div>

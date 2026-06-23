@@ -27,7 +27,7 @@ export default defineConfig({
         // Don't precache the heavy, on-demand libs (KaTeX maths, pdf.js page
         // counting, mammoth .docx) — they'd bloat first load for everyone. They
         // load lazily and are runtime-cached after first use instead.
-        globIgnores: ['**/katex-*.js', '**/pdf-*.js', '**/mammoth*.js'],
+        globIgnores: ['**/katex-*.js', '**/pdf-*.js', '**/mammoth*.js', '**/highlight*.js', '**/*hljs*.js'],
         navigateFallbackDenylist: [/^\/hq/, /^\/api\//],
         skipWaiting: true,
         clientsClaim: true,
@@ -41,7 +41,7 @@ export default defineConfig({
           },
           {
             // Heavy lazy libs + their fonts: cache on first use, fast after.
-            urlPattern: ({ url }) => /\/assets\/(katex|pdf|mammoth)[-.].*\.js$/.test(url.pathname) || /\.(woff2?|ttf)$/i.test(url.pathname),
+            urlPattern: ({ url }) => /\/assets\/(katex|pdf|mammoth|highlight|hljs)[-.].*\.js$/.test(url.pathname) || /\.(woff2?|ttf)$/i.test(url.pathname),
             handler: 'CacheFirst',
             options: { cacheName: 'heavy-libs', expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 * 30 } }
           },
@@ -72,6 +72,10 @@ export default defineConfig({
           }
           if (id.includes('node_modules/@supabase')) {
             return 'supabase-vendor';
+          }
+          // Name the lazy highlight.js chunk so it can be kept out of precache.
+          if (id.includes('node_modules/highlight.js')) {
+            return 'hljs';
           }
         },
       },
