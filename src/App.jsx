@@ -2759,6 +2759,10 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
               </div>
             )}
 
+            <div style={{fontSize:10.5,color:C.subtle,lineHeight:1.5,marginBottom:12}}>
+              Only upload your own work or material you're allowed to share — please don't upload exam boards' official mark schemes or other copyrighted files you don't have the right to use. Files are sent securely to Caps to mark and deleted straight after — we don't keep them.
+            </div>
+
             {err&&<div style={{fontSize:12,color:C.danger||'#ef4444',marginBottom:10,lineHeight:1.5}}>{err}</div>}
             {busy ? (
               <div style={{background:C.card2,borderRadius:12,padding:'16px 18px'}}>
@@ -2849,7 +2853,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
                           <div style={{display:'flex',flexWrap:'wrap',gap:10,marginBottom:(q.feedback||q.fix)?9:0}}>
                             {Array.isArray(q.yourWorking)&&q.yourWorking.length>0&&(
                               <div style={{flex:'1 1 230px',minWidth:0,background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:'9px 11px'}}>
-                                <div style={{fontSize:10.5,fontWeight:800,color:C.muted,textTransform:'uppercase',letterSpacing:0.4,marginBottom:7}}>Your working</div>
+                                <div style={{fontSize:10.5,fontWeight:800,color:C.muted,textTransform:'uppercase',letterSpacing:0.4,marginBottom:7}}>Your answer</div>
                                 {q.yourWorking.map((ln,j)=>{
                                   const col=ln.status==='correct'?(C.success||'#22c55e'):ln.status==='error'?(C.danger||'#ef4444'):ln.status==='warn'?'#f59e0b':C.text;
                                   const mark=ln.status==='correct'?'✓':ln.status==='error'?'✗':ln.status==='warn'?'!':'·';
@@ -2867,7 +2871,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
                             )}
                             {Array.isArray(q.modelWorking)&&q.modelWorking.length>0&&(
                               <div style={{flex:'1 1 230px',minWidth:0,background:C.bg,border:`1px solid ${C.border}`,borderRadius:9,padding:'9px 11px'}}>
-                                <div style={{fontSize:10.5,fontWeight:800,color:C.muted,textTransform:'uppercase',letterSpacing:0.4,marginBottom:7}}>Worked solution</div>
+                                <div style={{fontSize:10.5,fontWeight:800,color:C.muted,textTransform:'uppercase',letterSpacing:0.4,marginBottom:7}}>Model answer</div>
                                 {q.modelWorking.map((ln,j)=>(
                                   <div key={j} style={{display:'flex',gap:6,marginBottom:5,alignItems:'baseline'}}>
                                     <span style={{flexShrink:0,fontSize:11,color:C.muted,fontWeight:700,width:14,textAlign:'right'}}>{j+1}.</span>
