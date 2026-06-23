@@ -2441,7 +2441,22 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
 
   const MAX_FILES=6;            // per area (answers / mark scheme)
   const MAX_FILE_MB=30;         // matches the Storage bucket limit
+  const MAX_PAGES=40;           // total pages per mark — every page costs Claude tokens
   const readDataUrl=f=>new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>res(null);r.readAsDataURL(f);});
+  // Count PDF pages in the browser (lazy pdf.js) so we can cap upload size by pages.
+  const pdfjsRef=React.useRef(null);
+  const countPdfPages=async(file)=>{
+    try{
+      if(!pdfjsRef.current){
+        const lib=await import(/* @vite-ignore */ 'https://esm.sh/pdfjs-dist@4.7.76/build/pdf.min.mjs');
+        lib.GlobalWorkerOptions.workerSrc='https://esm.sh/pdfjs-dist@4.7.76/build/pdf.worker.min.mjs';
+        pdfjsRef.current=lib;
+      }
+      const buf=await file.arrayBuffer();
+      const doc=await pdfjsRef.current.getDocument({data:buf}).promise;
+      const n=doc.numPages; try{doc.destroy&&doc.destroy();}catch{} return n;
+    }catch{ return null; }
+  };
   // Images + PDFs are uploaded to private Storage at mark time and Caps reads them
   // via a signed URL (so even big question-paper PDFs work — they never go through
   // the API body). Word (.docx) is converted to text in the browser instead.
@@ -2461,8 +2476,14 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
       if (isImg||isPdf){
         if(room<=0){ continue; }
         if (f.size>MAX_FILE_MB*1024*1024){ setErr(`${f.name} is too large (max ${MAX_FILE_MB}MB).`); continue; }
+        let pages=1;
+        if(isPdf){
+          const n=await countPdfPages(f);
+          pages=n||null;
+          if(n&&n>MAX_PAGES){ setErr(`${f.name} is ${n} pages — the marker takes up to ${MAX_PAGES} pages at a time. Split it into smaller PDFs.`); continue; }
+        }
         const data=isImg?await readDataUrl(f):null; // preview thumbnail for images only
-        setList(p=>[...p,{kind:isPdf?'pdf':'image',name:f.name,file:f,data}].slice(0,MAX_FILES));
+        setList(p=>[...p,{kind:isPdf?'pdf':'image',name:f.name,file:f,data,pages}].slice(0,MAX_FILES));
         room--;
       } else if (isDocx){
         try{
@@ -2503,6 +2524,8 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
     setErr(''); setResult(null); setActions([]); setLogged(false);
     if(!subject||!board){setErr('Pick a subject and exam board.');return;}
     if(!att.length&&!answersText.trim()){setErr('Add a photo, PDF or Word file of your answers — or type them.');return;}
+    const totalPages=[...att,...msAtt].reduce((s,a)=>s+(a.pages||1),0);
+    if(totalPages>MAX_PAGES){setErr(`That's ${totalPages} pages in total — the marker takes up to ${MAX_PAGES} at once. Mark one paper at a time, or remove some files.`);return;}
     setBusy(true); setStage(0);
     // Advance the status messages so the wait feels alive (the API isn't staged;
     // this is purely reassurance so users don't think it froze). Holds on the
@@ -2519,7 +2542,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
       const r=await fetch('/api/mark-paper',{method:'POST',
         headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},
         body:JSON.stringify({subject,board,paperCode,level,answersText,markSchemeText,
-          attachmentUrls:attUrls, msAttachmentUrls:msUrls})});
+          attachmentUrls:attUrls, msAttachmentUrls:msUrls, pages:totalPages})});
       const d=await r.json();
       if(!r.ok||d.error) throw new Error(d.error||'Marking failed');
       setResult(d.result); setActions(d.actions||[]);
@@ -2560,6 +2583,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
                 display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2,padding:3,overflow:'hidden'}}>
                 <FileText size={16} strokeWidth={2} color={C.accent}/>
                 <span style={{fontSize:7,color:C.muted,textAlign:'center',lineHeight:1.1,maxHeight:16,overflow:'hidden'}}>{a.name.slice(0,14)}</span>
+                {a.pages?<span style={{fontSize:7,fontWeight:700,color:C.accent}}>{a.pages}p</span>:null}
               </div>}
           <button onClick={()=>setList(p=>p.filter((_,j)=>j!==i))} style={{position:'absolute',top:-6,right:-6,
             background:C.danger||'#ef4444',color:'#fff',border:'none',borderRadius:'50%',width:16,height:16,fontSize:10,cursor:'pointer',lineHeight:1}}>✕</button>
