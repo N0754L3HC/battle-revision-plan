@@ -132,13 +132,23 @@ export default async function handler(req, res) {
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
   const uid = user.id;
 
-  // Pro gate — same 3 signals as the rest of the app.
+  // Pro gate — same 3 signals as the rest of the app. Non-Pro users get ONE
+  // free mark per rolling 7 days (last_free_mark_at), so everyone can taste it.
   const { data: prof } = await admin.from('user_profiles')
-    .select('subscription_status,referral_pro_until,is_admin').eq('id', uid).single();
+    .select('subscription_status,referral_pro_until,is_admin,last_free_mark_at').eq('id', uid).single();
   const isPro = prof?.is_admin
     || ['pro', 'trialing', 'active'].includes(prof?.subscription_status)
     || (prof?.referral_pro_until && new Date(prof.referral_pro_until).getTime() > Date.now());
-  if (!isPro) return res.status(402).json({ error: 'Paper marking is a Pro feature' });
+
+  let usingFreeMark = false;
+  if (!isPro) {
+    const last = prof?.last_free_mark_at ? new Date(prof.last_free_mark_at).getTime() : 0;
+    if (Date.now() - last < 7 * DAY) {
+      const days = Math.ceil((7 * DAY - (Date.now() - last)) / DAY);
+      return res.status(402).json({ error: `You've used your free AI mark this week. Upgrade to Pro for unlimited marking, or come back in ${days} day${days===1?'':'s'}.`, code: 'free_used' });
+    }
+    usingFreeMark = true;
+  }
 
   if (!prof?.is_admin) {
     if (!take(userBucket, uid, MARK_HOUR_USER, HOUR)) return res.status(429).json({ error: `Marking limit reached (${MARK_HOUR_USER}/hour). Try again later.` });
@@ -210,7 +220,12 @@ export default async function handler(req, res) {
       actions.push({ type: 'add_plan_task', subject, topic: String(topic).slice(0, 120), day: 'today', duration_min: 45 });
     }
 
-    return res.status(200).json({ result: { ...result, estimatedPercent: pct }, actions, meta: { estimate: true } });
+    // Consume the weekly free mark only on a successful result.
+    if (usingFreeMark) {
+      await admin.from('user_profiles').update({ last_free_mark_at: new Date().toISOString() }).eq('id', uid);
+    }
+
+    return res.status(200).json({ result: { ...result, estimatedPercent: pct }, actions, meta: { estimate: true, free: usingFreeMark } });
   } catch (err) {
     console.error('Mark-paper error:', err.status, err.message);
     if (err.status === 429) return res.status(200).json({ error: 'The marker is busy right now — try again in a minute.' });

@@ -2411,7 +2411,7 @@ function StudyPlanner({subjects=[],scores=[],errors=[],sessions=[],rag={},target
   );
 }
 
-function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}),addToast=()=>{},C,font,onClose}) {
+function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}),isPro=false,addToast=()=>{},C,font,onClose}) {
   ensureAnimStyles();
   const BOARDS=['AQA','Edexcel','OCR','OCR A','OCR B','WJEC / Eduqas','CIE / CAIE','Other'];
   const [subject,setSubject]=useState(subjects[0]?.name||'');
@@ -2548,9 +2548,15 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
           <div style={{fontSize:17,fontWeight:800,color:C.text}}>Mark a past paper</div>
           <button onClick={onClose} style={{background:'transparent',border:'none',color:C.subtle,fontSize:18,cursor:'pointer'}}>✕</button>
         </div>
-        <div style={{fontSize:12,color:C.muted,lineHeight:1.6,marginBottom:16}}>
+        <div style={{fontSize:12,color:C.muted,lineHeight:1.6,marginBottom:12}}>
           Caps marks your own attempt in your board's style and gives an <b>estimated</b> grade (not an official result), then logs your paper, errors and a revision plan.
         </div>
+        {!isPro&&!result&&(
+          <div style={{fontSize:12,color:C.accent,background:C.accentSoft||`${C.accent}18`,border:`1px solid ${C.accent}33`,
+            borderRadius:8,padding:'9px 12px',marginBottom:14,lineHeight:1.5}}>
+            You get <b>1 free AI mark per week</b>. Upgrade to Pro for unlimited marking.
+          </div>
+        )}
 
         {!result ? (
           <>
@@ -4388,7 +4394,6 @@ function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font,onMarkPa
                 padding:'12px',marginBottom:18,background:C.accent,border:'none',borderRadius:10,
                 color:'#fff',fontSize:14,fontWeight:700,fontFamily:'inherit',cursor:'pointer'}}>
               <FileText size={16} strokeWidth={2.5}/> Mark a past paper with AI
-              <span style={{fontSize:10,fontWeight:800,background:'rgba(255,255,255,0.22)',borderRadius:4,padding:'1px 6px',letterSpacing:0.4}}>PRO</span>
             </button>
           )}
 
@@ -7533,7 +7538,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
     } catch { return {ok:false, message:'Could not apply'}; }
   };
 
-  const onMarkPaper=()=> isPro ? setPaperMarker(true) : addToast('Paper marking is a Pro feature — unlock it in Account → Settings.','info');
+  const onMarkPaper=()=> setPaperMarker(true); // free users get 1 mark/week; backend enforces
   const onBuildPlan=()=> isPro ? setPlanBuilder(true) : addToast('AI study plans are a Pro feature — unlock it in Account → Settings.','info');
   const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse,isAS,analyticsConsent,setAnalyticsConsent,insNoted,setInsNoted,myPlan,setMyPlan,shareTheme,setShareTheme,shareAspect,setShareAspect,yearGroup,setYearGroup,displayName,setDisplayName,onMarkPaper,onBuildPlan};
 
@@ -7998,7 +8003,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
       )}
       {paperMarker&&(
         <PaperMarker subjects={subjects} examLevel={examLevel} applyAction={applyCapsAction}
-          addToast={addToast} C={C} font={font} onClose={()=>setPaperMarker(false)}/>
+          isPro={isPro} addToast={addToast} C={C} font={font} onClose={()=>setPaperMarker(false)}/>
       )}
       {planBuilder&&(
         <StudyPlanner subjects={subjects} scores={scores} errors={errors} sessions={sessions}
