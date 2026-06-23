@@ -40,7 +40,7 @@ const MARK_DAY_USER  = parseInt(process.env.MARK_DAY_PER_USER  || '20', 10);
 // Page budget (DB-backed, survives cold starts) — the real token-drain guard,
 // since every PDF/image page costs ~1.5-3k Claude tokens.
 const MAX_PAGES_REQ  = parseInt(process.env.MARK_PAGES_PER_REQUEST || '40',  10);
-const MARK_PAGES_DAY = parseInt(process.env.MARK_PAGES_PER_DAY     || '150', 10);
+const MARK_PAGES_DAY = parseInt(process.env.MARK_PAGES_PER_DAY     || '60', 10);
 
 // Limits on the payload Claude sees (cost + abuse control).
 const MAX_IMAGES = 12;
@@ -72,8 +72,8 @@ RULES
 - Write simply and kindly, like a supportive tutor sitting next to them. Short, clear sentences. No jargon — if a technical term is unavoidable, explain it in a few words. Talk about THIS student's actual work, not generic advice.
 - For each question explain in plain words: how many marks they earned and why, what they did well, and the exact step that would earn the missing marks.
 - For maths and other working-based subjects: read the handwritten working line by line and award METHOD marks (M/A marks) for valid method even when the final answer is wrong; follow through a correct method from an earlier slip. Point to the exact line where it went wrong.
-- TRANSCRIBE the student's actual working into "yourWorking" as an ordered list of their lines/steps EXACTLY as they wrote them, and tag each line's "status": "correct", "error" (the line where it goes wrong), "warn" (risky/unclear/missing step), or "neutral". Add a short "note" ONLY on lines that need one (the error, or a key correct move) so the student sees exactly where and what went wrong.
-- Also give the correct worked solution in "modelWorking" as clear ordered steps, so the student can compare their working side-by-side with how it should be done.
+- Only show detailed working for questions the student did NOT get full marks on. For a question where they LOST marks: TRANSCRIBE their actual working into "yourWorking" as an ordered list of their lines/steps EXACTLY as they wrote them, tag each line's "status" ("correct", "error" = the line where it goes wrong, "warn" = risky/unclear/missing, or "neutral"), and add a short "note" only on lines that need one; then give the correct worked solution in "modelWorking" as clear ordered steps so they can compare side-by-side.
+- For questions they got FULL marks on (earned == available), leave "yourWorking" and "modelWorking" empty ([]) — just a short encouraging "feedback" line. This keeps the report focused on what they need to fix.
 - For essay/written subjects with no real "working", you may leave yourWorking and modelWorking empty ([]) and rely on feedback and fix instead.
 - Write ALL mathematics in LaTeX so it renders beautifully: wrap inline maths in single dollar signs (e.g. $x^2+3x-4$) and standalone/displayed equations in double dollar signs (e.g. $$\\int_0^1 x^2\\,dx = \\tfrac{1}{3}$$). Use proper LaTeX commands (\\frac, \\sqrt, \\times, \\le, ^, _, etc.). Apply this in questionText, yourWorking text, modelWorking, feedback, fix and summary. Keep ordinary words as plain English OUTSIDE the dollar signs — only the maths goes in LaTeX. (Remember this is JSON, so every LaTeX backslash must be escaped as \\\\.)
 - Spot recurring mistake patterns (e.g. "unit errors", "didn't show working", "sign error", "misread the command word") so the student can see their habits.
@@ -124,17 +124,17 @@ function toAttachmentBlock(input) {
   return toImageBlock(input);
 }
 
-async function callClaudeMark({ userBlocks }) {
+async function callClaudeMark({ userBlocks, model }) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  const model = process.env.ANTHROPIC_MODEL_MARK || 'claude-sonnet-4-6';
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({
-      // Generous output budget — transcribing student + model working for every
-      // question is verbose, and a truncated reply can't be parsed as JSON.
+      // Generous output budget — transcribing working for lost-mark questions is
+      // verbose, and a truncated reply can't be parsed as JSON.
       model, max_tokens: 16000, temperature: 0.2,
-      system: MARK_SYSTEM,
+      // Cache the long system prompt so repeat marks pay ~90% less for it.
+      system: [{ type: 'text', text: MARK_SYSTEM, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: userBlocks }],
     }),
   });
@@ -305,7 +305,11 @@ export default async function handler(req, res) {
   if (blocks.length === 1) return res.status(400).json({ error: 'Provide typed answers, or a photo/PDF/Word file of the paper.' });
 
   try {
-    const text = await callClaudeMark({ userBlocks: blocks });
+    // Pro gets Sonnet (sharpest marking); free taster runs on cheaper Haiku.
+    const model = isPro
+      ? (process.env.ANTHROPIC_MODEL_MARK || 'claude-sonnet-4-6')
+      : (process.env.ANTHROPIC_MODEL_MARK_FREE || 'claude-haiku-4-5');
+    const text = await callClaudeMark({ userBlocks: blocks, model });
     const result = parseResult(text);
     if (!result) {
       // Don't dead-end the student — if Caps wrote feedback we just couldn't
