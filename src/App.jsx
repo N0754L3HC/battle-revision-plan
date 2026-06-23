@@ -2629,6 +2629,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
   const [stage,setStage]=useState(0);
   const [elapsed,setElapsed]=useState(0);   // seconds since marking began
   const [estSecs,setEstSecs]=useState(null); // rough estimate based on page count
+  const [dailyUsed,setDailyUsed]=useState(null); // pages marked today (server-tracked)
   const MARK_STAGES=[
     'Reading the questions…',
     'Looking at your answers…',
@@ -2643,6 +2644,18 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
   const MAX_FILES=6;            // per area (answers / mark scheme)
   const MAX_FILE_MB=30;         // matches the Storage bucket limit
   const MAX_PAGES=40;           // total pages per mark — every page costs Claude tokens
+  const DAILY_PAGE_CAP=60;      // matches backend MARK_PAGES_PER_DAY default
+  // Pull today's marking usage so we can show a daily-allowance bar (Pro only;
+  // free users are gated by the weekly free mark instead). Resets at UTC midnight.
+  useEffect(()=>{
+    if(!isPro) return;
+    (async()=>{
+      const {data:{session}}=await supabase.auth.getSession();
+      const uid=session?.user?.id; if(!uid) return;
+      const {data}=await supabase.from('user_profiles').select('mark_files_count,mark_files_date').eq('id',uid).maybeSingle();
+      if(data){ const today=new Date().toISOString().slice(0,10); setDailyUsed(data.mark_files_date===today?(data.mark_files_count||0):0); }
+    })();
+  },[isPro]);
   const readDataUrl=f=>new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=()=>res(null);r.readAsDataURL(f);});
   // Count PDF pages in the browser (lazy pdf.js) so we can cap upload size by pages.
   const pdfjsRef=React.useRef(null);
@@ -2753,6 +2766,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
       const d=await r.json();
       if(!r.ok||d.error) throw new Error(d.error||'Marking failed');
       setResult(d.result); setActions(d.actions||[]);
+      if(isPro) setDailyUsed(u=>(u==null?0:u)+totalPages); // reflect today's spend
       if((d.actions||[]).length>0) setShowConfirm(true); // surface the log prompt front-and-centre
     }catch(e){setErr(e.message);}
     clearInterval(iv); clearInterval(et);
@@ -2820,6 +2834,25 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
             You get <b>1 free AI mark per week</b>. Upgrade to Pro for unlimited marking.
           </div>
         )}
+        {isPro&&!result&&dailyUsed!=null&&(()=>{
+          const pct=Math.min(100,Math.round((dailyUsed/DAILY_PAGE_CAP)*100));
+          const full=dailyUsed>=DAILY_PAGE_CAP;
+          const bar=full?(C.danger||'#ef4444'):pct>=85?'#f59e0b':C.accent;
+          return (
+            <div style={{marginBottom:14,background:C.card2,borderRadius:10,padding:'10px 12px'}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',fontSize:11.5,marginBottom:6}}>
+                <span style={{color:C.muted,fontWeight:600}}>Today's marking</span>
+                <span style={{fontWeight:800,color:full?(C.danger||'#ef4444'):C.text,fontVariantNumeric:'tabular-nums'}}>{Math.min(dailyUsed,DAILY_PAGE_CAP)} / {DAILY_PAGE_CAP} pages</span>
+              </div>
+              <div style={{height:7,background:C.surface,borderRadius:4,overflow:'hidden'}}>
+                <div style={{height:'100%',width:`${pct}%`,background:bar,borderRadius:4,transition:'width 0.4s ease'}}/>
+              </div>
+              <div style={{fontSize:10,color:C.subtle,marginTop:5}}>
+                {full?"You've reached today's limit — resets tomorrow.":`Resets daily · ${DAILY_PAGE_CAP-dailyUsed} pages left today`}
+              </div>
+            </div>
+          );
+        })()}
 
         {!result ? (
           <>
