@@ -2419,7 +2419,7 @@ function loadKatex(){
   if(_katex) return Promise.resolve(_katex);
   if(_katexPromise) return _katexPromise;
   _katexPromise=(async()=>{
-    await import('katex/dist/katex.min.css'); // bundled & served from our origin (CSP-safe)
+    try{ await import('katex/dist/katex.min.css'); }catch{} // styles are non-fatal
     const m=await import('katex');
     _katex=m.default||m; return _katex;
   })();
@@ -2452,6 +2452,48 @@ function MathText({children,style,as='span'}){
   const Tag=as;
   if(!hasMath||!k) return <Tag style={style}>{text}</Tag>;
   return <Tag style={style} dangerouslySetInnerHTML={{__html:_renderMath(text,k)}}/>;
+}
+
+// Full renderer: markdown (bold/italic/code/headings/bullets/rule) + LaTeX, for
+// Caps chat which replies in markdown. Without this, **bold**, lists and headings
+// show as raw symbols a student would be put off by. Sentinels are private-use
+// chars built at runtime so the source stays plain ASCII.
+function _renderRich(text,katex){
+  const maths=[];
+  let t=String(text??'');
+  if(katex){
+    const re=/(\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\$[^$\n]+?\$|\\\([\s\S]+?\\\))/g;
+    t=t.replace(re,(seg)=>{
+      let display=false,body;
+      if(seg.startsWith('$$')){display=true;body=seg.slice(2,-2);}
+      else if(seg.startsWith('\\[')){display=true;body=seg.slice(2,-2);}
+      else if(seg.startsWith('\\(')){body=seg.slice(2,-2);}
+      else {body=seg.slice(1,-1);}
+      let html; try{ html=katex.renderToString(body,{displayMode:display,throwOnError:false,output:'html'}); }catch{ html=_escHtml(seg); }
+      maths.push(html); return '[[MK:'+(maths.length-1)+']]';
+    });
+  }
+  let s=_escHtml(t);
+  s=s.replace(/^[ \t]*#{3,6}[ \t]+(.+)$/gm,'<div style="font-weight:800;margin:8px 0 2px">$1</div>')
+     .replace(/^[ \t]*##[ \t]+(.+)$/gm,'<div style="font-weight:800;font-size:1.05em;margin:8px 0 2px">$1</div>')
+     .replace(/^[ \t]*#[ \t]+(.+)$/gm,'<div style="font-weight:800;font-size:1.1em;margin:8px 0 3px">$1</div>');
+  s=s.replace(/^[ \t]*([-*_])\1{2,}[ \t]*$/gm,'<hr style="border:none;border-top:1px solid currentColor;opacity:0.18;margin:9px 0"/>');
+  s=s.replace(/^[ \t]*[-*][ \t]+(.+)$/gm,'<div style="padding-left:14px;text-indent:-9px">&bull; $1</div>');
+  s=s.replace(/`([^`\n]+)`/g,'<code style="background:rgba(127,127,127,0.16);border-radius:4px;padding:1px 5px;font-size:0.92em">$1</code>');
+  s=s.replace(/\*\*([^\n]+?)\*\*/g,'<strong>$1</strong>');
+  s=s.replace(/(^|[^*])\*([^*\n]+?)\*(?!\*)/g,'$1<em>$2</em>');
+  s=s.replace(/\n/g,'<br/>');
+  s=s.replace(/<br\/>(<(?:div|hr))/g,'$1').replace(/(<\/div>|<hr[^>]*\/>)<br\/>/g,'$1');
+  s=s.replace(/\[\[MK:(\d+)\]\]/g,(_,i)=>maths[i]);
+  return s;
+}
+function RichText({children,style}){
+  const text=String(children??'');
+  const hasMath=/\$|\\\(|\\\[/.test(text);
+  const [k,setK]=useState(_katex);
+  useEffect(()=>{ if(hasMath&&!_katex) loadKatex().then(setK).catch(()=>{}); },[hasMath]);
+  if(hasMath&&!k) return <div style={style}>{text}</div>; // brief: wait for KaTeX
+  return <div style={style} dangerouslySetInnerHTML={{__html:_renderRich(text,hasMath?k:null)}}/>;
 }
 
 function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}),isPro=false,addToast=()=>{},C,font,onClose}) {
@@ -3063,8 +3105,8 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
                 padding:'10px 14px',
                 background:m.from==='user'?C.accent:C.card2,
                 color:m.from==='user'?'#fff':C.text,
-                fontSize:13,lineHeight:1.6,whiteSpace:'pre-wrap'}}>
-                <MathText>{m.text}</MathText>
+                fontSize:13,lineHeight:1.6,wordBreak:'break-word'}}>
+                <RichText>{m.text}</RichText>
               </div>
               {Array.isArray(m.actions)&&m.actions.length>0&&(
                 <div style={{width:'100%',maxWidth:'92%',display:'flex',flexDirection:'column',gap:6}}>
