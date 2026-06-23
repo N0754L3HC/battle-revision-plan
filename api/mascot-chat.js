@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { logAiUsage } from '../lib/aiUsage.js';
 
 // Lazy init so missing env vars surface as a clean 503 rather than a
 // synchronous module-load crash with a generic 500.
@@ -286,7 +287,7 @@ async function callGeminiModel({apiKey, model, systemPrompt, contents}) {
   }
   const text = cand.content?.parts?.map(p => p.text).filter(Boolean).join('\n').trim();
   if (!text) return { reply: null, blocked: true, reason: 'empty', model };
-  return { reply: text, blocked: false, model };
+  return { reply: text, blocked: false, model, usage: d.usageMetadata };
 }
 
 async function callGemini({systemPrompt, contents}) {
@@ -342,7 +343,7 @@ async function callClaude({ systemPrompt, contents }) {
   if (d.stop_reason === 'refusal') return { reply: null, blocked: true, reason: 'refusal', model };
   const text = (d.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
   if (!text) return { reply: null, blocked: true, reason: 'empty', model };
-  return { reply: text, blocked: false, model };
+  return { reply: text, blocked: false, model, usage: d.usage };
 }
 
 // ─── Cost router ────────────────────────────────────────────────────────────
@@ -481,11 +482,12 @@ export default async function handler(req, res) {
 
   // 5. Call model
   try {
-    const { reply, blocked, reason } = await callLLM({
+    const { reply, blocked, reason, model, usage } = await callLLM({
       systemPrompt: sys,
       contents,
       prefer,
     });
+    if (usage) await logAiUsage(admin, { uid, feature: 'chat', model, usageRaw: usage });
     if (blocked || !reply) {
       // Safety block — return a neutral fallback rather than echoing the user
       return res.status(200).json({

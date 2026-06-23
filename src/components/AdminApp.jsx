@@ -1207,6 +1207,129 @@ function WaitlistPanel() {
 
 // ── Dashboard ──────────────────────────────────────────────────────────────
 // ── Finance ─────────────────────────────────────────────────────────────────
+function AiUsagePanel({users=[]}) {
+  const [rows,setRows]=useState(null);
+  const [days,setDays]=useState(30);
+  const [loading,setLoading]=useState(true);
+  useEffect(()=>{
+    let alive=true;
+    (async()=>{
+      setLoading(true);
+      const since=new Date(Date.now()-days*864e5).toISOString();
+      const {data}=await supabase.from('ai_usage')
+        .select('user_id,feature,model,input_tokens,output_tokens,cost_usd,created_at')
+        .gte('created_at',since).order('created_at',{ascending:false}).limit(20000);
+      if(alive){ setRows(data||[]); setLoading(false); }
+    })();
+    return ()=>{alive=false;};
+  },[days]);
+
+  const USD_GBP=0.79;           // rough $→£ for the profit estimate
+  const r=rows||[];
+  const totalUSD=r.reduce((a,x)=>a+Number(x.cost_usd||0),0);
+  const totalTok=r.reduce((a,x)=>a+(x.input_tokens||0)+(x.output_tokens||0),0);
+
+  const FEAT={chat:{l:'Mascot chat',c:'#0369a1'},marker:{l:'Paper marker',c:ACCENT},planner:{l:'Study planner',c:'#a855f7'}};
+  const byFeature={};
+  r.forEach(x=>{ const f=x.feature||'other'; (byFeature[f]=byFeature[f]||{cost:0,calls:0}); byFeature[f].cost+=Number(x.cost_usd||0); byFeature[f].calls++; });
+  const featRows=Object.entries(byFeature).map(([f,v])=>({f,label:FEAT[f]?.l||f,c:FEAT[f]?.c||MUT,...v})).sort((a,b)=>b.cost-a.cost);
+  const maxFeat=Math.max(0.000001,...featRows.map(x=>x.cost));
+
+  const uFor=id=>users.find(u=>u.id===id);
+  const isProFor=id=>{ const u=uFor(id); if(!u) return false; const now=Date.now();
+    return u.subscription_status==='active'||u.subscription_status==='trialing'||(u.referral_pro_until&&new Date(u.referral_pro_until).getTime()>now)||u.is_admin; };
+  const byUser={};
+  r.forEach(x=>{ const k=x.user_id||'anon'; (byUser[k]=byUser[k]||{cost:0,calls:0,chat:0,marker:0,planner:0}); byUser[k].cost+=Number(x.cost_usd||0); byUser[k].calls++; if(byUser[k][x.feature]!=null) byUser[k][x.feature]++; });
+  const userRows=Object.entries(byUser).map(([id,v])=>{ const u=uFor(id); return {id,name:u?(u.display_name||u.email):'(unknown / deleted)',pro:isProFor(id),...v}; }).sort((a,b)=>b.cost-a.cost).slice(0,25);
+
+  const paying=users.filter(u=>u.subscription_status==='active').length;
+  const mrrGBP=paying*4.99;
+  const projMonthUSD=days===30?totalUSD:totalUSD*(30/days);
+  const projMonthGBP=projMonthUSD*USD_GBP;
+  const profitGBP=mrrGBP-projMonthGBP;
+  const costPerPaying=paying?projMonthUSD/paying:0;
+
+  const Kpi=({v,l,sub,c})=>(
+    <div style={{...card,padding:'16px 18px'}}>
+      <div style={{fontSize:13,color:MUT,marginBottom:8}}>{l}</div>
+      <div style={{fontSize:25,fontWeight:700,color:c||TXT,lineHeight:1,letterSpacing:'-0.02em',fontFamily:numF}}>{v}</div>
+      {sub&&<div style={{fontSize:12,color:DIM,marginTop:6}}>{sub}</div>}
+    </div>
+  );
+  const $=(n)=>`$${Number(n).toFixed(2)}`;
+  const tok=(n)=>n>=1e6?`${(n/1e6).toFixed(1)}M`:n>=1e3?`${(n/1e3).toFixed(0)}k`:String(n);
+
+  return (
+    <div>
+      <div style={{display:'flex',gap:8,marginBottom:16,alignItems:'center'}}>
+        {[7,30].map(d=>(
+          <button key={d} onClick={()=>setDays(d)} style={{...btn(ACCENT),background:days===d?ACCENT_SOFT:'transparent',color:days===d?'#fff':TXT2}}>Last {d} days</button>
+        ))}
+        <span style={{fontSize:12,color:DIM}}>{loading?'Loading…':`${r.length} AI calls`}</span>
+        <span style={{marginLeft:'auto',fontSize:11,color:DIM}}>Cost in USD (Anthropic/Google bill in $); profit converts at ~£{USD_GBP}/$.</span>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:10}}>
+        <Kpi l={`AI spend · ${days}d`} v={$(totalUSD)} sub={`${tok(totalTok)} tokens · ${r.length} calls`} c={WARN}/>
+        <Kpi l="Projected monthly spend" v={`£${projMonthGBP.toFixed(2)}`} sub={`${$(projMonthUSD)} / mo`}/>
+        <Kpi l="MRR (paying)" v={`£${mrrGBP.toFixed(2)}`} sub={`${paying} × £4.99`} c={OK}/>
+        <Kpi l="Profit (est.)" v={`£${profitGBP.toFixed(2)}`} sub="MRR − projected AI cost" c={profitGBP>=0?OK:BAD}/>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:20}}>
+        <Kpi l="AI cost / paying user" v={$(costPerPaying)} sub="per month"/>
+        <Kpi l="Marker calls" v={byFeature.marker?.calls||0} sub={$(byFeature.marker?.cost||0)} c={ACCENT}/>
+        <Kpi l="Chat calls" v={byFeature.chat?.calls||0} sub={$(byFeature.chat?.cost||0)} c='#0369a1'/>
+        <Kpi l="Planner calls" v={byFeature.planner?.calls||0} sub={$(byFeature.planner?.cost||0)} c='#a855f7'/>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'1fr 2fr',gap:16}}>
+        <div style={{...card,padding:20}}>
+          <div style={{fontSize:13,fontWeight:600,color:TXT,marginBottom:16}}>Spend by feature</div>
+          {featRows.length===0&&<div style={{fontSize:12,color:DIM}}>No usage yet.</div>}
+          {featRows.map(b=>(
+            <div key={b.f} style={{marginBottom:13}}>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:5}}>
+                <span style={{color:TXT2}}>{b.label}</span>
+                <span style={{color:TXT,fontWeight:600,fontFamily:numF}}>{$(b.cost)} <span style={{color:DIM}}>· {b.calls}</span></span>
+              </div>
+              <div style={{height:6,background:PANEL2,borderRadius:4,overflow:'hidden'}}>
+                <div style={{height:'100%',width:`${(b.cost/maxFeat)*100}%`,background:b.c,borderRadius:4}}/>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{...card,padding:0,overflow:'hidden'}}>
+          <div style={{fontSize:13,fontWeight:600,color:TXT,padding:'18px 20px 12px'}}>Heaviest AI users</div>
+          <table style={{width:'100%',borderCollapse:'collapse'}}>
+            <thead>
+              <tr style={{borderTop:`1px solid ${BORDER}`,borderBottom:`1px solid ${BORDER}`,background:'rgba(0,0,0,0.02)'}}>
+                {['User','Tier','Marker','Chat','Planner','Calls','Cost'].map(h=>(
+                  <th key={h} style={{textAlign:h==='User'?'left':'right',padding:'9px 14px',fontSize:11,color:SEC,fontWeight:600,whiteSpace:'nowrap'}}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {userRows.length===0&&<tr><td colSpan={7} style={{padding:'28px 14px',color:DIM,fontSize:13,textAlign:'center'}}>No AI usage recorded yet — appears once students use Caps, the marker or the planner.</td></tr>}
+              {userRows.map(u=>(
+                <tr key={u.id} style={{borderBottom:`1px solid ${BORDER}`}}>
+                  <td style={{padding:'9px 14px',fontSize:12,color:TXT,maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{u.name}</td>
+                  <td style={{padding:'9px 14px',textAlign:'right'}}>{u.pro?<span style={{fontSize:10,fontWeight:700,color:OK}}>Pro</span>:<span style={{fontSize:10,color:DIM}}>Free</span>}</td>
+                  <td style={{padding:'9px 14px',textAlign:'right',fontSize:12,fontFamily:numF,color:u.marker?ACCENT:DIM}}>{u.marker}</td>
+                  <td style={{padding:'9px 14px',textAlign:'right',fontSize:12,fontFamily:numF,color:MUT}}>{u.chat}</td>
+                  <td style={{padding:'9px 14px',textAlign:'right',fontSize:12,fontFamily:numF,color:MUT}}>{u.planner}</td>
+                  <td style={{padding:'9px 14px',textAlign:'right',fontSize:12,fontFamily:numF,color:TXT2}}>{u.calls}</td>
+                  <td style={{padding:'9px 14px',textAlign:'right',fontSize:12,fontWeight:700,fontFamily:numF,color:u.cost>1?BAD:u.cost>0.3?WARN:TXT}}>{$(u.cost)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function FinanceSection({users=[],waitlist=[]}) {
   const PRICE=4.99;
   const now=Date.now();
@@ -1448,12 +1571,12 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
 
 
   const NAV=[
-    {group:'Insights',items:[['overview','Overview'],['finance','Finance'],['analytics','Analytics']]},
+    {group:'Insights',items:[['overview','Overview'],['finance','Finance'],['ai','AI usage'],['analytics','Analytics']]},
     {group:'People',items:[['users','Users'],['waitlist','Pro waitlist']]},
     {group:'Operations',items:[['exams','Exam schedule'],['resources','Resources'],['broadcast','Messaging'],['query','Data explorer'],['system','System']]},
     {group:'Personal',items:[['myplan','My revision plan']]},
   ];
-  const TITLES={overview:'Overview',finance:'Finance',analytics:'Analytics',users:'Users',waitlist:'Pro waitlist',exams:'Exam schedule',resources:'Resources',broadcast:'Messaging',query:'Data explorer',system:'System',myplan:'My revision plan'};
+  const TITLES={overview:'Overview',finance:'Finance',ai:'AI usage & profit',analytics:'Analytics',users:'Users',waitlist:'Pro waitlist',exams:'Exam schedule',resources:'Resources',broadcast:'Messaging',query:'Data explorer',system:'System',myplan:'My revision plan'};
 
   return (
     <>
@@ -1653,6 +1776,8 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
 
           {/* FINANCE */}
           {tab==='finance'&&<FinanceSection users={users} waitlist={waitlist}/>}
+
+          {tab==='ai'&&<AiUsagePanel users={users}/>}
 
           {/* ANALYTICS */}
           {tab==='analytics'&&<AnalyticsDashboard users={users} referrals={referrals} groups={groups} groupMembers={groupMembers}/>}

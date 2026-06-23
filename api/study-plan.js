@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { logAiUsage } from '../lib/aiUsage.js';
 
 export const maxDuration = 120;
 
@@ -58,7 +59,8 @@ async function callClaude(prompt) {
   });
   if (!r.ok) { const t = await r.text(); const e = new Error(`Claude ${r.status}: ${t.slice(0, 200)}`); e.status = r.status; throw e; }
   const d = await r.json();
-  return (d.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+  const text = (d.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+  return { text, usage: d.usage, model };
 }
 
 function parseJson(text) {
@@ -99,7 +101,8 @@ export default async function handler(req, res) {
   const prompt = `The student wants about ${hrs} hours of revision this week.\nHere is their study system (subjects, RAG topics, averages, targets, upcoming exams):\n${brief}`;
 
   try {
-    const text = await callClaude(prompt);
+    const { text, usage, model } = await callClaude(prompt);
+    if (usage) await logAiUsage(admin, { uid: user.id, feature: 'planner', model, usageRaw: usage });
     const out = parseJson(text);
     if (!out || !Array.isArray(out.tasks)) return res.status(502).json({ error: 'Could not build a plan — try again.' });
 

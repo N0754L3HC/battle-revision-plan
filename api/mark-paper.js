@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { logAiUsage } from '../lib/aiUsage.js';
 
 // A detailed mark of a long paper can take a while — give the function room so it
 // doesn't time out mid-generation (Vercel clamps to the plan's max).
@@ -146,7 +147,7 @@ async function callClaudeMark({ userBlocks, model }) {
   }
   const d = await r.json();
   const text = (d.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
-  return text;
+  return { text, usage: d.usage };
 }
 
 // Pull the first JSON object out of the model's reply, defensively.
@@ -305,11 +306,12 @@ export default async function handler(req, res) {
   if (blocks.length === 1) return res.status(400).json({ error: 'Provide typed answers, or a photo/PDF/Word file of the paper.' });
 
   try {
-    // Pro gets Sonnet (sharpest marking); free taster runs on cheaper Haiku.
-    const model = isPro
-      ? (process.env.ANTHROPIC_MODEL_MARK || 'claude-sonnet-4-6')
-      : (process.env.ANTHROPIC_MODEL_MARK_FREE || 'claude-haiku-4-5');
-    const text = await callClaudeMark({ userBlocks: blocks, model });
+    // Sonnet for everyone — the detailed marking quality is what retains
+    // students. Cost is held down by prompt caching + only transcribing working
+    // on lost-mark questions, not by downgrading the model.
+    const model = process.env.ANTHROPIC_MODEL_MARK || 'claude-sonnet-4-6';
+    const { text, usage } = await callClaudeMark({ userBlocks: blocks, model });
+    await logAiUsage(admin, { uid, feature: 'marker', model, usageRaw: usage });
     const result = parseResult(text);
     if (!result) {
       // Don't dead-end the student — if Caps wrote feedback we just couldn't
