@@ -6565,7 +6565,10 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
     setCancelling(false);
   };
 
-  const [accountTab, setAccountTab] = useState('settings');
+  const [accountTab, setAccountTab] = useState(()=>{
+    try { if (sessionStorage.getItem('rbp_plan_intent')==='commander') { sessionStorage.removeItem('rbp_plan_intent'); return 'subscription'; } } catch {}
+    return 'settings';
+  });
   const TABS = [
     ['settings','Settings'],
     ['subscription','Subscription'],
@@ -6618,8 +6621,9 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       <div style={{background:isPro?'linear-gradient(135deg,rgba(194,124,96,0.08),rgba(251,191,36,0.06))':C.card,
         border:`1px solid ${isPro?C.accent+'55':C.border}`,borderRadius:10,padding:'18px 20px'}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:isPro?12:0}}>
-          <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5}}>
-            Battle Plan {isPro?<span style={{color:C.accent}}>Pro</span>:'Free'}
+          <div>
+            <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5}}>Your rank</div>
+            <div style={{fontSize:18,fontWeight:800,color:isPro?C.accent:C.text,marginTop:2}}>{rankName(isPro)}</div>
           </div>
           {isPro&&(
             <div style={{fontSize:10,fontWeight:800,color:'#fbbf24',background:'rgba(251,191,36,0.12)',
@@ -7629,7 +7633,7 @@ function QuickLog({subjects,scores,setScores,uid,C,font,onClose,onSaved}){
 // ── Main shell ─────────────────────────────────────────────────────────────
 function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjects,examSched=EXAM_SCHEDULE,isPro=false,stripeCustomerId=null,subscriptionStatus=null,referralCode=null}) {
   const [dark,setDark]     = useState(()=>ls.get('rbp_dark',false));
-  const [view,setView]     = useState('analytics');
+  const [view,setView]     = useState(()=>{ try { return sessionStorage.getItem('rbp_plan_intent')==='commander' ? 'account' : 'analytics'; } catch { return 'analytics'; } });
   const [isMobile,setIsMobile] = useState(()=>window.innerWidth<640);
   const [isWide,  setIsWide]   = useState(()=>window.innerWidth>=768);
   const [quickLogOpen,setQuickLogOpen] = useState(false);
@@ -8678,6 +8682,113 @@ function LevelPicker({ onComplete }) {
   );
 }
 
+// ── Subscription ranks ───────────────────────────────────────────────────────
+// User-facing tiers. Entitlement is still derived from subscription_status /
+// referral_pro_until (see tierOf in api/mark-paper.js) — these are the names +
+// the onboarding chooser. Recruit = free; Commander = Pro (£6.99/mo). The trial
+// and referral-week both grant Commander temporarily.
+const RANKS = {
+  recruit: {
+    id:'recruit', name:'Recruit', price:'Free', tag:'Everyone starts here',
+    blurb:"Everything you need to track papers, see how ready you are, and revise smart — free, forever.",
+    perks:[
+      'Track every paper, topic & grade',
+      'Readiness score + weak-topic radar',
+      'Exam countdown & study plan',
+      'AI paper marking — a few a day',
+      'Ask Caps — a few chats a day',
+    ],
+  },
+  commander: {
+    id:'commander', name:'Commander', price:'£6.99/mo', tag:'For serious revision',
+    blurb:"Unlock the full arsenal — generous AI marking, unlimited Caps, and emailed battle reports.",
+    perks:[
+      'Everything in Recruit',
+      'Generous daily AI marking',
+      'Unlimited Caps companion chat',
+      'Emailed schedule & weekly digest',
+      'Priority access to new features',
+    ],
+  },
+};
+const rankName = isPro => (isPro ? 'Commander' : 'Recruit');
+
+// One-time plan chooser shown to new recruits right after subject pick, so
+// everyone sees the tiers. Recruit = continue free; Commander = upgrade (lands
+// them in Account → Subscription to complete it). Switchable later in Account.
+function PlanPicker({ onComplete, isPro=false }) {
+  const font = FONT_BODY;
+  const C = { bg:'#f4eee3', surface:'#fbf7ef', border:'#e7ddcc', text:'#2b2620', muted:'#6f665b', accent:'#b5735a', gold:'#c2802e' };
+  const [hover, setHover] = useState(null);
+  const cards = [RANKS.recruit, RANKS.commander];
+
+  return (
+    <div style={{ minHeight:'100vh', background:C.bg, display:'flex', alignItems:'center',
+      justifyContent:'center', fontFamily:font, padding:24 }}>
+      <div style={{ width:'100%', maxWidth:760 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:32 }}>
+          <CapsMark size={30}/>
+          <span style={{ fontFamily:FONT_DISPLAY, fontSize:16, fontWeight:600, color:C.text, letterSpacing:'-0.01em' }}>Battle Plan</span>
+        </div>
+
+        <div style={{ marginBottom:28 }}>
+          <h1 style={{ ...type.h1, color:C.text, margin:'0 0 8px' }}>Pick your rank</h1>
+          <p style={{ fontSize:14, color:C.muted, margin:0, lineHeight:1.5 }}>
+            Start free as a <strong style={{color:C.text}}>Recruit</strong> — everything you need to revise is included.
+            Go <strong style={{color:C.accent}}>Commander</strong> when you want the full arsenal. You can switch any time in Account.
+          </p>
+        </div>
+
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:14, marginBottom:22 }}>
+          {cards.map(r => {
+            const isCmd = r.id==='commander';
+            const isHov = hover===r.id;
+            return (
+              <div key={r.id} onMouseEnter={()=>setHover(r.id)} onMouseLeave={()=>setHover(null)}
+                style={{
+                  display:'flex', flexDirection:'column', padding:'22px 22px 20px',
+                  background: isCmd ? 'linear-gradient(160deg,#fff8ec,#fbf7ef)' : C.surface,
+                  border:`2px solid ${isHov?C.accent+'88':(isCmd?C.gold+'66':C.border)}`,
+                  borderRadius:16, transition:'all 0.15s',
+                }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
+                  <span style={{ fontSize:20, fontWeight:800, color:C.text }}>{r.name}</span>
+                  {isCmd && <span style={{ fontSize:10, fontWeight:800, color:C.gold, background:C.gold+'1c',
+                    border:`1px solid ${C.gold}44`, borderRadius:5, padding:'3px 8px', letterSpacing:0.5 }}>PRO</span>}
+                </div>
+                <div style={{ fontSize:13, color:C.muted, marginBottom:10 }}>{r.tag}</div>
+                <div style={{ fontSize:24, fontWeight:800, color:isCmd?C.accent:C.text, marginBottom:12 }}>{r.price}</div>
+                <p style={{ fontSize:13, color:C.muted, margin:'0 0 14px', lineHeight:1.5 }}>{r.blurb}</p>
+                <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:18, flex:1 }}>
+                  {r.perks.map(p => (
+                    <div key={p} style={{ display:'flex', alignItems:'flex-start', gap:8, fontSize:13, color:C.text }}>
+                      <span style={{ color:C.accent, fontWeight:800, flexShrink:0 }}>✓</span>{p}
+                    </div>
+                  ))}
+                </div>
+                <button onClick={()=>onComplete(r.id)}
+                  style={{
+                    width:'100%', padding:'12px', borderRadius:10, fontSize:14, fontWeight:700, fontFamily:font,
+                    cursor:'pointer', transition:'all 0.15s',
+                    background: isCmd ? C.accent : 'transparent',
+                    color: isCmd ? '#fff' : C.text,
+                    border: `1.5px solid ${isCmd ? C.accent : C.border}`,
+                  }}>
+                  {isCmd ? (isPro ? "I'm a Commander" : 'Become a Commander') : 'Start as a Recruit'}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        <p style={{ fontSize:12, color:C.muted, textAlign:'center', margin:0, lineHeight:1.6 }}>
+          No payment needed to start. Choosing Commander takes you to a secure checkout — cancel any time.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ── App root ───────────────────────────────────────────────────────────────
 export default function App() {
   const [phase,setPhase]           = useState('loading');
@@ -8689,6 +8800,7 @@ export default function App() {
   const [stripeCustomerId,setStripeCustomerId] = useState(null);
   const [subscriptionStatus,setSubscriptionStatus] = useState(null);
   const [referralCode,setReferralCode] = useState(null);
+  const [planChoice,setPlanChoice] = useState(null);
   const [splash,setSplash] = useState(true);
 
   // After returning from Stripe checkout (?upgraded=1), the webhook may take a
@@ -8779,7 +8891,8 @@ export default function App() {
         // Row is created by handle_new_user trigger on auth.users insert.
         // Heartbeat just bumps last_seen_at (email is server-controlled).
         await supabase.from('user_profiles').update({last_seen_at:new Date().toISOString()}).eq('id',uid);
-        const {data}=await supabase.from('user_profiles').select('subjects,subscription_status,stripe_customer_id,referral_code,exam_level,referral_pro_until,is_admin').eq('id',uid).single();
+        const {data}=await supabase.from('user_profiles').select('subjects,subscription_status,stripe_customer_id,referral_code,exam_level,referral_pro_until,is_admin,plan_choice').eq('id',uid).single();
+        if (alive && data?.plan_choice) setPlanChoice(data.plan_choice);
         if (!alive) return;
         const stripePro = data?.subscription_status==='pro'||data?.subscription_status==='trialing'||data?.subscription_status==='active';
         const referralPro = data?.referral_pro_until && new Date(data.referral_pro_until).getTime() > Date.now();
@@ -8852,6 +8965,16 @@ export default function App() {
     if (yg && user?.id) {
       supabase.from('user_profiles').update({year_group:yg}).eq('id',user.id).then(()=>{});
     }
+    // New recruits see the plan chooser once; returning users skip straight in.
+    setPhase(planChoice ? 'app' : 'plan-pick');
+  }
+
+  function handlePlanDone(choice) {
+    setPlanChoice(choice);
+    const uid=user?.id;
+    if (uid) supabase.from('user_profiles').update({plan_choice:choice}).eq('id',uid).then(()=>{},()=>{});
+    // Commander → land them in Account → Subscription to complete checkout.
+    if (choice==='commander') { try { sessionStorage.setItem('rbp_plan_intent','commander'); } catch {} }
     setPhase('app');
   }
 
@@ -8904,6 +9027,7 @@ export default function App() {
   if (phase==='anon')       return <ErrorBoundary><AuthGate onAuth={()=>{}}/></ErrorBoundary>;
   if (phase==='level-pick') return <ErrorBoundary><LevelPicker onComplete={handleLevelDone}/></ErrorBoundary>;
   if (phase==='onboarding') return <ErrorBoundary><SubjectPicker user={user} onComplete={handleSubjectsDone} examLevel={examLevel}/></ErrorBoundary>;
+  if (phase==='plan-pick')  return <ErrorBoundary><PlanPicker isPro={isPro} onComplete={handlePlanDone}/></ErrorBoundary>;
   return (
     <ErrorBoundary>
       <RevisionPlan user={user} selection={selection} examLevel={examLevel} onSignOut={handleSignOut} onResetSubjects={handleResetSubjects} examSched={examSched} isPro={isPro} stripeCustomerId={stripeCustomerId} subscriptionStatus={subscriptionStatus} referralCode={referralCode}/>
