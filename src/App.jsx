@@ -6509,9 +6509,10 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       const { data:{ session } } = await supabase.auth.getSession();
       const token = session?.access_token;
       if (!token) throw new Error('Please sign in again');
-      const r = await fetch('/api/cancel-subscription', {
+      const r = await fetch('/api/billing-portal', {
         method: 'POST',
         headers: {'Content-Type':'application/json', Authorization:`Bearer ${token}`},
+        body: JSON.stringify({ action: 'cancel' }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'Failed to cancel');

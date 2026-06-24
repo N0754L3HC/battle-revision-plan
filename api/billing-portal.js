@@ -19,6 +19,9 @@ async function getAuthUser(req) {
   return error ? null : user;
 }
 
+// Handles two billing actions on one function (Vercel Hobby caps functions):
+//   action:'cancel'           → cancel the user's subscription
+//   default / action:'portal' → open the Stripe billing portal
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   if (!process.env.STRIPE_SECRET_KEY) return res.status(503).json({ error: 'Payments not configured' });
@@ -27,17 +30,49 @@ export default async function handler(req, res) {
   const user = await getAuthUser(req);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-  const { customerId } = req.body ?? {};
-  if (!customerId || typeof customerId !== 'string') {
-    return res.status(400).json({ error: 'Missing customerId' });
-  }
+  const { customerId, action } = req.body ?? {};
 
-  // Verify the customerId belongs to the authenticated user — prevent portal hijacking
+  // The user's own Stripe customer — the source of truth for both actions.
   const { data: profile } = await admin.from('user_profiles')
     .select('stripe_customer_id').eq('id', user.id).single();
-  if (!profile?.stripe_customer_id || profile.stripe_customer_id !== customerId) {
-    return res.status(403).json({ error: 'Forbidden' });
+  const ownCustomer = profile?.stripe_customer_id;
+
+  // ── Cancel subscription ────────────────────────────────────────────────
+  if (action === 'cancel') {
+    if (!ownCustomer) return res.status(400).json({ error: 'No subscription to cancel' });
+    try {
+      const stripe = getStripe();
+      const subs = await stripe.subscriptions.list({ customer: ownCustomer, status: 'all', limit: 20 });
+      const live = subs.data.find(s => ['active', 'trialing', 'past_due', 'unpaid'].includes(s.status));
+      if (!live) return res.status(400).json({ error: 'No active subscription to cancel' });
+
+      if (live.status === 'trialing') {
+        // Cancel the trial immediately — no charge is ever taken. The webhook's
+        // customer.subscription.deleted handler resets the profile to free.
+        await stripe.subscriptions.cancel(live.id);
+        return res.status(200).json({ ok: true, status: 'trial_cancelled',
+          message: "Your free trial is cancelled — you won't be charged." });
+      }
+
+      // Active/paid: cancel at period end so they keep the access they paid for.
+      await stripe.subscriptions.update(live.id, { cancel_at_period_end: true });
+      const ends = live.current_period_end
+        ? new Date(live.current_period_end * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+        : null;
+      return res.status(200).json({ ok: true, status: 'cancels_at_period_end',
+        message: ends ? `Your subscription will end on ${ends}. You keep Pro until then.`
+                      : 'Your subscription will end at the period end. You keep Pro until then.' });
+    } catch (err) {
+      console.error('Cancel error:', err.type, err.message);
+      const isStripe = typeof err?.type === 'string' && err.type.startsWith('Stripe');
+      return res.status(500).json({ error: isStripe ? `Cancel failed: ${err.message}` : 'Failed to cancel subscription' });
+    }
   }
+
+  // ── Billing portal ─────────────────────────────────────────────────────
+  // Verify the customerId belongs to the authenticated user — prevent hijacking.
+  if (!customerId || typeof customerId !== 'string') return res.status(400).json({ error: 'Missing customerId' });
+  if (!ownCustomer || ownCustomer !== customerId) return res.status(403).json({ error: 'Forbidden' });
 
   try {
     const stripe = getStripe();
@@ -48,9 +83,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ url: session.url });
   } catch (err) {
     console.error('Portal error:', err.type, err.message);
-    // Surface Stripe's own message (e.g. "No configuration provided" when the
-    // customer portal hasn't been activated in the Stripe dashboard) so it's
-    // diagnosable instead of a generic failure.
     const isStripe = typeof err?.type === 'string' && err.type.startsWith('Stripe');
     return res.status(500).json({ error: isStripe ? `Billing portal error: ${err.message}` : 'Failed to open billing portal' });
   }
