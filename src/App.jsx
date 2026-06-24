@@ -7148,14 +7148,14 @@ function LandingPage({ onGetStarted }) {
   ];
 
   const TRUST = [
-    { title:'Free during beta', desc:'No card, no trial countdown, no locked features. Everything is open right now.' },
+    { title:'Free to start, no card', desc:'Everything you need to revise is free as a Recruit — no card to sign up. Commander is an optional upgrade, never a wall.' },
     { title:'Your data stays yours', desc:'No ads, never sold. Export everything or delete your account at any time.' },
     { title:'Real grades, not guesses', desc:'Marks become grades using official mark-scheme boundaries — not rough percentages.' },
     { title:'Every major board', desc:'AQA, Edexcel, OCR and WJEC — across A-Levels, AS and GCSEs.' },
   ];
 
   const FAQ = [
-    { q:'Is it actually free?', a:'Yes — free while in beta. No card required, and nothing is hidden behind a trial.' },
+    { q:'Is it actually free?', a:'Yes. As a Recruit you get everything you need to track papers and revise — free, forever, no card needed. Commander (£6.99/mo) is an optional upgrade for generous AI marking and unlimited companion chat.' },
     { q:'Which exam boards do you support?', a:'AQA, Edexcel, OCR and WJEC, for A-Levels, AS-Levels and GCSEs across the main subjects.' },
     { q:'Is my data safe?', a:'Your revision data is stored securely and is never sold or used for ads. You can export it or permanently delete your account whenever you like.' },
     { q:'Do I have to log every single paper?', a:'No. Even a handful of papers gives you a grade trajectory and shows your weakest topics. Log as much or as little as you want.' },
@@ -7335,6 +7335,55 @@ function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
+      {/* Plans */}
+      <section style={{borderTop:`1px solid ${C.border}`, background:C.surface}}>
+        <div style={{maxWidth:1080, margin:'0 auto', padding:'104px 24px'}}>
+          <div style={{...type.eyebrow, color:C.accent, marginBottom:10}}>Plans</div>
+          <h2 style={{fontFamily:display, fontWeight:600, fontSize:'clamp(26px, 3.4vw, 40px)', color:C.text,
+            margin:'0 0 12px', letterSpacing:'-0.03em', maxWidth:560}}>
+            Free to start. Upgrade only if you want more.
+          </h2>
+          <p style={{...type.body, fontSize:15, color:C.muted, margin:'0 0 40px', maxWidth:520, lineHeight:1.6}}>
+            Everyone starts as a <strong style={{color:C.text}}>Recruit</strong> — free, forever. Go{' '}
+            <strong style={{color:C.accent}}>Commander</strong> when you want generous AI marking and your companion on tap.
+          </p>
+          <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:16}}>
+            {[RANKS.recruit, RANKS.commander].map(r => {
+              const isCmd = r.id==='commander';
+              return (
+                <div key={r.id} style={{display:'flex', flexDirection:'column', padding:'28px 26px',
+                  background: isCmd ? 'linear-gradient(160deg,#fff8ec,#fbf7ef)' : C.bg,
+                  border:`1.5px solid ${isCmd ? C.accent+'66' : C.border}`, borderRadius:16}}>
+                  <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4}}>
+                    <span style={{fontFamily:display, fontSize:22, fontWeight:700, color:C.text, letterSpacing:'-0.02em'}}>{r.name}</span>
+                    {isCmd && <span style={{fontSize:10, fontWeight:800, color:'#c2802e', background:'#c2802e1c',
+                      border:'1px solid #c2802e44', borderRadius:5, padding:'3px 8px', letterSpacing:0.5}}>PRO</span>}
+                  </div>
+                  <div style={{...type.body, fontSize:13, color:C.muted, marginBottom:12}}>{r.tag}</div>
+                  <div style={{fontFamily:display, fontSize:30, fontWeight:800, color:isCmd?C.accent:C.text, letterSpacing:'-0.02em', marginBottom:16}}>{r.price}</div>
+                  <div style={{display:'flex', flexDirection:'column', gap:9, marginBottom:24, flex:1}}>
+                    {r.perks.map(p => (
+                      <div key={p} style={{display:'flex', alignItems:'flex-start', gap:9, ...type.body, fontSize:14, color:C.text}}>
+                        <span style={{color:C.accent, fontWeight:800, flexShrink:0}}>✓</span>{p}
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={onGetStarted}
+                    style={{width:'100%', padding:'12px', borderRadius:8, fontSize:14, fontWeight:600, fontFamily:font, cursor:'pointer',
+                      background: isCmd ? C.accent : 'transparent', color: isCmd ? '#fff' : C.text,
+                      border:`1px solid ${isCmd ? C.accent : C.border}`}}>
+                    {isCmd ? 'Become a Commander' : 'Start free'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          <p style={{...type.body, fontSize:12, color:C.subtle, marginTop:18, lineHeight:1.6}}>
+            Commander includes a 3-day free trial — cancel any time before it ends and you won't be charged. Switch ranks whenever you like.
+          </p>
+        </div>
+      </section>
+
       {/* FAQ */}
       <section style={{borderTop:`1px solid ${C.border}`}}>
         <div style={{maxWidth:1080, margin:'0 auto', padding:'104px 24px'}}>
@@ -7361,7 +7410,7 @@ function LandingPage({ onGetStarted }) {
             Your exams won't wait.
           </h2>
           <p style={{...type.body, fontSize:16, color:C.muted, margin:'0 auto 28px', maxWidth:440}}>
-            Two-minute setup. Free during beta. No card.
+            Two-minute setup. Free to start as a Recruit. No card.
           </p>
           <div style={{display:'flex', justifyContent:'center'}}>
           <button onClick={onGetStarted}
