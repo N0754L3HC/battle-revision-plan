@@ -1285,16 +1285,31 @@ function TesterCodesPanel() {
   const [loading,setLoading]=useState(true);
   const [err,setErr]=useState('');
   const [copied,setCopied]=useState('');
+  const [busy,setBusy]=useState('');
 
   useEffect(()=>{
     supabase.rpc('admin_list_pro_codes')
       .then(({data,error})=>{ if(error) setErr(error.message); else setRows(data||[]); setLoading(false); });
   },[]);
 
-  const isUsed = r => r.used_count>=r.max_uses;
+  const isUsed  = r => r.used_count>=r.max_uses;
+  const isSent  = r => !isUsed(r) && !!r.shared_at;
+  const isAvail = r => !isUsed(r) && !r.shared_at;
   const used = rows.filter(isUsed);
-  const avail = rows.filter(r=>!isUsed(r));
+  const sent = rows.filter(isSent);
+  const avail = rows.filter(isAvail);
+
   const copy = (list,label) => { navigator.clipboard.writeText(list.map(r=>r.code).join('\n')); setCopied(label); setTimeout(()=>setCopied(''),2000); };
+
+  // Reserve / un-reserve a code that's been handed out but not yet redeemed.
+  const setShared = async (code, shared) => {
+    setBusy(code);
+    const {error}=await supabase.rpc('admin_set_code_shared',{p_code:code,p_shared:shared});
+    if(!error) setRows(prev=>prev.map(r=>r.code===code?{...r,shared_at:shared?new Date().toISOString():null}:r));
+    setBusy('');
+  };
+  // Copy one code AND mark it sent in a single tap, so it leaves the available pool.
+  const copyAndSend = async (code) => { navigator.clipboard.writeText(code); setCopied(code); setTimeout(()=>setCopied(''),2000); await setShared(code,true); };
 
   if (loading) return <div style={{color:'#555',fontSize:12,padding:20}}>Loading…</div>;
   if (err) return <div style={{...card,padding:20,color:'#b91c1c',fontSize:12}}>Couldn't load codes: {err}</div>;
@@ -1305,11 +1320,12 @@ function TesterCodesPanel() {
         <div>
           <div style={{fontSize:9,letterSpacing:3,color:SEC,fontWeight:700}}>TESTER PRO CODES</div>
           <div style={{fontSize:22,fontWeight:900,color:TXT,marginTop:4}}>
-            {used.length}/{rows.length} <span style={{fontSize:13,color:MUT,fontWeight:400}}>redeemed, {avail.length} left</span>
+            {avail.length} <span style={{fontSize:13,color:MUT,fontWeight:400}}>available</span>
+            <span style={{fontSize:13,color:MUT,fontWeight:400}}> · {sent.length} sent · {used.length} redeemed of {rows.length}</span>
           </div>
         </div>
         <div style={{display:'flex',gap:8}}>
-          <button onClick={()=>copy(avail,'avail')} style={btn('#15803d',false)}>{copied==='avail'?'✓ COPIED':'COPY UNUSED'}</button>
+          <button onClick={()=>copy(avail,'avail')} style={btn('#15803d',false)}>{copied==='avail'?'✓ COPIED':'COPY AVAILABLE'}</button>
           <button onClick={()=>copy(rows,'all')} style={btn('#888',false)}>{copied==='all'?'✓ COPIED':'COPY ALL'}</button>
         </div>
       </div>
@@ -1318,7 +1334,7 @@ function TesterCodesPanel() {
         <table style={{width:'100%',borderCollapse:'collapse',fontSize:11,fontFamily:mono}}>
           <thead>
             <tr style={{borderBottom:'1px solid rgba(0,0,0,0.08)'}}>
-              {['Code','Days','Status','Redeemed by','When'].map(h=>(
+              {['Code','Days','Status','Detail','Action'].map(h=>(
                 <th key={h} style={{padding:'10px 14px',textAlign:'left',color:MUT,fontWeight:700,fontSize:9,letterSpacing:1}}>{h.toUpperCase()}</th>
               ))}
             </tr>
@@ -1329,18 +1345,30 @@ function TesterCodesPanel() {
                 <td style={{padding:'10px 14px',color:TXT,fontWeight:700}}>{r.code}</td>
                 <td style={{padding:'10px 14px',color:DIM}}>{r.days}d</td>
                 <td style={{padding:'10px 14px'}}>
-                  {isUsed(r)?<span style={pill('#b5735a')}>REDEEMED</span>:<span style={pill('#15803d')}>AVAILABLE</span>}
+                  {isUsed(r)?<span style={pill('#b5735a')}>REDEEMED</span>
+                    :isSent(r)?<span style={pill('#d4920a')}>SENT</span>
+                    :<span style={pill('#15803d')}>AVAILABLE</span>}
                 </td>
-                <td style={{padding:'10px 14px',color:TXT}}>{r.redeemed_by||<span style={{color:DIM}}>-</span>}</td>
-                <td style={{padding:'10px 14px',color:DIM}}>{r.redeemed_at?fmtDate(r.redeemed_at):<span style={{color:DIM}}>-</span>}</td>
+                <td style={{padding:'10px 14px',color:isUsed(r)?TXT:DIM}}>
+                  {isUsed(r)?(r.redeemed_by||fmtDate(r.redeemed_at))
+                    :isSent(r)?`sent ${fmtDate(r.shared_at)}`
+                    :<span style={{color:DIM}}>-</span>}
+                </td>
+                <td style={{padding:'10px 14px'}}>
+                  {isUsed(r)?<span style={{color:DIM}}>-</span>
+                    :isSent(r)?<button onClick={()=>setShared(r.code,false)} disabled={busy===r.code} style={btn('#888',false)}>{busy===r.code?'…':'UNDO'}</button>
+                    :<button onClick={()=>copyAndSend(r.code)} disabled={busy===r.code} style={btn('#15803d',true)}>{copied===r.code?'✓ COPIED':busy===r.code?'…':'COPY + MARK SENT'}</button>}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      <div style={{marginTop:16,fontSize:11,color:DIM,lineHeight:1.6}}>
-        Each code is single-use and grants {rows[0]?.days||60} days of Commander. Hand each tester one unused code. Once redeemed it can't be reused.
+      <div style={{marginTop:16,fontSize:11,color:DIM,lineHeight:1.7}}>
+        Each code is single-use and grants {rows[0]?.days||60} days of Commander. Tap <strong style={{color:MUT}}>COPY + MARK SENT</strong> when you hand one out:
+        it copies the code and moves it to <strong style={{color:MUT}}>SENT</strong>, so "Copy available" never gives you a code you've already shared. If a tester
+        doesn't end up using it, tap <strong style={{color:MUT}}>UNDO</strong> to free it again. Redeemed codes are locked and can't be reused.
       </div>
     </div>
   );
