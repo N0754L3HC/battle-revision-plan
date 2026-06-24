@@ -3324,7 +3324,12 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
       replyText = "I'm having trouble reaching the chat server right now - try again in a moment, or refresh the page.";
     }
 
-    setMessages(prev => [...prev, {from:'char', text: replyText, actions: serverActions}]);
+    // Name capture should just happen (no "Apply" chip) - auto-apply set_name
+    // so Caps starts using it immediately; show the rest as normal chips.
+    const _acts = serverActions || [];
+    _acts.filter(a=>a.type==='set_name').forEach(a=>applyAction(a));
+    const _shown = _acts.filter(a=>a.type!=='set_name');
+    setMessages(prev => [...prev, {from:'char', text: replyText, actions: _shown}]);
     setSending(false);
   };
 
@@ -8310,6 +8315,13 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
         if (!entry.topic) return {ok:false, message:'No topic for error'};
         setErrors(prev=>{ const u=[entry,...prev].slice(0,200); ls.set(`rbp_errors_${uid}`,u); return u; });
         return {ok:true, message:`Logged error: ${entry.topic}`};
+      }
+      if (a.type==='set_name') {
+        const n = String(a.name||'').trim().replace(/\s+/g,' ').slice(0,40);
+        if (!n) return {ok:false, message:'No name given'};
+        setDisplayName(n);
+        if (uid && uid!=='anon') supabase.from('user_profiles').update({display_name:n}).eq('id',uid).then(()=>{},()=>{});
+        return {ok:true, message:`Got it - I'll call you ${n} from now on.`};
       }
       return {ok:false, message:'Unknown action'};
     } catch { return {ok:false, message:'Could not apply'}; }
