@@ -6849,6 +6849,32 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       </>}
 
       {accountTab==='data'&&<>
+      {/* Plain-English privacy summary (Children's Code: age-appropriate wording) */}
+      <div style={{background:C.tintCream,borderRadius:14,padding:'18px 20px'}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Your privacy, in plain English</div>
+        <div style={{display:'flex',flexDirection:'column',gap:12}}>
+          {[
+            ['What we keep','Your email, your first name, the subjects you pick, the marks you log, and your topic ratings. That is basically it.'],
+            ['What we ask for','We never ask for your age, date of birth, address, or phone number. First name only, so Caps can say hi.'],
+            ['Who sees it','Only you. Your data is private by default. Nothing shows to other students unless you choose to join a group or school leaderboard.'],
+            ['Ads and selling','None. We do not run ads, we do not track you around the web, and we never sell your data. Ever.'],
+            ['The AI marker','When you upload your work it is sent to be marked and then deleted straight away. We do not keep your uploads. Do not type personal info into the chat.'],
+            ['Your control','You can download everything we hold, or delete your account and all of it, any time, from this page.'],
+          ].map(([h,b])=>(
+            <div key={h} style={{display:'flex',gap:10,alignItems:'flex-start'}}>
+              <span style={{color:C.accent,fontWeight:800,fontSize:13,flexShrink:0,marginTop:1}}>•</span>
+              <div>
+                <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:2}}>{h}</div>
+                <div style={{fontSize:12.5,color:C.muted,lineHeight:1.6}}>{b}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{fontSize:11,color:C.subtle,marginTop:14,lineHeight:1.6}}>
+          This is the short version. The full Terms &amp; Privacy Policy has the legal detail.
+        </div>
+      </div>
+
       <div style={{background:C.tintCream,borderRadius:14,padding:'18px 20px'}}>
         <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Research contribution</div>
         <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:16}}>
