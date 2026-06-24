@@ -1205,6 +1205,73 @@ function WaitlistPanel() {
   );
 }
 
+// ── Tester Pro codes ────────────────────────────────────────────────────────
+function TesterCodesPanel() {
+  const [rows,setRows]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [err,setErr]=useState('');
+  const [copied,setCopied]=useState('');
+
+  useEffect(()=>{
+    supabase.rpc('admin_list_pro_codes')
+      .then(({data,error})=>{ if(error) setErr(error.message); else setRows(data||[]); setLoading(false); });
+  },[]);
+
+  const isUsed = r => r.used_count>=r.max_uses;
+  const used = rows.filter(isUsed);
+  const avail = rows.filter(r=>!isUsed(r));
+  const copy = (list,label) => { navigator.clipboard.writeText(list.map(r=>r.code).join('\n')); setCopied(label); setTimeout(()=>setCopied(''),2000); };
+
+  if (loading) return <div style={{color:'#555',fontSize:12,padding:20}}>Loading…</div>;
+  if (err) return <div style={{...card,padding:20,color:'#b91c1c',fontSize:12}}>Couldn't load codes: {err}</div>;
+
+  return (
+    <div>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20,flexWrap:'wrap',gap:12}}>
+        <div>
+          <div style={{fontSize:9,letterSpacing:3,color:SEC,fontWeight:700}}>TESTER PRO CODES</div>
+          <div style={{fontSize:22,fontWeight:900,color:TXT,marginTop:4}}>
+            {used.length}/{rows.length} <span style={{fontSize:13,color:MUT,fontWeight:400}}>redeemed, {avail.length} left</span>
+          </div>
+        </div>
+        <div style={{display:'flex',gap:8}}>
+          <button onClick={()=>copy(avail,'avail')} style={btn('#15803d',false)}>{copied==='avail'?'✓ COPIED':'COPY UNUSED'}</button>
+          <button onClick={()=>copy(rows,'all')} style={btn('#888',false)}>{copied==='all'?'✓ COPIED':'COPY ALL'}</button>
+        </div>
+      </div>
+
+      <div style={{...card,overflow:'hidden'}}>
+        <table style={{width:'100%',borderCollapse:'collapse',fontSize:11,fontFamily:mono}}>
+          <thead>
+            <tr style={{borderBottom:'1px solid rgba(0,0,0,0.08)'}}>
+              {['Code','Days','Status','Redeemed by','When'].map(h=>(
+                <th key={h} style={{padding:'10px 14px',textAlign:'left',color:MUT,fontWeight:700,fontSize:9,letterSpacing:1}}>{h.toUpperCase()}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(r=>(
+              <tr key={r.code} style={{borderBottom:'1px solid rgba(0,0,0,0.04)'}}>
+                <td style={{padding:'10px 14px',color:TXT,fontWeight:700}}>{r.code}</td>
+                <td style={{padding:'10px 14px',color:DIM}}>{r.days}d</td>
+                <td style={{padding:'10px 14px'}}>
+                  {isUsed(r)?<span style={pill('#b5735a')}>REDEEMED</span>:<span style={pill('#15803d')}>AVAILABLE</span>}
+                </td>
+                <td style={{padding:'10px 14px',color:TXT}}>{r.redeemed_by||<span style={{color:DIM}}>-</span>}</td>
+                <td style={{padding:'10px 14px',color:DIM}}>{r.redeemed_at?fmtDate(r.redeemed_at):<span style={{color:DIM}}>-</span>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={{marginTop:16,fontSize:11,color:DIM,lineHeight:1.6}}>
+        Each code is single-use and grants {rows[0]?.days||60} days of Commander. Hand each tester one unused code. Once redeemed it can't be reused.
+      </div>
+    </div>
+  );
+}
+
 // ── Dashboard ──────────────────────────────────────────────────────────────
 // ── Finance ─────────────────────────────────────────────────────────────────
 function AiUsagePanel({users=[]}) {
@@ -1569,11 +1636,11 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
 
   const NAV=[
     {group:'Insights',items:[['overview','Overview'],['finance','Finance'],['ai','AI usage'],['analytics','Analytics']]},
-    {group:'People',items:[['users','Users'],['waitlist','Pro waitlist']]},
+    {group:'People',items:[['users','Users'],['waitlist','Pro waitlist'],['codes','Tester codes']]},
     {group:'Operations',items:[['exams','Exam schedule'],['resources','Resources'],['broadcast','Messaging'],['query','Data explorer'],['system','System']]},
     {group:'Personal',items:[['myplan','My revision plan']]},
   ];
-  const TITLES={overview:'Overview',finance:'Finance',ai:'AI usage & profit',analytics:'Analytics',users:'Users',waitlist:'Pro waitlist',exams:'Exam schedule',resources:'Resources',broadcast:'Messaging',query:'Data explorer',system:'System',myplan:'My revision plan'};
+  const TITLES={overview:'Overview',finance:'Finance',ai:'AI usage & profit',analytics:'Analytics',users:'Users',waitlist:'Pro waitlist',codes:'Tester codes',exams:'Exam schedule',resources:'Resources',broadcast:'Messaging',query:'Data explorer',system:'System',myplan:'My revision plan'};
 
   return (
     <>
@@ -1795,6 +1862,8 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
 
           {/* WAITLIST */}
           {tab==='waitlist'&&<WaitlistPanel/>}
+
+          {tab==='codes'&&<TesterCodesPanel/>}
 
           {/* SYSTEM */}
           {tab==='system'&&(

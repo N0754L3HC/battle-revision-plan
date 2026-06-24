@@ -355,6 +355,7 @@ export default function SubjectPicker({ user, onComplete, examLevel = 'alevel' }
   const [step, setStep] = useState(1);
   const [selection, setSelection] = useState([]);
   const [yearGroup, setYearGroup] = useState('');
+  const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
@@ -384,6 +385,9 @@ export default function SubjectPicker({ user, onComplete, examLevel = 'alevel' }
       await supabase.rpc('save_subjects', { p_subjects: subjectsJson });
       // Record Terms/Privacy acceptance (best-effort - never block onboarding on it)
       try { await supabase.rpc('accept_terms', { p_version: TERMS_VERSION }); } catch (_) {}
+      // Save the name if they gave one (optional - Caps will ask later if blank)
+      const nm = name.trim().slice(0, 40);
+      if (nm) { try { await supabase.from('user_profiles').update({ display_name: nm }).eq('id', user.id); } catch (_) {} }
     }
     setSaving(false);
     onComplete(selection, yearGroup);
@@ -453,7 +457,24 @@ export default function SubjectPicker({ user, onComplete, examLevel = 'alevel' }
         }}>
           {step === 1 && <PickSubjects selection={selection} onChange={setSelection} catalog={catalog} maxSubjects={maxSubjects} />}
           {step === 2 && <PickBoards  selection={selection} onChange={setSelection} catalog={catalog} />}
-          {step === 3 && <PickYearGroup yearGroup={yearGroup} setYearGroup={setYearGroup} examLevel={examLevel} />}
+          {step === 3 && <>
+            <PickYearGroup yearGroup={yearGroup} setYearGroup={setYearGroup} examLevel={examLevel} />
+            <div style={{ marginTop: 22, paddingTop: 20, borderTop: `1px solid ${colors.border}` }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 8 }}>
+                What should we call you? <span style={{ color: colors.subtle, fontWeight: 400 }}>(optional)</span>
+              </label>
+              <input
+                value={name} onChange={e => setName(e.target.value)} maxLength={40}
+                placeholder="First name, so Caps can greet you"
+                style={{ width: '100%', boxSizing: 'border-box', padding: '11px 13px', background: colors.bg,
+                  border: `1px solid ${colors.border}`, borderRadius: 9, color: colors.text, fontSize: 14,
+                  fontFamily: font, outline: 'none' }}
+              />
+              <div style={{ fontSize: 11, color: colors.subtle, marginTop: 7, lineHeight: 1.5 }}>
+                Just your first name. We never ask for your age or date of birth. You can add or change this any time.
+              </div>
+            </div>
+          </>}
           {step === 4 && <Confirm     selection={selection} catalog={catalog} examLevel={examLevel} />}
 
           {step === 4 && (
