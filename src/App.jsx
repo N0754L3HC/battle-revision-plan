@@ -6568,7 +6568,9 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
   const [accountTab, setAccountTab] = useState('settings');
   const TABS = [
     ['settings','Settings'],
+    ['subscription','Subscription'],
     ['data','Data & Privacy'],
+    ['help','Help'],
   ];
 
   return (
@@ -6591,6 +6593,17 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       </div>
 
       {accountTab==='settings'&&<>
+      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
+        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Your name</div>
+        <input value={displayName} onChange={e=>setDisplayName(e.target.value)} onBlur={saveName}
+          placeholder="First name — so Caps can greet you"
+          style={{width:'100%',padding:'10px 12px',background:C.card2,border:`1px solid ${C.border}`,
+            borderRadius:8,color:C.text,fontSize:14,fontFamily:font,boxSizing:'border-box'}}/>
+        <div style={{fontSize:11,color:C.subtle,marginTop:7,lineHeight:1.5}}>Just your first name is fine. We don't ask for your age or date of birth.</div>
+      </div>
+      </>}
+
+      {accountTab==='subscription'&&<>
       {upgraded&&!isPro&&(
         <div style={{background:'rgba(74,222,128,0.07)',border:'1px solid rgba(74,222,128,0.2)',
           borderRadius:10,padding:'14px 18px',display:'flex',alignItems:'flex-start',gap:10}}>
@@ -6601,15 +6614,6 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
           </div>
         </div>
       )}
-
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Your name</div>
-        <input value={displayName} onChange={e=>setDisplayName(e.target.value)} onBlur={saveName}
-          placeholder="First name — so Caps can greet you"
-          style={{width:'100%',padding:'10px 12px',background:C.card2,border:`1px solid ${C.border}`,
-            borderRadius:8,color:C.text,fontSize:14,fontFamily:font,boxSizing:'border-box'}}/>
-        <div style={{fontSize:11,color:C.subtle,marginTop:7,lineHeight:1.5}}>Just your first name is fine. We don't ask for your age or date of birth.</div>
-      </div>
 
       <div style={{background:isPro?'linear-gradient(135deg,rgba(194,124,96,0.08),rgba(251,191,36,0.06))':C.card,
         border:`1px solid ${isPro?C.accent+'55':C.border}`,borderRadius:10,padding:'18px 20px'}}>
@@ -6709,7 +6713,9 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
           </>
         )}
       </div>
+      </>}
 
+      {accountTab==='settings'&&<>
       <div style={{background:C.tintCream,borderRadius:14,padding:'18px 20px'}}>
         <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Account</div>
         <div style={{fontSize:14,color:C.text,fontWeight:600,marginBottom:14}}>{user?.email??'Signed in'}</div>
@@ -6746,7 +6752,9 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
           </div>
         </div>
       </div>
+      </>}
 
+      {accountTab==='subscription'&&<>
       {user && (
       <div style={{background:C.tintCream,borderRadius:14,padding:'18px 20px'}}>
         <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:8}}>
@@ -6804,9 +6812,10 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       )}
 
       {!isPro&&<RedeemCode C={C} font={font} addToast={addToast}/>}
+      </>}
 
+      {accountTab==='help'&&<>
       <ContactCard C={C} font={font}/>
-
       {/* Referral + school opt-in moved to the Groups page (they're social) */}
       </>}
 
