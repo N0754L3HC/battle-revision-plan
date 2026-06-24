@@ -865,6 +865,51 @@ const KNOWN_SUBJECTS = [
   {id:'german',name:'German'},{id:'art',name:'Art & Design'},
 ];
 
+// ── Exam schedule reminder ──────────────────────────────────────────────────
+// Tells the team to enter the new season's dates once the saved schedule has
+// passed. Pure date math from the saved schedule - no AI, no token cost. We do
+// NOT auto-fill dates with AI: a hallucinated exam date would be a trust killer.
+function ExamScheduleReminder({ onGoToExams }) {
+  const [latest, setLatest] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+  useEffect(()=>{
+    (async()=>{
+      let sched = EXAM_SCHEDULE;
+      try {
+        const {data}=await supabase.from('app_config').select('value').eq('key','exam_schedule').maybeSingle();
+        if (data?.value) sched = typeof data.value==='string'?JSON.parse(data.value):data.value;
+      } catch(_) {}
+      let max = null;
+      Object.values(sched||{}).forEach(bySub=>{
+        const arrays = Array.isArray(bySub) ? [bySub] : Object.values(bySub||{});
+        arrays.forEach(arr=>{ if(Array.isArray(arr)) arr.forEach(e=>{ if(e?.date && (!max || e.date>max)) max=e.date; }); });
+      });
+      setLatest(max); setLoaded(true);
+    })();
+  },[]);
+  if (!loaded || !latest) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const latestD = new Date(latest+'T00:00:00');
+  if (latestD >= today) return null; // schedule still has future dates - nothing to do
+  const seasonYear = latestD.getFullYear()+1;
+  const fmt = latestD.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  return (
+    <div style={{display:'flex',alignItems:'flex-start',gap:12,padding:'14px 18px',marginBottom:12,
+      background:'rgba(251,191,36,0.10)',border:'1px solid rgba(251,191,36,0.4)',borderRadius:10}}>
+      <span style={{fontSize:18,lineHeight:1.2,flexShrink:0}}>⚠️</span>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:13,fontWeight:800,color:TXT,marginBottom:3}}>Exam timetable needs updating</div>
+        <div style={{fontSize:12,color:MUT,lineHeight:1.6}}>
+          The latest date in the live schedule is <strong style={{color:TXT}}>{fmt}</strong>, which has passed.
+          Enter the <strong style={{color:TXT}}>{seasonYear}</strong> dates so students get the right countdowns
+          (boards publish provisional timetables in autumn). Year-out students see an estimate until you do.
+        </div>
+      </div>
+      <button onClick={onGoToExams} style={btn('#fbbf24',false)}>OPEN EXAM SCHEDULE</button>
+    </div>
+  );
+}
+
 // ── Exam Editor ────────────────────────────────────────────────────────────
 function ExamEditor() {
   const [schedule,setSchedule]=useState({});
@@ -1689,6 +1734,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
 
           <div style={{padding:'24px',maxWidth:1180,width:'100%',boxSizing:'border-box'}}>
           {tab==='overview'&&(<>
+          <ExamScheduleReminder onGoToExams={()=>setTab('exams')}/>
           <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:10,marginBottom:10}}>
             {[
               {v:stats.total,l:'Total users'},
