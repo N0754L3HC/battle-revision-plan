@@ -222,6 +222,14 @@ export default function TermsOfService({ onClose }) {
             material, and your contact particulars, whereupon we shall undertake to investigate and, where a valid
             notification is substantiated, to effect removal within a reasonable period.
           </p>
+          <p style={S.p}>
+            9.2. The Service is an independent product. It is not affiliated with, authorised by, endorsed by,
+            sponsored by, or in any way officially connected to AQA, Pearson Edexcel, OCR, WJEC/Eduqas, or any other
+            awarding organisation, examination board, or qualification regulator. All examination board names, paper
+            references, qualification titles, trade marks, and logos are the property of their respective owners and
+            are used herein solely for the purposes of factual identification and description. Any reference to such
+            names is nominative and does not imply any association or endorsement.
+          </p>
 
           <h2 style={S.h2}>10. Artificial Intelligence Functionality</h2>
           <p style={S.p}>

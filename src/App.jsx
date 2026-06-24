@@ -7440,6 +7440,14 @@ function LandingPage({ onGetStarted }) {
             <a href="mailto:51r4h100@gmail.com" style={{color:C.muted, fontSize:13, textDecoration:'none'}}>Contact</a>
           </div>
         </div>
+        <div style={{maxWidth:1100, margin:'0 auto', padding:'0 24px 28px'}}>
+          <p style={{fontSize:11, color:C.subtle, lineHeight:1.6, margin:0, maxWidth:760}}>
+            Battle Plan is an independent revision tool and is not affiliated with, endorsed by, or connected to AQA,
+            Pearson Edexcel, OCR, WJEC/Eduqas or any other exam board. Exam board names and trademarks are the property
+            of their respective owners and are used for identification only. Grade boundaries are indicative — always
+            verify against the official board.
+          </p>
+        </div>
       </footer>
 
     </div>
