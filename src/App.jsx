@@ -5164,7 +5164,7 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE,yearGroup=''}) {
         <div style={{display:'inline-flex',alignItems:'baseline',gap:8,background:C.card2,
           border:`1px solid ${C.border}`,borderRadius:10,padding:'12px 16px',marginBottom:16}}>
           <span style={{fontSize:28,fontWeight:800,color:C.accent}}>~{estDaysToExams}</span>
-          <span style={{fontSize:13,color:C.muted}}>days until your 2027 exams (estimated)</span>
+          <span style={{fontSize:13,color:C.muted}}>days until your first exam (estimated)</span>
         </div>
       )}
       <div style={{fontSize:14,color:C.muted,lineHeight:1.7,marginBottom:16}}>
@@ -7999,8 +7999,11 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   const [displayName, setDisplayName] = useState('');
   useEffect(()=>{
     if(!uid||uid==='anon') return;
-    supabase.from('user_profiles').select('display_name').eq('id',uid).single()
-      .then(({data})=>{ if(data?.display_name) setDisplayName(data.display_name); });
+    // Load name AND year group at app start - year_group drives the year-out
+    // (Y10/Y12) exam view, so it must be set before the Exams tab renders, not
+    // only when the Account screen is opened.
+    supabase.from('user_profiles').select('display_name,year_group').eq('id',uid).single()
+      .then(({data})=>{ if(data?.display_name) setDisplayName(data.display_name); if(data?.year_group) setYearGroup(data.year_group); });
   },[uid]);
   useEffect(()=>ls.set(`rbp_share_theme_${uid}`,shareTheme),[shareTheme,uid]);
   useEffect(()=>ls.set(`rbp_share_aspect_${uid}`,shareAspect),[shareAspect,uid]);
