@@ -2008,14 +2008,22 @@ function generateMascotNotifications({scores=[], sessions=[], subjects=[], examS
       msg:`${Math.round(topRecent.pct)}% on ${topRecent.paper||topRecent.subject}. That's the work paying off.`});
   }
 
-  // Exam within 7 days
-  const nextExam = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId,s.options))
+  // Exam reminders - computed straight from the schedule, NO AI cost. Urgent
+  // inside a week; a gentler "season approaching" nudge inside three weeks, so
+  // Caps flags exam season on its own without ever calling the AI.
+  const upExams = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId,s.options))
     .map(e=>({...e, days: Math.ceil((new Date(e.date).getTime()-now)/86400000)}))
-    .filter(e=>e.days>=0 && e.days<=7).sort((a,b)=>a.days-b.days)[0];
-  if (nextExam) {
-    const id = `exam_${nextExam.code||nextExam.paper}_${nextExam.date}`;
+    .filter(e=>e.days>=0).sort((a,b)=>a.days-b.days);
+  const soonExam = upExams.find(e=>e.days<=7);
+  const approachingExam = !soonExam && upExams.find(e=>e.days<=21);
+  if (soonExam) {
+    const id = `exam_${soonExam.code||soonExam.paper}_${soonExam.date}`;
     if (!dset.has(id)) out.push({id, kind:'warn',
-      msg:`${(nextExam.paper||'Exam').split(':')[0]} is ${nextExam.days===0?'today':nextExam.days===1?'tomorrow':`in ${nextExam.days} days`}. Drill weak topics.`});
+      msg:`${(soonExam.paper||'Exam').split(':')[0]} is ${soonExam.days===0?'today':soonExam.days===1?'tomorrow':`in ${soonExam.days} days`}. Drill weak topics.`});
+  } else if (approachingExam) {
+    const id = `season_${approachingExam.code||approachingExam.paper}_${approachingExam.date}`;
+    if (!dset.has(id)) out.push({id, kind:'info',
+      msg:`Exam season's nearly here - ${(approachingExam.paper||'your first exam').split(':')[0]} in ${approachingExam.days} days. Time to start ramping up.`});
   }
 
   // Activity gap warning - counts any study action (paper logged, error logged,
@@ -8020,6 +8028,13 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
     if (!isPro) return;
     if (briefing && briefing.date===todayKey) return;        // already have today's
     if (!briefHasData) return;                                // nothing to brief on yet
+    // Credit guard: only spend AI tokens when an exam is actually near. Off-season
+    // the free rule-based Caps message covers it, so we never burn credits months
+    // before they're needed. (Computed from the schedule - costs nothing.)
+    const daysToNextExam = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId,s.options))
+      .map(e=>Math.ceil((new Date(e.date).getTime()-Date.now())/86400000))
+      .filter(d=>d>=0).reduce((m,d)=>Math.min(m,d), Infinity);
+    if (daysToNextExam > 42) return;                          // not exam season yet - no AI call
     if (briefingTriedRef.current===todayKey) return;         // already attempted today
     briefingTriedRef.current = todayKey;
     let cancelled=false;
