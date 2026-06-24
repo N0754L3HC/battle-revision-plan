@@ -244,6 +244,13 @@ export default function TermsOfService({ onClose }) {
 
           <h2 style={S.h2}>11. Processing of Personal Data; Categories and Purposes</h2>
           <p style={S.p}>
+            11.0. <B>Data Controller.</B> For the purposes of Applicable Data Protection Law, the controller responsible
+            for the Processing of your Personal Data is the operator of Battle Plan ("Battle Plan", a service operated
+            from the United Kingdom), who may be contacted using the particulars set out in Clause 27. The operator's
+            full legal identity and an address for service are available to data subjects on request and, where required,
+            the operator is registered with the Information Commissioner's Office.
+          </p>
+          <p style={S.p}>
             11.1. In connection with your use of the Service, we may Process certain categories of Personal Data,
             including without limitation: identifying and account-related data (such as electronic mail address,
             display name, and associated account timestamps and configuration attributes); data voluntarily submitted

@@ -1,4 +1,4 @@
-// UK A-Level subject catalogue — all major boards including WJEC/Eduqas (Wales)
+// UK A-Level subject catalogue - all major boards including WJEC/Eduqas (Wales)
 
 export const SUBJECT_CATALOG = [
   {
@@ -25,14 +25,14 @@ export const SUBJECT_CATALOG = [
       caie:    ['Paper 1: Pure Mathematics 1', 'Paper 2: Pure Mathematics 2', 'Paper 3: Probability & Statistics 1'],
     },
     techniques: [
-      { title: 'Show all working — every step', body: 'Method marks are worth more than answer marks. A wrong final answer with correct method still scores 3–4 marks.' },
-      { title: 'Read the question keyword', body: '"Hence" means use your previous result. "Exact value" means no decimals. "Show that" — the answer is given, justify every step.' },
+      { title: 'Show all working - every step', body: 'Method marks are worth more than answer marks. A wrong final answer with correct method still scores 3–4 marks.' },
+      { title: 'Read the question keyword', body: '"Hence" means use your previous result. "Exact value" means no decimals. "Show that" - the answer is given, justify every step.' },
       { title: 'Check with substitution', body: 'Found x = 3? Substitute it back. 30 seconds. Catches errors worth 2–4 marks.' },
-      { title: 'Stats: conclusions in context', body: "Don't just write 'reject H₀'. Write the conclusion in the words of the question — e.g. 'there is evidence that the mean weight has increased'." },
+      { title: 'Stats: conclusions in context', body: "Don't just write 'reject H₀'. Write the conclusion in the words of the question - e.g. 'there is evidence that the mean weight has increased'." },
     ],
     resources: [
-      { name: 'PMT — past papers by board', url: 'https://www.physicsandmathstutor.com/maths/a-level/' },
-      { name: 'Save My Exams — A-Level Maths', url: 'https://www.savemyexams.com/a-level/maths/' },
+      { name: 'PMT - past papers by board', url: 'https://www.physicsandmathstutor.com/maths/a-level/' },
+      { name: 'Save My Exams - A-Level Maths', url: 'https://www.savemyexams.com/a-level/maths/' },
       { name: 'Dr Frost Maths', url: 'https://www.drfrostmaths.com/' },
     ],
   },
@@ -58,14 +58,14 @@ export const SUBJECT_CATALOG = [
       wjec:    ['Unit 1: Further Pure Mathematics A', 'Unit 2: Further Mathematics Options A', 'Unit 3: Further Pure Mathematics B', 'Unit 4: Further Mathematics Options B'],
     },
     techniques: [
-      { title: 'Proof by induction — four steps, always', body: 'Base case → assume n = k → prove n = k+1 → conclude. Free marks once you practise the structure.' },
-      { title: 'Decision Maths: follow the algorithm exactly', body: "Kruskal's, Dijkstra's, Simplex — each has a fixed procedure. Don't improvise. Show working in tables." },
+      { title: 'Proof by induction - four steps, always', body: 'Base case → assume n = k → prove n = k+1 → conclude. Free marks once you practise the structure.' },
+      { title: 'Decision Maths: follow the algorithm exactly', body: "Kruskal's, Dijkstra's, Simplex - each has a fixed procedure. Don't improvise. Show working in tables." },
       { title: 'Complex loci: sketch before you calculate', body: 'Draw the Argand diagram first. Identify the geometric shape (circle, perpendicular bisector, half-line) before applying algebra.' },
-      { title: 'Polar / hyperbolic: know the standard forms cold', body: 'r = a + b cos θ, cosh²x − sinh²x = 1. These appear constantly — commit them to memory.' },
+      { title: 'Polar / hyperbolic: know the standard forms cold', body: 'r = a + b cos θ, cosh²x − sinh²x = 1. These appear constantly - commit them to memory.' },
     ],
     resources: [
-      { name: 'PMT — Further Maths past papers', url: 'https://www.physicsandmathstutor.com/further-maths/a-level/' },
-      { name: 'Save My Exams — Further Maths', url: 'https://www.savemyexams.com/a-level/further-maths/' },
+      { name: 'PMT - Further Maths past papers', url: 'https://www.physicsandmathstutor.com/further-maths/a-level/' },
+      { name: 'Save My Exams - Further Maths', url: 'https://www.savemyexams.com/a-level/further-maths/' },
     ],
   },
   {
@@ -94,13 +94,13 @@ export const SUBJECT_CATALOG = [
     techniques: [
       { title: '6-mark questions: structure your answer', body: 'State the point → explain the mechanism → link to the outcome. Examiners award marks for logical chains, not lists of facts.' },
       { title: 'Required practicals: know the method, not just the result', body: 'Paper 3 tests your ability to analyse practical data. Know variables (IV, DV, control), sources of error, and how to improve the experiment.' },
-      { title: 'AQA essay question: plan for 5 minutes', body: '25 marks over ~3-4 sides. Breadth and depth both matter. Include diagrams where relevant — they can earn marks.' },
-      { title: 'Definitions must be precise', body: '"Active transport is the movement of substances against a concentration gradient using ATP." Vague answers lose marks — use correct terminology.' },
+      { title: 'AQA essay question: plan for 5 minutes', body: '25 marks over ~3-4 sides. Breadth and depth both matter. Include diagrams where relevant - they can earn marks.' },
+      { title: 'Definitions must be precise', body: '"Active transport is the movement of substances against a concentration gradient using ATP." Vague answers lose marks - use correct terminology.' },
     ],
     resources: [
-      { name: 'PMT — Biology past papers', url: 'https://www.physicsandmathstutor.com/biology/a-level/' },
-      { name: 'Save My Exams — A-Level Biology', url: 'https://www.savemyexams.com/a-level/biology/' },
-      { name: 'Seneca Learning — Biology', url: 'https://app.senecalearning.com/' },
+      { name: 'PMT - Biology past papers', url: 'https://www.physicsandmathstutor.com/biology/a-level/' },
+      { name: 'Save My Exams - A-Level Biology', url: 'https://www.savemyexams.com/a-level/biology/' },
+      { name: 'Seneca Learning - Biology', url: 'https://app.senecalearning.com/' },
     ],
   },
   {
@@ -125,15 +125,15 @@ export const SUBJECT_CATALOG = [
       wjec:    ['Unit 1: The Language of Chemistry, Structure & Simple Reactions', 'Unit 2: Energy, Rate & Chemistry of Carbon Compounds', 'Unit 3: Physical & Inorganic Chemistry', 'Unit 4: Organic Chemistry & Analysis'],
     },
     techniques: [
-      { title: 'Curly arrow mechanisms: every arrow must be precise', body: 'Arrows go from electron source to electron sink. Missing or misplaced arrows lose marks — practise until it is automatic.' },
+      { title: 'Curly arrow mechanisms: every arrow must be precise', body: 'Arrows go from electron source to electron sink. Missing or misplaced arrows lose marks - practise until it is automatic.' },
       { title: 'Enthalpy cycles: draw first, calculate second', body: "Hess's Law and Born-Haber: draw the full cycle, label every arrow's sign and direction, then calculate." },
       { title: 'Spectroscopy: learn the key values', body: 'IR: O–H broad ~3200–3550 cm⁻¹, C=O ~1700 cm⁻¹. NMR: know chemical shift regions and the n+1 splitting rule.' },
       { title: 'State vs explain vs suggest', body: '"State" = brief fact, no explanation. "Explain" = mechanism required. "Suggest" = apply knowledge to an unfamiliar context.' },
     ],
     resources: [
-      { name: 'PMT — Chemistry past papers', url: 'https://www.physicsandmathstutor.com/chemistry/a-level/' },
-      { name: 'ChemGuide — all topics in depth', url: 'https://www.chemguide.co.uk/' },
-      { name: 'Save My Exams — A-Level Chemistry', url: 'https://www.savemyexams.com/a-level/chemistry/' },
+      { name: 'PMT - Chemistry past papers', url: 'https://www.physicsandmathstutor.com/chemistry/a-level/' },
+      { name: 'ChemGuide - all topics in depth', url: 'https://www.chemguide.co.uk/' },
+      { name: 'Save My Exams - A-Level Chemistry', url: 'https://www.savemyexams.com/a-level/chemistry/' },
     ],
   },
   {
@@ -161,14 +161,14 @@ export const SUBJECT_CATALOG = [
     },
     techniques: [
       { title: 'Define before applying', body: "Many 'explain' questions want a definition first. State the law/principle, then show it applies to this specific situation." },
-      { title: 'Show ALL working — even obvious steps', body: 'Unit errors cost 1 mark. ECF (error carried forward) saves you if your method is right. Never skip intermediate steps.' },
+      { title: 'Show ALL working - even obvious steps', body: 'Unit errors cost 1 mark. ECF (error carried forward) saves you if your method is right. Never skip intermediate steps.' },
       { title: 'Graph axes: quantity / unit format', body: "Write 'Distance / m' not 'distance (m)'. Missing units on axes scores zero for that mark." },
       { title: 'Required practicals: know uncertainties', body: 'For each practical: what you measure, how, systematic errors, random errors, how to minimise uncertainty.' },
     ],
     resources: [
-      { name: 'PMT — Physics past papers', url: 'https://www.physicsandmathstutor.com/physics/a-level/' },
-      { name: 'Isaac Physics — problems & skills', url: 'https://isaacphysics.org/' },
-      { name: 'Save My Exams — A-Level Physics', url: 'https://www.savemyexams.com/a-level/physics/' },
+      { name: 'PMT - Physics past papers', url: 'https://www.physicsandmathstutor.com/physics/a-level/' },
+      { name: 'Isaac Physics - problems & skills', url: 'https://isaacphysics.org/' },
+      { name: 'Save My Exams - A-Level Physics', url: 'https://www.savemyexams.com/a-level/physics/' },
     ],
   },
   {
@@ -191,15 +191,15 @@ export const SUBJECT_CATALOG = [
       wjec:    ['Component 1: Computer Systems', 'Component 2: Algorithms & Programming', 'Component 3: Software Development Project'],
     },
     techniques: [
-      { title: 'Pseudocode: be consistent, not perfect', body: 'Examiners reward clear logic, not a specific syntax. Use the same conventions throughout — always define variables before use.' },
+      { title: 'Pseudocode: be consistent, not perfect', body: 'Examiners reward clear logic, not a specific syntax. Use the same conventions throughout - always define variables before use.' },
       { title: 'Binary/hex: show conversion steps', body: 'Even if you can do it in your head, write the column headers or working. 1 mark for the method, 1 for the answer.' },
       { title: 'Long-answer theory: use technical vocabulary', body: '"The OS uses a round-robin scheduling algorithm" scores more than "the OS takes turns with each process".' },
       { title: 'Algorithms: trace through with an example', body: "If you're unsure whether your algorithm is right, trace through it with a small input. This also helps you explain it." },
     ],
     resources: [
-      { name: 'PMT — CS past papers', url: 'https://www.physicsandmathstutor.com/computer-science/a-level/' },
-      { name: 'Craig and Dave — video lessons', url: 'https://craigndave.org/' },
-      { name: 'Revision World — CS notes', url: 'https://revisionworld.com/a2-level-level-revision/it' },
+      { name: 'PMT - CS past papers', url: 'https://www.physicsandmathstutor.com/computer-science/a-level/' },
+      { name: 'Craig and Dave - video lessons', url: 'https://craigndave.org/' },
+      { name: 'Revision World - CS notes', url: 'https://revisionworld.com/a2-level-level-revision/it' },
     ],
   },
   {
@@ -224,15 +224,15 @@ export const SUBJECT_CATALOG = [
       caie:    ['Paper 1: Multiple Choice', 'Paper 2: Data Response & Essays', 'Paper 3: Multiple Choice (A Level)', 'Paper 4: Data Response & Essays (A Level)'],
     },
     techniques: [
-      { title: 'Chain of reasoning — every answer', body: 'Point → Explain the mechanism → Link to outcome. Then evaluate with a limitation or real-world context.' },
-      { title: '25-mark essays: plan for 5 minutes', body: 'Plan 3 arguments + evaluation before writing. Your conclusion judgement is where A* marks are earned — make it specific.' },
+      { title: 'Chain of reasoning - every answer', body: 'Point → Explain the mechanism → Link to outcome. Then evaluate with a limitation or real-world context.' },
+      { title: '25-mark essays: plan for 5 minutes', body: 'Plan 3 arguments + evaluation before writing. Your conclusion judgement is where A* marks are earned - make it specific.' },
       { title: 'Diagrams: label every element', body: 'Every axis, curve, equilibrium point, and shift arrow must be labelled. An unlabelled diagram scores 0 for diagram marks.' },
       { title: 'Paper 3 (AQA): annotate the data first', body: 'Spend 8–10 minutes reading and annotating the extract. Every high-mark answer must reference the data directly.' },
     ],
     resources: [
-      { name: 'PMT — Economics past papers', url: 'https://www.physicsandmathstutor.com/economics/a-level/' },
-      { name: 'Tutor2u — Economics revision', url: 'https://www.tutor2u.net/economics/a-level' },
-      { name: 'Economics Online — revision notes', url: 'https://www.economicsonline.co.uk/' },
+      { name: 'PMT - Economics past papers', url: 'https://www.physicsandmathstutor.com/economics/a-level/' },
+      { name: 'Tutor2u - Economics revision', url: 'https://www.tutor2u.net/economics/a-level' },
+      { name: 'Economics Online - revision notes', url: 'https://www.economicsonline.co.uk/' },
     ],
   },
   {
@@ -255,15 +255,15 @@ export const SUBJECT_CATALOG = [
       wjec:    ['Unit 1: Core Psychology', 'Unit 2: Psychology in Action', 'Unit 3: Applied Psychology', 'Unit 4: Psychological Research & Its Applications'],
     },
     techniques: [
-      { title: 'Studies: APFCC — always structure your response', body: 'Aim → Procedure → Findings → Conclusions → Criticism. Especially important for 6-mark describe questions.' },
-      { title: 'Evaluation: specific, not generic', body: '"The sample was small" without a number is weak. "The sample was 12 participants — too small to generalise to the wider population" is A-grade.' },
-      { title: 'Research methods: always link to the study', body: "Don't describe lab experiments in general — explain why THIS study used a lab experiment and what the specific advantages/limitations were." },
-      { title: '16-mark essays: balance description and evaluation', body: '40% describing, 60% evaluating. A common mistake is spending 80% on description — evaluative points earn far more marks per line.' },
+      { title: 'Studies: APFCC - always structure your response', body: 'Aim → Procedure → Findings → Conclusions → Criticism. Especially important for 6-mark describe questions.' },
+      { title: 'Evaluation: specific, not generic', body: '"The sample was small" without a number is weak. "The sample was 12 participants - too small to generalise to the wider population" is A-grade.' },
+      { title: 'Research methods: always link to the study', body: "Don't describe lab experiments in general - explain why THIS study used a lab experiment and what the specific advantages/limitations were." },
+      { title: '16-mark essays: balance description and evaluation', body: '40% describing, 60% evaluating. A common mistake is spending 80% on description - evaluative points earn far more marks per line.' },
     ],
     resources: [
-      { name: 'PMT — Psychology past papers', url: 'https://www.physicsandmathstutor.com/psychology/a-level/' },
-      { name: 'Simply Psychology — revision notes', url: 'https://www.simplypsychology.org/' },
-      { name: 'Save My Exams — A-Level Psychology', url: 'https://www.savemyexams.com/a-level/psychology/' },
+      { name: 'PMT - Psychology past papers', url: 'https://www.physicsandmathstutor.com/psychology/a-level/' },
+      { name: 'Simply Psychology - revision notes', url: 'https://www.simplypsychology.org/' },
+      { name: 'Save My Exams - A-Level Psychology', url: 'https://www.savemyexams.com/a-level/psychology/' },
     ],
   },
   {
@@ -288,12 +288,12 @@ export const SUBJECT_CATALOG = [
     techniques: [
       { title: 'Source questions: CONTENT → PROVENANCE → CONTEXT', body: "Don't just summarise what a source says. What does the author's position, purpose, and date tell us about its value and limitations?" },
       { title: 'Essays: argument in every paragraph', body: 'Each paragraph should make a clear argument, not just narrate events. Open with your point, develop with evidence, then link back to the question.' },
-      { title: 'Avoid narrative — analyse instead', body: '"In 1933, Hitler became Chancellor because…" not "In 1933, Hitler became Chancellor. He then…". Every sentence should explain causation.' },
-      { title: 'Reach a balanced judgement', body: 'A* responses weigh multiple factors against each other and arrive at a reasoned conclusion — not just listing both sides.' },
+      { title: 'Avoid narrative - analyse instead', body: '"In 1933, Hitler became Chancellor because…" not "In 1933, Hitler became Chancellor. He then…". Every sentence should explain causation.' },
+      { title: 'Reach a balanced judgement', body: 'A* responses weigh multiple factors against each other and arrive at a reasoned conclusion - not just listing both sides.' },
     ],
     resources: [
-      { name: 'PMT — History past papers', url: 'https://www.physicsandmathstutor.com/history/a-level/' },
-      { name: 'Tutor2u — History revision', url: 'https://www.tutor2u.net/history/a-level' },
+      { name: 'PMT - History past papers', url: 'https://www.physicsandmathstutor.com/history/a-level/' },
+      { name: 'Tutor2u - History revision', url: 'https://www.tutor2u.net/history/a-level' },
     ],
   },
   {
@@ -322,9 +322,9 @@ export const SUBJECT_CATALOG = [
       { title: 'Maps and diagrams earn marks', body: 'Well-labelled sketch maps, annotated diagrams, and accurate graphs can earn specific marks. Practise drawing them under timed conditions.' },
     ],
     resources: [
-      { name: 'PMT — Geography past papers', url: 'https://www.physicsandmathstutor.com/geography/a-level/' },
-      { name: 'Coolgeography — revision notes', url: 'https://www.coolgeography.co.uk/' },
-      { name: 'Tutor2u — Geography', url: 'https://www.tutor2u.net/geography/a-level' },
+      { name: 'PMT - Geography past papers', url: 'https://www.physicsandmathstutor.com/geography/a-level/' },
+      { name: 'Coolgeography - revision notes', url: 'https://www.coolgeography.co.uk/' },
+      { name: 'Tutor2u - Geography', url: 'https://www.tutor2u.net/geography/a-level' },
     ],
   },
   {
@@ -350,12 +350,12 @@ export const SUBJECT_CATALOG = [
       { title: 'Close reading: quote short, analyse long', body: 'A two-word quotation with three sentences of analysis outperforms a long quotation with one sentence of commentary.' },
       { title: 'Context: weave it in, not bolt it on', body: "Contextual knowledge should emerge from the text, not be added at the end. Ask: 'how does this word/technique reflect the context?'" },
       { title: 'Form and structure are as important as content', body: 'Discuss why the author chose a sonnet, a dramatic monologue, or a non-linear structure. Examiners reward structural analysis.' },
-      { title: 'Comparison questions: integrate, not alternate', body: "Don't write about Text A then Text B. Weave the comparison throughout — 'While X does this, Y does…' in every paragraph." },
+      { title: 'Comparison questions: integrate, not alternate', body: "Don't write about Text A then Text B. Weave the comparison throughout - 'While X does this, Y does…' in every paragraph." },
     ],
     resources: [
-      { name: 'PMT — English Literature', url: 'https://www.physicsandmathstutor.com/english-literature/a-level/' },
-      { name: 'Sparknotes — set text study guides', url: 'https://www.sparknotes.com/' },
-      { name: 'Marked by Teachers — example essays', url: 'https://www.markedbyteachers.com/' },
+      { name: 'PMT - English Literature', url: 'https://www.physicsandmathstutor.com/english-literature/a-level/' },
+      { name: 'Sparknotes - set text study guides', url: 'https://www.sparknotes.com/' },
+      { name: 'Marked by Teachers - example essays', url: 'https://www.markedbyteachers.com/' },
     ],
   },
   {
@@ -372,20 +372,20 @@ export const SUBJECT_CATALOG = [
     ],
     gradeBoundaries: { 'A*': 75, A: 65, B: 55, C: 45, D: 35, E: 25 },
     papers: {
-      aqa:    ['Paper 1: Business 1 (7132/1)', 'Paper 2: Business 2 (7132/2)', 'Paper 3: Business 3 — Case Study (7132/3)'],
+      aqa:    ['Paper 1: Business 1 (7132/1)', 'Paper 2: Business 2 (7132/2)', 'Paper 3: Business 3 - Case Study (7132/3)'],
       edexcel:['Paper 1: Marketing, People & Global Business (9BS0/01)', 'Paper 2: Business Activities, Decisions & Strategy (9BS0/02)', 'Paper 3: Investigating Business in a Competitive Environment (9BS0/03)'],
       ocr:    ['Component 1: Business Foundations (H431/01)', 'Component 2: Business Analysis & Strategy (H431/02)', 'Component 3: Business in a Competitive Environment (H431/03)'],
       wjec:   ['Unit 1: Business Opportunities & Functions', 'Unit 2: Business Analysis', 'Unit 3: Business Strategy & Planning', 'Unit 4: Case Study'],
     },
     techniques: [
-      { title: 'Always apply to the context', body: "Don't describe motivation theory in general — apply it to THIS business, THIS situation. Examiners mark contextualisation heavily." },
-      { title: 'Evaluation: "it depends on…"', body: 'The best evaluation explains why the answer depends on the specific context — size of firm, market conditions, the data given.' },
+      { title: 'Always apply to the context', body: "Don't describe motivation theory in general - apply it to THIS business, THIS situation. Examiners mark contextualisation heavily." },
+      { title: 'Evaluation: "it depends on…"', body: 'The best evaluation explains why the answer depends on the specific context - size of firm, market conditions, the data given.' },
       { title: 'Case study: read the data before writing', body: 'In data-response questions, mine every piece of numerical data. Build your argument around the numbers provided.' },
       { title: 'Calculations: show your formula', body: 'Write the formula first (e.g. Profit Margin = Profit/Revenue × 100), then substitute values. Method marks exist even for wrong answers.' },
     ],
     resources: [
-      { name: 'Tutor2u — Business revision', url: 'https://www.tutor2u.net/business/a-level' },
-      { name: 'PMT — Business past papers', url: 'https://www.physicsandmathstutor.com/business-studies/a-level/' },
+      { name: 'Tutor2u - Business revision', url: 'https://www.tutor2u.net/business/a-level' },
+      { name: 'PMT - Business past papers', url: 'https://www.physicsandmathstutor.com/business-studies/a-level/' },
     ],
   },
   {
@@ -407,14 +407,14 @@ export const SUBJECT_CATALOG = [
     },
     techniques: [
       { title: 'Sociologist + study + date in every point', body: '"Durkheim (1897) found that suicide rates varied by religion and social integration." Named sociologists + evidence = higher marks.' },
-      { title: 'Theory questions: always evaluate', body: 'For any theory question, present the view clearly then criticise it using an opposing perspective — Marxist vs Feminist, etc.' },
-      { title: 'Research methods: always justify your choice', body: "Don't just name a method. Explain WHY it suits the research topic — is it valid, reliable, ethical, practical?" },
-      { title: 'Items (stimulus material): refer back', body: 'Exam questions often provide an "item". You must reference it explicitly — quotes earn marks, ignoring it loses them.' },
+      { title: 'Theory questions: always evaluate', body: 'For any theory question, present the view clearly then criticise it using an opposing perspective - Marxist vs Feminist, etc.' },
+      { title: 'Research methods: always justify your choice', body: "Don't just name a method. Explain WHY it suits the research topic - is it valid, reliable, ethical, practical?" },
+      { title: 'Items (stimulus material): refer back', body: 'Exam questions often provide an "item". You must reference it explicitly - quotes earn marks, ignoring it loses them.' },
     ],
     resources: [
-      { name: 'PMT — Sociology past papers', url: 'https://www.physicsandmathstutor.com/sociology/a-level/' },
-      { name: 'Tutor2u — Sociology revision', url: 'https://www.tutor2u.net/sociology/a-level' },
-      { name: 'Sociology Guide — revision notes', url: 'https://www.sociologyguide.com/' },
+      { name: 'PMT - Sociology past papers', url: 'https://www.physicsandmathstutor.com/sociology/a-level/' },
+      { name: 'Tutor2u - Sociology revision', url: 'https://www.tutor2u.net/sociology/a-level' },
+      { name: 'Sociology Guide - revision notes', url: 'https://www.sociologyguide.com/' },
     ],
   },
 ];
@@ -442,15 +442,15 @@ export const GCSE_CATALOG = [
       wjec:    ['Unit 1: Non-Calculator', 'Unit 2: Calculator', 'Unit 3: Calculator'],
     },
     techniques: [
-      { title: 'Show all working — every step', body: 'Method marks are awarded even when the final answer is wrong. Never skip steps.' },
+      { title: 'Show all working - every step', body: 'Method marks are awarded even when the final answer is wrong. Never skip steps.' },
       { title: 'Exact value means no rounding', body: 'Leave answers as surds, fractions, or multiples of π where the question asks for an exact value.' },
       { title: 'Circle theorems: name the theorem', body: 'Always state which theorem you are using: "angle at the centre is twice the angle at the circumference."' },
       { title: 'Check by substituting back', body: '30 seconds to verify saves marks on show-that questions.' },
     ],
     resources: [
-      { name: 'Maths Genie — GCSE past papers', url: 'https://www.mathsgenie.co.uk/gcse.html' },
-      { name: 'Dr Frost Maths — GCSE', url: 'https://www.drfrostmaths.com/' },
-      { name: 'Save My Exams — GCSE Maths', url: 'https://www.savemyexams.com/gcse/maths/' },
+      { name: 'Maths Genie - GCSE past papers', url: 'https://www.mathsgenie.co.uk/gcse.html' },
+      { name: 'Dr Frost Maths - GCSE', url: 'https://www.drfrostmaths.com/' },
+      { name: 'Save My Exams - GCSE Maths', url: 'https://www.savemyexams.com/gcse/maths/' },
     ],
   },
   {
@@ -474,13 +474,13 @@ export const GCSE_CATALOG = [
     },
     techniques: [
       { title: 'Language analysis: use subject terminology', body: 'Name techniques (metaphor, sibilance, semantic field) and explain the effect on the reader. Never quote without analysing.' },
-      { title: 'Structure: write about whole-text effects', body: 'Discuss how the writer structures the text — the opening, turning points, ending — not just individual sentences.' },
+      { title: 'Structure: write about whole-text effects', body: 'Discuss how the writer structures the text - the opening, turning points, ending - not just individual sentences.' },
       { title: 'Writing tasks: plan for 5 minutes', body: 'Identify your audience, purpose, and form. A clear structure with varied sentence lengths scores higher than a content dump.' },
       { title: 'Read the question carefully', body: 'Examiners deduct marks for writing to the wrong audience or form. Re-read the question after writing.' },
     ],
     resources: [
-      { name: 'PMT — English Language GCSE', url: 'https://www.physicsandmathstutor.com/english-language/gcse/' },
-      { name: 'Save My Exams — GCSE English Language', url: 'https://www.savemyexams.com/gcse/english-language/' },
+      { name: 'PMT - English Language GCSE', url: 'https://www.physicsandmathstutor.com/english-language/gcse/' },
+      { name: 'Save My Exams - GCSE English Language', url: 'https://www.savemyexams.com/gcse/english-language/' },
     ],
   },
   {
@@ -509,8 +509,8 @@ export const GCSE_CATALOG = [
       { title: 'Open book exams: know where things are', body: 'If you have the text, know which page key quotes appear on. Do not waste time searching during the exam.' },
     ],
     resources: [
-      { name: 'Sparknotes — set text study guides', url: 'https://www.sparknotes.com/' },
-      { name: 'Save My Exams — GCSE English Literature', url: 'https://www.savemyexams.com/gcse/english-literature/' },
+      { name: 'Sparknotes - set text study guides', url: 'https://www.sparknotes.com/' },
+      { name: 'Save My Exams - GCSE English Literature', url: 'https://www.savemyexams.com/gcse/english-literature/' },
     ],
   },
   {
@@ -538,12 +538,12 @@ export const GCSE_CATALOG = [
       { title: '6-mark questions: use a logical sequence', body: 'State → explain → link. Examiners award marks for logical chains, not bullet-point lists of facts.' },
       { title: 'Required practicals: know the method', body: 'Know the independent variable, dependent variable, control variables, and sources of error for every required practical.' },
       { title: 'Definitions must be precise', body: '"Active transport requires energy and moves substances against a concentration gradient." Vague answers lose marks.' },
-      { title: 'Maths in biology: show units', body: 'Magnification, surface area, rate of reaction — always include units in your final answer.' },
+      { title: 'Maths in biology: show units', body: 'Magnification, surface area, rate of reaction - always include units in your final answer.' },
     ],
     resources: [
-      { name: 'Save My Exams — GCSE Biology', url: 'https://www.savemyexams.com/gcse/biology/' },
-      { name: 'Seneca Learning — GCSE Biology', url: 'https://app.senecalearning.com/' },
-      { name: 'BBC Bitesize — Biology', url: 'https://www.bbc.co.uk/bitesize/subjects/z9ddmp3' },
+      { name: 'Save My Exams - GCSE Biology', url: 'https://www.savemyexams.com/gcse/biology/' },
+      { name: 'Seneca Learning - GCSE Biology', url: 'https://app.senecalearning.com/' },
+      { name: 'BBC Bitesize - Biology', url: 'https://www.bbc.co.uk/bitesize/subjects/z9ddmp3' },
     ],
   },
   {
@@ -570,13 +570,13 @@ export const GCSE_CATALOG = [
     techniques: [
       { title: 'Balancing equations: check atoms on both sides', body: 'Count every atom. A balanced equation is often worth 1–2 marks and is quick to check.' },
       { title: 'Ionic equations: only write reacting species', body: 'Leave out spectator ions. AQA in particular tests net ionic equations at Higher tier.' },
-      { title: 'Calculation questions: give correct units', body: 'g/mol, mol/dm³, kJ/mol — a correct answer without units loses the mark at Higher.' },
+      { title: 'Calculation questions: give correct units', body: 'g/mol, mol/dm³, kJ/mol - a correct answer without units loses the mark at Higher.' },
       { title: 'Required practicals: know the purpose of each step', body: 'Why do you heat to constant mass? Why filter before titrating? Examiners ask about method, not just results.' },
     ],
     resources: [
-      { name: 'Save My Exams — GCSE Chemistry', url: 'https://www.savemyexams.com/gcse/chemistry/' },
-      { name: 'ChemGuide — GCSE section', url: 'https://www.chemguide.co.uk/' },
-      { name: 'BBC Bitesize — Chemistry', url: 'https://www.bbc.co.uk/bitesize/subjects/zyn3rwx' },
+      { name: 'Save My Exams - GCSE Chemistry', url: 'https://www.savemyexams.com/gcse/chemistry/' },
+      { name: 'ChemGuide - GCSE section', url: 'https://www.chemguide.co.uk/' },
+      { name: 'BBC Bitesize - Chemistry', url: 'https://www.bbc.co.uk/bitesize/subjects/zyn3rwx' },
     ],
   },
   {
@@ -601,15 +601,15 @@ export const GCSE_CATALOG = [
       wjec:        ['Unit 1: Electricity & Energy', 'Unit 2: Forces, Space & Radioactivity'],
     },
     techniques: [
-      { title: 'Use the equation sheet', body: 'GCSE Physics provides an equation sheet — know which equations are on it and which must be memorised.' },
-      { title: 'Standard form: always check the power of 10', body: 'Speed of light, gravitational field strength — getting the power of 10 wrong loses all marks on a calculation.' },
+      { title: 'Use the equation sheet', body: 'GCSE Physics provides an equation sheet - know which equations are on it and which must be memorised.' },
+      { title: 'Standard form: always check the power of 10', body: 'Speed of light, gravitational field strength - getting the power of 10 wrong loses all marks on a calculation.' },
       { title: 'Required practicals: draw a proper results table', body: 'Headers, units, consistent decimal places. A rushed table loses method marks before you even calculate.' },
       { title: 'Explain questions: cause → mechanism → effect', body: '"When resistance increases, current decreases (V=IR), so the motor spins slower." Always complete the chain.' },
     ],
     resources: [
-      { name: 'Save My Exams — GCSE Physics', url: 'https://www.savemyexams.com/gcse/physics/' },
-      { name: 'Isaac Physics — GCSE support', url: 'https://isaacphysics.org/' },
-      { name: 'BBC Bitesize — Physics', url: 'https://www.bbc.co.uk/bitesize/subjects/zh2xsbk' },
+      { name: 'Save My Exams - GCSE Physics', url: 'https://www.savemyexams.com/gcse/physics/' },
+      { name: 'Isaac Physics - GCSE support', url: 'https://isaacphysics.org/' },
+      { name: 'BBC Bitesize - Physics', url: 'https://www.bbc.co.uk/bitesize/subjects/zh2xsbk' },
     ],
   },
   {
@@ -632,15 +632,15 @@ export const GCSE_CATALOG = [
       wjec:    ['Component 1: Biology', 'Component 2: Chemistry', 'Component 3: Physics'],
     },
     techniques: [
-      { title: 'Study all three sciences equally', body: 'Combined Science is double-weighted — weak physics can drag down your biology grade. Balance your revision time.' },
+      { title: 'Study all three sciences equally', body: 'Combined Science is double-weighted - weak physics can drag down your biology grade. Balance your revision time.' },
       { title: 'Required practicals appear on every paper', body: 'There are 16 required practicals across the 3 sciences. Know each one cold.' },
       { title: 'Maths skills: practice across all three sciences', body: 'Many students lose marks on calculations. The same maths (rearranging, standard form, graphs) appears in all three.' },
-      { title: 'Use past papers by paper, not by subject', body: 'Biology Paper 1 has a specific topic list — don\'t mix up which content appears in which paper.' },
+      { title: 'Use past papers by paper, not by subject', body: 'Biology Paper 1 has a specific topic list - don\'t mix up which content appears in which paper.' },
     ],
     resources: [
-      { name: 'BBC Bitesize — Combined Science', url: 'https://www.bbc.co.uk/bitesize/subjects/zrkw2hv' },
-      { name: 'Save My Exams — GCSE Sciences', url: 'https://www.savemyexams.com/gcse/' },
-      { name: 'Seneca Learning — Sciences', url: 'https://app.senecalearning.com/' },
+      { name: 'BBC Bitesize - Combined Science', url: 'https://www.bbc.co.uk/bitesize/subjects/zrkw2hv' },
+      { name: 'Save My Exams - GCSE Sciences', url: 'https://www.savemyexams.com/gcse/' },
+      { name: 'Seneca Learning - Sciences', url: 'https://app.senecalearning.com/' },
     ],
   },
   {
@@ -664,14 +664,14 @@ export const GCSE_CATALOG = [
     },
     techniques: [
       { title: 'Source questions: CONTENT → PROVENANCE', body: 'Don\'t just summarise what a source says. What does the author\'s position and purpose tell us about reliability?' },
-      { title: 'Avoid narrative — analyse instead', body: '"This caused X because…" not "This happened, then this happened." Every sentence should explain causation.' },
-      { title: 'Balance your argument', body: 'A* responses weigh multiple factors and reach a reasoned judgement — not just listing evidence on both sides.' },
-      { title: 'Know your own topic in depth', body: 'GCSE History is topic-specific. Know your Britain, Germany, or USA topic cold — dates, key figures, key events.' },
+      { title: 'Avoid narrative - analyse instead', body: '"This caused X because…" not "This happened, then this happened." Every sentence should explain causation.' },
+      { title: 'Balance your argument', body: 'A* responses weigh multiple factors and reach a reasoned judgement - not just listing evidence on both sides.' },
+      { title: 'Know your own topic in depth', body: 'GCSE History is topic-specific. Know your Britain, Germany, or USA topic cold - dates, key figures, key events.' },
     ],
     resources: [
-      { name: 'PMT — History GCSE papers', url: 'https://www.physicsandmathstutor.com/history/gcse/' },
-      { name: 'Tutor2u — History GCSE', url: 'https://www.tutor2u.net/history/gcse' },
-      { name: 'BBC Bitesize — History', url: 'https://www.bbc.co.uk/bitesize/subjects/zk26n39' },
+      { name: 'PMT - History GCSE papers', url: 'https://www.physicsandmathstutor.com/history/gcse/' },
+      { name: 'Tutor2u - History GCSE', url: 'https://www.tutor2u.net/history/gcse' },
+      { name: 'BBC Bitesize - History', url: 'https://www.bbc.co.uk/bitesize/subjects/zk26n39' },
     ],
   },
   {
@@ -689,7 +689,7 @@ export const GCSE_CATALOG = [
     gradeBoundaries: { '9': 80, '8': 70, '7': 59, '6': 49, '5': 40, '4': 32, '3': 24 },
     papers: {
       aqa:     ['Paper 1: Living with the Physical Environment (8035/1)', 'Paper 2: Challenges in the Human Environment (8035/2)', 'Paper 3: Geographical Applications (8035/3)'],
-      edexcel: ['Paper 1: Global Geographical Issues (1GB0/01)', 'Paper 2: UK Geographical Issues (1GB0/02)', 'Paper 3: People and Environment Issues — Making Geographical Decisions (1GB0/03)'],
+      edexcel: ['Paper 1: Global Geographical Issues (1GB0/01)', 'Paper 2: UK Geographical Issues (1GB0/02)', 'Paper 3: People and Environment Issues - Making Geographical Decisions (1GB0/03)'],
       'ocr-a': ['Component 1: Our Natural World (J383/01)', 'Component 2: People and Society (J383/02)', 'Component 3: Geographical Skills (J383/03)'],
       wjec:    ['Unit 1: Changing Landscapes', 'Unit 2: Changing Places', 'Unit 3: Environmental Challenges'],
     },
@@ -700,9 +700,9 @@ export const GCSE_CATALOG = [
       { title: 'Sketch maps: label everything', body: 'A well-labelled sketch map can earn dedicated marks. Practise drawing key maps from memory.' },
     ],
     resources: [
-      { name: 'Coolgeography — GCSE notes', url: 'https://www.coolgeography.co.uk/' },
-      { name: 'PMT — Geography GCSE', url: 'https://www.physicsandmathstutor.com/geography/gcse/' },
-      { name: 'BBC Bitesize — Geography', url: 'https://www.bbc.co.uk/bitesize/subjects/zr982hv' },
+      { name: 'Coolgeography - GCSE notes', url: 'https://www.coolgeography.co.uk/' },
+      { name: 'PMT - Geography GCSE', url: 'https://www.physicsandmathstutor.com/geography/gcse/' },
+      { name: 'BBC Bitesize - Geography', url: 'https://www.bbc.co.uk/bitesize/subjects/zr982hv' },
     ],
   },
   {
@@ -731,9 +731,9 @@ export const GCSE_CATALOG = [
       { title: 'Theory questions: use technical vocabulary', body: '"The OS uses round-robin scheduling" scores more than "the OS takes turns." Use exact terminology.' },
     ],
     resources: [
-      { name: 'Craig and Dave — video lessons', url: 'https://craigndave.org/' },
-      { name: 'BBC Bitesize — Computer Science', url: 'https://www.bbc.co.uk/bitesize/subjects/zvnygk7' },
-      { name: 'Save My Exams — GCSE CS', url: 'https://www.savemyexams.com/gcse/computer-science/' },
+      { name: 'Craig and Dave - video lessons', url: 'https://craigndave.org/' },
+      { name: 'BBC Bitesize - Computer Science', url: 'https://www.bbc.co.uk/bitesize/subjects/zvnygk7' },
+      { name: 'Save My Exams - GCSE CS', url: 'https://www.savemyexams.com/gcse/computer-science/' },
     ],
   },
   {
@@ -758,12 +758,12 @@ export const GCSE_CATALOG = [
     techniques: [
       { title: 'Speaking: use complex structures', body: 'Include subjunctive, conditional, and perfect tense in your oral. Examiners reward grammatical range.' },
       { title: 'Listening: read questions before the audio plays', body: 'Use the preparation time to identify key words to listen for. You cannot rewind.' },
-      { title: 'Writing: vary tenses deliberately', body: 'Past, present, future, conditional — include all four in longer writing tasks to hit the top grade descriptors.' },
+      { title: 'Writing: vary tenses deliberately', body: 'Past, present, future, conditional - include all four in longer writing tasks to hit the top grade descriptors.' },
       { title: 'Vocabulary: prioritise high-frequency words', body: 'Learn the most common 500 words cold. They appear in every paper and compose most of the unseen text.' },
     ],
     resources: [
-      { name: 'BBC Bitesize — French', url: 'https://www.bbc.co.uk/bitesize/subjects/z9dkqhv' },
-      { name: 'Language Nut — vocab builder', url: 'https://www.languagenut.com/' },
+      { name: 'BBC Bitesize - French', url: 'https://www.bbc.co.uk/bitesize/subjects/z9dkqhv' },
+      { name: 'Language Nut - vocab builder', url: 'https://www.languagenut.com/' },
     ],
   },
   {
@@ -788,12 +788,12 @@ export const GCSE_CATALOG = [
     techniques: [
       { title: 'Speaking: use complex structures', body: 'Include subjunctive, conditional, and perfect tense. Examiners reward grammatical range at grade 7+.' },
       { title: 'Listening: listen for gender and number', body: 'Spanish adjective agreement is tested implicitly. Listen for plural/feminine markers in listening tasks.' },
-      { title: 'Writing: use connectives and opinions', body: 'aunque (although), sin embargo (however), me parece que (I think that) — these signal sophistication to examiners.' },
+      { title: 'Writing: use connectives and opinions', body: 'aunque (although), sin embargo (however), me parece que (I think that) - these signal sophistication to examiners.' },
       { title: 'Learn ser vs estar cold', body: 'The most common pitfall in Spanish writing and speaking. A single ser/estar error can break the flow of a whole answer.' },
     ],
     resources: [
-      { name: 'BBC Bitesize — Spanish', url: 'https://www.bbc.co.uk/bitesize/subjects/zfckjxs' },
-      { name: 'Language Nut — vocab builder', url: 'https://www.languagenut.com/' },
+      { name: 'BBC Bitesize - Spanish', url: 'https://www.bbc.co.uk/bitesize/subjects/zfckjxs' },
+      { name: 'Language Nut - vocab builder', url: 'https://www.languagenut.com/' },
     ],
   },
   {
@@ -811,7 +811,7 @@ export const GCSE_CATALOG = [
     gradeBoundaries: { '9': 80, '8': 70, '7': 60, '6': 50, '5': 41, '4': 33, '3': 25 },
     papers: {
       aqa:     ['Paper 1: Catholic Christianity or Component 1 Religion (8062/1)', 'Paper 2: Thematic Studies (8062/2)'],
-      edexcel: ['Paper 1: Area of Study 1 — Study of Religion (1RB0/1H)', 'Paper 2: Area of Study 2 — Christianity (1RB0/2H)', 'Paper 3: Area of Study 3 — Philosophical/Ethical Studies (1RB0/3H)'],
+      edexcel: ['Paper 1: Area of Study 1 - Study of Religion (1RB0/1H)', 'Paper 2: Area of Study 2 - Christianity (1RB0/2H)', 'Paper 3: Area of Study 3 - Philosophical/Ethical Studies (1RB0/3H)'],
       ocr:     ['Paper 1: Beliefs & Teachings & Practices (J625/01)', 'Paper 2: Religious, Philosophical & Ethical Studies (J625/02)'],
       wjec:    ['Unit 1: Religion & Philosophical Themes', 'Unit 2: Religious Practices & Community'],
     },
@@ -822,8 +822,8 @@ export const GCSE_CATALOG = [
       { title: 'Ethical theories: apply, don\'t just describe', body: "Don't just say 'a utilitarian would consider outcomes.' Apply it: 'a utilitarian might argue X because it maximises happiness by…'" },
     ],
     resources: [
-      { name: 'BBC Bitesize — Religious Studies', url: 'https://www.bbc.co.uk/bitesize/subjects/zh3rkqt' },
-      { name: 'Tutor2u — RS GCSE', url: 'https://www.tutor2u.net/religious-studies/gcse' },
+      { name: 'BBC Bitesize - Religious Studies', url: 'https://www.bbc.co.uk/bitesize/subjects/zh3rkqt' },
+      { name: 'Tutor2u - RS GCSE', url: 'https://www.tutor2u.net/religious-studies/gcse' },
     ],
   },
   {
@@ -848,12 +848,12 @@ export const GCSE_CATALOG = [
     techniques: [
       { title: 'Speaking: use complex structures', body: 'Include subjunctive, conditional, and perfect tense in your oral. Examiners reward grammatical range.' },
       { title: 'Listening: read questions before the audio plays', body: 'Use the preparation time to identify key words to listen for. You cannot rewind.' },
-      { title: 'Writing: vary tenses deliberately', body: 'Past, present, future, conditional — include all four in longer writing tasks to hit the top grade descriptors.' },
-      { title: 'Word order rules: learn cold', body: 'Verb-second rule, subordinate clause inversion, separable verbs at the end — these are tested constantly and errors are penalised.' },
+      { title: 'Writing: vary tenses deliberately', body: 'Past, present, future, conditional - include all four in longer writing tasks to hit the top grade descriptors.' },
+      { title: 'Word order rules: learn cold', body: 'Verb-second rule, subordinate clause inversion, separable verbs at the end - these are tested constantly and errors are penalised.' },
     ],
     resources: [
-      { name: 'BBC Bitesize — German', url: 'https://www.bbc.co.uk/bitesize/subjects/z97rkqt' },
-      { name: 'Language Nut — vocab builder', url: 'https://www.languagenut.com/' },
+      { name: 'BBC Bitesize - German', url: 'https://www.bbc.co.uk/bitesize/subjects/z97rkqt' },
+      { name: 'Language Nut - vocab builder', url: 'https://www.languagenut.com/' },
     ],
   },
   {
@@ -877,13 +877,13 @@ export const GCSE_CATALOG = [
     },
     techniques: [
       { title: 'Listening exam: use musical terminology', body: 'Name specific devices: ostinato, augmentation, modulation, canon. Vague answers like "it gets louder" score poorly.' },
-      { title: 'Appraising: work through MADSM', body: 'Melody, Articulation, Dynamics, Structure, Metre — systematically cover each element when analysing an extract.' },
+      { title: 'Appraising: work through MADSM', body: 'Melody, Articulation, Dynamics, Structure, Metre - systematically cover each element when analysing an extract.' },
       { title: 'Performance: record yourself regularly', body: 'Self-assessment against the mark scheme identifies technical and expressive issues before the assessed performance.' },
       { title: 'Composition: address the brief exactly', body: 'Marks are awarded for meeting every stated requirement. Re-read the brief before submitting.' },
     ],
     resources: [
-      { name: 'BBC Bitesize — Music', url: 'https://www.bbc.co.uk/bitesize/subjects/zmsvr82' },
-      { name: 'Music Theory — musictheory.net', url: 'https://www.musictheory.net/' },
+      { name: 'BBC Bitesize - Music', url: 'https://www.bbc.co.uk/bitesize/subjects/zmsvr82' },
+      { name: 'Music Theory - musictheory.net', url: 'https://www.musictheory.net/' },
     ],
   },
   {
@@ -900,19 +900,19 @@ export const GCSE_CATALOG = [
     ],
     gradeBoundaries: { '9': 80, '8': 70, '7': 60, '6': 50, '5': 41, '4': 33, '3': 25 },
     papers: {
-      aqa:     ['Portfolio (Component 1 — coursework, 60%)', 'Externally Set Assignment (Component 2 — 10-hour timed exam, 40%)'],
-      edexcel: ['Portfolio (Component 1 — coursework, 60%)', 'Externally Set Assignment (Component 2 — 10-hour timed exam, 40%)'],
-      ocr:     ['Portfolio (Component 1 — coursework, 60%)', 'Externally Set Assignment (Component 2 — 10-hour timed exam, 40%)'],
-      wjec:    ['Personal Portfolio (60%)', 'Externally Set Assignment (40% — 10-hour timed exam)'],
+      aqa:     ['Portfolio (Component 1 - coursework, 60%)', 'Externally Set Assignment (Component 2 - 10-hour timed exam, 40%)'],
+      edexcel: ['Portfolio (Component 1 - coursework, 60%)', 'Externally Set Assignment (Component 2 - 10-hour timed exam, 40%)'],
+      ocr:     ['Portfolio (Component 1 - coursework, 60%)', 'Externally Set Assignment (Component 2 - 10-hour timed exam, 40%)'],
+      wjec:    ['Personal Portfolio (60%)', 'Externally Set Assignment (40% - 10-hour timed exam)'],
     },
     techniques: [
-      { title: 'Annotation: explain your choices', body: 'Assessors award marks for written annotation. Explain why you made compositional, material, and technique choices — don\'t just describe.' },
-      { title: 'AO1: show artist research', body: 'Reference specific artists and artworks. Show how their work has influenced your own — direct visual connections score highest.' },
+      { title: 'Annotation: explain your choices', body: 'Assessors award marks for written annotation. Explain why you made compositional, material, and technique choices - don\'t just describe.' },
+      { title: 'AO1: show artist research', body: 'Reference specific artists and artworks. Show how their work has influenced your own - direct visual connections score highest.' },
       { title: 'AO2: experiment with media', body: 'Show breadth of experimentation: different materials, techniques, and processes. Variety in your portfolio demonstrates AO2 skills.' },
       { title: 'Timed exam: use preparation time', body: 'You have weeks to prepare before the 10-hour sitting. Research artists, gather visual references, plan compositions.' },
     ],
     resources: [
-      { name: 'BBC Bitesize — Art & Design', url: 'https://www.bbc.co.uk/bitesize/subjects/zn3rkqt' },
+      { name: 'BBC Bitesize - Art & Design', url: 'https://www.bbc.co.uk/bitesize/subjects/zn3rkqt' },
       { name: 'Incredible Art Department', url: 'https://www.incredibleart.org/' },
     ],
   },
@@ -930,9 +930,9 @@ export const GCSE_CATALOG = [
     ],
     gradeBoundaries: { '9': 80, '8': 70, '7': 60, '6': 50, '5': 41, '4': 33, '3': 25 },
     papers: {
-      aqa:     ['Written Exam: Understanding Drama (8261/W — 40%)', 'Devising Drama (NEA — 40%)', 'Performance from Text (NEA — 20%)'],
-      edexcel: ['Written Exam: Theatre Makers in Practice (1DR0/01 — 40%)', 'Devising (NEA — 40%)', 'Texts in Practice (NEA — 20%)'],
-      ocr:     ['Written Exam (J316/01 — 40%)', 'Performance (NEA)', 'Devising (NEA)'],
+      aqa:     ['Written Exam: Understanding Drama (8261/W - 40%)', 'Devising Drama (NEA - 40%)', 'Performance from Text (NEA - 20%)'],
+      edexcel: ['Written Exam: Theatre Makers in Practice (1DR0/01 - 40%)', 'Devising (NEA - 40%)', 'Texts in Practice (NEA - 20%)'],
+      ocr:     ['Written Exam (J316/01 - 40%)', 'Performance (NEA)', 'Devising (NEA)'],
       wjec:    ['Written Exam (40%)', 'Devising Performance (NEA)', 'Scripted Performance (NEA)'],
     },
     techniques: [
@@ -942,7 +942,7 @@ export const GCSE_CATALOG = [
       { title: 'Performance: make intentional choices', body: "Examiners reward actors who make deliberate choices about physicality, voice, and use of space." },
     ],
     resources: [
-      { name: 'BBC Bitesize — Drama', url: 'https://www.bbc.co.uk/bitesize/subjects/zbckjxs' },
+      { name: 'BBC Bitesize - Drama', url: 'https://www.bbc.co.uk/bitesize/subjects/zbckjxs' },
     ],
   },
   {
@@ -965,14 +965,14 @@ export const GCSE_CATALOG = [
       wjec:    ['Unit 1: Business in the Real World', 'Unit 2: Business Operations & Finance'],
     },
     techniques: [
-      { title: 'Apply to the context always', body: "Don't describe theory in general — apply it to the specific business in the question. Contextualisation is heavily rewarded." },
+      { title: 'Apply to the context always', body: "Don't describe theory in general - apply it to the specific business in the question. Contextualisation is heavily rewarded." },
       { title: 'Calculations: show your formula', body: 'Write the formula first, then substitute values. Method marks exist even for wrong final answers.' },
-      { title: '9-mark questions: evaluate throughout', body: '"It depends on" factors — size of firm, market conditions, product type — earn evaluative marks throughout your answer.' },
+      { title: '9-mark questions: evaluate throughout', body: '"It depends on" factors - size of firm, market conditions, product type - earn evaluative marks throughout your answer.' },
       { title: 'Data-response: reference specific figures', body: 'For any question with data, quote exact numbers from the source. Generic answers score 4–5 at best.' },
     ],
     resources: [
-      { name: 'Tutor2u — Business GCSE', url: 'https://www.tutor2u.net/business/gcse' },
-      { name: 'BBC Bitesize — Business', url: 'https://www.bbc.co.uk/bitesize/subjects/zpsvr82' },
+      { name: 'Tutor2u - Business GCSE', url: 'https://www.tutor2u.net/business/gcse' },
+      { name: 'BBC Bitesize - Business', url: 'https://www.bbc.co.uk/bitesize/subjects/zpsvr82' },
     ],
   },
   {
@@ -989,20 +989,20 @@ export const GCSE_CATALOG = [
     ],
     gradeBoundaries: { '9': 80, '8': 70, '7': 60, '6': 50, '5': 41, '4': 33, '3': 25 },
     papers: {
-      aqa:     ['Written Exam: D&T in the Real World (8552/W — 50%)', 'Non-Exam Assessment: Design & Make Task (50%)'],
-      edexcel: ['Written Exam (1DT0/01 — 50%)', 'Non-Exam Assessment: Design & Make Task (50%)'],
-      ocr:     ['Written Exam (J310/01 — 50%)', 'Non-Exam Assessment: Design & Make Task (50%)'],
+      aqa:     ['Written Exam: D&T in the Real World (8552/W - 50%)', 'Non-Exam Assessment: Design & Make Task (50%)'],
+      edexcel: ['Written Exam (1DT0/01 - 50%)', 'Non-Exam Assessment: Design & Make Task (50%)'],
+      ocr:     ['Written Exam (J310/01 - 50%)', 'Non-Exam Assessment: Design & Make Task (50%)'],
       wjec:    ['Written Exam (50%)', 'Non-Exam Assessment (50%)'],
     },
     techniques: [
       { title: 'Written exam: cover all material categories', body: 'Questions span papers, boards, metals, polymers, textiles, and electronic systems. Don\'t revise only your specialisation.' },
       { title: 'Iterative design: document testing', body: 'The NEA rewards iterative processes. Document testing, evaluation, and modifications at each stage of development.' },
-      { title: 'Technical drawing: follow conventions', body: 'Third-angle orthographic projection, dimensions, tolerances — marks are lost for missing conventions.' },
+      { title: 'Technical drawing: follow conventions', body: 'Third-angle orthographic projection, dimensions, tolerances - marks are lost for missing conventions.' },
       { title: 'Sustainability: include in every answer', body: 'Questions on ecological impact, material lifecycle, and ethical sourcing appear every year at GCSE.' },
     ],
     resources: [
-      { name: 'BBC Bitesize — Design & Technology', url: 'https://www.bbc.co.uk/bitesize/subjects/zr9d7ty' },
-      { name: 'PMT — D&T GCSE', url: 'https://www.physicsandmathstutor.com/design-technology/gcse/' },
+      { name: 'BBC Bitesize - Design & Technology', url: 'https://www.bbc.co.uk/bitesize/subjects/zr9d7ty' },
+      { name: 'PMT - D&T GCSE', url: 'https://www.physicsandmathstutor.com/design-technology/gcse/' },
     ],
   },
   {
@@ -1031,8 +1031,8 @@ export const GCSE_CATALOG = [
       { title: '6-mark questions: use PEEL', body: 'Point → Evidence → Explain → Link back. Bullet points are not rewarded for extended responses.' },
     ],
     resources: [
-      { name: 'BBC Bitesize — PE', url: 'https://www.bbc.co.uk/bitesize/subjects/ztvg9j6' },
-      { name: 'PMT — PE GCSE', url: 'https://www.physicsandmathstutor.com/pe/gcse/' },
+      { name: 'BBC Bitesize - PE', url: 'https://www.bbc.co.uk/bitesize/subjects/ztvg9j6' },
+      { name: 'PMT - PE GCSE', url: 'https://www.physicsandmathstutor.com/pe/gcse/' },
     ],
   },
 ];

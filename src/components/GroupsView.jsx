@@ -72,7 +72,7 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
       const fresh = data?.session?.access_token;
       if (fresh) r = await callGroups(fresh, method, body);
     }
-    if (r.status === 401) return { error: 'Your session expired — please sign out and back in.' };
+    if (r.status === 401) return { error: 'Your session expired - please sign out and back in.' };
     try { return await r.json(); }
     catch { return { error: `Something went wrong (HTTP ${r.status}).` }; }
   }, []);
@@ -125,7 +125,7 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
 
   const handleInvite = async (group) => {
     const url  = `${APP_ORIGIN}/j/${group.invite_code}`;
-    const text = `Join my Battle Plan study group "${group.name}" — compare exam scores`;
+    const text = `Join my Battle Plan study group "${group.name}" - compare exam scores`;
     try {
       if (navigator.share) {
         await navigator.share({ title: 'Join my study group', text, url });
@@ -136,7 +136,7 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
     }
     try {
       await navigator.clipboard.writeText(url);
-      addToast('Invite link copied — paste it to your friends', 'success');
+      addToast('Invite link copied - paste it to your friends', 'success');
     } catch {
       addToast(`Share this link: ${url}`, 'info');
     }
@@ -167,7 +167,7 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
     setSchoolsLoading(false);
   }, []);
 
-  // Referral (moved here from Account — it's social)
+  // Referral (moved here from Account - it's social)
   const [refCount, setRefCount] = useState(null);
   const [refCopied, setRefCopied] = useState(false);
   useEffect(() => {
@@ -179,7 +179,7 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
   }, [referralCode]);
   const shareReferral = async () => {
     const link = `https://beattheexam.org/?ref=${referralCode}`;
-    const text = `I'm using Battle Plan to track my revision and predict my grades — give it a go:`;
+    const text = `I'm using Battle Plan to track my revision and predict my grades - give it a go:`;
     try {
       if (navigator.share) { await navigator.share({ title: 'Battle Plan', text, url: link }); return; }
     } catch (e) { if (e?.name === 'AbortError') return; }
@@ -187,7 +187,7 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
     catch { addToast(`Share this link: ${link}`, 'info'); }
   };
 
-  // School opt-in (moved here from Account — it's social, and feeds this page's
+  // School opt-in (moved here from Account - it's social, and feeds this page's
   // school leaderboard)
   const [schoolName, setSchoolName] = useState('');
   const [schoolOptIn, setSchoolOptIn] = useState(false);
@@ -232,7 +232,7 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
         <h1 style={{ fontFamily: font, fontSize: 27, fontWeight: 700, letterSpacing: '-0.02em',
           lineHeight: 1.2, color: C.text, margin: 0 }}>Groups</h1>
         <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.5, margin: '4px 0 0' }}>
-          Private leaderboards with your mates. Create one and share the link — they tap, sign in, and join instantly.
+          Private leaderboards with your mates. Create one and share the link - they tap, sign in, and join instantly.
         </p>
       </div>
 
@@ -299,7 +299,7 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
         <div style={{ fontSize: 13, color: C.subtle, padding: '4px 0' }}>Loading…</div>
       ) : groups.length === 0 ? (
         <div style={{ fontSize: 12, color: C.subtle, lineHeight: 1.6, padding: '4px 4px' }}>
-          You're not in any groups yet — create one above or paste a friend's invite link.
+          You're not in any groups yet - create one above or paste a friend's invite link.
         </div>
       ) : (
         <>
@@ -352,14 +352,14 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
                   </button>
                 </div>
 
-                {/* Lone-member CTA — replaces leaderboard when you're alone */}
+                {/* Lone-member CTA - replaces leaderboard when you're alone */}
                 {alone ? (
                   <div style={{ padding: '24px 18px', textAlign: 'center' }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 6 }}>
                       You're the only one here so far
                     </div>
                     <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5, marginBottom: 14, maxWidth: 320, margin: '0 auto 14px' }}>
-                      Share the invite link with your friends — they'll tap it, sign in, and land straight in this group.
+                      Share the invite link with your friends - they'll tap it, sign in, and land straight in this group.
                     </div>
                     <button onClick={() => handleInvite(g)}
                       style={{ padding: '11px 24px', background: C.accent, border: 'none', borderRadius: 8,
@@ -433,7 +433,7 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
         <div style={{ background: C.tintCream, borderRadius: 14, padding: '18px 20px' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>Appear on the school leaderboard</div>
           <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.6, marginBottom: 12 }}>
-            Add your school and opt in to put it on the anonymous leaderboard below. Only your school's average is shown — never your individual data.
+            Add your school and opt in to put it on the anonymous leaderboard below. Only your school's average is shown - never your individual data.
           </div>
           <input value={schoolName} onChange={e => setSchoolName(e.target.value)} placeholder="Your school name" maxLength={80}
             style={{ width: '100%', boxSizing: 'border-box', background: C.card2, border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 12px', color: C.text, fontSize: 13, fontFamily: font, outline: 'none', marginBottom: 10 }} />
@@ -537,7 +537,7 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
               </div>
             ) : (
               <div style={{ fontSize: 12, color: C.subtle, lineHeight: 1.6 }}>
-                No schools yet for this filter — opt in under Account → School leaderboard. Requires at least 3 students from the same school{yearFilter?` in ${yearFilter}`:''}.
+                No schools yet for this filter - opt in under Account → School leaderboard. Requires at least 3 students from the same school{yearFilter?` in ${yearFilter}`:''}.
               </div>
             )}
           </div>

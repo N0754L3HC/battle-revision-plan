@@ -24,11 +24,11 @@ const C = {
 };
 
 const FEATURES = [
-  { title: 'Past paper tracker', desc: 'Log every paper with your real grade — calculated against official mark-scheme boundaries.' },
+  { title: 'Past paper tracker', desc: 'Log every paper with your real grade - calculated against official mark-scheme boundaries.' },
   { title: 'Battle Readiness score', desc: 'A single score telling you exactly how prepared you are for each exam.' },
   { title: 'RAG topic tracker', desc: 'Red, amber, green every topic. See at a glance where your time should go.' },
   { title: 'Error pattern log', desc: 'Tag every mistake by type. Fix the patterns before they cost you on exam day.' },
-  { title: 'Exam countdown', desc: 'All your paper dates in one place — days remaining, board, and timetable.' },
+  { title: 'Exam countdown', desc: 'All your paper dates in one place - days remaining, board, and timetable.' },
   { title: 'School timetable', desc: 'Store your weekly timetable in-app. Your whole week, right next to your revision.' },
 ];
 
@@ -285,7 +285,7 @@ export default function AuthGate({ onAuth }) {
     );
   }
 
-  // Desktop — two-column layout
+  // Desktop - two-column layout
   return (
     <div style={{ minHeight:'100vh', background:C.bg,
       display:'flex', alignItems:'stretch', fontFamily:font }}>
@@ -451,7 +451,7 @@ export default function AuthGate({ onAuth }) {
             background:C.accentBg, borderRadius:10, border:`1px solid ${C.accentBorder}` }}>
             <div style={{ fontSize:13, color:C.accent, fontWeight:700, marginBottom:4 }}>Free during beta</div>
             <div style={{ fontSize:12, color:C.muted, lineHeight:1.6 }}>
-              All features are free right now — no credit card, no trial. Supports AQA, Edexcel, OCR, WJEC, and all major boards.
+              All features are free right now - no credit card, no trial. Supports AQA, Edexcel, OCR, WJEC, and all major boards.
             </div>
           </div>
         </div>

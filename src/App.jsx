@@ -68,13 +68,13 @@ const T = {
 
 // ── Type system ──────────────────────────────────────────────────────────────
 // ONE font family across the entire app (Notion model). Hierarchy comes from
-// size, weight and colour only — never a second typeface. This is what makes
+// size, weight and colour only - never a second typeface. This is what makes
 // the UI read as a single owned system rather than an assembled template.
 const FONT_BODY    = "'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
 const FONT_DISPLAY = FONT_BODY;   // alias: same family, kept so callers needn't change
 const FONT_MONO    = "'JetBrains Mono','SF Mono',ui-monospace,monospace";
 
-// Reusable text styles — spread into inline styles, override colour per use.
+// Reusable text styles - spread into inline styles, override colour per use.
 // Notion-tuned: bold-but-not-huge headings, calm 1.5 body, subtle eyebrows.
 const type = {
   display: { fontFamily:FONT_BODY, fontWeight:700, letterSpacing:'-0.022em', lineHeight:1.1 },
@@ -88,7 +88,7 @@ const type = {
 
 // ── Exam schedule (subjectId → boardId → exams) ────────────────────────────
 // Built-in defaults. Admin-managed overrides live in Supabase app_config
-// (key: exam_schedule) and are merged over these on load — see App() boot.
+// (key: exam_schedule) and are merged over these on load - see App() boot.
 // IMPORTANT: dates are verified against official board timetables but students
 // are always told to confirm with their own school timetable (dates can move).
 export const EXAM_SCHEDULE = {
@@ -270,7 +270,7 @@ export const EXAM_SCHEDULE = {
     aqa: [
       { date:'2026-05-13', paper:'Paper 1: Business 1 (7132/1)',              code:'7132/1', board:'AQA', time:'PM', duration:'2h', maxMark:100 },
       { date:'2026-05-19', paper:'Paper 2: Business 2 (7132/2)',              code:'7132/2', board:'AQA', time:'AM', duration:'2h', maxMark:100 },
-      { date:'2026-06-10', paper:'Paper 3: Business 3 — Case Study (7132/3)', code:'7132/3', board:'AQA', time:'AM', duration:'2h', maxMark:100 },
+      { date:'2026-06-10', paper:'Paper 3: Business 3 - Case Study (7132/3)', code:'7132/3', board:'AQA', time:'AM', duration:'2h', maxMark:100 },
     ],
     edexcel: [
       { date:'2026-05-12', paper:'Paper 1: Marketing, People & Global Business (9BS0/01)',                          code:'9BS0/01', board:'Edexcel', time:'AM', duration:'2h', maxMark:100 },
@@ -410,7 +410,7 @@ export const EXAM_SCHEDULE = {
     edexcel: [
       { date:'2026-05-14', paper:'Paper 1: Global Geographical Issues (1GB0/01)',                        code:'1GB0/01', board:'Edexcel B', time:'AM', duration:'1h 30m', maxMark:94 },
       { date:'2026-06-04', paper:'Paper 2: UK Geographical Issues (1GB0/02)',                            code:'1GB0/02', board:'Edexcel B', time:'AM', duration:'1h 30m', maxMark:94 },
-      { date:'2026-06-16', paper:'Paper 3: People & Environment Issues — Making Decisions (1GB0/03)',    code:'1GB0/03', board:'Edexcel B', time:'AM', duration:'1h 30m', maxMark:64 },
+      { date:'2026-06-16', paper:'Paper 3: People & Environment Issues - Making Decisions (1GB0/03)',    code:'1GB0/03', board:'Edexcel B', time:'AM', duration:'1h 30m', maxMark:64 },
     ],
     'ocr-a': [
       { date:'2026-05-15', paper:'Component 1: Our Natural World (J383/01)',   code:'J383/01', board:'OCR A', time:'AM', duration:'1h 30m', maxMark:70 },
@@ -462,8 +462,8 @@ export const EXAM_SCHEDULE = {
       { date:'2026-06-05', paper:'Paper 2: Thematic Studies (8062/2)',                 code:'8062/2', board:'AQA', time:'AM', duration:'1h 45m', maxMark:102 },
     ],
     edexcel: [
-      { date:'2026-05-12', paper:'Paper 1: Study of Religion — Beliefs, Teachings & Practices (1RB0/1H)', code:'1RB0/1H', board:'Edexcel', time:'AM', duration:'1h 45m', maxMark:118 },
-      { date:'2026-06-03', paper:'Paper 2: Area of Study 2 — Christianity (1RB0/2H)',                     code:'1RB0/2H', board:'Edexcel', time:'PM', duration:'50m',    maxMark:48  },
+      { date:'2026-05-12', paper:'Paper 1: Study of Religion - Beliefs, Teachings & Practices (1RB0/1H)', code:'1RB0/1H', board:'Edexcel', time:'AM', duration:'1h 45m', maxMark:118 },
+      { date:'2026-06-03', paper:'Paper 2: Area of Study 2 - Christianity (1RB0/2H)',                     code:'1RB0/2H', board:'Edexcel', time:'PM', duration:'50m',    maxMark:48  },
       { date:'2026-06-10', paper:'Paper 3: Philosophical & Ethical Studies (1RB0/3H)',                    code:'1RB0/3H', board:'Edexcel', time:'AM', duration:'1h 45m', maxMark:118 },
     ],
   },
@@ -555,21 +555,21 @@ function getSubjectExams(sched, subjectId, boardId, options=[]) {
 
 // ── Raw grade boundaries (paper-specific) ───────────────────────────────────
 const RAW_BOUNDARIES = {
-  'Core Pure Mathematics 1 — 2023':{ max:75,'A*':62,A:51,B:40,C:29,D:19,E:10 },
-  'Core Pure Mathematics 1 — 2022':{ max:75,'A*':61,A:51,B:41,C:31,D:21,E:12 },
-  'Core Pure Mathematics 1 — 2019':{ max:75,'A*':68,A:56,B:45,C:34,D:23,E:12 },
-  'Core Pure Mathematics 2 — 2023':{ max:75,'A*':61,A:50,B:39,C:29,D:19,E:10 },
-  'Core Pure Mathematics 2 — 2022':{ max:75,'A*':60,A:50,B:40,C:30,D:20,E:11 },
-  'Core Pure Mathematics 2 — 2019':{ max:75,'A*':66,A:55,B:44,C:33,D:22,E:12 },
-  'Paper 1: Pure Mathematics 1 — 2023':{ max:100,'A*':73,A:61,B:50,C:39,D:29,E:19 },
-  'Paper 1: Pure Mathematics 1 — 2022':{ max:100,'A*':72,A:60,B:49,C:38,D:28,E:18 },
-  'Paper 1: Pure Mathematics 1 — 2019':{ max:100,'A*':77,A:64,B:53,C:42,D:32,E:22 },
-  'Paper 2: Pure Mathematics 2 — 2023':{ max:100,'A*':72,A:59,B:48,C:37,D:27,E:17 },
-  'Paper 2: Pure Mathematics 2 — 2022':{ max:100,'A*':71,A:58,B:47,C:36,D:26,E:17 },
-  'Paper 2: Pure Mathematics 2 — 2019':{ max:100,'A*':76,A:63,B:52,C:41,D:31,E:21 },
-  'Paper 3: Statistics & Mechanics — 2023':{ max:100,'A*':70,A:57,B:46,C:35,D:25,E:16 },
-  'Paper 3: Statistics & Mechanics — 2022':{ max:100,'A*':68,A:55,B:44,C:33,D:23,E:14 },
-  'Paper 3: Statistics & Mechanics — 2019':{ max:100,'A*':73,A:60,B:49,C:38,D:28,E:18 },
+  'Core Pure Mathematics 1 - 2023':{ max:75,'A*':62,A:51,B:40,C:29,D:19,E:10 },
+  'Core Pure Mathematics 1 - 2022':{ max:75,'A*':61,A:51,B:41,C:31,D:21,E:12 },
+  'Core Pure Mathematics 1 - 2019':{ max:75,'A*':68,A:56,B:45,C:34,D:23,E:12 },
+  'Core Pure Mathematics 2 - 2023':{ max:75,'A*':61,A:50,B:39,C:29,D:19,E:10 },
+  'Core Pure Mathematics 2 - 2022':{ max:75,'A*':60,A:50,B:40,C:30,D:20,E:11 },
+  'Core Pure Mathematics 2 - 2019':{ max:75,'A*':66,A:55,B:44,C:33,D:22,E:12 },
+  'Paper 1: Pure Mathematics 1 - 2023':{ max:100,'A*':73,A:61,B:50,C:39,D:29,E:19 },
+  'Paper 1: Pure Mathematics 1 - 2022':{ max:100,'A*':72,A:60,B:49,C:38,D:28,E:18 },
+  'Paper 1: Pure Mathematics 1 - 2019':{ max:100,'A*':77,A:64,B:53,C:42,D:32,E:22 },
+  'Paper 2: Pure Mathematics 2 - 2023':{ max:100,'A*':72,A:59,B:48,C:37,D:27,E:17 },
+  'Paper 2: Pure Mathematics 2 - 2022':{ max:100,'A*':71,A:58,B:47,C:36,D:26,E:17 },
+  'Paper 2: Pure Mathematics 2 - 2019':{ max:100,'A*':76,A:63,B:52,C:41,D:31,E:21 },
+  'Paper 3: Statistics & Mechanics - 2023':{ max:100,'A*':70,A:57,B:46,C:35,D:25,E:16 },
+  'Paper 3: Statistics & Mechanics - 2022':{ max:100,'A*':68,A:55,B:44,C:33,D:23,E:14 },
+  'Paper 3: Statistics & Mechanics - 2019':{ max:100,'A*':73,A:60,B:49,C:38,D:28,E:18 },
 };
 
 // ── Historical grade boundaries (%) per paper per year ──────────────────────
@@ -830,7 +830,7 @@ const HISTORICAL_GRADE_PCT = {
   },
 };
 
-// ── Notional grade boundaries (%) per subject — used when no year-specific data ─
+// ── Notional grade boundaries (%) per subject - used when no year-specific data ─
 const NOTIONAL_GRADE_PCT = {
   maths:          {'A*':72,A:60,B:49,C:38,D:27,E:17},
   'further-maths':{'A*':81,A:68,B:54,C:40,D:27,E:14},
@@ -895,15 +895,15 @@ const FLASHCARD_DECKS = {
     {q:'State Newton\'s second law for rotation.', a:'τ = Iα  (torque = moment of inertia × angular acceleration)\nAnalogue of F = ma for rotation'},
   ],
   cs: [
-    {q:'What is Big O notation O(n log n)?', a:'Describes algorithm time complexity.\nO(n log n) = linearithmic — typical of efficient sorts (merge sort, quicksort avg case).\nBetter than O(n²) for large n.'},
-    {q:'What is a stack vs a queue?', a:'Stack: LIFO — push/pop from same end.\nQueue: FIFO — enqueue rear, dequeue front.\nStack uses: recursion, undo. Queue uses: scheduling, BFS.'},
+    {q:'What is Big O notation O(n log n)?', a:'Describes algorithm time complexity.\nO(n log n) = linearithmic - typical of efficient sorts (merge sort, quicksort avg case).\nBetter than O(n²) for large n.'},
+    {q:'What is a stack vs a queue?', a:'Stack: LIFO - push/pop from same end.\nQueue: FIFO - enqueue rear, dequeue front.\nStack uses: recursion, undo. Queue uses: scheduling, BFS.'},
     {q:'Explain the difference between TCP and UDP.', a:'TCP: connection-oriented, reliable, ordered delivery, slower.\nUDP: connectionless, no guarantee, faster.\nUse TCP for web/email, UDP for streaming/gaming.'},
     {q:'What is a binary search tree (BST)?', a:'Each node: left child < node < right child.\nSearch/insert O(log n) average, O(n) worst.\nIn-order traversal gives sorted output.'},
-    {q:'Define an abstract data type (ADT).', a:'A data type defined by its behaviour (operations) not implementation.\nExamples: Stack, Queue, List, Tree, Graph.\nHides implementation details — encapsulation.'},
+    {q:'Define an abstract data type (ADT).', a:'A data type defined by its behaviour (operations) not implementation.\nExamples: Stack, Queue, List, Tree, Graph.\nHides implementation details - encapsulation.'},
     {q:'What is a hash table collision?', a:'When two keys map to the same index.\nResolution: chaining (linked list at slot) or open addressing (probe for next free slot).\nGood hash function minimises collisions.'},
     {q:'Explain the fetch-decode-execute cycle.', a:'Fetch: MAR ← PC, MDR ← memory[MAR], PC++, CIR ← MDR\nDecode: control unit interprets CIR\nExecute: ALU performs operation, result stored in registers/memory'},
     {q:'What is the difference between lossy and lossless compression?', a:'Lossless: exact original recoverable (ZIP, PNG, FLAC).\nLossy: data discarded, smaller files, not reversible (JPEG, MP3).\nLossy exploits human perception limits.'},
-    {q:'Define recursion and state the base case requirement.', a:'A function that calls itself.\nMust have: (1) base case — stops recursion, (2) recursive case — reduces problem size.\nWithout base case: infinite recursion → stack overflow.'},
+    {q:'Define recursion and state the base case requirement.', a:'A function that calls itself.\nMust have: (1) base case - stops recursion, (2) recursive case - reduces problem size.\nWithout base case: infinite recursion → stack overflow.'},
     {q:'What are the four principles of OOP?', a:'Encapsulation: bundle data + methods, hide internals.\nInheritance: subclass inherits from superclass.\nPolymorphism: same interface, different implementations.\nAbstraction: hide complexity, show essentials.'},
   ],
   chemistry: [
@@ -913,7 +913,7 @@ const FLASHCARD_DECKS = {
     {q:'What is Hess\'s law?', a:'The total enthalpy change is independent of the route taken.\nΔH(reaction) = Σ ΔHf°(products) - Σ ΔHf°(reactants)'},
     {q:'State the rate equation and what it means.', a:'rate = k[A]^m[B]^n\nm = order w.r.t. A, n = order w.r.t. B, overall order = m+n\nk = rate constant (temp-dependent)'},
     {q:'What is nucleophilic addition? Give an example.', a:'Nu attacks electrophilic carbonyl carbon (C=O).\nExample: HCN + CH₃CHO → CH₃CH(OH)CN (hydroxynitrile)\nNu: CN⁻ attacks C, then H⁺ from HCN attaches to O⁻'},
-    {q:'Define oxidation and reduction in terms of electrons.', a:'Oxidation: loss of electrons (OIL)\nReduction: gain of electrons (RIG)\nOIL RIG — "Oxidation Is Loss, Reduction Is Gain"'},
+    {q:'Define oxidation and reduction in terms of electrons.', a:'Oxidation: loss of electrons (OIL)\nReduction: gain of electrons (RIG)\nOIL RIG - "Oxidation Is Loss, Reduction Is Gain"'},
     {q:'What is the Born-Haber cycle?', a:'Thermodynamic cycle to calculate lattice enthalpy.\nSteps: atomisation + ionisation energies + electron affinities + lattice enthalpy = ΔHf°\nLattice enthalpy: energy released forming ionic lattice from gaseous ions'},
     {q:'What is Kp and how does it relate to Kc?', a:'Kp = equilibrium constant in terms of partial pressures.\nKp = Kc(RT)^Δn where Δn = moles gas products - moles gas reactants\nKp = Kc when Δn = 0'},
     {q:'Describe the mechanism of electrophilic addition to alkenes.', a:'1. π bond attacks electrophile (e.g. Br₂) → forms carbocation intermediate\n2. Nucleophile (Br⁻) attacks carbocation\nMarkovnikov\'s rule: H adds to less substituted C'},
@@ -928,13 +928,13 @@ const FLASHCARD_DECKS = {
     {q:'State the ideal gas law.', a:'pV = nRT\np = pressure (Pa), V = volume (m³), n = moles, R = 8.31 J mol⁻¹ K⁻¹, T = temp (K)\nAlso: pV = NkT where k = 1.38×10⁻²³ J/K'},
     {q:'What is radioactive decay? State the decay equation.', a:'N = N₀e^(-λt)\nλ = decay constant, t½ = ln2/λ\nActivity A = λN = A₀e^(-λt)'},
     {q:'Define capacitance and give the energy stored formula.', a:'C = Q/V (farads)\nE = ½CV² = ½QV = Q²/2C\nSeries: 1/C = 1/C₁ + 1/C₂; Parallel: C = C₁ + C₂'},
-    {q:'What is gravitational potential?', a:'V = -GM/r  (negative — work done to escape)\nGravitational PE = mV = -GMm/r\ng = -dV/dr = GM/r²'},
+    {q:'What is gravitational potential?', a:'V = -GM/r  (negative - work done to escape)\nGravitational PE = mV = -GMm/r\ng = -dV/dr = GM/r²'},
   ],
   economics: [
     {q:'What is price elasticity of demand (PED)?', a:'PED = % change in Qd / % change in P\n|PED| > 1: elastic, |PED| < 1: inelastic, |PED| = 1: unit elastic\nInelastic goods: necessities, no substitutes, addictive'},
     {q:'Explain the multiplier effect.', a:'An injection into the economy leads to a larger increase in national income.\nMultiplier = 1/(1-MPC) = 1/MPS+MPT+MPM\nHigher MPC → larger multiplier → more stimulus effect'},
     {q:'What is a deadweight loss?', a:'Loss of economic efficiency from market distortion (tax, monopoly).\nArea of triangle between supply and demand curves outside equilibrium.\nRepresents transactions that don\'t happen but would benefit both parties.'},
-    {q:'Define comparative advantage.', a:'Country has comparative advantage if it can produce a good at lower opportunity cost.\nBasis for international trade — both countries gain even if one is absolutely better at both.\nRicardo\'s theory of specialisation'},
+    {q:'Define comparative advantage.', a:'Country has comparative advantage if it can produce a good at lower opportunity cost.\nBasis for international trade - both countries gain even if one is absolutely better at both.\nRicardo\'s theory of specialisation'},
     {q:'What is the Lorenz curve and Gini coefficient?', a:'Lorenz curve: plots cumulative income share vs cumulative population %.\nLine of equality = 45° diagonal.\nGini = Area A / (A + B); 0 = perfect equality, 1 = perfect inequality'},
     {q:'Explain demand-pull vs cost-push inflation.', a:'Demand-pull: AD increases → prices rise (economy overheating).\nCost-push: supply costs rise (e.g. oil price) → AS shifts left → stagflation.\nInflation target UK: 2% CPI'},
     {q:'What is the J-curve effect?', a:'After depreciation, current account worsens before improving.\nShort run: prices adjust before quantities (contracts, inelastic demand).\nLong run: volumes respond → trade balance improves'},
@@ -959,7 +959,7 @@ const FLASHCARD_DECKS = {
     {q:'Describe Milgram\'s obedience study (1963).', a:'650V shock machine, "learner" in next room (confederate).\n65% gave maximum 450V shock.\nSituational factors: agentic state, proximity, authority figure in uniform.\nShows situational not dispositional causes of obedience'},
     {q:'What is Ainsworth\'s Strange Situation?', a:'8 episodes testing infant attachment in standardised lab.\nTypes: Secure (70%): uses caregiver as safe base.\nInsecure-avoidant (20%): little distress, avoids caregiver.\nInsecure-resistant (10%): high distress, angry at return.'},
     {q:'Explain the Working Memory Model (Baddeley & Hitch).', a:'Central Executive (CE): supervisor, limited capacity, controls other components.\nPhonological Loop: inner ear (phonological store) + inner voice (articulatory process).\nVisuo-spatial Sketchpad: visual/spatial info.\nEpisodic Buffer (added 2000): links to LTM.'},
-    {q:'What is the cognitive approach to psychopathology?', a:'Disorders caused by irrational/negative thinking patterns.\nEllis: ABC model — Activating event → Beliefs → Consequences.\nBeck: negative cognitive triad (self, world, future) → depression.\nTreatment: CBT'},
+    {q:'What is the cognitive approach to psychopathology?', a:'Disorders caused by irrational/negative thinking patterns.\nEllis: ABC model - Activating event → Beliefs → Consequences.\nBeck: negative cognitive triad (self, world, future) → depression.\nTreatment: CBT'},
     {q:'Describe the biological approach to schizophrenia.', a:'Dopamine hypothesis: excess dopamine activity in mesolimbic pathway.\nEvidence: antipsychotics (dopamine antagonists) reduce positive symptoms.\nGenetics: concordance rate 48% MZ twins → not purely genetic.\nAlso: enlarged ventricles, prefrontal underactivity'},
     {q:'What is the SLT (Bandura)? Key study?', a:'Social Learning Theory: learn through observation, imitation, vicarious reinforcement.\nMediational processes: Attention → Retention → Reproduction → Motivation.\nBandura (1961) Bobo doll: children imitated aggressive model, esp. same-sex.'},
     {q:'Explain gender schema theory (Martin & Halverson).', a:'Children develop gender schemas (mental frameworks) about gender-appropriate behaviour.\nBy age 3: know own gender.\nIn-group schema (own gender): detailed. Out-group: limited.\nSchemas distort memory to fit gender expectations'},
@@ -967,35 +967,35 @@ const FLASHCARD_DECKS = {
     {q:'Define reliability and validity in research.', a:'Reliability: consistency of results (test-retest, inter-rater).\nInternal validity: study measures what it claims (controlled variables).\nExternal validity: generalisability (ecological, population).\nReliability ≠ validity'},
   ],
   sociology: [
-    {q:'What is the Marxist view of education?', a:'Schools reproduce class inequality — transmit ruling class ideology (Althusser: ISA).\nHidden curriculum: punctuality, obedience, conformity — prepares workers.\nBowles & Gintis correspondence principle: school mirrors workplace hierarchy.\nCounter: doesn\'t explain working-class resistance'},
+    {q:'What is the Marxist view of education?', a:'Schools reproduce class inequality - transmit ruling class ideology (Althusser: ISA).\nHidden curriculum: punctuality, obedience, conformity - prepares workers.\nBowles & Gintis correspondence principle: school mirrors workplace hierarchy.\nCounter: doesn\'t explain working-class resistance'},
     {q:'Explain Durkheim\'s functionalist view of crime.', a:'Crime is normal and functional: universal in all societies.\nFunctions: boundary maintenance (punishments affirm shared norms), social solidarity, safety valve, warnings of problems.\nToo much crime → anomie (normlessness), too little → stagnation'},
     {q:'What is Willis\'s "Learning to Labour" (1977)?', a:'Ethnographic study of 12 working-class "lads" in Midlands school.\nLads rejected school, formed counter-school culture.\nParadox: resistance led them into manual labour → reproduced class structure.\nChallenge to cultural deprivation theory'},
     {q:'Define the concept of patriarchy.', a:'System where men hold power and dominate women in social, political, economic spheres.\nFeminist perspectives: liberal (reform through legislation), radical (patriarchy root cause), Marxist (capitalism + patriarchy), intersectionality.\nStatistics: gender pay gap, glass ceiling, domestic labour'},
-    {q:'What is the New Right view of the family?', a:'Traditional nuclear family is best — 2 parents, breadwinner/homemaker.\nMurray: underclass caused by welfare dependency, absent fathers.\nCriticisms: ignores diversity, romanticises nuclear family, ignores domestic abuse.'},
+    {q:'What is the New Right view of the family?', a:'Traditional nuclear family is best - 2 parents, breadwinner/homemaker.\nMurray: underclass caused by welfare dependency, absent fathers.\nCriticisms: ignores diversity, romanticises nuclear family, ignores domestic abuse.'},
     {q:'Explain Merton\'s strain theory.', a:'Anomie when cultural goals (success) blocked for some groups by legitimate means.\nAdaptations: Conformity, Innovation (crime), Ritualism, Retreatism, Rebellion.\nExplains working-class crime but not white-collar crime or corporate crime.'},
-    {q:'What is Foucault\'s concept of surveillance?', a:'Power operates through surveillance — Panopticon (Bentham): prisoners behave if they think watched.\nModern institutions (schools, hospitals, prisons) use similar disciplinary power.\nSurveillance society: CCTV, data collection — self-regulation through gaze'},
-    {q:'Describe the functionalist theory of stratification (Davis & Moore).', a:'Social inequality is functional and universal.\nSome positions more important and require scarce talent — high rewards attract able people.\nCriticisms: ignores ascription (birth), doesn\'t explain inheritance of wealth, tautological.'},
+    {q:'What is Foucault\'s concept of surveillance?', a:'Power operates through surveillance - Panopticon (Bentham): prisoners behave if they think watched.\nModern institutions (schools, hospitals, prisons) use similar disciplinary power.\nSurveillance society: CCTV, data collection - self-regulation through gaze'},
+    {q:'Describe the functionalist theory of stratification (Davis & Moore).', a:'Social inequality is functional and universal.\nSome positions more important and require scarce talent - high rewards attract able people.\nCriticisms: ignores ascription (birth), doesn\'t explain inheritance of wealth, tautological.'},
     {q:'What is the secularisation thesis?', a:'Religion\'s social significance declining in modern societies (Weber, Bruce).\nEvidence: church attendance falls, civil religion rises, religion privatised.\nCounter: religious revival, fundamentalism, global religion (Berger revised).\nSocial cohesion functions remain?'},
-    {q:'Explain postmodernist views on identity.', a:'Identity is fluid, multiple, chosen — not fixed by class/gender/religion.\nConsumption defines identity (Bauman: liquid modernity).\nMedia creates simulacra (Baudrillard) — signs detached from reality.\nCriticisms: ignores material constraints on choice'},
+    {q:'Explain postmodernist views on identity.', a:'Identity is fluid, multiple, chosen - not fixed by class/gender/religion.\nConsumption defines identity (Bauman: liquid modernity).\nMedia creates simulacra (Baudrillard) - signs detached from reality.\nCriticisms: ignores material constraints on choice'},
   ],
   history: [
     {q:'What were the main causes of WWI?', a:'MAIN: Militarism, Alliances (Triple Alliance vs Triple Entente), Imperialism, Nationalism.\nPrecipitating event: assassination of Archduke Franz Ferdinand (June 1914).\nShort-term: Schlieffen Plan; Long-term: arms race, colonial rivalry.'},
-    {q:'Explain Stalin\'s consolidation of power 1924-1929.', a:'Exploited Lenin\'s Testament against Trotsky; allied with Zinoviev/Kamenev; later turned on them.\nGeneral Secretary: controlled party appointments — packed with loyalists.\nSocialism in one country vs Trotsky\'s permanent revolution.\n1929: Trotsky expelled from USSR.'},
-    {q:'What were the causes of the 1905 Russian Revolution?', a:'Short-term: Bloody Sunday (Jan 1905) — troops fired on peaceful marchers.\nLong-term: poverty, land hunger, autocratic rule, defeat in Russo-Japanese War.\nOutcome: October Manifesto — Duma promised; revolution quelled but pressures remained.'},
-    {q:'Describe the significance of the New Deal (USA 1933).', a:'FDR\'s response to Great Depression — "Relief, Recovery, Reform".\nKey acts: FERA, AAA, NRA, CCC, TVA, Social Security Act (1935).\nDebate: did it end Depression (no — WWII did) or restore confidence and reduce suffering?'},
-    {q:'What were Hitler\'s foreign policy aims 1933-1939?', a:'Overturn Versailles, Lebensraum (living space east), unite German-speaking peoples, destroy communism.\nAchievements: Rhineland (1936), Anschluss (1938), Sudetenland, then rest of Czechoslovakia.\nAppeasement: Munich 1938 — Chamberlain gave Sudetenland.'},
+    {q:'Explain Stalin\'s consolidation of power 1924-1929.', a:'Exploited Lenin\'s Testament against Trotsky; allied with Zinoviev/Kamenev; later turned on them.\nGeneral Secretary: controlled party appointments - packed with loyalists.\nSocialism in one country vs Trotsky\'s permanent revolution.\n1929: Trotsky expelled from USSR.'},
+    {q:'What were the causes of the 1905 Russian Revolution?', a:'Short-term: Bloody Sunday (Jan 1905) - troops fired on peaceful marchers.\nLong-term: poverty, land hunger, autocratic rule, defeat in Russo-Japanese War.\nOutcome: October Manifesto - Duma promised; revolution quelled but pressures remained.'},
+    {q:'Describe the significance of the New Deal (USA 1933).', a:'FDR\'s response to Great Depression - "Relief, Recovery, Reform".\nKey acts: FERA, AAA, NRA, CCC, TVA, Social Security Act (1935).\nDebate: did it end Depression (no - WWII did) or restore confidence and reduce suffering?'},
+    {q:'What were Hitler\'s foreign policy aims 1933-1939?', a:'Overturn Versailles, Lebensraum (living space east), unite German-speaking peoples, destroy communism.\nAchievements: Rhineland (1936), Anschluss (1938), Sudetenland, then rest of Czechoslovakia.\nAppeasement: Munich 1938 - Chamberlain gave Sudetenland.'},
     {q:'Explain the policy of appeasement and reasons for it.', a:'Giving concessions to aggressor to prevent war.\nReasons: public anti-war feeling, economic weakness, military unpreparedness, belief Hitler\'s demands were reasonable, fear of communism more than fascism.\nFailure: Munich 1938 didn\'t stop Hitler; invaded Poland 1939 → WWII'},
-    {q:'What was the Weimar Republic\'s major crises 1919-1923?', a:'1919: Spartacist uprising (left) suppressed.\n1920: Kapp Putsch (right) failed — general strike stopped it.\n1923: French/Belgian occupation of Ruhr → hyperinflation.\n1923: Munich/Beer Hall Putsch — Hitler arrested.\nStabilised under Stresemann.'},
+    {q:'What was the Weimar Republic\'s major crises 1919-1923?', a:'1919: Spartacist uprising (left) suppressed.\n1920: Kapp Putsch (right) failed - general strike stopped it.\n1923: French/Belgian occupation of Ruhr → hyperinflation.\n1923: Munich/Beer Hall Putsch - Hitler arrested.\nStabilised under Stresemann.'},
     {q:'Describe the causes and consequences of the Wall Street Crash (1929).', a:'Causes: overproduction, speculation on margin, weak banking system, overvalued stocks.\nConsequences: Great Depression, bank failures, 25% unemployment USA, global spread.\nPolitical: rise of extremism, collapse of Weimar, New Deal.'},
-    {q:'What were the main causes of the Cold War?', a:'Ideological clash: capitalism (USA) vs communism (USSR).\nYalta/Potsdam conferences — disagreement over Germany, Eastern Europe.\nMutual suspicion: A-bomb, Soviet expansion, Truman Doctrine (1947), Marshall Plan.\nIron Curtain speech (Churchill 1946).'},
-    {q:'Explain the significance of the Berlin Wall (1961-1989).', a:'Built 1961 by East Germany to stop brain drain (3.5m fled west 1945-61).\nSymbol of Cold War division — "Antifascist Protection Rampart".\nFell 9 Nov 1989 — end of Cold War symbol.\nTear down this wall — Reagan (1987).'},
+    {q:'What were the main causes of the Cold War?', a:'Ideological clash: capitalism (USA) vs communism (USSR).\nYalta/Potsdam conferences - disagreement over Germany, Eastern Europe.\nMutual suspicion: A-bomb, Soviet expansion, Truman Doctrine (1947), Marshall Plan.\nIron Curtain speech (Churchill 1946).'},
+    {q:'Explain the significance of the Berlin Wall (1961-1989).', a:'Built 1961 by East Germany to stop brain drain (3.5m fled west 1945-61).\nSymbol of Cold War division - "Antifascist Protection Rampart".\nFell 9 Nov 1989 - end of Cold War symbol.\nTear down this wall - Reagan (1987).'},
   ],
   geography: [
     {q:'What is the demographic transition model (DTM)?', a:'4+ stage model of population change:\nStage 1: High BR + DR, stable.\nStage 2: DR falls (medicine/food), BR high → rapid growth.\nStage 3: BR falls (development, women\'s rights).\nStage 4: Low BR + DR, stable.\nStage 5: Sub-replacement fertility.'},
     {q:'Explain plate tectonics and types of plate boundary.', a:'Constructive (divergent): plates move apart, magma rises, mid-ocean ridges/rift valleys.\nDestructive (convergent): subduction or collision, volcanoes/fold mountains/trenches.\nConservative (transform): plates slide past, earthquakes, no magma (San Andreas).'},
-    {q:'What is the hydrological cycle?', a:'Closed system — no water added/removed from Earth.\nInputs: precipitation. Stores: interception, soil, groundwater, surface water.\nProcesses: evapotranspiration, infiltration, percolation, surface runoff, throughflow.\nOutputs: evaporation, transpiration, river discharge'},
+    {q:'What is the hydrological cycle?', a:'Closed system - no water added/removed from Earth.\nInputs: precipitation. Stores: interception, soil, groundwater, surface water.\nProcesses: evapotranspiration, infiltration, percolation, surface runoff, throughflow.\nOutputs: evaporation, transpiration, river discharge'},
     {q:'Define urbanisation and its causes.', a:'Increasing proportion of population living in urban areas.\nCauses: rural push (poverty, land shortage) + urban pull (jobs, services, education).\nMegacities (10m+): growing rapidly in Global South.\nUrbanisation level: developed 80%+, developing ~50%'},
-    {q:'What is the Rostow model of development?', a:'Linear 5-stage model: Traditional → Preconditions → Take-off → Drive to maturity → Mass consumption.\nCriticisms: Eurocentric, ignores colonialism, dependency theory (Frank) — development of underdevelopment.\nModernisation theory assumes Western path universal'},
+    {q:'What is the Rostow model of development?', a:'Linear 5-stage model: Traditional → Preconditions → Take-off → Drive to maturity → Mass consumption.\nCriticisms: Eurocentric, ignores colonialism, dependency theory (Frank) - development of underdevelopment.\nModernisation theory assumes Western path universal'},
     {q:'Explain the causes and effects of tropical deforestation.', a:'Causes: commercial farming (soya, cattle), logging, mining, roads, subsistence farming.\nEffects: biodiversity loss, carbon release, soil erosion, disrupted water cycle, indigenous displacement.\nAmazon: "tipping point" at 20-25% deforestation → savannification'},
     {q:'What is the coastal sediment cell system?', a:'Closed system of sediment transfer along coastline.\nProcesses: erosion (hydraulic action, abrasion, attrition) → transport (longshore drift) → deposition.\nInterventions: groynes trap sediment (updrift accumulation, downdrift starvation).'},
     {q:'Define globalisation and its critics.', a:'Increasing interconnectedness of economies, cultures, people across world.\nDrivers: TNCs, trade liberalisation, internet, container shipping.\nCritics: widens inequality, cultural homogenisation, race to bottom (labour/environment), Western imperialism.'},
@@ -1004,23 +1004,23 @@ const FLASHCARD_DECKS = {
   ],
   'english-lit': [
     {q:'What are the key themes in "The Great Gatsby" (Fitzgerald)?', a:'The American Dream and its corruption/failure.\nClass and social mobility (old money vs new money vs no money).\nIllusion vs reality (Gatsby\'s constructed identity).\nTime and the past ("Can\'t repeat the past? Why of course you can!")'},
-    {q:'What are the main themes of "Hamlet"?', a:'Revenge vs moral paralysis (To be or not to be).\nCorruption — "Something is rotten in the state of Denmark".\nMadness — real (Ophelia) vs performed (Hamlet?).\nParents, duty, mortality. Revenge tragedy conventions.'},
+    {q:'What are the main themes of "Hamlet"?', a:'Revenge vs moral paralysis (To be or not to be).\nCorruption - "Something is rotten in the state of Denmark".\nMadness - real (Ophelia) vs performed (Hamlet?).\nParents, duty, mortality. Revenge tragedy conventions.'},
     {q:'Define dramatic irony.', a:'When the audience knows something characters don\'t.\nEffect: creates tension, sympathy, or dark comedy.\nExample: Othello believes Iago without knowing Iago is villainous.\nContrasted with: situational irony (unexpected outcomes), verbal irony (saying opposite of meaning)'},
-    {q:'What is the significance of colour symbolism in "The Great Gatsby"?', a:'Green light: Gatsby\'s dream, hope, unattainable goal.\nWhite: false purity (Daisy, Jordan — corrupt beneath).\nYellow/Gold: corruption of dream, wealth\'s tawdriness.\nGrey: Valley of Ashes, waste, moral emptiness of the rich.'},
-    {q:'What are the feminist themes in "The Handmaid\'s Tale" (Atwood)?', a:'Patriarchal control of women\'s bodies and fertility.\nLanguage as power — Handmaids stripped of names.\nCollaboration vs resistance.\n"Nolite te bastardes carborundorum" — Don\'t let the bastards grind you down.\nAtwood: "nothing in this book isn\'t already happening somewhere"'},
-    {q:'Explain the concept of an unreliable narrator.', a:'Narrator whose account we cannot fully trust — limited perspective, bias, lies, mental state.\nExamples: Nick Carraway (self-serving), Stevens (Remains of the Day — self-deception).\nEffect: reader must read against the grain; creates irony and complexity.'},
-    {q:'What is the tragic flaw (hamartia) in Greek tragedy?', a:'Protagonist\'s inherent weakness leading to downfall.\nAristotle\'s Poetics: tragedy arouses pity and fear, achieves catharsis.\nExamples: Oedipus — hubris + determination; Macbeth — ambition; Hamlet — indecision.\nNot necessarily a moral failing — may be circumstantial'},
+    {q:'What is the significance of colour symbolism in "The Great Gatsby"?', a:'Green light: Gatsby\'s dream, hope, unattainable goal.\nWhite: false purity (Daisy, Jordan - corrupt beneath).\nYellow/Gold: corruption of dream, wealth\'s tawdriness.\nGrey: Valley of Ashes, waste, moral emptiness of the rich.'},
+    {q:'What are the feminist themes in "The Handmaid\'s Tale" (Atwood)?', a:'Patriarchal control of women\'s bodies and fertility.\nLanguage as power - Handmaids stripped of names.\nCollaboration vs resistance.\n"Nolite te bastardes carborundorum" - Don\'t let the bastards grind you down.\nAtwood: "nothing in this book isn\'t already happening somewhere"'},
+    {q:'Explain the concept of an unreliable narrator.', a:'Narrator whose account we cannot fully trust - limited perspective, bias, lies, mental state.\nExamples: Nick Carraway (self-serving), Stevens (Remains of the Day - self-deception).\nEffect: reader must read against the grain; creates irony and complexity.'},
+    {q:'What is the tragic flaw (hamartia) in Greek tragedy?', a:'Protagonist\'s inherent weakness leading to downfall.\nAristotle\'s Poetics: tragedy arouses pity and fear, achieves catharsis.\nExamples: Oedipus - hubris + determination; Macbeth - ambition; Hamlet - indecision.\nNot necessarily a moral failing - may be circumstantial'},
     {q:'What are the key features of Gothic literature?', a:'Settings: decaying mansions, remote/wild landscapes, darkness.\nThemes: supernatural, death, transgression, the double, repressed desire.\nCharacters: monsters, villains, persecuted heroines, mysterious strangers.\nExamples: Frankenstein, Wuthering Heights, Rebecca.'},
-    {q:'Explain the significance of the "green light" in Gatsby — extended reading.', a:'Chapter 1: Gatsby reaches towards it across the water — hope, longing.\nChapter 5: Enchanted object fades once he has Daisy — "His count of enchanted objects had diminished by one".\nFinal lines: boats against the current — human striving, nostalgia, inevitability of failure.\nRepresents the American Dream\'s contradictions.'},
-    {q:'What is an allegory? Give an example.', a:'Extended narrative where characters/events represent abstract ideas.\nExample: Animal Farm — allegory of Russian Revolution (Napoleon = Stalin, Snowball = Trotsky, pigs = Soviet leadership).\nDistinct from symbolism (single image) — allegory is systematic throughout text.'},
+    {q:'Explain the significance of the "green light" in Gatsby - extended reading.', a:'Chapter 1: Gatsby reaches towards it across the water - hope, longing.\nChapter 5: Enchanted object fades once he has Daisy - "His count of enchanted objects had diminished by one".\nFinal lines: boats against the current - human striving, nostalgia, inevitability of failure.\nRepresents the American Dream\'s contradictions.'},
+    {q:'What is an allegory? Give an example.', a:'Extended narrative where characters/events represent abstract ideas.\nExample: Animal Farm - allegory of Russian Revolution (Napoleon = Stalin, Snowball = Trotsky, pigs = Soviet leadership).\nDistinct from symbolism (single image) - allegory is systematic throughout text.'},
   ],
   business: [
     {q:'What is price elasticity of demand and why does it matter for pricing?', a:'PED = % ΔQd / % ΔP\nInelastic (|PED|<1): price rise → higher revenue. Elastic (|PED|>1): price rise → lower revenue.\nTR = P × Q. Inelastic: raise prices to maximise revenue. Elastic: lower prices.'},
-    {q:'Explain the Boston Matrix (BCG).', a:'2×2 matrix: Market Share (high/low) × Market Growth (high/low).\nStar: high share, high growth — needs investment.\nCash Cow: high share, low growth — generates cash.\nQuestion Mark: low share, high growth — needs decision.\nDog: low share, low growth — divest/harvest.'},
-    {q:'What are Porter\'s Five Forces?', a:'1. Competitive rivalry — intensity of competition.\n2. Supplier power — dependence, switching costs.\n3. Buyer power — concentration, price sensitivity.\n4. Threat of new entrants — barriers to entry.\n5. Threat of substitutes — alternative products.\nUsed for industry attractiveness analysis.'},
+    {q:'Explain the Boston Matrix (BCG).', a:'2×2 matrix: Market Share (high/low) × Market Growth (high/low).\nStar: high share, high growth - needs investment.\nCash Cow: high share, low growth - generates cash.\nQuestion Mark: low share, high growth - needs decision.\nDog: low share, low growth - divest/harvest.'},
+    {q:'What are Porter\'s Five Forces?', a:'1. Competitive rivalry - intensity of competition.\n2. Supplier power - dependence, switching costs.\n3. Buyer power - concentration, price sensitivity.\n4. Threat of new entrants - barriers to entry.\n5. Threat of substitutes - alternative products.\nUsed for industry attractiveness analysis.'},
     {q:'Define contribution and how it relates to break-even.', a:'Contribution per unit = Selling price - Variable cost per unit.\nTotal contribution = Revenue - Total variable costs.\nBreak-even output = Fixed costs / Contribution per unit.\nMargin of safety = Actual output - Break-even output'},
-    {q:'What is Herzberg\'s two-factor theory?', a:'Hygiene factors (prevent dissatisfaction): pay, working conditions, security — don\'t motivate.\nMotivators (drive satisfaction): achievement, recognition, responsibility, advancement.\nImplication: fix hygiene first, then focus on intrinsic motivators.\nContrasted with Maslow\'s hierarchy.'},
-    {q:'Explain the difference between organic and inorganic growth.', a:'Organic (internal): develop new products, expand market share gradually, self-funded.\nInorganic (external): mergers, acquisitions, joint ventures — faster but riskier.\nMerger benefits: economies of scale, market power, diversification.\nRisks: culture clash, diseconomies, debt.'},
+    {q:'What is Herzberg\'s two-factor theory?', a:'Hygiene factors (prevent dissatisfaction): pay, working conditions, security - don\'t motivate.\nMotivators (drive satisfaction): achievement, recognition, responsibility, advancement.\nImplication: fix hygiene first, then focus on intrinsic motivators.\nContrasted with Maslow\'s hierarchy.'},
+    {q:'Explain the difference between organic and inorganic growth.', a:'Organic (internal): develop new products, expand market share gradually, self-funded.\nInorganic (external): mergers, acquisitions, joint ventures - faster but riskier.\nMerger benefits: economies of scale, market power, diversification.\nRisks: culture clash, diseconomies, debt.'},
     {q:'What is cash flow vs profit? Why can a profitable business fail?', a:'Profit = Revenue - Total costs (accruals accounting).\nCash flow = actual money in vs out at a given time.\nProfitable but cash poor: credit sales (debtors), overtrading, large capital expenditure.\nSolution: invoice factoring, overdraft, reduce credit terms.'},
     {q:'What are the main sources of finance for a business?', a:'Internal: retained profit, sale of assets, working capital management.\nExternal Debt: bank loan, overdraft, debentures, mortgage.\nExternal Equity: share issue, venture capital, crowdfunding.\nFit to purpose: long-term needs → long-term finance.'},
     {q:'Define economies of scale with examples.', a:'Fall in average cost as output increases (long run).\nInternal: purchasing (bulk discounts), technical (larger machines), managerial (specialisation), financial (lower interest).\nExternal: industry clusters, skilled labour pool, supplier networks.\nDiseconomies: communication problems, coordination failure.'},
@@ -1099,7 +1099,7 @@ function calcBattleReadiness(scores, errors) {
 
 function getPaperSuggestions(subject) {
   const years=['2024','2023','2022','2019'];
-  return subject.papers.flatMap(p=>years.map(y=>`${p} — ${y}`));
+  return subject.papers.flatMap(p=>years.map(y=>`${p} - ${y}`));
 }
 
 // ── Study streak ───────────────────────────────────────────────────────────
@@ -1234,7 +1234,7 @@ function generateSchedule(subjects, scores, errors, examSched, rag={}, targets={
     const topics = SPEC_TOPICS[s.id]||[];
     const redTopics = topics.filter((_,i)=>rag[`${s.id}_${i}`]==='red');
     const ragBoost = redTopics.length * 4;
-    // Predicted vs target gap — if projected below target, boost priority
+    // Predicted vs target gap - if projected below target, boost priority
     const targetGrade = targets[s.name] || (Object.keys(s.gradeBoundaries||{})[0]==='9' ? '9' : 'A*');
     const targetPct = (s.gradeBoundaries||{})[targetGrade] || 80;
     const pred = predictedGrade(scores, s.name, GRADE_BOUNDS);
@@ -1332,7 +1332,7 @@ function ensureAnimStyles(){if(!document.getElementById('rbp-anims')){const s=do
 // HISTORICAL_GRADE_PCT keys don't. Map explicitly + code-scoped so that two
 // boards sharing a bare paper name (OCR vs Edexcel "Algorithms & Programming",
 // or OCR A-Level vs GCSE "Computer Systems") can never cross-map to the wrong
-// boundaries. Anything unmapped falls back to the Notional standard — never a
+// boundaries. Anything unmapped falls back to the Notional standard - never a
 // wrong year-specific grade.
 const HIST_PAPER_MAP = {
   'Paper 1: Pure Mathematics 1 (9MA0/01)':'Paper 1: Pure Mathematics 1',
@@ -1350,7 +1350,7 @@ const HIST_PAPER_MAP = {
 };
 function histBaseName(name){ return HIST_PAPER_MAP[name] || name; }
 function parsePaperKey(key){
-  const m=key.match(/^(.+?)\s[—–-]+\s?(\d{4})$/);
+  const m=key.match(/^(.+?)\s[-–-]+\s?(\d{4})$/);
   if(m) return {name:m[1].trim(),year:parseInt(m[2])};
   return {name:key,year:null};
 }
@@ -1546,7 +1546,7 @@ const TOUR_STEPS = [
   {Icon:FileText,  title:'Log your past papers',desc:"Hit the + button to record any past paper. Your scores, grades, and trends are tracked automatically."},
   {Icon:Target,    title:'RAG topic tracker',desc:"Go to Resources → mark every spec topic as Red (needs work), Amber, or Green (confident). Your weakest areas surface automatically."},
   {Icon:BarChart3, title:'Battle Readiness',desc:"Analytics combines your scores, paper count, and topic coverage into a single readiness score. Aim for 80+ before exam day."},
-  {Icon:Timer,     title:'Study Timer',desc:"Pomodoro and free stopwatch — both track time per subject and sync across your devices so your streaks are always accurate."},
+  {Icon:Timer,     title:'Study Timer',desc:"Pomodoro and free stopwatch - both track time per subject and sync across your devices so your streaks are always accurate."},
   {Icon:CalendarDays, title:'Exam countdown',desc:"Exams shows every paper with days remaining. Tap Send Schedule to email your full timetable to yourself."},
 ];
 
@@ -1603,7 +1603,7 @@ function Onboarding({onDone,setView,C,font}) {
 }
 
 // ── Companion character ─────────────────────────────────────────────────────
-// Capybara coat palette — natural/light/golden/dark/chocolate/grey/sandy
+// Capybara coat palette - natural/light/golden/dark/chocolate/grey/sandy
 const CAPY_COATS    = ['#8B6240','#B08560','#C99363','#5A3F26','#3a2210','#8a8275','#a08068'];
 const OUTFIT_COLORS = ['#4a90d9','#e87c3e','#5cb85c','#9b59b6','#e74c3c','#2c3e50','#ec4899','#0ea5e9','#fbbf24'];
 const HAT_LABELS    = ['None','Glasses','Grad cap','Beanie','Headphones','Crown','Flower'];
@@ -1652,7 +1652,7 @@ function computeCoins(scores=[], sessions=[], spent=0) {
   return { earned, spent, available: Math.max(0, earned - spent) };
 }
 
-// "Did you show up?" — any meaningful study action counts toward streaks,
+// "Did you show up?" - any meaningful study action counts toward streaks,
 // momentum and the mascot: a timed session, a logged past paper, or a logged
 // error. This is deliberately separate from *minutes studied*, which stays
 // measured-only (timer + exam mode) so the clock never reflects a guess.
@@ -1676,7 +1676,7 @@ function CompanionAvatar({skin=0,outfitColor=0,accessory=0,mood='neutral',pose='
   const COAT  = CAPY_COATS[skin]          ?? CAPY_COATS[0];
   const SCARF = OUTFIT_COLORS[outfitColor] ?? OUTFIT_COLORS[0];
 
-  // Coat tint helpers — lighter for belly/muzzle, darker for shading
+  // Coat tint helpers - lighter for belly/muzzle, darker for shading
   const tint = (hex, amt, dir) => {
     const n=parseInt(hex.slice(1),16);
     const r=(n>>16)&255,g=(n>>8)&255,b=n&255;
@@ -1698,13 +1698,13 @@ function CompanionAvatar({skin=0,outfitColor=0,accessory=0,mood='neutral',pose='
       {/* Ground shadow */}
       <ellipse cx="50" cy="143" rx="36" ry="4" fill="#000" opacity="0.13"/>
 
-      {/* BACK LEGS — stubby cylinders peeking out behind body */}
+      {/* BACK LEGS - stubby cylinders peeking out behind body */}
       <ellipse cx="22" cy="132" rx="9"   ry="10"  fill={SHADOW}/>
       <ellipse cx="78" cy="132" rx="9"   ry="10"  fill={SHADOW}/>
       <ellipse cx="22" cy="140" rx="9"   ry="3.5" fill="#241608"/>
       <ellipse cx="78" cy="140" rx="9"   ry="3.5" fill="#241608"/>
 
-      {/* BODY — chunky barrel */}
+      {/* BODY - chunky barrel */}
       <ellipse cx="50" cy="108" rx="38" ry="30" fill={COAT}/>
       {/* Top-of-back shading band */}
       <path d="M14 100 Q50 82 86 100" stroke={SHADOW} strokeWidth="1.4" fill="none" opacity="0.35"/>
@@ -1730,40 +1730,40 @@ function CompanionAvatar({skin=0,outfitColor=0,accessory=0,mood='neutral',pose='
         </>
       )}
 
-      {/* SCARF — wraps the neck between body + head */}
+      {/* SCARF - wraps the neck between body + head */}
       <ellipse cx="50" cy="78" rx="34" ry="9" fill={SCARF}/>
       <ellipse cx="50" cy="76" rx="34" ry="2" fill={SCARFD} opacity="0.55"/>
       <path d="M68 84 Q80 96 74 110 L66 108 Q70 98 64 86 Z" fill={SCARF}/>
       <path d="M68 84 Q80 96 74 110" stroke={SCARFD} strokeWidth="0.7" fill="none" opacity="0.5"/>
 
-      {/* EARS — tiny, on top corners of head, drawn before head so they tuck behind */}
+      {/* EARS - tiny, on top corners of head, drawn before head so they tuck behind */}
       <ellipse cx="22" cy="18" rx="6" ry="5.5" fill={COAT}/>
       <ellipse cx="78" cy="18" rx="6" ry="5.5" fill={COAT}/>
       <ellipse cx="22" cy="20" rx="3" ry="2.5" fill={SHADOW} opacity="0.55"/>
       <ellipse cx="78" cy="20" rx="3" ry="2.5" fill={SHADOW} opacity="0.55"/>
 
-      {/* HEAD — flat-topped rounded rectangle (capybara silhouette) */}
+      {/* HEAD - flat-topped rounded rectangle (capybara silhouette) */}
       <path d="M14 32 Q14 16 30 16 L70 16 Q86 16 86 32 L86 64 Q86 78 70 78 L30 78 Q14 78 14 64 Z" fill={COAT}/>
       {/* Top-of-head highlight */}
       <path d="M22 22 Q50 18 78 22" stroke={BELLY} strokeWidth="1" fill="none" opacity="0.45"/>
 
-      {/* MUZZLE — wide lighter region across lower half */}
+      {/* MUZZLE - wide lighter region across lower half */}
       <ellipse cx="50" cy="60" rx="30" ry="13" fill={MUZZLE} opacity="0.85"/>
       <ellipse cx="50" cy="72" rx="22" ry="3" fill="#000" opacity="0.06"/>
 
-      {/* CHEEK BLUSH — only when happy/excited */}
+      {/* CHEEK BLUSH - only when happy/excited */}
       {(mood==='happy'||mood==='excited')&&(<>
         <ellipse cx="22" cy="58" rx="6" ry="4" fill="#f9a8d4" opacity="0.5"/>
         <ellipse cx="78" cy="58" rx="6" ry="4" fill="#f9a8d4" opacity="0.5"/>
       </>)}
 
-      {/* BROWS — only on worried */}
+      {/* BROWS - only on worried */}
       {mood==='worried'&&(<>
         <path d="M27 34 Q34 30 42 33" stroke={SHADOW} strokeWidth="2.2" fill="none" strokeLinecap="round"/>
         <path d="M58 33 Q66 30 73 34" stroke={SHADOW} strokeWidth="2.2" fill="none" strokeLinecap="round"/>
       </>)}
 
-      {/* EYES — small black dots with catchlight; excited = squinty, sleepy = closed */}
+      {/* EYES - small black dots with catchlight; excited = squinty, sleepy = closed */}
       {mood==='sleepy'?(
         <>
           <path d="M28 42 Q34 46 40 42" stroke="#1a0e08" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
@@ -1806,7 +1806,7 @@ function CompanionAvatar({skin=0,outfitColor=0,accessory=0,mood='neutral',pose='
         <ellipse cx="50" cy="66" rx="3" ry="1.6" fill="#241608" opacity="0.75"/>
       )}
 
-      {/* ACCESSORIES — round Harry-Potter glasses */}
+      {/* ACCESSORIES - round Harry-Potter glasses */}
       {accessory===1&&(<>
         <circle cx="34" cy="42" r="8" fill="none" stroke="#1a1a1a" strokeWidth="2"/>
         <circle cx="66" cy="42" r="8" fill="none" stroke="#1a1a1a" strokeWidth="2"/>
@@ -1815,7 +1815,7 @@ function CompanionAvatar({skin=0,outfitColor=0,accessory=0,mood='neutral',pose='
         <line x1="86" y1="40" x2="74" y2="42" stroke="#1a1a1a" strokeWidth="1.6"/>
       </>)}
 
-      {/* Graduation cap — mortarboard with tassel */}
+      {/* Graduation cap - mortarboard with tassel */}
       {accessory===2&&(<>
         <path d="M14 14 L50 4 L86 14 L50 22 Z" fill="#1a1a1a"/>
         <path d="M14 14 L50 22 L86 14" fill="none" stroke="#2a2a2a" strokeWidth="0.8"/>
@@ -1834,7 +1834,7 @@ function CompanionAvatar({skin=0,outfitColor=0,accessory=0,mood='neutral',pose='
         <line x1="70" y1="25" x2="70" y2="32" stroke="#1a2230" strokeWidth="0.6"/>
       </>)}
 
-      {/* Headphones — band over ears + cans on the tiny ears */}
+      {/* Headphones - band over ears + cans on the tiny ears */}
       {accessory===4&&(<>
         <path d="M14 26 Q14 2 50 2 Q86 2 86 26" stroke="#1a1a1a" strokeWidth="3.5" fill="none" strokeLinecap="round"/>
         <rect x="10" y="18" width="14" height="20" rx="5" fill="#1a1a1a"/>
@@ -1852,7 +1852,7 @@ function CompanionAvatar({skin=0,outfitColor=0,accessory=0,mood='neutral',pose='
         <circle cx="78" cy="6" r="2"   fill="#22c55e"/>
       </>)}
 
-      {/* Flower — tucked behind one ear */}
+      {/* Flower - tucked behind one ear */}
       {accessory===6&&(<>
         <circle cx="32" cy="14" r="3.5" fill="#ec4899"/>
         <circle cx="28" cy="10" r="3.5" fill="#ec4899"/>
@@ -1912,7 +1912,7 @@ function generateMascotNotifications({scores=[], sessions=[], subjects=[], examS
       msg:`${(nextExam.paper||'Exam').split(':')[0]} is ${nextExam.days===0?'today':nextExam.days===1?'tomorrow':`in ${nextExam.days} days`}. Drill weak topics.`});
   }
 
-  // Activity gap warning — counts any study action (paper logged, error logged,
+  // Activity gap warning - counts any study action (paper logged, error logged,
   // timed session), so the warning never fires on a day the student did work.
   const acts = [...sessions.map(s=>s.ts), ...scores.map(s=>s.ts??s.id)].filter(Boolean);
   const activeToday = acts.some(t=>t>=todayStart.getTime());
@@ -1943,12 +1943,12 @@ function getCompanionMessage({mood,sessions,scores,subjects,examSched,name}) {
     .filter(e=>e.d>=0).sort((a,b)=>a.d-b.d)[0];
   if (mood==='excited'&&nextExam&&nextExam.d<=3) {
     const when = nextExam.d===0?'today':nextExam.d===1?'tomorrow':`in ${nextExam.d} days`;
-    return `${nextExam.paper?.split(':')[0]||'Your exam'} is ${when}. You've put in the work — go show it.`;
+    return `${nextExam.paper?.split(':')[0]||'Your exam'} is ${when}. You've put in the work - go show it.`;
   }
   if (mood==='worried') return `Haven't seen you study recently. Even 30 focused minutes today makes a real difference.`;
   if (mood==='excited'&&scores.length) {
     const l=scores[scores.length-1];
-    return `${l.grade||Math.round(l.pct)+'%'} on ${l.paper||l.subject} — that's what the work looks like. Keep it up.`;
+    return `${l.grade||Math.round(l.pct)+'%'} on ${l.paper||l.subject} - that's what the work looks like. Keep it up.`;
   }
   if (mood==='happy') return `${tod}. Solid progress. Stay consistent and the grades will follow.`;
   if (!scores.length) return `${tod}! Log your first past paper to get your readiness score. I'll track everything for you.`;
@@ -1961,7 +1961,7 @@ function CompanionCustomiser({companion,draft,setDraft,setCompanion,onSave,onCan
 
   const buyItem = (cat, item) => {
     if (isOwned(cat, item.idx)) return; // already owned, no-op
-    if (item.pro && !isPro) { addToast('This item is Pro-only — upgrade to unlock','info'); return; }
+    if (item.pro && !isPro) { addToast('This item is Pro-only - upgrade to unlock','info'); return; }
     if (coins < item.price) { addToast(`You need ${item.price - coins} more coin${item.price-coins===1?'':'s'}`,'info'); return; }
     setCompanion(p => ({
       ...p,
@@ -2189,46 +2189,46 @@ function getCharacterReply(input, {subjects, scores, sessions, examSched}) {
   const t = input.toLowerCase().trim();
   if (!t) return null;
   if (t.match(/stress|anxious|nervous|overwhelm|panic/))
-    return "That feeling is completely normal — it means you care. Take one breath. The preparation you've done doesn't disappear when nerves show up. Focus on the next 25 minutes, nothing else.";
+    return "That feeling is completely normal - it means you care. Take one breath. The preparation you've done doesn't disappear when nerves show up. Focus on the next 25 minutes, nothing else.";
   if (t.match(/can'?t focus|distract|procrastinat/))
-    return "Classic. Open the timer, pick one subject, 25 minutes — no phone. Don't open a new tab. The hard part is starting. After 25 minutes you'll probably want to keep going.";
+    return "Classic. Open the timer, pick one subject, 25 minutes - no phone. Don't open a new tab. The hard part is starting. After 25 minutes you'll probably want to keep going.";
   if (t.match(/fail|did badly|terrible|awful|bomb|mess/))
-    return "One bad paper is just data. What specifically went wrong — timing, a topic gap, nerves? Log it as an error, spend 20 minutes on that one thing today. That's how you convert a bad paper into real exam prep.";
+    return "One bad paper is just data. What specifically went wrong - timing, a topic gap, nerves? Log it as an error, spend 20 minutes on that one thing today. That's how you convert a bad paper into real exam prep.";
   if (t.match(/a\*|aced|nailed|crushed|great paper|did well|went well/))
-    return "That's the work paying off. Log it if you haven't — every A* shifts your readiness score. Don't ease off though. Consistent pressure through to exam day is what locks it in.";
+    return "That's the work paying off. Log it if you haven't - every A* shifts your readiness score. Don't ease off though. Consistent pressure through to exam day is what locks it in.";
   if (t.match(/tired|exhaust|burnout|can'?t sleep|no sleep/))
-    return "Rest is part of the process. Tired studying tanks your retention — you'd get more from 5 hours' sleep than 2 hours of grinding half-asleep. Come back sharp tomorrow.";
+    return "Rest is part of the process. Tired studying tanks your retention - you'd get more from 5 hours' sleep than 2 hours of grinding half-asleep. Come back sharp tomorrow.";
   if (t.match(/motivat|inspire|struggling|hard|difficult|giving up/))
-    return "Here's the truth: everyone sitting your exams is also finding it hard. The ones who get the top grades aren't smarter — they just kept going when it got difficult. You're still here. That's the whole job.";
+    return "Here's the truth: everyone sitting your exams is also finding it hard. The ones who get the top grades aren't smarter - they just kept going when it got difficult. You're still here. That's the whole job.";
   if (t.match(/exam|when|how long|days left|next paper/)) {
     const next = subjects.flatMap(s=>getSubjectExams(examSched,s.id,s.boardId,s.options))
       .map(e=>({...e,d:Math.ceil((new Date(e.date)-Date.now())/86400000)}))
       .filter(e=>e.d>=0).sort((a,b)=>a.d-b.d)[0];
     if (next) {
-      const when = next.d===0?'today — rest, key notes only.'
+      const when = next.d===0?'today - rest, key notes only.'
         :next.d===1?'tomorrow. No new topics today, just consolidation.'
-        :`in ${next.d} days — ${Math.floor(next.d/7)} week${next.d>=14?'s':''} of prep. Make them count.`;
+        :`in ${next.d} days - ${Math.floor(next.d/7)} week${next.d>=14?'s':''} of prep. Make them count.`;
       return `${next.paper.split(':')[0]} is ${when}`;
     }
-    return "I can't see any upcoming exams — go to the Exams tab and make sure your schedule is set up correctly.";
+    return "I can't see any upcoming exams - go to the Exams tab and make sure your schedule is set up correctly.";
   }
   if (t.match(/help|advice|tip|what should|where do i start/))
     return "The whole game: past paper under timed conditions → mark it properly → log your errors → drill those topics → repeat. Everything else is secondary. How many papers have you done this week?";
   if (t.match(/thank|cheers|appreciate|you'?re great/))
-    return "Any time. Now go log a paper — I'll be watching your readiness score climb.";
+    return "Any time. Now go log a paper - I'll be watching your readiness score climb.";
   if (t.match(/^(hello|hi|hey|sup|yo|alright)\b/))
-    return `Good ${new Date().getHours()<12?'morning':new Date().getHours()<17?'afternoon':'evening'}. What's on your mind? Ask me anything — exam tips, what to focus on, or just vent if you need to.`;
+    return `Good ${new Date().getHours()<12?'morning':new Date().getHours()<17?'afternoon':'evening'}. What's on your mind? Ask me anything - exam tips, what to focus on, or just vent if you need to.`;
   if (t.match(/topic|subject|weak|bad at/))
     return "Go to Resources and mark your weakest topics red. Then spend your next session on just one of them. Narrow focus beats scattered effort every time.";
   const fallbacks = [
-    "Tell me more — what specifically are you finding hard right now?",
+    "Tell me more - what specifically are you finding hard right now?",
     "I'm here. What's weighing on you most at the moment?",
     "You haven't given up, and that matters more than people think. What do you need?",
   ];
   return fallbacks[Math.floor(Math.random()*fallbacks.length)];
 }
 
-// Full study-system snapshot for Caps (chat + daily briefing). No PII —
+// Full study-system snapshot for Caps (chat + daily briefing). No PII -
 // just the student's revision data. Shared so chat and briefings stay in sync.
 function buildCapsContext({subjects=[],scores=[],sessions=[],errors=[],targets={},rag={},examSched=EXAM_SCHEDULE,examLevel='alevel',studentName=''}={}) {
   const nowMs = Date.now();
@@ -2345,7 +2345,7 @@ function StudyPlanner({subjects=[],scores=[],errors=[],sessions=[],rag={},target
         {!enoughRag ? (
           <>
             <div style={{fontSize:13,color:C.muted,lineHeight:1.6,margin:'8px 0 16px'}}>
-              Caps builds your plan around your <b>weak topics</b> — so first, rate your topics red / amber / green.
+              Caps builds your plan around your <b>weak topics</b> - so first, rate your topics red / amber / green.
               You've rated <b>{ratedCount}</b> so far (need at least 3).
             </div>
             <button onClick={goToRag} style={{width:'100%',padding:'12px',background:C.accent,border:'none',
@@ -2388,7 +2388,7 @@ function StudyPlanner({subjects=[],scores=[],errors=[],sessions=[],rag={},target
               {actions.map((a,i)=>(
                 <div key={i} style={{display:'flex',justifyContent:'space-between',gap:8,fontSize:12,color:C.muted,
                   padding:'7px 0',borderBottom:`1px solid ${C.border}`}}>
-                  <span><b style={{color:C.text}}>{a.subject}</b>{a.topic?` — ${a.topic}`:''}</span>
+                  <span><b style={{color:C.text}}>{a.subject}</b>{a.topic?` - ${a.topic}`:''}</span>
                   <span style={{flexShrink:0,color:C.subtle}}>{a.day} · {a.duration_min}m</span>
                 </div>
               ))}
@@ -2454,7 +2454,7 @@ function MathText({children,style,as='span'}){
   return <Tag style={style} dangerouslySetInnerHTML={{__html:_renderMath(text,k)}}/>;
 }
 
-// Syntax highlighting (lazy highlight.js) for fenced code blocks — CS, R, etc.
+// Syntax highlighting (lazy highlight.js) for fenced code blocks - CS, R, etc.
 let _hljs=null,_hljsPromise=null;
 function loadHljs(){
   if(_hljs) return Promise.resolve(_hljs);
@@ -2466,7 +2466,7 @@ function loadHljs(){
   })();
   return _hljsPromise;
 }
-// Inline markdown (code / bold / highlight / underline / italic) — reused for cells.
+// Inline markdown (code / bold / highlight / underline / italic) - reused for cells.
 function _inlineMd(s){
   return s
     .replace(/`([^`\n]+)`/g,'<code style="background:rgba(127,127,127,0.16);border-radius:4px;padding:1px 5px;font-size:0.92em">$1</code>')
@@ -2476,7 +2476,7 @@ function _inlineMd(s){
     .replace(/(^|[^*])\*([^*\n]+?)\*(?!\*)/g,'$1<em>$2</em>');
 }
 // Draw a simple chart from a JSON spec as inline SVG (no dependency). Supports
-// line / scatter (series of [x,y] points) and bar (categories + values) — enough
+// line / scatter (series of [x,y] points) and bar (categories + values) - enough
 // for econ supply&demand, biology results, physics, geography data.
 function _renderChart(raw){
   let spec; try{ spec=JSON.parse(raw); }catch{ return null; }
@@ -2688,7 +2688,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
     }catch{ return null; }
   };
   // Images + PDFs are uploaded to private Storage at mark time and Caps reads them
-  // via a signed URL (so even big question-paper PDFs work — they never go through
+  // via a signed URL (so even big question-paper PDFs work - they never go through
   // the API body). Word (.docx) is converted to text in the browser instead.
   const readFiles=async(fileList,target)=>{
     setErr('');
@@ -2697,7 +2697,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
     const existing=(target==='ms'?msAtt:att).length;
     let room=MAX_FILES-existing;
     const incoming=Array.from(fileList||[]);
-    if(incoming.length>room) setErr(`You can upload up to ${MAX_FILES} files here — extra files were skipped.`);
+    if(incoming.length>room) setErr(`You can upload up to ${MAX_FILES} files here - extra files were skipped.`);
     for (const f of incoming){
       const isImg=f.type.startsWith('image/');
       const isPdf=f.type==='application/pdf'||/\.pdf$/i.test(f.name);
@@ -2710,7 +2710,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
         if(isPdf){
           const n=await countPdfPages(f);
           pages=n||null;
-          if(n&&n>MAX_PAGES){ setErr(`${f.name} is ${n} pages — the marker takes up to ${MAX_PAGES} pages at a time. Split it into smaller PDFs.`); continue; }
+          if(n&&n>MAX_PAGES){ setErr(`${f.name} is ${n} pages - the marker takes up to ${MAX_PAGES} pages at a time. Split it into smaller PDFs.`); continue; }
         }
         const data=isImg?await readDataUrl(f):null; // preview thumbnail for images only
         setList(p=>[...p,{kind:isPdf?'pdf':'image',name:f.name,file:f,data,pages}].slice(0,MAX_FILES));
@@ -2724,9 +2724,9 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
           const text=(value||'').trim();
           if(!text){ setErr(`Couldn't read text from ${f.name}.`); continue; }
           setText(p=>(p?p+'\n\n':'')+text);
-        }catch{ setErr(`Couldn't read ${f.name} — try exporting it as a PDF.`); }
+        }catch{ setErr(`Couldn't read ${f.name} - try exporting it as a PDF.`); }
       } else if (isDoc){
-        setErr("Old .doc files aren't supported — save as .docx or PDF.");
+        setErr("Old .doc files aren't supported - save as .docx or PDF.");
       } else {
         setErr('Use an image, PDF, or Word (.docx) file.');
       }
@@ -2753,9 +2753,9 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
   const mark=async()=>{
     setErr(''); setResult(null); setActions([]); setLogged(false);
     if(!subject||!board){setErr('Pick a subject and exam board.');return;}
-    if(!att.length&&!answersText.trim()){setErr('Add a photo, PDF or Word file of your answers — or type them.');return;}
+    if(!att.length&&!answersText.trim()){setErr('Add a photo, PDF or Word file of your answers - or type them.');return;}
     const totalPages=[...att,...msAtt].reduce((s,a)=>s+(a.pages||1),0);
-    if(totalPages>MAX_PAGES){setErr(`That's ${totalPages} pages in total — the marker takes up to ${MAX_PAGES} at once. Mark one paper at a time, or remove some files.`);return;}
+    if(totalPages>MAX_PAGES){setErr(`That's ${totalPages} pages in total - the marker takes up to ${MAX_PAGES} at once. Mark one paper at a time, or remove some files.`);return;}
     setBusy(true); setStage(0); setElapsed(0);
     // Rough ETA so students know what to expect: a few seconds of overhead plus
     // ~2s per page of detailed marking (capped). Detailed marking is slower.
@@ -2868,7 +2868,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
                 <div style={{height:'100%',width:`${pct}%`,background:bar,borderRadius:4,transition:'width 0.4s ease'}}/>
               </div>
               <div style={{fontSize:10,color:C.subtle,marginTop:5}}>
-                {full?"You've reached today's limit — resets tomorrow.":`Resets daily · ${DAILY_PAGE_CAP-dailyUsed} pages left today`}
+                {full?"You've reached today's limit - resets tomorrow.":`Resets daily · ${DAILY_PAGE_CAP-dailyUsed} pages left today`}
                 {monthUsed!=null&&` · ${Math.max(0,MONTH_PAGE_CAP-monthUsed)}/${MONTH_PAGE_CAP} left this month`}
               </div>
             </div>
@@ -2900,7 +2900,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
             </div>
 
             <div style={{marginBottom:12}}>
-              <label style={labelStyle}>Your answers — photo, PDF or Word (up to {MAX_FILES} files)</label>
+              <label style={labelStyle}>Your answers - photo, PDF or Word (up to {MAX_FILES} files)</label>
               {renderUpload('answers')}
               {renderChips(att,setAtt)}
             </div>
@@ -2917,17 +2917,17 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
             </button>
             {showMS&&(
               <div style={{marginBottom:14}}>
-                <label style={labelStyle}>Mark scheme — photo, PDF or Word (up to {MAX_FILES} files)</label>
+                <label style={labelStyle}>Mark scheme - photo, PDF or Word (up to {MAX_FILES} files)</label>
                 {renderUpload('ms')}
                 {renderChips(msAtt,setMsAtt)}
                 <textarea value={markSchemeText} onChange={e=>setMarkSchemeText(e.target.value)} rows={3}
-                  placeholder="…or paste the mark scheme text (your own copy). Caps aligns to it — we never store it."
+                  placeholder="…or paste the mark scheme text (your own copy). Caps aligns to it - we never store it."
                   style={{...inputStyle,resize:'vertical',lineHeight:1.5,marginTop:8}}/>
               </div>
             )}
 
             <div style={{fontSize:10.5,color:C.subtle,lineHeight:1.5,marginBottom:12}}>
-              Only upload your own work or material you're allowed to share — please don't upload exam boards' official mark schemes or other copyrighted files you don't have the right to use. Files are sent securely to Caps to mark and deleted straight after — we don't keep them.
+              Only upload your own work or material you're allowed to share - please don't upload exam boards' official mark schemes or other copyrighted files you don't have the right to use. Files are sent securely to Caps to mark and deleted straight after - we don't keep them.
             </div>
 
             {err&&<div style={{fontSize:12,color:C.danger||'#ef4444',marginBottom:10,lineHeight:1.5}}>{err}</div>}
@@ -2945,8 +2945,8 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
                 <div style={{display:'flex',justifyContent:'space-between',gap:8,fontSize:11,color:C.subtle,marginTop:8,lineHeight:1.5}}>
                   <span>
                     {elapsed<3?'Caps is reading your paper…'
-                      :estSecs&&elapsed>estSecs+8?'Almost there — a detailed mark is worth the wait.'
-                      :`Marking in detail${estSecs?` — about ${estSecs}s for this paper`:''}.`}
+                      :estSecs&&elapsed>estSecs+8?'Almost there - a detailed mark is worth the wait.'
+                      :`Marking in detail${estSecs?` - about ${estSecs}s for this paper`:''}.`}
                   </span>
                   <span style={{flexShrink:0,fontVariantNumeric:'tabular-nums',color:C.muted}}>{elapsed}s</span>
                 </div>
@@ -3079,7 +3079,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
 
             {!logged&&actions.length>0&&(
               <div style={{background:C.card2,borderRadius:10,padding:'12px 14px',marginBottom:12}}>
-                <div style={{fontSize:11,fontWeight:700,color:C.accent,marginBottom:6}}>Caps will log this for you — confirm:</div>
+                <div style={{fontSize:11,fontWeight:700,color:C.accent,marginBottom:6}}>Caps will log this for you - confirm:</div>
                 {(()=>{const p=actions.filter(a=>a.type==='log_paper').length,e=actions.filter(a=>a.type==='log_error').length,t=actions.filter(a=>a.type==='add_plan_task').length;
                   return <div style={{fontSize:12,color:C.muted,lineHeight:1.7}}>
                     {p>0&&<div>• Paper logged to your tracker ({result.estimatedPercent}%{result.estimatedGrade?`, ≈${result.estimatedGrade}`:''})</div>}
@@ -3128,11 +3128,11 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
               <div style={{fontSize:16,fontWeight:800,color:C.text,lineHeight:1.25}}>Add this to your tracker?</div>
             </div>
             <div style={{fontSize:12.5,color:C.muted,lineHeight:1.6,marginBottom:14}}>
-              Caps marked <b style={{color:C.text}}>{subject}</b> — saving as “<b style={{color:C.text}}>{paperLabel}</b>”.
+              Caps marked <b style={{color:C.text}}>{subject}</b> - saving as “<b style={{color:C.text}}>{paperLabel}</b>”.
             </div>
             <div style={{background:C.card2,borderRadius:12,padding:'12px 14px',marginBottom:16,
               display:'flex',flexDirection:'column',gap:6,fontSize:12.5,color:C.muted}}>
-              {p>0&&<div>✓ Paper logged{result.estimatedPercent!=null?` — ${result.estimatedPercent}%`:''}{result.estimatedGrade?` (≈${result.estimatedGrade})`:''}</div>}
+              {p>0&&<div>✓ Paper logged{result.estimatedPercent!=null?` - ${result.estimatedPercent}%`:''}{result.estimatedGrade?` (≈${result.estimatedGrade})`:''}</div>}
               {e>0&&<div>✓ {e} mistake{e===1?'':'s'} added to your error log</div>}
               {t>0&&<div>✓ {t} revision task{t===1?'':'s'} added to your plan</div>}
             </div>
@@ -3156,7 +3156,7 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
   const firstName = String(studentName||'').trim().split(/\s+/)[0] || '';
   const [messages,setMessages] = useState([{
     from:'char',
-    text:`Hey${firstName?` ${firstName}`:''}, I'm ${companion.name}. What's on your mind? You can ask me anything — how you're doing, what to focus on, or just vent if you need to.`
+    text:`Hey${firstName?` ${firstName}`:''}, I'm ${companion.name}. What's on your mind? You can ask me anything - how you're doing, what to focus on, or just vent if you need to.`
   }]);
   const [input,setInput] = useState('');
   const [sending,setSending] = useState(false);
@@ -3175,7 +3175,7 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
     setInput('');
     setSending(true);
 
-    // Build FULL context — the whole study system so Caps can reason properly.
+    // Build FULL context - the whole study system so Caps can reason properly.
     const ctx = buildCapsContext({subjects,scores,sessions,errors,targets,rag,examSched,examLevel,studentName});
 
     let replyText = null;
@@ -3194,7 +3194,7 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
           if (d.reply) { replyText = d.reply; serverHit = true; serverActions = Array.isArray(d.actions)?d.actions:[]; }
         } else if (r.status === 429) {
           const d = await r.json().catch(()=>({}));
-          replyText = d.error || "I need a breather — too many messages this hour. Try again in a bit.";
+          replyText = d.error || "I need a breather - too many messages this hour. Try again in a bit.";
           serverHit = true;
         } else if (r.status === 402) {
           replyText = "Mascot chat is a Pro feature. Upgrade in Account → Settings to unlock me properly.";
@@ -3209,13 +3209,13 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
           if (replyText) serverHit = true;
         }
       }
-    } catch {/* network failure — fall through */}
+    } catch {/* network failure - fall through */}
 
     // If the server didn't respond at all (no session, network down, or empty reply),
     // be honest about it rather than silently injecting a rule-based reply that
     // looks like a non-sequitur mid-conversation.
     if (!replyText) {
-      replyText = "I'm having trouble reaching the chat server right now — try again in a moment, or refresh the page.";
+      replyText = "I'm having trouble reaching the chat server right now - try again in a moment, or refresh the page.";
     }
 
     setMessages(prev => [...prev, {from:'char', text: replyText, actions: serverActions}]);
@@ -3237,14 +3237,14 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
   const actLabel = (a) => {
     if (a.type==='set_target')    return `Set ${a.subject} target → ${a.grade}`;
     if (a.type==='mark_topics')   return `Mark ${a.topics.length} ${a.subject} topic${a.topics.length>1?'s':''} as ${a.level==='red'?'weak':a.level}`;
-    if (a.type==='add_plan_task') return `Plan · ${a.day}: ${a.subject}${a.topic?` — ${a.topic}`:''}${a.duration_min?` (${a.duration_min}m)`:''}`;
+    if (a.type==='add_plan_task') return `Plan · ${a.day}: ${a.subject}${a.topic?` - ${a.topic}`:''}${a.duration_min?` (${a.duration_min}m)`:''}`;
     return 'Apply change';
   };
   const QUICK = {
-    'Quiz me':'Quiz me on my weakest topics — one question at a time, exam style. Wait for my answer before the next one.',
-    'Plan my week':'Plan my week — build a revision schedule across the next 7 days based on my weakest subjects and nearest exams.',
+    'Quiz me':'Quiz me on my weakest topics - one question at a time, exam style. Wait for my answer before the next one.',
+    'Plan my week':'Plan my week - build a revision schedule across the next 7 days based on my weakest subjects and nearest exams.',
     'What should I do today?':'Based on my data, what are the 2-3 most useful things I should do today?',
-    'Find my weak spots':'Look at my scores and topic ratings and tell me my biggest weak spots — mark them red if it helps.',
+    'Find my weak spots':'Look at my scores and topic ratings and tell me my biggest weak spots - mark them red if it helps.',
     'Suggest targets':"Suggest sensible target grades for each of my subjects based on how I'm currently doing.",
   };
 
@@ -3415,7 +3415,7 @@ function MissionBoard({subjects,scores,C,font,examSched,onQuickLog=()=>{}}) {
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5}}>Next exam</div>
             <div style={{fontSize:13,fontWeight:700,color:C.text,marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-              {soonest.subjectName} — {soonest.paper.split(':')[1]?.trim()||soonest.paper}
+              {soonest.subjectName} - {soonest.paper.split(':')[1]?.trim()||soonest.paper}
             </div>
             <div style={{fontSize:11,color:C.muted,marginTop:1}}>
               {new Date(soonest.date).toLocaleDateString('en-GB',{day:'numeric',month:'long'})} · {soonest.time}
@@ -3525,7 +3525,7 @@ function InsuranceEligibilityCard({ scores, uid, C, font, noted=false, setNoted=
             color: elig.isEligible ? '#22c55e' : C.accent}}>Revision Insurance</div>
           <div style={{fontSize:14, fontWeight:600, color:C.text, marginTop:2}}>
             {elig.isEligible
-              ? 'You qualify — miss your grade, get £100 back'
+              ? 'You qualify - miss your grade, get £100 back'
               : `${elig.papersNeeded > 0 ? `${elig.papersNeeded} more paper${elig.papersNeeded!==1?'s':''} to qualify` : 'Almost eligible'}`}
           </div>
         </div>
@@ -3571,7 +3571,7 @@ function InsuranceEligibilityCard({ scores, uid, C, font, noted=false, setNoted=
             Pay <strong style={{color:C.text}}>£20</strong> before your first exam. If you miss your
             target grade in any covered subject on results day, we pay you{' '}
             <strong style={{color:C.text}}>£100 back</strong>. Only available to students who've been
-            consistently revising — which you have been.
+            consistently revising - which you have been.
           </div>
           <div style={{display:'flex', gap:6, flexWrap:'wrap', marginBottom:14}}>
             {['£20 one-time','Up to £100 payout','Results day claim','48hr processing'].map(t=>(
@@ -3717,7 +3717,7 @@ function StreakBanner({scores, C}) {
             color: gold ? '#fbbf24' : C.text}}>
             {streak}-day streak
           </div>
-          <div style={{fontSize:11, color:C.muted}}>Keep it going — log a paper today!</div>
+          <div style={{fontSize:11, color:C.muted}}>Keep it going - log a paper today!</div>
         </div>
       </div>
       <div style={{display:'flex',gap:5,marginTop:10}}>
@@ -3850,7 +3850,7 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
           {day.isExamDay ? (
             <div style={{display:'flex',flexDirection:'column',gap:10}}>
               <div style={{fontSize:11,fontWeight:700,color:'#f97316',textTransform:'uppercase',letterSpacing:0.5}}>
-                Exam day — rest, review key notes only
+                Exam day - rest, review key notes only
               </div>
               {day.exams.map((e,j)=>(
                 <div key={j} style={{display:'flex',alignItems:'flex-start',gap:10,
@@ -3969,7 +3969,7 @@ function Schedule({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDU
                     {s.gapBoost>0&&(
                       <div style={{marginTop:6,marginLeft:15,fontSize:11,color:'#f59e0b',display:'flex',alignItems:'center',gap:4}}>
                         <span style={{fontSize:9}}>▲</span>
-                        On track for <strong style={{margin:'0 2px'}}>{s.predGrade}</strong>, target <strong style={{margin:'0 2px'}}>{s.targetGrade}</strong> — boosted priority
+                        On track for <strong style={{margin:'0 2px'}}>{s.predGrade}</strong>, target <strong style={{margin:'0 2px'}}>{s.targetGrade}</strong> - boosted priority
                       </div>
                     )}
                   </div>
@@ -4306,7 +4306,7 @@ function ShareReadinessCard({br, subjects, scores, C, font, shareTheme='dark', s
       await new Promise(resolve=>canvas.toBlob(async blob=>{
         try {
           const file=new File([blob],'battle-readiness.png',{type:'image/png'});
-          const shareText=`${br.total}% Battle Readiness — ${br.label}!\nTracked with Battle Plan`;
+          const shareText=`${br.total}% Battle Readiness - ${br.label}!\nTracked with Battle Plan`;
           if (navigator.canShare?.({files:[file]})) {
             await navigator.share({files:[file],title:'My Battle Readiness',text:shareText});
           } else {
@@ -4465,7 +4465,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
   const underInvested = rows.filter(r=>r.avg!=null && r.gap!=null && r.gap<-3 && (totalSecs===0 || r.timeShare<evenShare*0.8))
     .sort((a,b)=>a.gap-b.gap);
 
-  // Error hotspots — last 21 days, grouped by topic (fallback subject)
+  // Error hotspots - last 21 days, grouped by topic (fallback subject)
   const recentErrs = errors.filter(e=>now-(e.ts||e.id)<21*86400000);
   const hotMap={}; recentErrs.forEach(e=>{ const k=(e.topic&&e.topic.trim())||e.subject||'General'; hotMap[k]=(hotMap[k]||0)+1; });
   const hotspots = Object.entries(hotMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
@@ -4488,7 +4488,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
           {scores.length===0
             ? 'Log your first past paper to start building your picture.'
             : isOffSeason
-              ? (nextExam ? `${nextExam.d} days to first exam. Build the habits now.` : 'Off-season — build the foundation.')
+              ? (nextExam ? `${nextExam.d} days to first exam. Build the habits now.` : 'Off-season - build the foundation.')
               : 'Where you stand across every subject, right now.'}
         </p>
       </div>
@@ -4496,8 +4496,8 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
       {/* ── KPI strip ─────────────────────────────────────────────────────── */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,marginBottom:12}}>
         {[
-          {l:'Avg score', v: overallAvg!=null?`${overallAvg}%`:'—', sub:`${scores.length} paper${scores.length===1?'':'s'}`, c:C.text},
-          {l:'On target', v: ratedSubs?`${onTarget}/${ratedSubs}`:'—', sub:'subjects at/above', c: ratedSubs&&onTarget===ratedSubs?(C.success||'#22c55e'):C.text},
+          {l:'Avg score', v: overallAvg!=null?`${overallAvg}%`:'-', sub:`${scores.length} paper${scores.length===1?'':'s'}`, c:C.text},
+          {l:'On target', v: ratedSubs?`${onTarget}/${ratedSubs}`:'-', sub:'subjects at/above', c: ratedSubs&&onTarget===ratedSubs?(C.success||'#22c55e'):C.text},
           {l:'Study time', v: totalSecs?fmtMins(totalSecs):'0m', sub:`${fmtMins(weekSecs)} this week`, c:C.text},
           nextExam
             ? {l:'Next exam', v:`${nextExam.d}d`, sub:'until first paper', c:C.accent}
@@ -4534,7 +4534,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
                   border:`1px solid ${C.border}`,borderRadius:9,borderTop:`2px solid ${r.s.color}`}}>
                   <div style={{fontSize:10,color:C.muted,fontWeight:600,marginBottom:7,
                     whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{label}</div>
-                  <div style={{fontSize:30,fontWeight:800,lineHeight:1,color:proj?gradeColor(proj):C.subtle}}>{proj||'—'}</div>
+                  <div style={{fontSize:30,fontWeight:800,lineHeight:1,color:proj?gradeColor(proj):C.subtle}}>{proj||'-'}</div>
                   <div style={{fontSize:10,marginTop:7,fontWeight:600,
                     color:r.avg==null?C.subtle:onTrack?(C.success||'#22c55e'):(C.warn||'#f59e0b')}}>
                     {r.avg==null?'no papers':`target ${r.target}`}
@@ -4574,7 +4574,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
                 </div>
                 {/* avg */}
                 <div style={{textAlign:'center'}}>
-                  <span style={{fontSize:15,fontWeight:700,color:r.grade?gradeColor(r.grade):C.subtle}}>{r.avg!=null?r.avg:'—'}</span>
+                  <span style={{fontSize:15,fontWeight:700,color:r.grade?gradeColor(r.grade):C.subtle}}>{r.avg!=null?r.avg:'-'}</span>
                   {r.trend!=null&&Math.abs(r.trend)>=1&&(
                     <div style={{fontSize:10,fontWeight:700,color:r.trend>=0?(C.success||'#22c55e'):(C.danger||'#ef4444')}}>
                       {r.trend>=0?'▲':'▼'}{Math.abs(r.trend)}
@@ -4585,7 +4585,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
                 <div style={{textAlign:'center'}}>
                   {r.pred ? (
                     <span style={{fontSize:14,fontWeight:700,color:gradeColor(r.pred.grade)}}>{r.pred.grade}</span>
-                  ) : <span style={{fontSize:12,color:C.subtle}}>—</span>}
+                  ) : <span style={{fontSize:12,color:C.subtle}}>-</span>}
                   {r.pred&&r.pred.trend!=='stable'&&(
                     <div style={{fontSize:10,color:r.pred.trend==='up'?(C.success||'#22c55e'):(C.danger||'#ef4444')}}>
                       {r.pred.trend==='up'?'↗':'↘'}
@@ -4618,7 +4618,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
                         <circle cx={x(r.ss.length-1)} cy={y(last)} r="2.4" fill={r.s.color}/>
                       </svg>
                     );
-                  })() : <span style={{fontSize:11,color:C.subtle}}>—</span>}
+                  })() : <span style={{fontSize:11,color:C.subtle}}>-</span>}
                 </div>
               </div>
             ))}
@@ -4675,7 +4675,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
               <div key={r.s.name} style={{display:'flex',alignItems:'flex-start',gap:9}}>
                 <span style={{width:8,height:8,borderRadius:'50%',background:r.s.color,flexShrink:0,marginTop:5}}/>
                 <span style={{fontSize:13,color:C.muted,lineHeight:1.5}}>
-                  <strong style={{color:C.text}}>{r.s.name}</strong> is {Math.abs(r.gap)}% below your {r.target} target but only {Math.round(r.timeShare*100)}% of your study time. Under-invested — give it more sessions.
+                  <strong style={{color:C.text}}>{r.s.name}</strong> is {Math.abs(r.gap)}% below your {r.target} target but only {Math.round(r.timeShare*100)}% of your study time. Under-invested - give it more sessions.
                 </span>
               </div>
             ))}
@@ -4683,7 +4683,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
               <div style={{display:'flex',alignItems:'flex-start',gap:9}}>
                 <span style={{width:8,height:8,borderRadius:'50%',background:topMover.s.color,flexShrink:0,marginTop:5}}/>
                 <span style={{fontSize:13,color:C.muted,lineHeight:1.5}}>
-                  <strong style={{color:C.text}}>{topMover.s.name}</strong> {topMover.trend>0?'jumped':'dropped'} {Math.abs(topMover.trend)}% on your last paper{topMover.trend>0?' — keep that momentum.':' — worth a review.'}
+                  <strong style={{color:C.text}}>{topMover.s.name}</strong> {topMover.trend>0?'jumped':'dropped'} {Math.abs(topMover.trend)}% on your last paper{topMover.trend>0?' - keep that momentum.':' - worth a review.'}
                 </span>
               </div>
             )}
@@ -4941,7 +4941,7 @@ function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font,onMarkPa
                 </div>
               </div>
 
-              {/* Papers — exam-table style */}
+              {/* Papers - exam-table style */}
               {subjScores.length===0&&(
                 <div style={{...type.body,color:C.muted,textAlign:'center',padding:'18px 0'}}>No papers logged for {selSubject} yet.</div>
               )}
@@ -5034,7 +5034,7 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE,yearGroup=''}) {
   const past=allExams.filter(e=>daysUntil(e.date)<0);
   const next=upcoming[0]??null;
 
-  // Y12/Y10 sit a year out — official 2027 dates aren't published yet, so show a
+  // Y12/Y10 sit a year out - official 2027 dates aren't published yet, so show a
   // rough countdown built from last year's earliest paper shifted into 2027.
   let estDaysToExams=null;
   if (isY12 && allExams.length) {
@@ -5043,7 +5043,10 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE,yearGroup=''}) {
     estDaysToExams=Math.round((d-today)/86400000);
   }
 
-  if (isY12 && !upcoming.length) return (
+  // Year-out students (Y10 GCSE / Y12 A-Level) always see the 2027 estimate view -
+  // not just once the 2026 reference dates have passed (otherwise mid-year they'd
+  // see last year's dates as if they were their own).
+  if (isY12 && allExams.length) return (
     <div style={{padding:'40px 24px',maxWidth:520}}>
       <div style={{fontSize:18,fontWeight:700,color:C.text,marginBottom:10}}>Your exams are in 2027</div>
       {estDaysToExams!=null&&estDaysToExams>0&&(
@@ -5054,7 +5057,7 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE,yearGroup=''}) {
         </div>
       )}
       <div style={{fontSize:14,color:C.muted,lineHeight:1.7,marginBottom:16}}>
-        {yearGroup==='Y12'?'A-Level':'GCSE'} exam dates for {yearGroup==='Y12'?'2027':'2027'} haven't been officially published by exam boards yet — they're usually released in autumn {yearGroup==='Y12'?'2026':'2026'}.
+        {yearGroup==='Y12'?'A-Level':'GCSE'} exam dates for {yearGroup==='Y12'?'2027':'2027'} haven't been officially published by exam boards yet - they're usually released in autumn {yearGroup==='Y12'?'2026':'2026'}.
       </div>
       <div style={{fontSize:13,color:C.muted,lineHeight:1.7,marginBottom:12}}>
         In the meantime, use this app to:<br/>
@@ -5063,7 +5066,7 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE,yearGroup=''}) {
         • Check back here once your board publishes the timetable
       </div>
       <div style={{fontSize:11,color:C.subtle,background:C.card2,borderRadius:8,padding:'10px 14px',border:`1px solid ${C.border}`}}>
-        The dates below (grayed out) are last year's 2026 schedule — shown for reference only. Your actual dates will differ.
+        The dates below (grayed out) are last year's 2026 schedule - shown for reference only. Your actual dates will differ.
       </div>
       {allExams.length>0&&(
         <div style={{marginTop:20}}>
@@ -5120,7 +5123,7 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE,yearGroup=''}) {
 
   return (
     <div>
-      {/* Next exam — compact, left-aligned */}
+      {/* Next exam - compact, left-aligned */}
       {next&&(
         <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:22,
           padding:'16px 18px',background:C.tintCream,borderRadius:14}}>
@@ -5145,7 +5148,7 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE,yearGroup=''}) {
         </div>
       )}
 
-      {/* All exams done — celebratory close-out (current-year students only;
+      {/* All exams done - celebratory close-out (current-year students only;
           Y12/Y10 return early above, and the empty-schedule case is handled too). */}
       {!next&&(
         <div style={{marginBottom:24,padding:'26px 22px',background:C.surface,
@@ -5153,15 +5156,15 @@ function Exams({subjects,C,font,examSched=EXAM_SCHEDULE,yearGroup=''}) {
           <div style={{...type.eyebrow,color:C.accent,marginBottom:10}}>That's a wrap</div>
           <div style={{...type.h1,fontSize:25,color:C.text,margin:'0 0 8px'}}>Exams done.</div>
           <div style={{...type.body,color:C.muted,maxWidth:420}}>
-            Every paper on your schedule is behind you. However they went, the hard part is over — and that took real graft.
+            Every paper on your schedule is behind you. However they went, the hard part is over - and that took real graft.
           </div>
           <div style={{fontSize:14,color:C.text,fontWeight:600,marginTop:14}}>
-            Results land in August. Until then, rest — you've earned it.
+            Results land in August. Until then, rest - you've earned it.
           </div>
         </div>
       )}
 
-      {/* Always-confirm banner — only while exams are still ahead. A wrong date
+      {/* Always-confirm banner - only while exams are still ahead. A wrong date
           is the one mistake you can't recover from; once everything's done it's
           just noise, so we drop it. */}
       {upcoming.length>0&&(
@@ -5290,7 +5293,7 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
     setExamRunning(false); setExamDone(false); setExamResult(null); setTick(t=>t+1);
   };
   // End the exam and log the elapsed time as a real, subject-attributed study
-  // session (measured time — same footing as the stopwatch). Called both when
+  // session (measured time - same footing as the stopwatch). Called both when
   // the clock hits zero and when the student finishes early.
   const finishExam = (elapsedSecs) => {
     examEndRef.current = null; examRemRef.current = 0;
@@ -5318,7 +5321,7 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
     ? Math.max(0, Math.round((Date.now() - swStartRef.current) / 1000))
     : swAccumRef.current;
 
-  // Tick interval — just triggers re-renders; accuracy comes from Date.now()
+  // Tick interval - just triggers re-renders; accuracy comes from Date.now()
   useEffect(()=>{
     if (!pomRunning && !swRunning && !examRunning) return;
     const id = setInterval(()=>{
@@ -5403,8 +5406,8 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
     ...s, secs:todaySessions.filter(ss=>ss.subjectId===s.id).reduce((a,ss)=>a+ss.secs,0)
   })).filter(s=>s.secs>0).sort((a,b)=>b.secs-a.secs);
 
-  // Streak counts any study action that day — timed session, logged paper, or
-  // logged error — not just timer use. (Minutes above stay measured-only.)
+  // Streak counts any study action that day - timed session, logged paper, or
+  // logged error - not just timer use. (Minutes above stay measured-only.)
   const daySet=studyActivityDays({sessions,scores,errors});
   let streak=0; const chk=new Date(); chk.setHours(0,0,0,0);
   while(daySet.has(chk.getTime())){streak++;chk.setDate(chk.getDate()-1);}
@@ -5579,7 +5582,7 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
               )}
               {examResult&&!examResult.logged&&(
                 <div style={{fontSize:12,color:C.subtle,marginBottom:20}}>
-                  {selSubject?'Under a minute — not logged.':'Pick a subject next time to log this as study time.'}
+                  {selSubject?'Under a minute - not logged.':'Pick a subject next time to log this as study time.'}
                 </div>
               )}
               <button onClick={examReset}
@@ -5598,7 +5601,7 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
             const dispColor=warn10?'#ef4444':warn30?'#f97316':C.text;
             return (
               <>
-                {/* Subject — so exam time logs against the right subject */}
+                {/* Subject - so exam time logs against the right subject */}
                 {subjectPill(examRunning)}
                 {/* Duration picker */}
                 <div style={{marginBottom:18}}>
@@ -5682,7 +5685,7 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
                   )}
                 </div>
                 <div style={{fontSize:11,color:C.subtle,textAlign:'center',lineHeight:1.6}}>
-                  Can't be paused — just like a real exam. Finish early to log your time.
+                  Can't be paused - just like a real exam. Finish early to log your time.
                 </div>
               </>
             );
@@ -5722,7 +5725,7 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
               )}
             </div>
             {swSecs>0&&swSecs<60&&!swRunning&&(
-              <div style={{marginTop:12,fontSize:12,color:C.subtle}}>Keep going — save when you hit 1 minute</div>
+              <div style={{marginTop:12,fontSize:12,color:C.subtle}}>Keep going - save when you hit 1 minute</div>
             )}
           </div>
           {todaySessions.length>0&&(
@@ -5759,7 +5762,7 @@ function StudyTimer({subjects,uid,C,font,sessions,setSessions,scores=[],errors=[
             </div>
             {bySubjectToday.length>0&&(
               <>
-                <div style={{fontSize:11,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:10}}>Today — tap to explore</div>
+                <div style={{fontSize:11,fontWeight:700,color:C.subtle,textTransform:'uppercase',letterSpacing:0.5,marginBottom:10}}>Today - tap to explore</div>
                 <div style={{display:'flex',gap:16,alignItems:'flex-start',flexWrap:'wrap'}}>
                   <DonutChart slices={bySubjectToday} selected={pieSelected} onSelect={setPieSelected} C={C} size={140}/>
                   <div style={{flex:1,minWidth:120}}>
@@ -5900,6 +5903,28 @@ const SPEC_TOPICS = {
   geography:['Hazards (tectonic & atmospheric)','Coastal Systems & Landscapes','Glacial Systems & Landscapes','Ecosystems under Stress','Global Systems & Governance','Changing Places','Contemporary Urban Environments','Population & the Environment','Resource Security','Geographical Skills & Fieldwork'],
   'english-lit':['Paper 1 Novel/Prose Text','Paper 1 Poetry (pre-1900)','Paper 2 Drama Text','Paper 2 Prose Text','Comparative Essay Technique','Unseen Poetry Analysis','Contextual Factors & Interpretations','Critical Vocabulary & Close Reading','AO1: Argument & Expression','AO3: Connections across texts'],
   business:['Business Objectives & Strategy','Financial Statements & Ratios','Investment Appraisal','Marketing Strategies & Mix','Operations Management','HR Strategies (motivation, org. structure)','Corporate Strategy (Ansoff, Porter)','External Influences (PESTLE)','Globalisation & Business','Case Study Analysis Skills'],
+
+  // ── GCSE spec topics (board-neutral; covers the main AQA/Edexcel/OCR areas) ──
+  'gcse-maths':['Number','Algebra','Ratio, Proportion & Rates of Change','Geometry & Measures','Trigonometry','Pythagoras','Probability','Statistics','Sequences','Graphs','Surds & Indices','Vectors','Transformations','Simultaneous Equations'],
+  'gcse-english-lang':['Reading: Explicit & Implicit Meaning','Language Analysis (word/phrase)','Structure Analysis','Evaluating Texts Critically','Comparing Writers’ Viewpoints','Descriptive & Narrative Writing','Persuasive & Transactional Writing','Spelling, Punctuation & Grammar','Spoken Language (NEA)'],
+  'gcse-english-lit':['Shakespeare Play','19th-Century Novel','Modern Text (Drama/Prose)','Poetry Anthology','Unseen Poetry','Comparing Poems','Context & Themes','Quotation & Analysis (AO1)','Language, Form & Structure (AO2)'],
+  'gcse-biology':['Cell Biology','Organisation','Infection & Response','Bioenergetics','Homeostasis & Response','Inheritance, Variation & Evolution','Ecology','Required Practicals'],
+  'gcse-chemistry':['Atomic Structure & Periodic Table','Bonding, Structure & Properties','Quantitative Chemistry','Chemical Changes','Energy Changes','Rate & Extent of Reaction','Organic Chemistry','Chemical Analysis','Chemistry of the Atmosphere','Using Resources','Required Practicals'],
+  'gcse-physics':['Energy','Electricity','Particle Model of Matter','Atomic Structure & Radiation','Forces','Waves','Magnetism & Electromagnetism','Space Physics','Required Practicals'],
+  'gcse-combined-science':['Cell Biology','Organisation & Infection','Bioenergetics & Homeostasis','Inheritance & Evolution','Ecology','Atomic Structure & Periodic Table','Bonding & Structure','Quantitative & Chemical Changes','Energy & Rates','Organic, Analysis & Atmosphere','Energy (Physics)','Electricity','Particle Model','Forces & Motion','Waves & Electromagnetism','Required Practicals'],
+  'gcse-history':['Medicine / Health Through Time','Germany 1890–1945','Conflict & Tension (WWI/WWII)','Cold War & Superpower Relations','Elizabethan England','Norman England','Crime & Punishment','Source Analysis Skills','Interpretations Skills','Essay Technique'],
+  'gcse-geography':['Natural Hazards (tectonic & weather)','The Living World (ecosystems)','Rivers & Coastal Landscapes','Glacial Landscapes','Urban Issues & Challenges','The Changing Economic World','Resource Management','Fieldwork & Geographical Skills','Issue Evaluation'],
+  'gcse-cs':['Systems Architecture','Memory & Storage','Networks & Topologies','Network Security','Systems Software','Ethical, Legal & Environmental Impacts','Algorithms (search & sort)','Programming Fundamentals','Producing Robust Programs','Boolean Logic','Data Representation (binary, hex)','Programming Languages & IDEs'],
+  'gcse-french':['Listening','Reading','Speaking (role-play, photo card, conversation)','Writing','Theme: Identity & Culture','Theme: Local, National & International Areas','Theme: Study & Employment','Grammar & Tenses','Translation (both ways)'],
+  'gcse-spanish':['Listening','Reading','Speaking (role-play, photo card, conversation)','Writing','Theme: Identity & Culture','Theme: Local, National & International Areas','Theme: Study & Employment','Grammar & Tenses','Translation (both ways)'],
+  'gcse-german':['Listening','Reading','Speaking (role-play, photo card, conversation)','Writing','Theme: Identity & Culture','Theme: Local, National & International Areas','Theme: Study & Employment','Grammar & Tenses','Translation (both ways)'],
+  'gcse-religious-studies':['Christianity: Beliefs & Teachings','Christianity: Practices','Islam: Beliefs & Teachings','Islam: Practices','Theme: Relationships & Families','Theme: Religion & Life','Theme: Peace & Conflict','Theme: Crime & Punishment','Theme: Existence of God','Evaluation (12-mark) Technique'],
+  'gcse-music':['Performing (solo & ensemble)','Composing','Listening & Appraising','AoS: Western Classical Tradition','AoS: Popular Music','AoS: Traditional & World Music','Elements of Music (MAD-T-SHIRP)','Set Works'],
+  'gcse-art':['Recording Observations','Developing Ideas','Refining & Experimenting with Media','Artist Research & Analysis','Personal Response / Final Piece','Formal Elements','Sketchbook / Portfolio','Externally Set Assignment'],
+  'gcse-drama':['Devising Drama','Performance from Text','Set Text Study','Live Theatre Evaluation','Practitioners & Styles','Design Elements (set, light, sound, costume)','Vocal & Physical Skills','Theatre Roles & Terminology'],
+  'gcse-business':['Enterprise & Entrepreneurship','Marketing Mix (4Ps)','Operations & Production','Finance (cash flow, profit, break-even)','Human Resources','External Influences','Business Growth & Aims','Globalisation & Ethics','Business Calculations'],
+  'gcse-dt':['New & Emerging Technologies','Energy Generation & Storage','Material Categories & Properties','Mechanical Devices','Manufacturing Processes','Design & Make Principles','Ecological & Social Footprint','Investigation & Research (primary/secondary)','Specialist Technical Principles','NEA: Iterative Design'],
+  'gcse-pe':['Applied Anatomy & Physiology','Movement Analysis','Physical Training','Sports Psychology','Socio-cultural Influences','Health, Fitness & Well-being','Use of Data','Practical Performance & Analysis (NEA)'],
 };
 
 // ── RAG Tracker (Resources) ────────────────────────────────────────────────
@@ -6111,7 +6136,7 @@ function Resources({subjects,uid,C,font,rag,setRag,ragNotes,setRagNotes}) {
                       <a href={bank.board} target="_blank" rel="noopener noreferrer" style={linkSecondary}>Official board page ↗</a>
                     </div>
                   ):(
-                    <div style={{...type.caption,color:C.subtle}}>No direct link — search "{s.name} {s.board} past papers".</div>
+                    <div style={{...type.caption,color:C.subtle}}>No direct link - search "{s.name} {s.board} past papers".</div>
                   )}
                 </div>
               );
@@ -6146,7 +6171,7 @@ function Resources({subjects,uid,C,font,rag,setRag,ragNotes,setRagNotes}) {
           </div>
           <div style={{...type.caption,color:C.muted,marginBottom:bank?14:18}}>
             {weak
-              ? `${items.length} red & amber topic${items.length===1?'':'s'} — drill these first`
+              ? `${items.length} red & amber topic${items.length===1?'':'s'} - drill these first`
               : `${cc.red} red · ${cc.amber} amber · ${cc.green} green`}
           </div>
 
@@ -6159,7 +6184,7 @@ function Resources({subjects,uid,C,font,rag,setRag,ragNotes,setRagNotes}) {
 
           {items.length===0?(
             <div style={{...type.body,color:C.muted,textAlign:'center',padding:'18px 0'}}>
-              {weak?'Nothing flagged — rate topics Red or Amber to see them here.':'No topics defined for this subject.'}
+              {weak?'Nothing flagged - rate topics Red or Amber to see them here.':'No topics defined for this subject.'}
             </div>
           ):(
             <div>
@@ -6245,7 +6270,7 @@ function ContactCard({C,font}){
       <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Contact us</div>
       {sent ? (
         <div style={{fontSize:13,color:C.text,lineHeight:1.6}}>
-          ✓ Thanks — your message is on its way and we'll get back to you as soon as we can.
+          ✓ Thanks - your message is on its way and we'll get back to you as soon as we can.
           <button onClick={()=>{setSent(false);setMessage('');setContact('');}} style={{display:'block',marginTop:10,background:'transparent',border:'none',color:C.accent,fontSize:12,fontWeight:600,fontFamily:font,cursor:'pointer',padding:0}}>Send another</button>
         </div>
       ) : (
@@ -6376,9 +6401,9 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
 
   const shareReferralLink = async () => {
     const link=`https://beattheexam.org/?ref=${referralCode}`;
-    const text=`I'm using Battle Plan to track my revision and predict my grades — give it a go:`;
+    const text=`I'm using Battle Plan to track my revision and predict my grades - give it a go:`;
     // Prefer the native share sheet (one tap into WhatsApp/iMessage with the
-    // link prefilled) — copy-only loses a lot of shares on mobile. Fall back to
+    // link prefilled) - copy-only loses a lot of shares on mobile. Fall back to
     // clipboard on desktop / where the Web Share API isn't available.
     try {
       if (navigator.share) { await navigator.share({ title:'Battle Plan', text, url:link }); return; }
@@ -6462,11 +6487,11 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
     }
   };
 
-  // Stripe is LIVE — real checkout enabled. Set true again to fall back to the
+  // Stripe is LIVE - real checkout enabled. Set true again to fall back to the
   // pro_waitlist capture (no charges) if you need to pause monetization.
   const BETA_WAITLIST = false;
   const [waitlistJoined, setWaitlistJoined] = useState(false);
-  const [upgradeKind, setUpgradeKind] = useState(null); // 'trial' | 'sub' — which checkout button is loading
+  const [upgradeKind, setUpgradeKind] = useState(null); // 'trial' | 'sub' - which checkout button is loading
   useEffect(()=>{
     if (!BETA_WAITLIST || !uid) return;
     (async()=>{
@@ -6486,7 +6511,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       // 23505 = unique violation = already on the list; treat as success
       if (error && error.code !== '23505') { setUpgradeError(error.message); return; }
       setWaitlistJoined(true);
-      addToast("You're on the list — we'll email you when Pro launches.", 'success');
+      addToast("You're on the list - we'll email you when Pro launches.", 'success');
       return;
     }
     setUpgrading(true); setUpgradeKind(trial?'trial':'sub'); setUpgradeError('');
@@ -6502,7 +6527,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
         body: JSON.stringify({ trial }),
       });
       const d = await r.json();
-      // Already a paying subscriber — don't open a second checkout (no double charge).
+      // Already a paying subscriber - don't open a second checkout (no double charge).
       if (r.status === 409 || d.code === 'already_subscribed') {
         setUpgrading(false); setUpgradeKind(null);
         addToast("You already have an active subscription. Manage it under Billing.", 'success');
@@ -6599,7 +6624,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
         <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Your name</div>
         <input value={displayName} onChange={e=>setDisplayName(e.target.value)} onBlur={saveName}
-          placeholder="First name — so Caps can greet you"
+          placeholder="First name - so Caps can greet you"
           style={{width:'100%',padding:'10px 12px',background:C.card2,border:`1px solid ${C.border}`,
             borderRadius:8,color:C.text,fontSize:14,fontFamily:font,boxSizing:'border-box'}}/>
         <div style={{fontSize:11,color:C.subtle,marginTop:7,lineHeight:1.5}}>Just your first name is fine. We don't ask for your age or date of birth.</div>
@@ -6613,7 +6638,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
           <span style={{fontSize:18,lineHeight:1,flexShrink:0}}>🎉</span>
           <div>
             <div style={{fontSize:13,fontWeight:700,color:C.success,marginBottom:3}}>Payment received!</div>
-            <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>Activating your Pro access now — this unlocks automatically in a few seconds.</div>
+            <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>Activating your Pro access now - this unlocks automatically in a few seconds.</div>
           </div>
         </div>
       )}
@@ -6635,7 +6660,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
         {isPro?(
           <>
             <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginBottom:12}}>
-              You have access to all Pro features — email reports, companion chat, and priority updates.
+              You have access to all Commander features - email reports, companion chat, and priority updates.
             </div>
             {stripeCustomerId ? (
               <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
@@ -6654,7 +6679,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
               </div>
             ) : (
               <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>
-                Your Pro access isn't a paid Stripe subscription (granted or trial) — there's nothing to manage here.
+                Your Commander access isn't a paid Stripe subscription (granted or trial) - there's nothing to manage here.
               </div>
             )}
             {cancelMsg&&(
@@ -6668,10 +6693,10 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
           <>
             <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginTop:10,marginBottom:14}}>
               {BETA_WAITLIST
-                ? "Pro isn't quite ready yet — payments aren't live during the beta. Join the waitlist and you'll be the first to know when it launches."
+                ? "Commander isn't quite ready yet - payments aren't live during the beta. Join the waitlist and you'll be the first to know when it launches."
                 : (stripeCustomerId
-                    ? "Upgrade to Pro to unlock email reports, AI companion chat, and more."
-                    : "Try Pro free for 3 days — email reports, AI companion chat, and more. A card is required; cancel anytime before day 3 and you won't be charged. £6.99/mo after.")}
+                    ? "Upgrade to Commander to unlock email reports, AI companion chat, and more."
+                    : "Try Commander free for 3 days - email reports, AI companion chat, and more. A card is required; cancel anytime before day 3 and you won't be charged. £6.99/mo after.")}
             </div>
             <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:14}}>
               {['Email exam schedule & weekly digest','Companion chat','Priority feature access'].map(f=>(
@@ -6689,14 +6714,14 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
                   border:`1px solid ${waitlistJoined?C.border:(upgrading?C.border:C.accent)}`,borderRadius:8,
                   color:waitlistJoined?C.muted:(upgrading?C.muted:'#fff'),fontSize:14,fontWeight:700,fontFamily:font,
                   cursor:upgrading||!user||waitlistJoined?'not-allowed':'pointer'}}>
-                {waitlistJoined ? "✓ You're on the waitlist" : (upgrading ? 'Adding you…' : 'Join the Pro waitlist')}
+                {waitlistJoined ? "✓ You're on the waitlist" : (upgrading ? 'Adding you…' : 'Join the Commander waitlist')}
               </button>
             ) : stripeCustomerId ? (
               <button onClick={()=>handleUpgrade({trial:false})} disabled={upgrading||!user}
                 style={{width:'100%',padding:'11px',background:upgrading?C.card2:C.accent,
                   border:`1px solid ${upgrading?C.border:C.accent}`,borderRadius:8,color:upgrading?C.muted:'#fff',
                   fontSize:14,fontWeight:700,fontFamily:font,cursor:upgrading||!user?'not-allowed':'pointer',transition:'background 0.15s'}}>
-                {upgrading ? 'Opening secure checkout…' : 'Upgrade to Pro — £6.99/mo'}
+                {upgrading ? 'Opening secure checkout…' : 'Upgrade to Commander - £6.99/mo'}
               </button>
             ) : (
               <>
@@ -6710,7 +6735,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
                   style={{width:'100%',marginTop:8,padding:'10px',background:'transparent',
                     border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,fontSize:13,fontWeight:600,
                     fontFamily:font,cursor:upgrading||!user?'not-allowed':'pointer'}}>
-                  {(upgrading&&upgradeKind==='sub') ? 'Opening secure checkout…' : 'Or subscribe now — £6.99/mo (skip trial)'}
+                  {(upgrading&&upgradeKind==='sub') ? 'Opening secure checkout…' : 'Or subscribe now - £6.99/mo (skip trial)'}
                 </button>
               </>
             )}
@@ -6830,7 +6855,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
           <div style={{flex:1}}>
             <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:4}}>Share anonymised data with universities</div>
             <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>
-              Your scores are aggregated and anonymised — never individual — to help universities understand how students revise. You can opt out at any time.
+              Your scores are aggregated and anonymised - never individual - to help universities understand how students revise. You can opt out at any time.
             </div>
           </div>
           <button onClick={()=>toggleConsent(!analyticsConsent)}
@@ -6844,7 +6869,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
         </div>
       </div>
 
-      {/* Your data — GDPR Article 20 (portability) + Article 17 (erasure) */}
+      {/* Your data - GDPR Article 20 (portability) + Article 17 (erasure) */}
       <div style={{background:C.tintCream,borderRadius:14,padding:'18px 20px'}}>
         <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:6}}>
           Your data
@@ -6883,7 +6908,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
                 style={{flex:1,padding:'9px',background:C.danger,border:'none',
                   borderRadius:7,color:'#fff',fontSize:12,fontWeight:700,
                   fontFamily:font,cursor:'pointer'}}>
-                I understand — continue
+                I understand - continue
               </button>
               <button onClick={()=>setDeleteStep(0)}
                 style={{padding:'9px 14px',background:'transparent',
@@ -7121,13 +7146,13 @@ function LandingPage({ onGetStarted }) {
   const FEATURES = [
     { icon: ic(<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>),
       title: 'Past paper tracker',
-      desc: 'Log every paper and see your real grade — calculated against official mark-scheme boundaries, not rough percentages.' },
+      desc: 'Log every paper and see your real grade - calculated against official mark-scheme boundaries, not rough percentages.' },
     { icon: ic(<><path d="M22 12A10 10 0 1 1 12 2"/><path d="M12 12 16 8"/></>),
       title: 'Battle Readiness',
       desc: 'One score for how prepared you actually are, updated every time you log a paper.' },
     { icon: ic(<><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></>),
       title: 'Error patterns',
-      desc: 'Tag every mistake by type and see which topics keep costing you marks — so you fix the cause, not the symptom.' },
+      desc: 'Tag every mistake by type and see which topics keep costing you marks - so you fix the cause, not the symptom.' },
     { icon: ic(<><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></>),
       title: 'RAG topic map',
       desc: 'Rate every topic red, amber or green. See at a glance exactly where your revision time should go.' },
@@ -7144,22 +7169,22 @@ function LandingPage({ onGetStarted }) {
   const STEPS = [
     { n:'1', title:'Set up in two minutes', desc:'Pick your subjects and exam boards. The right papers and official grade boundaries load automatically.' },
     { n:'2', title:'Log papers as you go', desc:'Enter your mark after each past paper, tag the mistakes you made, and rate every topic red, amber or green.' },
-    { n:'3', title:'See exactly what to fix', desc:'Your real grade, your trajectory and the topics costing you the most marks — so every revision hour is spent where it counts.' },
+    { n:'3', title:'See exactly what to fix', desc:'Your real grade, your trajectory and the topics costing you the most marks - so every revision hour is spent where it counts.' },
   ];
 
   const TRUST = [
-    { title:'Free to start, no card', desc:'Everything you need to revise is free as a Recruit — no card to sign up. Commander is an optional upgrade, never a wall.' },
+    { title:'Free to start, no card', desc:'Everything you need to revise is free as a Recruit - no card to sign up. Commander is an optional upgrade, never a wall.' },
     { title:'Your data stays yours', desc:'No ads, never sold. Export everything or delete your account at any time.' },
-    { title:'Real grades, not guesses', desc:'Marks become grades using official mark-scheme boundaries — not rough percentages.' },
-    { title:'Every major board', desc:'AQA, Edexcel, OCR and WJEC — across A-Levels, AS and GCSEs.' },
+    { title:'Real grades, not guesses', desc:'Marks become grades using official mark-scheme boundaries - not rough percentages.' },
+    { title:'Every major board', desc:'AQA, Edexcel, OCR and WJEC - across A-Levels, AS and GCSEs.' },
   ];
 
   const FAQ = [
-    { q:'Is it actually free?', a:'Yes. As a Recruit you get everything you need to track papers and revise — free, forever, no card needed. Commander (£6.99/mo) is an optional upgrade for generous AI marking and unlimited companion chat.' },
+    { q:'Is it actually free?', a:'Yes. As a Recruit you get everything you need to track papers and revise - free, forever, no card needed. Commander (£6.99/mo) is an optional upgrade for generous AI marking and unlimited companion chat.' },
     { q:'Which exam boards do you support?', a:'AQA, Edexcel, OCR and WJEC, for A-Levels, AS-Levels and GCSEs across the main subjects.' },
     { q:'Is my data safe?', a:'Your revision data is stored securely and is never sold or used for ads. You can export it or permanently delete your account whenever you like.' },
     { q:'Do I have to log every single paper?', a:'No. Even a handful of papers gives you a grade trajectory and shows your weakest topics. Log as much or as little as you want.' },
-    { q:'I do GCSEs — does it work for me?', a:'Yes. Choose GCSE at sign-up and everything switches to the 9–1 grade scale and GCSE papers.' },
+    { q:'I do GCSEs - does it work for me?', a:'Yes. Choose GCSE at sign-up and everything switches to the 9–1 grade scale and GCSE papers.' },
   ];
 
   return (
@@ -7184,7 +7209,7 @@ function LandingPage({ onGetStarted }) {
         </button>
       </nav>
 
-      {/* Hero — minimal, centred, type-led */}
+      {/* Hero - minimal, centred, type-led */}
       <section>
         <div style={{maxWidth:820, margin:'0 auto', padding:'132px 24px 0', textAlign:'center'}}>
           <div style={{display:'inline-flex', alignItems:'center', gap:8, padding:'5px 13px',
@@ -7205,7 +7230,7 @@ function LandingPage({ onGetStarted }) {
               style={{display:'inline-flex', alignItems:'center', gap:8, padding:'12px 22px',
                 background:C.accent, border:'none', borderRadius:8, color:'#fff',
                 fontSize:14, fontWeight:600, fontFamily:font, cursor:'pointer'}}>
-              Get started — it's free
+              Get started - it's free
             </button>
             <button onClick={onGetStarted}
               style={{display:'inline-flex', alignItems:'center', padding:'12px 20px',
@@ -7291,7 +7316,7 @@ function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
-      {/* Features — minimal uniform grid with hairline dividers */}
+      {/* Features - minimal uniform grid with hairline dividers */}
       <section style={{maxWidth:1080, margin:'0 auto', padding:'104px 24px'}}>
         <div style={{...type.eyebrow, color:C.subtle, marginBottom:14}}>Features</div>
         <h2 style={{fontFamily:display, fontWeight:600, fontSize:'clamp(26px, 3.4vw, 40px)', color:C.text,
@@ -7329,7 +7354,7 @@ function LandingPage({ onGetStarted }) {
           </div>
           <div style={{...type.body, fontSize:15, color:C.muted, marginTop:48, maxWidth:600, lineHeight:1.7,
             paddingTop:32, borderTop:`1px solid ${C.border}`}}>
-            <span style={{color:C.text, fontWeight:600}}>Made by a student who just sat their A-Levels</span> — built out of
+            <span style={{color:C.text, fontWeight:600}}>Made by a student who just sat their A-Levels</span> - built out of
             frustration with revision that felt busy but not effective, and shaped around what actually moves a grade.
           </div>
         </div>
@@ -7344,7 +7369,7 @@ function LandingPage({ onGetStarted }) {
             Free to start. Upgrade only if you want more.
           </h2>
           <p style={{...type.body, fontSize:15, color:C.muted, margin:'0 0 40px', maxWidth:520, lineHeight:1.6}}>
-            Everyone starts as a <strong style={{color:C.text}}>Recruit</strong> — free, forever. Go{' '}
+            Everyone starts as a <strong style={{color:C.text}}>Recruit</strong> - free, forever. Go{' '}
             <strong style={{color:C.accent}}>Commander</strong> when you want generous AI marking and your companion on tap.
           </p>
           <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:16}}>
@@ -7379,7 +7404,7 @@ function LandingPage({ onGetStarted }) {
             })}
           </div>
           <p style={{...type.body, fontSize:12, color:C.subtle, marginTop:18, lineHeight:1.6}}>
-            Commander includes a 3-day free trial — cancel any time before it ends and you won't be charged. Switch ranks whenever you like.
+            Commander includes a 3-day free trial - cancel any time before it ends and you won't be charged. Switch ranks whenever you like.
           </p>
         </div>
       </section>
@@ -7418,7 +7443,7 @@ function LandingPage({ onGetStarted }) {
               background:C.accent, border:'none',
               borderRadius:6, color:'#fff', fontSize:15, fontWeight:600,
               fontFamily:font, cursor:'pointer', flexShrink:0}}>
-            Get started — it's free
+            Get started - it's free
           </button>
           </div>
         </div>
@@ -7444,7 +7469,7 @@ function LandingPage({ onGetStarted }) {
           <p style={{fontSize:11, color:C.subtle, lineHeight:1.6, margin:0, maxWidth:760}}>
             Battle Plan is an independent revision tool and is not affiliated with, endorsed by, or connected to AQA,
             Pearson Edexcel, OCR, WJEC/Eduqas or any other exam board. Exam board names and trademarks are the property
-            of their respective owners and are used for identification only. Grade boundaries are indicative — always
+            of their respective owners and are used for identification only. Grade boundaries are indicative - always
             verify against the official board.
           </p>
         </div>
@@ -7644,7 +7669,7 @@ function QuickLog({subjects,scores,setScores,uid,C,font,onClose,onSaved}){
                       letterSpacing:0.4,marginBottom:4}}>{paperYear} Actual</div>
                     <div style={{fontSize:22,fontWeight:800,color:gradeColor(histGrade)}}>{histGrade}</div>
                     <div style={{fontSize:10,color:C.muted,marginTop:2}}>
-                      A* needs {getHistoricalThreshold('A*',paper)??'—'}%
+                      A* needs {getHistoricalThreshold('A*',paper)??'-'}%
                     </div>
                   </div>
                 )}
@@ -7655,7 +7680,7 @@ function QuickLog({subjects,scores,setScores,uid,C,font,onClose,onSaved}){
                       letterSpacing:0.4,marginBottom:4}}>Notional</div>
                     <div style={{fontSize:22,fontWeight:800,color:gradeColor(notGrade)}}>{notGrade}</div>
                     <div style={{fontSize:10,color:C.muted,marginTop:2}}>
-                      A* needs {notThresh??'—'}%
+                      A* needs {notThresh??'-'}%
                     </div>
                   </div>
                 )}
@@ -7788,7 +7813,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
 
   const saveCompanion = (c) => { setCompanion(c); ls.set(`rbp_companion_${uid}`,c); };
 
-  // Mascot notifications — generated from state, dismissed-set persisted on companion
+  // Mascot notifications - generated from state, dismissed-set persisted on companion
   const mascotNots = generateMascotNotifications({
     scores, sessions, subjects, examSched,
     coinsEarned: computeCoins(scores, sessions, companion?.spent_coins||0).earned,
@@ -7821,7 +7846,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
     if (isMobile&&isWide) setMoreOpen(false);
   },[isMobile,isWide]);
 
-  // Supabase sync — load on mount, push on change
+  // Supabase sync - load on mount, push on change
   const syncRef        = useRef(null);
   const [syncLoaded,setSyncLoaded] = useState(false);
   const [timetable, setTimetable] = useState(()=>ls.get(`rbp_timetable_${uid}`,{}));
@@ -7845,7 +7870,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   const [myPlan, setMyPlan] = useState(()=>ls.get(`rbp_my_plan_${uid}`,[]));
   useEffect(()=>ls.set(`rbp_my_plan_${uid}`,myPlan),[myPlan,uid]);
 
-  // ── Caps daily briefing — AI-written, fetched at most once per day (Pro) ──
+  // ── Caps daily briefing - AI-written, fetched at most once per day (Pro) ──
   const todayKey = new Date().toISOString().slice(0,10);
   const [briefing, setBriefing] = useState(()=>ls.get(`rbp_briefing_${uid}`,null));
   const [briefingLoading, setBriefingLoading] = useState(false);
@@ -7875,7 +7900,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
           const b = {date:todayKey, text:d.reply, actions:Array.isArray(d.actions)?d.actions:[]};
           setBriefing(b); ls.set(`rbp_briefing_${uid}`,b);
         }
-      } catch {/* offline — keep the rule-based message */}
+      } catch {/* offline - keep the rule-based message */}
       finally { if(!cancelled) setBriefingLoading(false); }
     })();
     return ()=>{ cancelled=true; };
@@ -7966,7 +7991,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
         {user_id:user.id,profile:'me',scores,errors,rag,targets,sessions,rag_notes:ragNotes,timetable,companion,achievements:unlockedAch,my_plan:myPlan,updated_at:new Date().toISOString()},
         {onConflict:'user_id,profile'}
       ).then(({error})=>{
-        if(error) addToast('Auto-save failed — your data is safe locally','warn');
+        if(error) addToast('Auto-save failed - your data is safe locally','warn');
       });
       // leaderboard_score + papers_count are computed server-side by the
       // recompute_leaderboard_score trigger on user_data; we only touch
@@ -7977,7 +8002,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
     return ()=>clearTimeout(syncRef.current);
   },[scores,errors,rag,targets,sessions,ragNotes,timetable,companion,unlockedAch,myPlan,syncLoaded]);
 
-  // Settings sync — load once from user_profiles.user_settings, then debounced push on changes
+  // Settings sync - load once from user_profiles.user_settings, then debounced push on changes
   const settingsSyncRef = useRef(null);
   const settingsLoadedRef = useRef(false);
   useEffect(()=>{
@@ -7999,7 +8024,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   },[user?.id]);
   useEffect(()=>{
     if (!user?.id||!isSupabaseConfigured()||!syncLoaded) return;
-    // Skip until initial remote load completes — don't push stale local values over remote
+    // Skip until initial remote load completes - don't push stale local values over remote
     if (!settingsLoadedRef.current) return;
     clearTimeout(settingsSyncRef.current);
     settingsSyncRef.current = setTimeout(()=>{
@@ -8159,7 +8184,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   };
 
   const onMarkPaper=()=> setPaperMarker(true); // free users get 1 mark/week; backend enforces
-  const onBuildPlan=()=> isPro ? setPlanBuilder(true) : addToast('AI study plans are a Pro feature — unlock it in Account → Settings.','info');
+  const onBuildPlan=()=> isPro ? setPlanBuilder(true) : addToast('AI study plans are a Pro feature - unlock it in Account → Settings.','info');
   const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse,isAS,analyticsConsent,setAnalyticsConsent,insNoted,setInsNoted,myPlan,setMyPlan,shareTheme,setShareTheme,shareAspect,setShareAspect,yearGroup,setYearGroup,displayName,setDisplayName,onMarkPaper,onBuildPlan};
 
   return (
@@ -8202,7 +8227,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
                   {todaysBriefing.actions.map((a,j)=>{
                     const lbl = a.type==='set_target'?`Set ${a.subject} target → ${a.grade}`
                       : a.type==='mark_topics'?`Mark ${a.topics?.length||0} ${a.subject} topic${(a.topics?.length||0)>1?'s':''} as ${a.level==='red'?'weak':a.level}`
-                      : a.type==='add_plan_task'?`Plan · ${a.day}: ${a.subject}${a.topic?` — ${a.topic}`:''}`
+                      : a.type==='add_plan_task'?`Plan · ${a.day}: ${a.subject}${a.topic?` - ${a.topic}`:''}`
                       : 'Apply change';
                     return (
                       <div key={j} style={{display:'flex',alignItems:'center',gap:8,
@@ -8293,7 +8318,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
         </button>
       )}
 
-      {/* ── SIDEBAR — always visible, narrow on phones, full on tablet/desktop ── */}
+      {/* ── SIDEBAR - always visible, narrow on phones, full on tablet/desktop ── */}
       <aside style={{position:'fixed',left:0,top:0,bottom:0,
         width:sidebarW,zIndex:100,overflow:'hidden',
         background:C.nav,backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
@@ -8412,7 +8437,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
                     fontFamily:font,cursor:'pointer',fontWeight:500}}>
                   Customise
                 </button>
-                <button onClick={e=>{e.stopPropagation(); isPro?setCompanionChat(true):addToast('Companion chat is a Pro feature — unlock it in Account → Settings.','info');}}
+                <button onClick={e=>{e.stopPropagation(); isPro?setCompanionChat(true):addToast('Companion chat is a Pro feature - unlock it in Account → Settings.','info');}}
                   style={{fontSize:10,color:C.accent,background:C.accentSoft,
                     border:`1px solid ${C.accent}44`,borderRadius:5,padding:'3px 8px',
                     fontFamily:font,cursor:'pointer',fontWeight:600}}>
@@ -8561,7 +8586,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
 
       {/* ── Floating companion chat launcher ── */}
       <button
-        onClick={()=> isPro ? setCompanionChat(true) : addToast('Companion chat is a Pro feature — unlock it in Account → Settings.','info')}
+        onClick={()=> isPro ? setCompanionChat(true) : addToast('Companion chat is a Pro feature - unlock it in Account → Settings.','info')}
         aria-label={`Chat with ${companion.name}`}
         style={{position:'fixed',bottom:isMobile?84:88,right:isMobile?20:24,zIndex:91,
           display:'flex',alignItems:'center',gap:9,
@@ -8741,24 +8766,24 @@ function LevelPicker({ onComplete }) {
 
 // ── Subscription ranks ───────────────────────────────────────────────────────
 // User-facing tiers. Entitlement is still derived from subscription_status /
-// referral_pro_until (see tierOf in api/mark-paper.js) — these are the names +
+// referral_pro_until (see tierOf in api/mark-paper.js) - these are the names +
 // the onboarding chooser. Recruit = free; Commander = Pro (£6.99/mo). The trial
 // and referral-week both grant Commander temporarily.
 const RANKS = {
   recruit: {
     id:'recruit', name:'Recruit', price:'Free', tag:'Everyone starts here',
-    blurb:"Everything you need to track papers, see how ready you are, and revise smart — free, forever.",
+    blurb:"Everything you need to track papers, see how ready you are, and revise smart - free, forever.",
     perks:[
       'Track every paper, topic & grade',
       'Readiness score + weak-topic radar',
       'Exam countdown & study plan',
-      'AI paper marking — a few a day',
-      'Ask Caps — a few chats a day',
+      'AI paper marking - a few a day',
+      'Ask Caps - a few chats a day',
     ],
   },
   commander: {
     id:'commander', name:'Commander', price:'£6.99/mo', tag:'For serious revision',
-    blurb:"Unlock the full arsenal — generous AI marking, unlimited Caps, and emailed battle reports.",
+    blurb:"Unlock the full arsenal - generous AI marking, unlimited Caps, and emailed battle reports.",
     perks:[
       'Everything in Recruit',
       'Generous daily AI marking',
@@ -8791,7 +8816,7 @@ function PlanPicker({ onComplete, isPro=false }) {
         <div style={{ marginBottom:28 }}>
           <h1 style={{ ...type.h1, color:C.text, margin:'0 0 8px' }}>Pick your rank</h1>
           <p style={{ fontSize:14, color:C.muted, margin:0, lineHeight:1.5 }}>
-            Start free as a <strong style={{color:C.text}}>Recruit</strong> — everything you need to revise is included.
+            Start free as a <strong style={{color:C.text}}>Recruit</strong> - everything you need to revise is included.
             Go <strong style={{color:C.accent}}>Commander</strong> when you want the full arsenal. You can switch any time in Account.
           </p>
         </div>
@@ -8839,7 +8864,7 @@ function PlanPicker({ onComplete, isPro=false }) {
         </div>
 
         <p style={{ fontSize:12, color:C.muted, textAlign:'center', margin:0, lineHeight:1.6 }}>
-          No payment needed to start. Choosing Commander takes you to a secure checkout — cancel any time.
+          No payment needed to start. Choosing Commander takes you to a secure checkout - cancel any time.
         </p>
       </div>
     </div>
@@ -8862,7 +8887,7 @@ export default function App() {
 
   // After returning from Stripe checkout (?upgraded=1), the webhook may take a
   // second or two to mark the account Pro. Poll briefly so Pro lights up on its
-  // own — no manual reload, no awkward "still free" flash.
+  // own - no manual reload, no awkward "still free" flash.
   useEffect(()=>{
     if (!user || isPro) return;
     if (new URLSearchParams(window.location.search).get('upgraded')!=='1') return;
@@ -8904,7 +8929,7 @@ export default function App() {
 
   // Load admin-managed exam-date overrides (app_config.exam_schedule) and merge
   // them over the built-in schedule. Public read, admin-only write (RLS). This is
-  // what makes the God-Mode exam editor's saved dates actually reach students —
+  // what makes the God-Mode exam editor's saved dates actually reach students -
   // without it the editor wrote to a table nothing ever read back.
   useEffect(()=>{
     if (!isSupabaseConfigured()) return;
@@ -8958,7 +8983,7 @@ export default function App() {
         if (data?.stripe_customer_id) setStripeCustomerId(data.stripe_customer_id);
         if (data?.subscription_status) setSubscriptionStatus(data.subscription_status);
         // referral_code is auto-assigned by the column DEFAULT on insert.
-        // If still null on an existing row, re-read after a short pause —
+        // If still null on an existing row, re-read after a short pause -
         // the row was likely created by handle_new_user mid-boot.
         let rc=data?.referral_code;
         if (!rc) {
@@ -8981,7 +9006,7 @@ export default function App() {
         if (Array.isArray(sel)&&sel.length>0) {
           ls.set(`rbp_sel_${uid}`,sel); setSelection(sel);
           if (!lvl) {
-            // Existing user without exam_level — default to alevel, save it silently
+            // Existing user without exam_level - default to alevel, save it silently
             setExamLevel('alevel');
             supabase.from('user_profiles').update({exam_level:'alevel'}).eq('id',uid).then(()=>{});
           }
@@ -8994,7 +9019,7 @@ export default function App() {
             if (alive) setPhase('app');
             supabase.rpc('save_subjects',{p_subjects:JSON.stringify(cached)});
           } else {
-            // New user — if exam_level not set show level picker, else go to subject picker
+            // New user - if exam_level not set show level picker, else go to subject picker
             if (alive) setPhase(lvl ? 'onboarding' : 'level-pick');
           }
         }
@@ -9056,7 +9081,7 @@ export default function App() {
     setSelection([]); setPhase('onboarding');
   }
 
-  // Splash — show the full mascot for a beat on first load so Caps is seen.
+  // Splash - show the full mascot for a beat on first load so Caps is seen.
   const splashScreen=(
     <div style={{minHeight:'100vh',background:C.bg,display:'flex',alignItems:'center',
       justifyContent:'center',flexDirection:'column',gap:8,fontFamily:font,

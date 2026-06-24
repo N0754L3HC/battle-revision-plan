@@ -253,10 +253,10 @@ function PickBoards({ selection, onChange, catalog }) {
 function PickYearGroup({ yearGroup, setYearGroup, examLevel }) {
   const isGcse = examLevel === 'gcse';
   const options = isGcse
-    ? [{id:'Y10',label:'Year 10',desc:'First year of GCSEs'},{id:'Y11',label:'Year 11',desc:'Final GCSE year — exams this summer'}]
+    ? [{id:'Y10',label:'Year 10',desc:'First year of GCSEs'},{id:'Y11',label:'Year 11',desc:'Final GCSE year - exams this summer'}]
     : examLevel === 'aslevel'
     ? [{id:'Y12',label:'Year 12',desc:'AS-Level year'}]
-    : [{id:'Y12',label:'Year 12',desc:'First year of A-Levels'},{id:'Y13',label:'Year 13',desc:'Final A-Level year — exams this summer'}];
+    : [{id:'Y12',label:'Year 12',desc:'First year of A-Levels'},{id:'Y13',label:'Year 13',desc:'Final A-Level year - exams this summer'}];
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
@@ -382,7 +382,7 @@ export default function SubjectPicker({ user, onComplete, examLevel = 'alevel' }
     }
     if (user) {
       await supabase.rpc('save_subjects', { p_subjects: subjectsJson });
-      // Record Terms/Privacy acceptance (best-effort — never block onboarding on it)
+      // Record Terms/Privacy acceptance (best-effort - never block onboarding on it)
       try { await supabase.rpc('accept_terms', { p_version: TERMS_VERSION }); } catch (_) {}
     }
     setSaving(false);
