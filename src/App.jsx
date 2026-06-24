@@ -6296,7 +6296,7 @@ function ContactCard({C,font}){
 }
 
 // ── Account ────────────────────────────────────────────────────────────────
-function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,font,examSched,scores=[],rag={},isPro=false,stripeCustomerId=null,subscriptionStatus=null,referralCode=null,analyticsConsent=true,setAnalyticsConsent=()=>{},addToast=()=>{},yearGroup='',setYearGroup=()=>{},displayName='',setDisplayName=()=>{}}) {
+function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,font,examSched,scores=[],rag={},isPro=false,stripeCustomerId=null,subscriptionStatus=null,referralCode=null,analyticsConsent=false,setAnalyticsConsent=()=>{},addToast=()=>{},yearGroup='',setYearGroup=()=>{},displayName='',setDisplayName=()=>{}}) {
   const [emailSending, setEmailSending] = useState(false);
   const [emailState, setEmailState] = useState('idle'); // 'idle'|'sent'|'error'
   const [emailMsg, setEmailMsg] = useState('');
@@ -6876,12 +6876,12 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       </div>
 
       <div style={{background:C.tintCream,borderRadius:14,padding:'18px 20px'}}>
-        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Research contribution</div>
+        <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:12}}>Help improve Battle Plan</div>
         <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:16}}>
           <div style={{flex:1}}>
-            <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:4}}>Share anonymised data with universities</div>
+            <div style={{fontSize:13,fontWeight:600,color:C.text,marginBottom:4}}>Allow anonymised usage for research</div>
             <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>
-              Your scores are aggregated and anonymised - never individual - to help universities understand how students revise. You can opt out at any time.
+              Off by default. Turn this on to let your anonymised, aggregated study data (never anything that identifies you) help us research how students revise and improve the app. We don't share individual data and we never sell it. Change this any time.
             </div>
           </div>
           <button onClick={()=>toggleConsent(!analyticsConsent)}
@@ -7880,7 +7880,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   const [sidebarOpen, setSidebarOpen] = useState(()=>ls.get('rbp_sidebar_open',true));
   const toggleSidebar = () => { const v=!sidebarOpen; setSidebarOpen(v); ls.set('rbp_sidebar_open',v); };
   const [unlockedAch, setUnlockedAch] = useState(()=>ls.get(`rbp_ach_${uid}`,[]));
-  const [analyticsConsent, setAnalyticsConsent] = useState(()=>ls.get(`rbp_analytics_${uid}`,true));
+  const [analyticsConsent, setAnalyticsConsent] = useState(()=>ls.get(`rbp_analytics_${uid}`,false));
   const [insNoted, setInsNoted] = useState(()=>ls.get(`rbp_ins_noted_${uid}`,false));
   const [shareTheme, setShareTheme] = useState(()=>ls.get(`rbp_share_theme_${uid}`,'dark'));
   const [shareAspect, setShareAspect] = useState(()=>ls.get(`rbp_share_aspect_${uid}`,'landscape'));
