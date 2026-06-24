@@ -10,11 +10,11 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'pwa-icon.svg'],
       manifest: {
-        name: 'Battle Plan — GCSE & A-Level Revision',
+        name: 'Battle Plan - GCSE & A-Level Revision',
         short_name: 'Battle Plan',
         description: 'Track past papers, grades and exam readiness',
-        theme_color: '#c27c60',
-        background_color: '#0c0e13',
+        theme_color: '#b5735a',
+        background_color: '#f4eee3',
         display: 'standalone',
         icons: [
           { src: 'pwa-icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },

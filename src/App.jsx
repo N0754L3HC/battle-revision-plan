@@ -1518,6 +1518,112 @@ function AchievementToast({achievement,onDismiss}){
   );
 }
 
+// ── PWA install prompt ──────────────────────────────────────────────────────
+// Capture beforeinstallprompt at module load — it can fire before the banner
+// component mounts, so we stash it and re-broadcast for the component to pick up.
+let _deferredInstall = null;
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    _deferredInstall = e;
+    window.dispatchEvent(new Event('rbp-installable'));
+  });
+}
+
+// Prominent but polite "add to home screen" banner. Chrome/Edge/Android fire
+// beforeinstallprompt (we capture it and drive a real Install button); iOS
+// Safari has no such event, so we show the manual Share -> Add to Home Screen
+// steps. Hidden when already installed or dismissed in the last 14 days.
+function InstallPrompt({ C, font }) {
+  const [deferred, setDeferred] = useState(null);
+  const [show, setShow]         = useState(false);
+  const [iosHelp, setIosHelp]   = useState(false);
+
+  useEffect(() => {
+    const standalone = window.matchMedia?.('(display-mode: standalone)')?.matches
+      || window.navigator.standalone === true;
+    if (standalone) return;
+    const dismissedAt = ls.get('rbp_install_dismissed', 0);
+    if (dismissedAt && Date.now() - dismissedAt < 14 * 86400000) return;
+
+    const ua = navigator.userAgent || '';
+    const isIOS = /iphone|ipad|ipod/i.test(ua)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isSafari = /safari/i.test(ua) && !/crios|fxios|edgios|chrome|android/i.test(ua);
+
+    // Already captured before mount?
+    if (_deferredInstall) { setDeferred(_deferredInstall); setShow(true); }
+
+    const onBIP = (e) => { e.preventDefault(); _deferredInstall = e; setDeferred(e); setShow(true); };
+    const onCustom = () => { if (_deferredInstall) { setDeferred(_deferredInstall); setShow(true); } };
+    const onInstalled = () => { setShow(false); _deferredInstall = null; ls.set('rbp_install_dismissed', Date.now()); };
+    window.addEventListener('beforeinstallprompt', onBIP);
+    window.addEventListener('rbp-installable', onCustom);
+    window.addEventListener('appinstalled', onInstalled);
+
+    let t;
+    if (isIOS && isSafari) t = setTimeout(() => setShow(true), 3000);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onBIP);
+      window.removeEventListener('rbp-installable', onCustom);
+      window.removeEventListener('appinstalled', onInstalled);
+      clearTimeout(t);
+    };
+  }, []);
+
+  const dismiss = () => { setShow(false); ls.set('rbp_install_dismissed', Date.now()); };
+  const install = async () => {
+    const d = deferred || _deferredInstall;
+    if (d) {
+      d.prompt();
+      try { await d.userChoice; } catch {}
+      _deferredInstall = null; setDeferred(null); setShow(false); ls.set('rbp_install_dismissed', Date.now());
+    } else {
+      setIosHelp(v => !v); // iOS: reveal the manual steps
+    }
+  };
+
+  if (!show) return null;
+  return (
+    <div style={{position:'fixed',left:0,right:0,bottom:0,zIndex:300,display:'flex',
+      justifyContent:'center',padding:'0 12px max(12px, env(safe-area-inset-bottom))',pointerEvents:'none'}}>
+      <div style={{pointerEvents:'auto',width:'100%',maxWidth:440,background:C.surface,
+        border:`1px solid ${C.border}`,borderRadius:16,boxShadow:'0 12px 40px rgba(40,30,18,0.22)',
+        padding:'14px 16px',fontFamily:font}}>
+        <div style={{display:'flex',alignItems:'center',gap:12}}>
+          <div style={{flexShrink:0}}><CapsMark size={36}/></div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:14,fontWeight:700,color:C.text}}>Add Battle Plan to your home screen</div>
+            <div style={{fontSize:12,color:C.muted,lineHeight:1.5,marginTop:2}}>One tap to open, works offline, and easy to find when you sit down to revise.</div>
+          </div>
+          <button onClick={dismiss} aria-label="Dismiss" style={{flexShrink:0,background:'transparent',
+            border:'none',color:C.subtle,fontSize:20,cursor:'pointer',lineHeight:1,padding:'2px 4px'}}>×</button>
+        </div>
+        {iosHelp ? (
+          <div style={{marginTop:12,fontSize:12.5,color:C.text,lineHeight:1.8,background:C.card2,borderRadius:10,padding:'10px 12px'}}>
+            1. Tap the <strong>Share</strong> button at the bottom of Safari.<br/>
+            2. Scroll and tap <strong>Add to Home Screen</strong>.<br/>
+            3. Tap <strong>Add</strong>. That's it.
+          </div>
+        ) : (
+          <div style={{display:'flex',gap:8,marginTop:12}}>
+            <button onClick={install} style={{flex:1,padding:'10px',background:C.accent,
+              border:`1px solid ${C.accent}`,borderRadius:9,color:'#fff',fontSize:13,fontWeight:700,
+              fontFamily:font,cursor:'pointer'}}>
+              {deferred ? 'Install app' : 'Show me how'}
+            </button>
+            <button onClick={dismiss} style={{padding:'10px 14px',background:'transparent',
+              border:`1px solid ${C.border}`,borderRadius:9,color:C.muted,fontSize:13,fontWeight:600,
+              fontFamily:font,cursor:'pointer'}}>
+              Not now
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Toast bar ──────────────────────────────────────────────────────────────
 function ToastBar({toasts,dismiss,isMobile}) {
   ensureAnimStyles();
@@ -8546,6 +8652,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
         <AchievementToast achievement={pendingAchievement} onDismiss={()=>setPendingAchievement(null)}/>
       )}
       <ToastBar toasts={toasts} dismiss={dismissToast} isMobile={isMobile}/>
+      <InstallPrompt C={C} font={font}/>
       {showTour&&<Onboarding onDone={doneTour} setView={setView} C={C} font={font}/>}
       {aStarFlash&&(()=>{
         ensureAnimStyles();
