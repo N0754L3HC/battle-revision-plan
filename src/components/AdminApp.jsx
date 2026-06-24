@@ -910,6 +910,35 @@ function ExamScheduleReminder({ onGoToExams }) {
   );
 }
 
+// EXAM_SCHEDULE nests papers by board id ({subject:{boardId:[...]}}). The editor
+// works on flat rows, so flatten on load (tagging each row with its board id) and
+// re-nest on save, so the live app keeps per-board routing. Single-board / GCSE
+// subjects stored as a flat array round-trip unchanged.
+function flattenSched(sched) {
+  const flat = {};
+  for (const [sub, val] of Object.entries(sched||{})) {
+    if (Array.isArray(val)) flat[sub] = val.map(e=>({_bid:e._bid||'', ...e}));
+    else {
+      flat[sub] = [];
+      for (const [bid, arr] of Object.entries(val||{})) (Array.isArray(arr)?arr:[]).forEach(e=>flat[sub].push({...e,_bid:bid}));
+    }
+  }
+  return flat;
+}
+function nestSched(flat) {
+  const out = {};
+  for (const [sub, rows] of Object.entries(flat||{})) {
+    const list = Array.isArray(rows)?rows:[];
+    if (list.some(r=>r._bid)) {
+      out[sub] = {};
+      for (const r of list) { const {_bid, ...rest}=r; const k=_bid||'default'; (out[sub][k] = out[sub][k]||[]).push(rest); }
+    } else {
+      out[sub] = list.map(r=>{ const {_bid, ...rest}=r; return rest; });
+    }
+  }
+  return out;
+}
+
 // ── Exam Editor ────────────────────────────────────────────────────────────
 function ExamEditor() {
   const [schedule,setSchedule]=useState({});
@@ -925,25 +954,23 @@ function ExamEditor() {
   const loadSchedule=async()=>{
     setLoading(true);
     const {data}=await supabase.from('app_config').select('value').eq('key','exam_schedule').maybeSingle();
-    if (data?.value) {
-      try { setSchedule(typeof data.value==='string'?JSON.parse(data.value):data.value); }
-      catch(_) { setSchedule(EXAM_SCHEDULE); }
-    } else {
-      // No override saved yet — seed from the app's built-in schedule so you edit
-      // the real dates. The live app merges per subject, so saving a half-empty
-      // schedule would wipe a subject's papers; seeding the full set avoids that.
-      setSchedule(EXAM_SCHEDULE);
-    }
+    let override = {};
+    if (data?.value) { try { override = typeof data.value==='string'?JSON.parse(data.value):data.value; } catch(_) { override = {}; } }
+    // Always start from the full built-in schedule and apply admin overrides on
+    // top, then flatten for editing - so the editor shows the COMPLETE schedule
+    // and a save can never half-wipe a subject's papers.
+    setSchedule(flattenSched({ ...EXAM_SCHEDULE, ...override }));
     setLoading(false);
   };
 
   const saveSchedule=async()=>{
     setSaving(true);
-    await supabase.from('app_config').upsert({key:'exam_schedule',value:JSON.stringify(schedule),updated_at:new Date().toISOString()},{onConflict:'key'});
+    // Re-nest flat rows back into {boardId:[...]} so the live app keeps per-board routing.
+    await supabase.from('app_config').upsert({key:'exam_schedule',value:JSON.stringify(nestSched(schedule)),updated_at:new Date().toISOString()},{onConflict:'key'});
     setSaved(true); setTimeout(()=>setSaved(false),2500); setSaving(false);
   };
 
-  const addExam=()=>setSchedule(p=>({...p,[activeSub]:[...(p[activeSub]||[]),{...DEF}]}));
+  const addExam=()=>setSchedule(p=>({...p,[activeSub]:[...(p[activeSub]||[]),{...DEF,_bid:(p[activeSub]||[]).find(r=>r._bid)?._bid||''}]}));
 
   const updateExam=(sub,idx,field,val)=>setSchedule(p=>({
     ...p,[sub]:p[sub].map((e,i)=>i===idx?{...e,[field]:val}:e)
@@ -1016,7 +1043,7 @@ function ExamEditor() {
           </div>
         ):activeExams.map((e,idx)=>(
           <div key={idx} style={{...card,padding:'10px 12px',marginBottom:8}}>
-            <div style={{display:'grid',gridTemplateColumns:'140px 1fr 90px 80px 52px 90px 80px 34px',gap:6,alignItems:'center'}}>
+            <div style={{display:'grid',gridTemplateColumns:'124px 1fr 78px 72px 66px 48px 78px 62px 28px',gap:6,alignItems:'center'}}>
               <input style={{...iS,fontSize:11,padding:'7px 10px'}} type="date" value={e.date}
                 onChange={ev=>updateExam(activeSub,idx,'date',ev.target.value)}/>
               <input style={{...iS,fontSize:11,padding:'7px 10px'}} value={e.paper}
@@ -1025,6 +1052,8 @@ function ExamEditor() {
                 onChange={ev=>updateExam(activeSub,idx,'code',ev.target.value)} placeholder="Code"/>
               <input style={{...iS,fontSize:11,padding:'7px 10px'}} value={e.board||''}
                 onChange={ev=>updateExam(activeSub,idx,'board',ev.target.value)} placeholder="Board"/>
+              <input style={{...iS,fontSize:11,padding:'7px 8px'}} value={e._bid||''}
+                onChange={ev=>updateExam(activeSub,idx,'_bid',ev.target.value)} placeholder="board id" title="Board id that routes this paper to a student (e.g. edexcel, aqa, ocr-a). Leave blank for single-board/GCSE subjects."/>
               <select style={{...iS,fontSize:11,padding:'7px 8px'}} value={e.time||'PM'}
                 onChange={ev=>updateExam(activeSub,idx,'time',ev.target.value)}>
                 <option>AM</option><option>PM</option>
