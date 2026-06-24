@@ -1,7 +1,7 @@
 # Data Protection Impact Assessment (DPIA) - Battle Plan
 
 **Service:** Battle Plan (beattheexam.org) - a revision tracker for UK GCSE & A-Level students
-**Controller:** [INSERT LEGAL NAME / TRADING NAME], United Kingdom
+**Controller:** Charis Muzenda, trading as Battle Plan, United Kingdom
 **Prepared:** 2026-06-24  ·  **Review:** annually or on any material change
 **Status:** Lightweight DPIA (ICO Age Appropriate Design Code - service likely accessed by under-18s)
 
