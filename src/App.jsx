@@ -6174,6 +6174,47 @@ function Resources({subjects,uid,C,font,rag,setRag,ragNotes,setRagNotes}) {
   );
 }
 
+// ── Redeem a Pro code ────────────────────────────────────────────────────────
+// Tester invite codes → redeem_pro_code RPC grants Pro via referral_pro_until.
+function RedeemCode({C,font,addToast=()=>{}}){
+  const [code,setCode]=useState('');
+  const [busy,setBusy]=useState(false);
+  const [err,setErr]=useState('');
+  const [done,setDone]=useState('');
+  const inp={padding:'9px 11px',background:C.card2,border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:13,fontFamily:font,boxSizing:'border-box'};
+  const redeem=async()=>{
+    setErr(''); setDone('');
+    if(!code.trim()){ setErr('Enter your code.'); return; }
+    setBusy(true);
+    try{
+      const {data,error}=await supabase.rpc('redeem_pro_code',{p_code:code.trim()});
+      if(error) throw new Error(error.message||'Couldn\'t redeem that code.');
+      if(!data?.ok) throw new Error(data?.error||'Couldn\'t redeem that code.');
+      const until=data.until?new Date(data.until).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}):'';
+      setDone(`✓ Pro unlocked${until?` until ${until}`:''}! Reloading…`);
+      addToast('Pro unlocked 🎉','success');
+      setTimeout(()=>window.location.reload(),1500);
+    }catch(e){ setErr(e.message); }
+    setBusy(false);
+  };
+  return (
+    <div style={{background:C.tintCream,borderRadius:14,padding:'18px 20px'}}>
+      <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Have a code?</div>
+      <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginBottom:12}}>Got a Pro invite code? Enter it to unlock Pro.</div>
+      <div style={{display:'flex',gap:8}}>
+        <input value={code} onChange={e=>setCode(e.target.value.toUpperCase())} placeholder="BP-XXXXXX"
+          style={{...inp,flex:1,textTransform:'uppercase',letterSpacing:0.5}}/>
+        <button onClick={redeem} disabled={busy}
+          style={{padding:'9px 18px',background:C.accent,border:'none',borderRadius:8,color:'#fff',fontSize:13,fontWeight:700,fontFamily:font,cursor:busy?'wait':'pointer',whiteSpace:'nowrap'}}>
+          {busy?'…':'Redeem'}
+        </button>
+      </div>
+      {done&&<div style={{fontSize:12.5,color:C.success||'#22c55e',marginTop:10,fontWeight:600}}>{done}</div>}
+      {err&&<div style={{fontSize:12.5,color:C.danger||'#ef4444',marginTop:10,lineHeight:1.5}}>{err}</div>}
+    </div>
+  );
+}
+
 // ── Contact us ───────────────────────────────────────────────────────────────
 // Form → /api/contact emails BOTH inboxes (team + personal). Students only ever
 // see the public team address; the personal one lives server-side.
@@ -6761,6 +6802,8 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
         )}
       </div>
       )}
+
+      {!isPro&&<RedeemCode C={C} font={font} addToast={addToast}/>}
 
       <ContactCard C={C} font={font}/>
 
