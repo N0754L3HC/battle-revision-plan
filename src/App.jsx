@@ -7446,6 +7446,7 @@ function LandingPage({ onGetStarted }) {
   };
   const [showTerms, setShowTerms] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
+  const [slide, setSlide] = useState(0);
   const ic = d => (
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{d}</svg>
   );
@@ -7526,21 +7527,23 @@ function LandingPage({ onGetStarted }) {
       ],
       verdict:'Your logic was right, but with no base case it never stops. Always anchor a recursion first.' },
 
-    { tab:'Economics', subject:'Economics', paper:'Paper 1 · Labour market', marks:'2 / 6', diagram:true,
-      question:`**Q3** Using a diagram, explain the effect of a minimum wage set **above** the equilibrium wage.
+    { tab:'Economics', subject:'Economics', paper:'Theme 3 · Monopoly', marks:'3 / 9', diagram:true,
+      question:`**Q6** Using a diagram, find the profit-maximising price and output for a monopolist, and shade its supernormal profit. $AR = 20 - Q$, $MR = 20 - 2Q$, $MC = 2 + Q$, and $ATC = £8$ at the profit-maximising output.
 
 \`\`\`chart
-{"type":"line","title":"","xLabel":"Quantity of labour","yLabel":"Wage","series":[{"name":"Demand","points":[[0,10],[10,0]]},{"name":"Supply","points":[[0,0],[10,10]]}]}
+{"type":"line","title":"Monopoly · profit maximisation","xLabel":"Quantity","yLabel":"Price (£)","series":[{"name":"AR (D)","points":[[0,20],[20,0]]},{"name":"MR","points":[[0,20],[10,0]]},{"name":"MC","points":[[0,2],[18,20]]},{"name":"ATC","points":[[2,14],[4,9.5],[6,8],[9,8.3],[13,10]]}]}
 \`\`\``,
       student:[
-        {text:'A minimum wage raises pay, so more people are employed.', bad:true},
+        {text:'Profit max is where $MR = MC$, so I read straight across: $Q = 6$ and **price $= £8$**.', bad:true},
+        {text:'Profit $= 0$ because price $= $ cost there.', bad:true},
       ],
       caps:[
-        'Above equilibrium, the wage floor sits where the **supply** of labour exceeds **demand**.',
-        'Firms move up the demand curve and hire fewer workers, while more people want to work.',
-        'That gap is **excess supply of labour = unemployment**: better pay for those in work, fewer jobs overall.',
+        'Profit max is where $MR = MC$: $20 - 2Q = 2 + Q \\Rightarrow Q = \\mathbf{6}$.',
+        'Crucial step: read the **price up on the AR (demand) curve**, not on MC: $P = 20 - 6 = \\mathbf{£14}$.',
+        'Supernormal profit per unit $= AR - ATC = 14 - 8 = £6$.',
+        'Total supernormal profit $= (AR - ATC)\\times Q = 6 \\times 6 = \\mathbf{£36}$ - the shaded rectangle.',
       ],
-      verdict:'The diagram shows the opposite of your claim - a wage floor above equilibrium creates a labour surplus.' },
+      verdict:'The classic monopoly trap: you priced at MC. A monopolist sets quantity where MR=MC, then charges what the demand curve will bear above it.' },
 
     { tab:'English', subject:'English Literature', paper:'Macbeth · 30 marks', marks:'Level 2 / 5', diagram:false,
       question:`**Q1** "Macbeth is a victim of fate." Explore how far you agree.`,
@@ -7558,53 +7561,62 @@ function LandingPage({ onGetStarted }) {
 
   // One marked-answer card (question + diagram, wrong answer, Caps's full re-work).
   const renderMarkerCard = (s) => (
-    <div key={s.subject} style={{background:C.bg, border:`1px solid ${C.border}`, borderRadius:14,
-      overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 16px 44px rgba(40,30,18,0.08)'}}>
-      <div style={{display:'flex', alignItems:'center', gap:11, padding:'13px 16px',
+    <div key={s.subject} style={{background:C.surface, border:`1px solid ${C.border}`, borderRadius:16,
+      overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 20px 60px rgba(20,14,8,0.28)'}}>
+      {/* header */}
+      <div style={{display:'flex', alignItems:'center', gap:12, padding:'15px 22px',
         borderBottom:`1px solid ${C.border}`, background:C.card2}}>
-        <CapsMark size={24}/>
+        <CapsMark size={28}/>
         <div style={{flex:1, minWidth:0}}>
-          <div style={{fontSize:13.5, fontWeight:800, color:C.text, lineHeight:1.2}}>{s.subject}</div>
-          <div style={{fontSize:11, color:C.subtle, fontFamily:mono}}>{s.paper}</div>
+          <div style={{fontSize:15, fontWeight:800, color:C.text, lineHeight:1.2}}>{s.subject}</div>
+          <div style={{fontSize:11.5, color:C.subtle, fontFamily:mono}}>{s.paper}</div>
         </div>
-        <div style={{fontSize:12.5, fontWeight:800, fontFamily:mono, color:C.accent,
-          background:`${C.accent}14`, border:`1px solid ${C.accent}33`, borderRadius:7, padding:'4px 9px'}}>{s.marks}</div>
+        <div style={{fontSize:13, fontWeight:800, fontFamily:mono, color:C.accent,
+          background:`${C.accent}14`, border:`1px solid ${C.accent}33`, borderRadius:8, padding:'5px 11px'}}>{s.marks}</div>
       </div>
-      <div style={{padding:'16px 18px', display:'flex', flexDirection:'column', gap:14}}>
-        <RichText style={{fontSize:13.5, color:C.text, lineHeight:1.7}}>{s.question}</RichText>
-        <div style={{background:'rgba(239,68,68,0.06)', border:'1px solid rgba(239,68,68,0.28)', borderRadius:10, padding:'10px 12px'}}>
-          <div style={{fontSize:10, fontWeight:800, color:'#c0392b', textTransform:'uppercase', letterSpacing:0.5, marginBottom:7,
-            display:'flex', alignItems:'center', gap:6}}>
-            <span style={{width:14, height:14, borderRadius:'50%', background:'#ef4444', color:'#fff', fontSize:9, fontWeight:900,
+
+      {/* question on top, full width */}
+      <div style={{padding:'20px 22px 8px'}}>
+        <div style={{fontSize:10.5, fontWeight:800, color:C.subtle, textTransform:'uppercase', letterSpacing:0.6, marginBottom:8}}>The question</div>
+        <RichText style={{fontSize:14.5, color:C.text, lineHeight:1.75}}>{s.question}</RichText>
+      </div>
+
+      {/* student vs Caps, side by side */}
+      <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(270px, 1fr))', gap:14, padding:'12px 22px 6px'}}>
+        <div style={{background:'rgba(239,68,68,0.06)', border:'1px solid rgba(239,68,68,0.28)', borderRadius:12, padding:'13px 15px'}}>
+          <div style={{fontSize:10.5, fontWeight:800, color:'#c0392b', textTransform:'uppercase', letterSpacing:0.5, marginBottom:10,
+            display:'flex', alignItems:'center', gap:7}}>
+            <span style={{width:16, height:16, borderRadius:'50%', background:'#ef4444', color:'#fff', fontSize:10, fontWeight:900,
               display:'inline-flex', alignItems:'center', justifyContent:'center'}}>✕</span>
             Student's answer
           </div>
           {s.student.map((ln,i)=>(
-            <div key={i} style={{display:'flex', gap:7, alignItems:'flex-start', marginBottom:i<s.student.length-1?4:0}}>
-              <RichText style={{flex:1, minWidth:0, fontSize:13, lineHeight:1.55, color:ln.bad?'#c0392b':C.muted,
-                fontWeight:ln.bad?600:400}}>{ln.text}</RichText>
-            </div>
+            <RichText key={i} style={{fontSize:13, lineHeight:1.6, color:ln.bad?'#c0392b':C.muted,
+              fontWeight:ln.bad?600:400, marginBottom:i<s.student.length-1?6:0}}>{ln.text}</RichText>
           ))}
         </div>
-        <div style={{background:`${C.success}0f`, border:`1px solid ${C.success}33`, borderRadius:10, padding:'10px 12px'}}>
-          <div style={{fontSize:10, fontWeight:800, color:C.success, textTransform:'uppercase', letterSpacing:0.5, marginBottom:8,
-            display:'flex', alignItems:'center', gap:6}}>
-            <span style={{width:14, height:14, borderRadius:'50%', background:C.success, color:'#fff', fontSize:9, fontWeight:900,
+        <div style={{background:`${C.success}0f`, border:`1px solid ${C.success}33`, borderRadius:12, padding:'13px 15px'}}>
+          <div style={{fontSize:10.5, fontWeight:800, color:C.success, textTransform:'uppercase', letterSpacing:0.5, marginBottom:10,
+            display:'flex', alignItems:'center', gap:7}}>
+            <span style={{width:16, height:16, borderRadius:'50%', background:C.success, color:'#fff', fontSize:10, fontWeight:900,
               display:'inline-flex', alignItems:'center', justifyContent:'center'}}>✓</span>
-            Caps re-worked it
+            Caps re-worked it in full
           </div>
           {s.caps.map((step,i)=>(
-            <div key={i} style={{display:'flex', gap:8, alignItems:'flex-start', marginBottom:i<s.caps.length-1?7:0}}>
-              <span style={{flexShrink:0, fontSize:11, fontWeight:800, color:C.success, fontFamily:mono, marginTop:2, width:14, textAlign:'right'}}>{i+1}</span>
-              <RichText style={{flex:1, minWidth:0, fontSize:13, lineHeight:1.6, color:C.text}}>{step}</RichText>
+            <div key={i} style={{display:'flex', gap:9, alignItems:'flex-start', marginBottom:i<s.caps.length-1?9:0}}>
+              <span style={{flexShrink:0, fontSize:11, fontWeight:800, color:'#fff', background:C.success, fontFamily:mono,
+                width:18, height:18, borderRadius:'50%', display:'inline-flex', alignItems:'center', justifyContent:'center', marginTop:1}}>{i+1}</span>
+              <RichText style={{flex:1, minWidth:0, fontSize:13, lineHeight:1.65, color:C.text}}>{step}</RichText>
             </div>
           ))}
         </div>
-        <div style={{display:'flex', gap:8, alignItems:'flex-start', fontSize:12.5, color:C.muted, lineHeight:1.55,
-          borderTop:`1px solid ${C.border}`, paddingTop:12, marginTop:'auto'}}>
-          <span style={{flexShrink:0, color:C.accent, fontWeight:800}}>Caps:</span>
-          <span>{s.verdict}</span>
-        </div>
+      </div>
+
+      {/* verdict */}
+      <div style={{display:'flex', gap:9, alignItems:'flex-start', fontSize:13, color:C.muted, lineHeight:1.6,
+        margin:'10px 22px 20px', background:`${C.accent}0e`, border:`1px solid ${C.accent}26`, borderRadius:10, padding:'12px 15px'}}>
+        <span style={{flexShrink:0, color:C.accent, fontWeight:800}}>Caps:</span>
+        <span>{s.verdict}</span>
       </div>
     </div>
   );
@@ -7681,14 +7693,37 @@ function LandingPage({ onGetStarted }) {
           </div>
         </div>
       ) },
-    { tag:'Caps chat', title:'Ask Caps anything', desc:'Your companion answers grounded in your own papers, weak topics and exam dates.',
+    { tag:'Caps chat', title:'Ask Caps anything', desc:'Exactly how it looks in the app - your companion answers grounded in your own papers, topics and dates.',
       render:()=>(
-        <div style={{display:'flex', flexDirection:'column', gap:9}}>
-          <div style={{alignSelf:'flex-end', maxWidth:'82%', background:C.accent, color:'#fff', borderRadius:'12px 12px 3px 12px', padding:'9px 12px', fontSize:12.5, lineHeight:1.5}}>
-            What should I revise tonight?
+        <div style={{border:`1px solid ${C.border}`, borderRadius:12, overflow:'hidden', background:C.bg}}>
+          {/* chat header, as the student sees it */}
+          <div style={{display:'flex', alignItems:'center', gap:9, padding:'9px 12px', borderBottom:`1px solid ${C.border}`, background:C.card2}}>
+            <CapsMark size={24}/>
+            <div style={{flex:1, minWidth:0}}>
+              <div style={{fontSize:12.5, fontWeight:800, color:C.text, lineHeight:1.1}}>Caps</div>
+              <div style={{fontSize:10, color:C.success, display:'flex', alignItems:'center', gap:4}}>
+                <span style={{width:6, height:6, borderRadius:'50%', background:C.success, display:'inline-block'}}/>online
+              </div>
+            </div>
           </div>
-          <div style={{alignSelf:'flex-start', maxWidth:'88%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'12px 12px 12px 3px', padding:'10px 12px'}}>
-            <RichText style={{fontSize:12.5, color:C.text, lineHeight:1.6}}>{`Your weakest topic is **Chemistry · rates** (3 lost marks last paper). Do 30 mins on activation energy, then a timed 6-marker. Physics paper is in **9 days** - keep it warm with one mechanics question.`}</RichText>
+          {/* messages */}
+          <div style={{padding:'12px', display:'flex', flexDirection:'column', gap:9, background:C.surface}}>
+            <div style={{alignSelf:'flex-end', maxWidth:'82%', background:C.accent, color:'#fff', borderRadius:'13px 13px 4px 13px', padding:'9px 12px', fontSize:12.5, lineHeight:1.5}}>
+              What should I revise tonight?
+            </div>
+            <div style={{alignSelf:'flex-start', maxWidth:'90%', display:'flex', gap:7, alignItems:'flex-end'}}>
+              <CapsMark size={20}/>
+              <div style={{background:C.bg, border:`1px solid ${C.border}`, borderRadius:'13px 13px 13px 4px', padding:'10px 12px'}}>
+                <RichText style={{fontSize:12.5, color:C.text, lineHeight:1.6}}>{`Your weakest topic is **Chemistry - rates** (3 lost marks last paper). Do 30 mins on activation energy, then a timed 6-marker. Your **Physics** paper is in **9 days** - keep it warm with one mechanics question.`}</RichText>
+              </div>
+            </div>
+          </div>
+          {/* input bar (visual only) */}
+          <div style={{display:'flex', alignItems:'center', gap:8, padding:'9px 12px', borderTop:`1px solid ${C.border}`, background:C.bg}}>
+            <div style={{flex:1, fontSize:12, color:C.subtle, background:C.surface, border:`1px solid ${C.border}`, borderRadius:999, padding:'8px 13px'}}>Ask Caps anything...</div>
+            <div style={{width:30, height:30, borderRadius:'50%', background:C.accent, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </div>
           </div>
         </div>
       ) },
@@ -7745,56 +7780,95 @@ function LandingPage({ onGetStarted }) {
     <div style={{minHeight:'100vh', background:C.bg, fontFamily:font, color:C.text}}>
       {showTerms && <TermsOfService onClose={()=>setShowTerms(false)}/>}
 
-      {/* ── Gallery sheet ──────────────────────────────────────────────── */}
-      {showGallery && (
-        <div style={{position:'fixed', inset:0, zIndex:300, background:C.bg, overflowY:'auto', fontFamily:font}}>
+      {/* ── Gallery sheet (own presentation palette) ───────────────────── */}
+      {showGallery && (()=>{
+        // Distinct, focused "presentation" scheme - warm charcoal so the live
+        // cream cards and diagrams pop. Cards inside stay on the light palette.
+        const G = { bg:'#211b16', head:'rgba(33,27,22,0.86)', panel:'#2b231c', border:'#3c332a',
+          text:'#f5eee2', muted:'#bcb1a0', subtle:'#8d8273', accent:'#e0966c' };
+        const total = MARKER_SAMPLES.length;
+        const s = MARKER_SAMPLES[slide];
+        const go = (d) => setSlide((slide + d + total) % total);
+        return (
+        <div style={{position:'fixed', inset:0, zIndex:300, background:G.bg, overflowY:'auto', fontFamily:font}}>
           {/* sticky header */}
-          <div style={{position:'sticky', top:0, zIndex:5, background:C.nav, backdropFilter:'blur(16px)',
-            WebkitBackdropFilter:'blur(16px)', borderBottom:`1px solid ${C.border}`, height:56,
+          <div style={{position:'sticky', top:0, zIndex:5, background:G.head, backdropFilter:'blur(16px)',
+            WebkitBackdropFilter:'blur(16px)', borderBottom:`1px solid ${G.border}`, height:56,
             display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 20px'}}>
             <div style={{display:'flex', alignItems:'center', gap:10}}>
               <CapsMark size={26}/>
-              <span style={{fontFamily:display, fontSize:16, fontWeight:700, color:C.text}}>Gallery</span>
+              <span style={{fontFamily:display, fontSize:16, fontWeight:700, color:G.text}}>Gallery</span>
             </div>
             <div style={{display:'flex', alignItems:'center', gap:8}}>
               <button onClick={()=>{setShowGallery(false); onGetStarted();}}
-                style={{padding:'7px 15px', background:C.accent, border:'none', borderRadius:6, color:'#fff',
-                  fontSize:13, fontWeight:700, fontFamily:font, cursor:'pointer'}}>Get started free</button>
+                style={{padding:'7px 15px', background:G.accent, border:'none', borderRadius:6, color:'#241a12',
+                  fontSize:13, fontWeight:800, fontFamily:font, cursor:'pointer'}}>Get started free</button>
               <button onClick={()=>setShowGallery(false)} aria-label="Close gallery"
                 style={{width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center',
-                  background:'transparent', border:`1px solid ${C.border}`, borderRadius:8, color:C.muted,
+                  background:'transparent', border:`1px solid ${G.border}`, borderRadius:8, color:G.muted,
                   fontSize:18, cursor:'pointer', lineHeight:1}}>✕</button>
             </div>
           </div>
 
-          <div style={{maxWidth:1180, margin:'0 auto', padding:'40px 24px 100px'}}>
+          <div style={{maxWidth:1100, margin:'0 auto', padding:'40px 20px 100px'}}>
             {/* intro */}
-            <div style={{textAlign:'center', maxWidth:680, margin:'0 auto 30px'}}>
-              <div style={{...type.eyebrow, color:C.accent, marginBottom:12}}>The AI marker · real output</div>
-              <h2 style={{fontFamily:display, fontWeight:600, fontSize:'clamp(26px, 3.6vw, 40px)', color:C.text,
+            <div style={{textAlign:'center', maxWidth:680, margin:'0 auto 26px'}}>
+              <div style={{...type.eyebrow, color:G.accent, marginBottom:12}}>The AI marker · real output</div>
+              <h2 style={{fontFamily:display, fontWeight:600, fontSize:'clamp(26px, 3.6vw, 40px)', color:G.text,
                 margin:'0 0 12px', letterSpacing:'-0.03em'}}>
                 You get it wrong. Caps shows you right - in full.
               </h2>
-              <p style={{...type.body, fontSize:15.5, color:C.muted, margin:0, lineHeight:1.6}}>
-                A hard past-paper question from each subject: the kind of answer students actually write,
-                then Caps re-working it step by step in your board's style. Everything below is rendered live -
-                real LaTeX, diagrams, networks and code, not screenshots.
+              <p style={{fontSize:15.5, color:G.muted, margin:0, lineHeight:1.6}}>
+                A hard past-paper question from each subject - the answer students actually write, then Caps
+                re-working it step by step. Rendered live: real LaTeX, diagrams, networks and code.
               </p>
             </div>
 
-            {/* marker cards */}
-            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(350px, 1fr))', gap:16}}>
-              {MARKER_SAMPLES.map(renderMarkerCard)}
+            {/* subject selector chips */}
+            <div style={{display:'flex', flexWrap:'wrap', justifyContent:'center', gap:7, marginBottom:18}}>
+              {MARKER_SAMPLES.map((m,i)=>(
+                <button key={m.tab} onClick={()=>setSlide(i)}
+                  style={{padding:'7px 13px', borderRadius:999, cursor:'pointer', fontFamily:font, fontSize:12.5, fontWeight:700,
+                    border:`1px solid ${slide===i?G.accent:G.border}`,
+                    background:slide===i?G.accent:'transparent', color:slide===i?'#241a12':G.muted, transition:'all 0.12s'}}>
+                  {m.tab}
+                </button>
+              ))}
+            </div>
+
+            {/* slideshow: one card at a time */}
+            <div style={{display:'flex', justifyContent:'center'}}>
+              <div style={{flex:1, maxWidth:880, minWidth:0}}>{renderMarkerCard(s)}</div>
+            </div>
+
+            {/* controls: prev / dots / next */}
+            <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:16, marginTop:20}}>
+              <button onClick={()=>go(-1)} aria-label="Previous"
+                style={{width:40, height:40, borderRadius:'50%', border:`1px solid ${G.border}`, background:G.panel,
+                  color:G.text, fontSize:20, cursor:'pointer', lineHeight:1}}>‹</button>
+              <div style={{display:'flex', alignItems:'center', gap:7}}>
+                {MARKER_SAMPLES.map((m,i)=>(
+                  <button key={i} onClick={()=>setSlide(i)} aria-label={m.tab}
+                    style={{width:slide===i?22:8, height:8, borderRadius:999, border:'none', cursor:'pointer',
+                      background:slide===i?G.accent:G.border, transition:'all 0.2s'}}/>
+                ))}
+              </div>
+              <button onClick={()=>go(1)} aria-label="Next"
+                style={{width:40, height:40, borderRadius:'50%', border:`1px solid ${G.border}`, background:G.panel,
+                  color:G.text, fontSize:20, cursor:'pointer', lineHeight:1}}>›</button>
+            </div>
+            <div style={{textAlign:'center', marginTop:10, fontSize:12, color:G.subtle, fontFamily:mono}}>
+              {slide+1} / {total} · {s.subject}
             </div>
 
             {/* everything else */}
-            <div style={{textAlign:'center', maxWidth:680, margin:'76px auto 26px'}}>
-              <div style={{...type.eyebrow, color:C.accent, marginBottom:12}}>Everything else it does</div>
-              <h2 style={{fontFamily:display, fontWeight:600, fontSize:'clamp(24px, 3.2vw, 36px)', color:C.text,
+            <div style={{textAlign:'center', maxWidth:680, margin:'74px auto 26px'}}>
+              <div style={{...type.eyebrow, color:G.accent, marginBottom:12}}>Everything else it does</div>
+              <h2 style={{fontFamily:display, fontWeight:600, fontSize:'clamp(24px, 3.2vw, 36px)', color:G.text,
                 margin:'0 0 12px', letterSpacing:'-0.03em'}}>
                 The whole revision picture, in one place.
               </h2>
-              <p style={{...type.body, fontSize:15, color:C.muted, margin:0, lineHeight:1.6}}>
+              <p style={{fontSize:15, color:G.muted, margin:0, lineHeight:1.6}}>
                 Marking is one piece. Battle Plan also shows where your grades are heading, tracks every paper,
                 times your focus, and puts Caps on tap.
               </p>
@@ -7802,7 +7876,7 @@ function LandingPage({ onGetStarted }) {
             <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(320px, 1fr))', gap:16}}>
               {APP_SHOTS.map(shot=>(
                 <div key={shot.title} style={{background:C.surface, border:`1px solid ${C.border}`, borderRadius:14,
-                  overflow:'hidden', boxShadow:'0 16px 44px rgba(40,30,18,0.08)'}}>
+                  overflow:'hidden', boxShadow:'0 20px 50px rgba(10,6,3,0.4)'}}>
                   <div style={{display:'flex', alignItems:'center', gap:7, padding:'11px 14px', borderBottom:`1px solid ${C.border}`, background:C.card2}}>
                     {['#ff5f57','#febc2e','#28c840'].map(c=><span key={c} style={{width:9, height:9, borderRadius:'50%', background:c}}/>)}
                     <span style={{marginLeft:6, fontSize:10.5, fontWeight:800, color:C.accent, textTransform:'uppercase', letterSpacing:0.5}}>{shot.tag}</span>
@@ -7819,15 +7893,16 @@ function LandingPage({ onGetStarted }) {
             {/* footer CTA */}
             <div style={{display:'flex', gap:12, marginTop:48, flexWrap:'wrap', alignItems:'center', justifyContent:'center'}}>
               <button onClick={()=>{setShowGallery(false); onGetStarted();}}
-                style={{padding:'14px 28px', background:C.accent, border:'none', borderRadius:8, color:'#fff',
-                  fontSize:15, fontWeight:700, fontFamily:font, cursor:'pointer'}}>
+                style={{padding:'14px 28px', background:G.accent, border:'none', borderRadius:8, color:'#241a12',
+                  fontSize:15, fontWeight:800, fontFamily:font, cursor:'pointer'}}>
                 Mark your first paper free
               </button>
-              <span style={{fontSize:13.5, color:C.muted}}>3 free marks to try it, then Commander for unlimited. Estimates for revision, not official marks.</span>
+              <span style={{fontSize:13.5, color:G.muted}}>3 free marks to try it, then Commander for unlimited. Estimates for revision, not official marks.</span>
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Nav */}
       <nav style={{position:'fixed', top:0, left:0, right:0, zIndex:100,
