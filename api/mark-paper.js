@@ -113,6 +113,7 @@ ADAPT TO THE SUBJECT — mark in that subject's exam conventions (work out the s
 OUTPUT — return ONLY a single JSON object, no prose around it:
 {
   "paperName": "<short label for THIS paper, read from the paper itself if a title/code/date is visible (e.g. 'Edexcel Maths Paper 1, June 2022'); otherwise a sensible default like '<subject> practice paper'. Max 60 chars.>",
+  "detectedSubject": "<the ACTUAL academic subject of THIS paper, worked out from its content — do NOT just echo the subject label you were handed, because the student often leaves the form's default subject selected. If you were given a list of the subjects the student tracks, return the EXACT one from that list that matches this paper; otherwise your best one-word label (e.g. 'Physics', 'Economics', 'Further Maths'). Null only if genuinely unidentifiable.>",
   "estimatedPercent": <int 0-100>,
   "estimatedGrade": "<board-appropriate grade or null>",
   "confidence": "low|medium|high",
@@ -133,6 +134,21 @@ OUTPUT — return ONLY a single JSON object, no prose around it:
 Cover every attempted question and be generous with helpful detail in "feedback" and "fix". If you genuinely cannot read the work, set confidence "low" and say so kindly in the summary.`;
 
 function clampText(s) { return String(s ?? '').slice(0, MAX_TEXT); }
+
+// Decide which subject to LOG the paper under. The form's subject dropdown
+// defaults to the student's first subject and is easily left unchanged, so a
+// physics paper can get logged under (say) Further Maths. Claude reads the
+// actual subject off the paper ("detectedSubject"); trust it only when it maps
+// to one of the subjects the student tracks, otherwise keep their selection.
+function pickLoggedSubject(detected, selected, tracked) {
+  const list = Array.isArray(tracked) ? tracked.filter(t => typeof t === 'string' && t.trim()) : [];
+  if (!detected || typeof detected !== 'string') return selected;
+  const d = detected.trim().toLowerCase();
+  if (!d) return selected;
+  const hit = list.find(t => t.toLowerCase() === d)
+           || list.find(t => t.toLowerCase().includes(d) || d.includes(t.toLowerCase()));
+  return hit || selected; // never log under a subject the student doesn't track
+}
 
 // Parse a data URL or raw base64 into Anthropic image block. Returns null if invalid/oversized.
 function toImageBlock(input) {
@@ -281,8 +297,14 @@ export default async function handler(req, res) {
   }
 
   const { subject, board, paperCode, level, answersText, markSchemeText, images, attachments, msAttachments,
-          attachmentUrls, msAttachmentUrls } = req.body ?? {};
+          attachmentUrls, msAttachmentUrls, trackedSubjects } = req.body ?? {};
   if (!subject || !board) return res.status(400).json({ error: 'Subject and exam board are required' });
+
+  // The subjects this student tracks — lets Claude pick the RIGHT one to log
+  // under instead of trusting the form's (often unchanged) default.
+  const trackedList = Array.isArray(trackedSubjects)
+    ? trackedSubjects.filter(s => typeof s === 'string' && s.trim()).map(s => s.trim().slice(0, 60)).slice(0, 24)
+    : [];
 
   // Paths to remove from Storage once Claude has read them (privacy + housekeeping).
   const cleanupPaths = [...(Array.isArray(attachmentUrls) ? attachmentUrls : []),
@@ -334,7 +356,12 @@ export default async function handler(req, res) {
     paperCode ? `Paper: ${clampText(paperCode)}` : null,
   ].filter(Boolean).join('\n');
 
-  const blocks = [{ type: 'text', text: `Mark this student's attempt.\n${header}` }];
+  // Tell Claude the selected subject may be a stale default and to identify the
+  // real one from the paper (mapping to a tracked subject when we have the list).
+  const subjectHint = `The student picked "${clampText(subject)}" in the form, but they may have left the default selected — work out the ACTUAL subject of THIS paper from its content and return it as detectedSubject.`
+    + (trackedList.length ? ` The subjects they track are: ${trackedList.join(', ')}. detectedSubject MUST be the exact one of these that fits this paper (or "${clampText(subject)}" if you truly can't tell).` : '');
+
+  const blocks = [{ type: 'text', text: `Mark this student's attempt.\n${header}\n\n${subjectHint}` }];
 
   // ── Mark scheme (text + any image/PDF the student supplied) ──
   if (markSchemeText && String(markSchemeText).trim()) {
@@ -423,12 +450,17 @@ export default async function handler(req, res) {
     const resolvedPaper = (paperCode && String(paperCode).trim())
       || (result.paperName && String(result.paperName).trim().slice(0, 80))
       || null;
-    actions.push({ type: 'log_paper', subject, board, paperCode: resolvedPaper, pct, grade: result.estimatedGrade || null });
+    // Log under the subject Caps actually read off the paper (mapped to a tracked
+    // subject), not the form default — so a physics paper stops landing under
+    // Further Maths. All three action types use the same resolved subject so the
+    // score, errors and plan tasks stay together.
+    const loggedSubject = pickLoggedSubject(result.detectedSubject, subject, trackedList);
+    actions.push({ type: 'log_paper', subject: loggedSubject, board, paperCode: resolvedPaper, pct, grade: result.estimatedGrade || null });
     for (const e of (Array.isArray(result.errors) ? result.errors : []).slice(0, 12)) {
-      if (e && (e.topic || e.note)) actions.push({ type: 'log_error', subject, topic: String(e.topic || '').slice(0, 80), errorType: String(e.type || '').slice(0, 40), note: String(e.note || '').slice(0, 160) });
+      if (e && (e.topic || e.note)) actions.push({ type: 'log_error', subject: loggedSubject, topic: String(e.topic || '').slice(0, 80), errorType: String(e.type || '').slice(0, 40), note: String(e.note || '').slice(0, 160) });
     }
     for (const topic of (Array.isArray(result.suggestedTopicsToRevise) ? result.suggestedTopicsToRevise : []).slice(0, 6)) {
-      actions.push({ type: 'add_plan_task', subject, topic: String(topic).slice(0, 120), day: 'today', duration_min: 45 });
+      actions.push({ type: 'add_plan_task', subject: loggedSubject, topic: String(topic).slice(0, 120), day: 'today', duration_min: 45 });
     }
 
     // Burn one lifetime free mark — only on success, so a failed mark never
@@ -439,7 +471,10 @@ export default async function handler(req, res) {
       if (typeof used === 'number') freeRemaining = Math.max(0, FREE_MARK_LIFETIME - used);
     }
 
-    return res.status(200).json({ result: { ...result, estimatedPercent: pct }, actions, meta: { estimate: true, free: usingFreeMark, freeRemaining, freeLimit: FREE_MARK_LIFETIME } });
+    // Tell the client if we logged under a different subject than was selected,
+    // so it can update the on-screen labels and reassure the student.
+    const subjectCorrected = loggedSubject && loggedSubject !== subject ? loggedSubject : null;
+    return res.status(200).json({ result: { ...result, estimatedPercent: pct }, actions, meta: { estimate: true, free: usingFreeMark, freeRemaining, freeLimit: FREE_MARK_LIFETIME, loggedSubject, subjectCorrected } });
   } catch (err) {
     console.error('Mark-paper error:', err.status, err.message);
     // Transient upstream blip that survived all retries (overload/gateway/network)

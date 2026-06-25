@@ -2989,10 +2989,14 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
       const r=await fetch('/api/mark-paper',{method:'POST',
         headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},
         body:JSON.stringify({subject,board,paperCode,level,answersText,markSchemeText,
-          attachmentUrls:attUrls, msAttachmentUrls:msUrls, pages:totalPages})});
+          attachmentUrls:attUrls, msAttachmentUrls:msUrls, pages:totalPages,
+          trackedSubjects:subjects.map(s=>s.name)})});
       const d=await r.json();
       if(!r.ok||d.error) throw new Error(d.error||'Marking failed');
       setResult(d.result); setActions(d.actions||[]);
+      // Caps reads the real subject off the paper; if it differs from the (often
+      // default) dropdown, switch the labels over so it's logged correctly.
+      if(d.meta?.subjectCorrected){ setSubject(d.meta.subjectCorrected); addToast(`This looks like ${d.meta.subjectCorrected} - logging it there.`,'info'); }
       if(isPro){ setDailyUsed(u=>(u==null?0:u)+totalPages); setMonthUsed(u=>(u==null?0:u)+totalPages); } // reflect spend
       // Free tier: reflect the lifetime mark just spent (server is source of truth).
       if(d.meta&&typeof d.meta.freeRemaining==='number') setFreeMarksUsed(FREE_MARK_LIFETIME-d.meta.freeRemaining);
