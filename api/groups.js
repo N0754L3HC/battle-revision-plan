@@ -187,5 +187,24 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
+  // ── report ──────────────────────────────────────────────────────────────
+  if (action === 'report') {
+    const { target_type, target_id, target_label, reason, note } = req.body ?? {};
+    const TYPES = ['group', 'member', 'name', 'other'];
+    const REASONS = ['offensive_name', 'harassment', 'inappropriate', 'spam', 'other'];
+    if (!TYPES.includes(target_type)) return res.status(400).json({ error: 'Invalid report target' });
+    if (!REASONS.includes(reason)) return res.status(400).json({ error: 'Please choose a reason' });
+    const { error } = await admin.from('reports').insert({
+      reporter_id: uid,
+      target_type,
+      target_id: target_id ? String(target_id).slice(0, 80) : null,
+      target_label: target_label ? String(target_label).slice(0, 120) : null,
+      reason,
+      note: note ? String(note).slice(0, 300) : null,
+    });
+    if (error) return res.status(500).json({ error: 'Failed to submit report' });
+    return res.status(200).json({ ok: true });
+  }
+
   return res.status(400).json({ error: 'Unknown action' });
 }

@@ -1106,6 +1106,76 @@ function ModerationPanel({ users=[], onOpenUser }) {
   );
 }
 
+// ── Reports queue ───────────────────────────────────────────────────────────
+const REASON_LABEL = { offensive_name:'Offensive name', harassment:'Harassment/bullying', inappropriate:'Inappropriate', spam:'Spam', other:'Other' };
+
+function ReportsReminder({ onGo }) {
+  const [n, setN] = useState(0);
+  useEffect(()=>{ (async()=>{ const {data}=await supabase.rpc('admin_list_reports'); setN((data||[]).length); })(); },[]);
+  if (!n) return null;
+  return (
+    <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px 18px',marginBottom:12,
+      background:'rgba(220,38,38,0.08)',border:`1px solid ${BAD}55`,borderRadius:10}}>
+      <span style={{fontSize:18,flexShrink:0}}>⚑</span>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:13,fontWeight:800,color:TXT,marginBottom:3}}>{n} open report{n>1?'s':''}</div>
+        <div style={{fontSize:12,color:MUT}}>Students have flagged content for review.</div>
+      </div>
+      <button onClick={onGo} style={btn(BAD,false)}>REVIEW REPORTS</button>
+    </div>
+  );
+}
+
+function ReportsPanel() {
+  const [rows, setRows] = useState(null);
+  const [busy, setBusy] = useState('');
+  const load = async () => { const {data}=await supabase.rpc('admin_list_reports'); setRows(data||[]); };
+  useEffect(()=>{ load(); },[]);
+  const drop = (id) => setRows(r=>(r||[]).filter(x=>x.id!==id));
+  const dropTarget = (tt,tid) => setRows(r=>(r||[]).filter(x=>!(x.target_type===tt && (x.target_id||'')===(tid||''))));
+  const resolve = async (r, status) => { setBusy(r.id); await supabase.rpc('admin_resolve_report',{p_id:r.id,p_status:status}); drop(r.id); setBusy(''); };
+  const clearName = async (r) => { if(!r.target_id) return; setBusy(r.id); await supabase.rpc('admin_clear_display_name',{p_uid:r.target_id}); await supabase.rpc('admin_resolve_target',{p_target_type:r.target_type,p_target_id:r.target_id,p_status:'actioned'}); dropTarget(r.target_type,r.target_id); setBusy(''); };
+  const deleteGroup = async (r) => { if(!r.target_id||!confirm(`Delete group "${r.target_label}" for everyone?`)) return; setBusy(r.id); await supabase.rpc('admin_delete_group',{p_gid:r.target_id}); await supabase.rpc('admin_resolve_target',{p_target_type:'group',p_target_id:r.target_id,p_status:'actioned'}); dropTarget('group',r.target_id); setBusy(''); };
+  const renameGroup = async (r) => { const n=prompt('Rename group to:',r.target_label); if(n==null||!n.trim()) return; setBusy(r.id); await supabase.rpc('admin_rename_group',{p_gid:r.target_id,p_name:n.trim()}); await supabase.rpc('admin_resolve_target',{p_target_type:'group',p_target_id:r.target_id,p_status:'actioned'}); dropTarget('group',r.target_id); setBusy(''); };
+
+  return (
+    <div>
+      <div style={{fontSize:12,color:MUT,lineHeight:1.6,marginBottom:16}}>
+        Open reports from students (group names, members, anything they flag). Acting on a target resolves all of its reports at once. The reporter is never shown to the person reported.
+      </div>
+      {rows===null ? <div style={{fontSize:12.5,color:MUT}}>Loading…</div>
+        : rows.length===0 ? <div style={{...card,padding:20,fontSize:13,color:MUT}}>No open reports. 🎉</div>
+        : (
+        <div style={{display:'flex',flexDirection:'column',gap:12}}>
+          {rows.map(r=>(
+            <div key={r.id} style={{...card,padding:'14px 16px'}}>
+              <div style={{display:'flex',alignItems:'flex-start',gap:12,flexWrap:'wrap'}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:5}}>
+                    <span style={{fontSize:9,fontWeight:800,letterSpacing:0.5,textTransform:'uppercase',color:BAD,background:'rgba(220,38,38,0.12)',borderRadius:5,padding:'2px 7px'}}>{REASON_LABEL[r.reason]||r.reason}</span>
+                    <span style={{fontSize:9,fontWeight:700,letterSpacing:0.4,textTransform:'uppercase',color:DIM}}>{r.target_type}</span>
+                    {r.dupes>1 && <span style={{fontSize:9,fontWeight:800,color:WARN}}>×{r.dupes} reports</span>}
+                  </div>
+                  <div style={{fontSize:14,fontWeight:700,color:TXT,marginBottom:3}}>“{r.target_label||'(no label)'}”</div>
+                  {r.note && <div style={{fontSize:12.5,color:MUT,lineHeight:1.5,marginBottom:4}}>“{r.note}”</div>}
+                  <div style={{fontSize:10.5,color:DIM}}>by {r.reporter_email||'unknown'} · {new Date(r.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</div>
+                </div>
+                <div style={{display:'flex',gap:7,flexWrap:'wrap'}}>
+                  {(r.target_type==='member'||r.target_type==='name') && r.target_id && <button onClick={()=>clearName(r)} disabled={busy===r.id} style={btn(BAD,false)}>Clear name</button>}
+                  {r.target_type==='group' && r.target_id && <button onClick={()=>renameGroup(r)} disabled={busy===r.id} style={btn()}>Rename</button>}
+                  {r.target_type==='group' && r.target_id && <button onClick={()=>deleteGroup(r)} disabled={busy===r.id} style={btn(BAD,false)}>Delete group</button>}
+                  <button onClick={()=>resolve(r,'actioned')} disabled={busy===r.id} style={btn(OK,false)}>Done</button>
+                  <button onClick={()=>resolve(r,'dismissed')} disabled={busy===r.id} style={btn()}>Dismiss</button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // EXAM_SCHEDULE nests papers by board id ({subject:{boardId:[...]}}). The editor
 // works on flat rows, so flatten on load (tagging each row with its board id) and
 // re-nest on save, so the live app keeps per-board routing. Single-board / GCSE
@@ -1936,10 +2006,10 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
     {group:'Insights',items:[['overview','Overview'],['finance','Finance'],['ai','AI usage'],['analytics','Analytics']]},
     {group:'People',items:[['users','Users'],['waitlist','Pro waitlist'],['codes','Tester codes']]},
     {group:'Operations',items:[['exams','Exam schedule'],['resources','Resources'],['broadcast','Messaging'],['query','Data explorer'],['system','System']]},
-    {group:'Safety',items:[['moderation','Moderation']]},
+    {group:'Safety',items:[['reports','Reports'],['moderation','Moderation']]},
     {group:'Launch',items:[['scaling','Scaling & upgrades']]},
   ];
-  const TITLES={overview:'Overview',finance:'Finance',ai:'AI usage & profit',analytics:'Analytics',users:'Users',waitlist:'Pro waitlist',codes:'Tester codes',exams:'Exam schedule',resources:'Resources',broadcast:'Messaging',query:'Data explorer',system:'System',scaling:'Scaling & upgrades',moderation:'Moderation'};
+  const TITLES={overview:'Overview',finance:'Finance',ai:'AI usage & profit',analytics:'Analytics',users:'Users',waitlist:'Pro waitlist',codes:'Tester codes',exams:'Exam schedule',resources:'Resources',broadcast:'Messaging',query:'Data explorer',system:'System',scaling:'Scaling & upgrades',moderation:'Moderation',reports:'Reports'};
 
   return (
     <>
@@ -1990,6 +2060,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
           <div style={{padding:'24px',maxWidth:1180,width:'100%',boxSizing:'border-box'}}>
           {tab==='overview'&&(<>
           <ExamScheduleReminder onGoToExams={()=>setTab('exams')}/>
+          <ReportsReminder onGo={()=>setTab('reports')}/>
           <ScalingReminder total={stats.total} onGo={()=>setTab('scaling')}/>
           <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:10,marginBottom:10}}>
             {[
@@ -2156,6 +2227,9 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
 
           {/* RESOURCES */}
           {tab==='resources'&&<ResourcesPanel/>}
+
+          {/* REPORTS */}
+          {tab==='reports'&&<ReportsPanel/>}
 
           {/* MODERATION */}
           {tab==='moderation'&&<ModerationPanel users={users} onOpenUser={setSelected}/>}

@@ -32,6 +32,12 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
   const [joining, setJoining]     = useState(false);
   const [expanded, setExpanded]   = useState(null);
 
+  // Report flow
+  const [reportTarget, setReportTarget] = useState(null); // {type,id,label}
+  const [reportReason, setReportReason] = useState('');
+  const [reportNote, setReportNote]     = useState('');
+  const [reportBusy, setReportBusy]     = useState(false);
+
   const [displayName, setDisplayName] = useState(user?.email?.split('@')[0] || 'You');
 
   const [schools, setSchools]     = useState(null);
@@ -147,6 +153,20 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
     const d = await apiFetch('POST', { action: 'leave', group_id });
     if (d.ok) { addToast(`Left "${name}"`, 'info'); load(); }
     else addToast(d.error || 'Failed', 'error');
+  };
+
+  const submitReport = async () => {
+    if (!reportReason) { addToast('Pick a reason', 'error'); return; }
+    setReportBusy(true);
+    const d = await apiFetch('POST', {
+      action: 'report', target_type: reportTarget.type, target_id: reportTarget.id,
+      target_label: reportTarget.label, reason: reportReason, note: reportNote.trim() || undefined,
+    });
+    setReportBusy(false);
+    if (d.ok) {
+      addToast("Thanks - we'll look into it.", 'success');
+      setReportTarget(null); setReportReason(''); setReportNote('');
+    } else addToast(d.error || 'Could not submit report', 'error');
   };
 
   const loadSchools = useCallback(async (yr='') => {
@@ -350,6 +370,12 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
                       borderRadius: 7, color: C.muted, fontSize: 12, fontFamily: font, cursor: 'pointer' }}>
                     Leave
                   </button>
+                  <button onClick={() => { setReportTarget({ type:'group', id:g.id, label:g.name }); setReportReason(''); setReportNote(''); }}
+                    title="Report this group" aria-label="Report this group"
+                    style={{ padding: '8px 10px', background: 'transparent', border: `1px solid ${C.border}`,
+                      borderRadius: 7, color: C.subtle, fontSize: 12, fontFamily: font, cursor: 'pointer' }}>
+                    ⚑
+                  </button>
                 </div>
 
                 {/* Lone-member CTA - replaces leaderboard when you're alone */}
@@ -387,6 +413,12 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
                             minWidth: 48, textAlign: 'right', flexShrink: 0 }}>
                             {m.leaderboard_score}%
                           </div>
+                          {!m.is_me && (
+                            <button onClick={() => { setReportTarget({ type:'member', id:m.user_id, label:m.display_name }); setReportReason(''); setReportNote(''); }}
+                              title={`Report ${m.display_name}`} aria-label={`Report ${m.display_name}`}
+                              style={{ flexShrink:0, background:'transparent', border:'none', color:C.subtle,
+                                cursor:'pointer', fontSize:13, padding:'0 2px', lineHeight:1 }}>⚑</button>
+                          )}
                         </div>
                       ))}
                       {g.members.length > 5 && (
@@ -543,6 +575,47 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
           </div>
         )}
       </div>
+
+      {reportTarget && (
+        <div onClick={() => !reportBusy && setReportTarget(null)}
+          style={{ position:'fixed', inset:0, zIndex:400, background:'rgba(0,0,0,0.55)',
+            display:'flex', alignItems:'center', justifyContent:'center', padding:'24px 16px' }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ width:'100%', maxWidth:380, background:C.surface, border:`1px solid ${C.border}`,
+              borderRadius:16, padding:'20px 22px', boxShadow:'0 20px 60px rgba(0,0,0,0.35)' }}>
+            <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:4 }}>
+              Report {reportTarget.type === 'group' ? 'group' : 'member'}
+            </div>
+            <div style={{ fontSize:12.5, color:C.muted, lineHeight:1.5, marginBottom:14 }}>
+              Reporting “<b style={{ color:C.text }}>{reportTarget.label}</b>”. This is private - they won't be told who reported it.
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:7, marginBottom:12 }}>
+              {[['offensive_name','Offensive name'],['harassment','Harassment or bullying'],['inappropriate','Inappropriate content'],['spam','Spam'],['other','Something else']].map(([val,lbl]) => (
+                <button key={val} onClick={() => setReportReason(val)}
+                  style={{ textAlign:'left', padding:'9px 12px', borderRadius:9, cursor:'pointer', fontFamily:font,
+                    fontSize:13, fontWeight:reportReason===val?700:500,
+                    border:`1px solid ${reportReason===val?C.accent:C.border}`,
+                    background:reportReason===val?(C.accentSoft||`${C.accent}1e`):'transparent',
+                    color:reportReason===val?C.accent:C.text }}>{lbl}</button>
+              ))}
+            </div>
+            <textarea value={reportNote} onChange={e => setReportNote(e.target.value.slice(0,300))} rows={2}
+              placeholder="Anything to add? (optional)"
+              style={{ width:'100%', boxSizing:'border-box', background:C.card2||C.tintCream, border:`1px solid ${C.border}`,
+                borderRadius:9, padding:'9px 12px', color:C.text, fontSize:13, fontFamily:font, resize:'vertical',
+                marginBottom:14, outline:'none' }}/>
+            <div style={{ display:'flex', gap:8 }}>
+              <button onClick={() => setReportTarget(null)} disabled={reportBusy}
+                style={{ flex:1, padding:'11px', background:'transparent', border:`1px solid ${C.border}`, borderRadius:9,
+                  color:C.muted, fontSize:13, fontWeight:600, fontFamily:font, cursor:'pointer' }}>Cancel</button>
+              <button onClick={submitReport} disabled={reportBusy || !reportReason}
+                style={{ flex:1, padding:'11px', border:'none', borderRadius:9, fontSize:13, fontWeight:700, fontFamily:font,
+                  background:reportBusy||!reportReason?C.card2:C.accent, color:reportBusy||!reportReason?C.subtle:'#fff',
+                  cursor:reportBusy||!reportReason?'not-allowed':'pointer' }}>{reportBusy?'Sending…':'Submit report'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
