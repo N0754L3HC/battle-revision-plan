@@ -155,30 +155,58 @@ function toAttachmentBlock(input) {
   return toImageBlock(input);
 }
 
+// Transient upstream failures we should silently retry rather than fail the
+// student on: Anthropic/Cloudflare blips (520/522/524 = empty/timeout from the
+// origin, 529 = overloaded), gateway/5xx, and rate-limit (429). A big paper is
+// exactly when these one-off hiccups appear, and a quick retry usually clears.
+const RETRYABLE = new Set([429, 500, 502, 503, 504, 520, 522, 524, 529]);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
 async function callClaudeMark({ userBlocks, model }) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({
-      // Generous output budget — a full-paper walkthrough (esp. a blank paper
-      // where every answer is modelled) is long, and a truncated reply can't be
-      // parsed as JSON.
-      model, max_tokens: 24000, temperature: 0.2,
-      // Cache the long system prompt so repeat marks pay ~90% less for it.
-      system: [{ type: 'text', text: MARK_SYSTEM, cache_control: { type: 'ephemeral' } }],
-      messages: [{ role: 'user', content: userBlocks }],
-    }),
+  const body = JSON.stringify({
+    // Generous output budget — a full-paper walkthrough (esp. a blank paper
+    // where every answer is modelled) is long, and a truncated reply can't be
+    // parsed as JSON.
+    model, max_tokens: 24000, temperature: 0.2,
+    // Cache the long system prompt so repeat marks pay ~90% less for it.
+    system: [{ type: 'text', text: MARK_SYSTEM, cache_control: { type: 'ephemeral' } }],
+    messages: [{ role: 'user', content: userBlocks }],
   });
-  if (!r.ok) {
+
+  // Up to 3 attempts. Backoff is short so we stay well inside maxDuration even
+  // when a mark itself is slow. Network errors (fetch throws) are retried too.
+  const DELAYS = [1500, 4000];
+  let lastErr = null;
+  for (let attempt = 0; attempt <= DELAYS.length; attempt++) {
+    let r;
+    try {
+      r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        body,
+      });
+    } catch (netErr) {
+      // DNS/connection reset/socket hangup — treat as retryable.
+      lastErr = Object.assign(new Error(`Claude network error: ${netErr.message}`), { status: 0 });
+      if (attempt < DELAYS.length) { await sleep(DELAYS[attempt]); continue; }
+      throw lastErr;
+    }
+    if (r.ok) {
+      const d = await r.json();
+      const text = (d.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+      return { text, usage: d.usage, truncated: d.stop_reason === 'max_tokens' };
+    }
     const txt = await r.text();
-    const err = new Error(`Claude ${r.status}: ${txt.slice(0, 200)}`);
-    err.status = r.status;
-    throw err;
+    lastErr = Object.assign(new Error(`Claude ${r.status}: ${txt.slice(0, 200)}`), { status: r.status });
+    if (RETRYABLE.has(r.status) && attempt < DELAYS.length) {
+      console.warn(`Mark-paper: Claude ${r.status}, retry ${attempt + 1}/${DELAYS.length}`);
+      await sleep(DELAYS[attempt]);
+      continue;
+    }
+    throw lastErr; // non-retryable (e.g. 400 bad request, 401) or out of attempts
   }
-  const d = await r.json();
-  const text = (d.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
-  return { text, usage: d.usage, truncated: d.stop_reason === 'max_tokens' };
+  throw lastErr;
 }
 
 // Pull the first JSON object out of the model's reply, defensively.
@@ -414,7 +442,13 @@ export default async function handler(req, res) {
     return res.status(200).json({ result: { ...result, estimatedPercent: pct }, actions, meta: { estimate: true, free: usingFreeMark, freeRemaining, freeLimit: FREE_MARK_LIFETIME } });
   } catch (err) {
     console.error('Mark-paper error:', err.status, err.message);
-    if (err.status === 429) return res.status(200).json({ error: 'The marker is busy right now — try again in a minute.' });
+    // Transient upstream blip that survived all retries (overload/gateway/network)
+    // — reassure the student it's not their paper and a retry will likely work.
+    if (err.status === 429 || RETRYABLE.has(err.status) || err.status === 0) {
+      return res.status(503).json({
+        error: 'Caps is overloaded right now, not a problem with your paper. Give it a few seconds and tap Mark again — your upload is fine.',
+        code: 'busy' });
+    }
     return res.status(500).json({ error: 'Marking failed — try again.' });
   } finally {
     // Claude has already fetched the URLs by now — remove the uploaded files.
