@@ -6681,10 +6681,10 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
   },[uid]);
 
   const handleUpgrade = async (opts = {}) => {
-    if (!user?.email) return;
     const trial = !!opts.trial;
     const annual = !!opts.annual;
     if (BETA_WAITLIST) {
+      if (!user?.email) { setUpgradeError('Your session expired. Refresh the page and try again.'); return; }
       setUpgrading(true); setUpgradeError('');
       const {error}=await supabase.from('pro_waitlist')
         .insert({user_id:uid, email:user.email});
@@ -6919,20 +6919,20 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
                     {billing==='annual' ? 'about £5.83/mo, billed yearly' : (!stripeCustomerId ? '3-day free trial first' : '')}
                   </span>
                 </div>
-                <button onClick={()=>handleUpgrade(billing==='annual'?{annual:true}:(stripeCustomerId?{trial:false}:{trial:true}))} disabled={upgrading||!user}
+                <button onClick={()=>handleUpgrade(billing==='annual'?{annual:true}:(stripeCustomerId?{trial:false}:{trial:true}))} disabled={upgrading}
                   style={{width:'100%',padding:'11px',background:upgrading?C.card2:C.accent,
                     border:`1px solid ${upgrading?C.border:C.accent}`,borderRadius:8,color:upgrading?C.muted:'#fff',
-                    fontSize:14,fontWeight:700,fontFamily:font,cursor:upgrading||!user?'not-allowed':'pointer',transition:'background 0.15s'}}>
+                    fontSize:14,fontWeight:700,fontFamily:font,cursor:upgrading?'not-allowed':'pointer',transition:'background 0.15s'}}>
                   {upgrading ? 'Opening secure checkout…'
                     : billing==='annual' ? 'Get Commander, yearly'
                     : stripeCustomerId ? 'Subscribe - £8.99/mo'
                     : 'Start 3-day free trial'}
                 </button>
                 {billing==='monthly' && !stripeCustomerId && (
-                  <button onClick={()=>handleUpgrade({trial:false})} disabled={upgrading||!user}
+                  <button onClick={()=>handleUpgrade({trial:false})} disabled={upgrading}
                     style={{width:'100%',marginTop:8,padding:'9px',background:'transparent',
                       border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,fontSize:12.5,fontWeight:600,
-                      fontFamily:font,cursor:upgrading||!user?'not-allowed':'pointer'}}>
+                      fontFamily:font,cursor:upgrading?'not-allowed':'pointer'}}>
                     Skip the trial, subscribe now
                   </button>
                 )}
