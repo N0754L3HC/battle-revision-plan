@@ -3106,33 +3106,14 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
               Only upload your own work or material you're allowed to share - please don't upload exam boards' official mark schemes or other copyrighted files you don't have the right to use. Files are sent securely to Caps to mark and deleted straight after - we don't keep them.
             </div>
 
-            {busy ? (
-              <div style={{background:C.card2,borderRadius:12,padding:'16px 18px'}}>
-                <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
-                  <span style={{width:16,height:16,borderRadius:'50%',border:`2px solid ${C.accent}40`,
-                    borderTopColor:C.accent,display:'inline-block',animation:'rbp-spin 0.7s linear infinite',flexShrink:0}}/>
-                  <span style={{fontSize:13.5,fontWeight:700,color:C.text}}>{MARK_STAGES[stage]}</span>
-                </div>
-                <div style={{height:6,background:C.surface,borderRadius:3,overflow:'hidden'}}>
-                  <div style={{height:'100%',width:`${estSecs?Math.min(96,Math.round((elapsed/estSecs)*100)):Math.round(((stage+1)/MARK_STAGES.length)*100)}%`,
-                    background:C.accent,borderRadius:3,transition:'width 0.6s ease'}}/>
-                </div>
-                <div style={{display:'flex',justifyContent:'space-between',gap:8,fontSize:11,color:C.subtle,marginTop:8,lineHeight:1.5}}>
-                  <span>
-                    {elapsed<3?'Caps is reading your paper…'
-                      :estSecs&&elapsed>estSecs+8?'Almost there - a detailed mark is worth the wait.'
-                      :`Marking in detail${estSecs?` - about ${estSecs}s for this paper`:''}.`}
-                  </span>
-                  <span style={{flexShrink:0,fontVariantNumeric:'tabular-nums',color:C.muted}}>{elapsed}s</span>
-                </div>
-              </div>
-            ) : (
-              <button onClick={mark} style={{width:'100%',padding:'12px',background:C.accent,
-                border:`1px solid ${C.accent}`,borderRadius:9,color:'#fff',
-                fontSize:14,fontWeight:700,fontFamily:font,cursor:'pointer'}}>
-                Mark my paper
-              </button>
-            )}
+            <button onClick={mark} disabled={busy} style={{width:'100%',padding:'12px',
+              background:busy?C.card2:C.accent,border:`1px solid ${busy?C.border:C.accent}`,borderRadius:9,
+              color:busy?C.muted:'#fff',fontSize:14,fontWeight:700,fontFamily:font,
+              cursor:busy?'default':'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:9}}>
+              {busy&&<span style={{width:15,height:15,borderRadius:'50%',border:`2px solid ${C.accent}55`,
+                borderTopColor:C.accent,display:'inline-block',animation:'rbp-spin 0.7s linear infinite'}}/>}
+              {busy?'Marking your paper…':'Mark my paper'}
+            </button>
           </>
         ) : (
           <>
@@ -3323,6 +3304,62 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
         </div>
       );
     })()}
+
+    {/* Centered "Caps is marking" popup - encourages patience and shows the
+        process stepping through, since a detailed mark takes 20-90s. */}
+    {busy&&(
+      <div style={{position:'fixed',inset:0,zIndex:370,background:'rgba(0,0,0,0.6)',
+        display:'flex',alignItems:'center',justifyContent:'center',padding:'24px 16px'}}>
+        <div style={{width:'100%',maxWidth:380,background:C.bg,border:`1px solid ${C.border}`,borderRadius:18,
+          padding:'24px 22px',animation:'rbp-pop 0.2s ease',boxShadow:'0 20px 60px rgba(0,0,0,0.4)'}}>
+          <style>{`@keyframes caps-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}`}</style>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',textAlign:'center',marginBottom:18}}>
+            <div style={{animation:'caps-bob 1.7s ease-in-out infinite',marginBottom:10}}><CapsMark size={52}/></div>
+            <div style={{fontSize:16.5,fontWeight:800,color:C.text,lineHeight:1.25}}>Caps is marking your paper</div>
+            <div style={{fontSize:12.5,color:C.muted,lineHeight:1.6,marginTop:5}}>
+              A proper mark takes a little while - Caps reads every answer against the {board} {level} standard. Hang tight, it's worth the wait.
+            </div>
+          </div>
+
+          {/* The steps, ticking through as Caps works */}
+          <div style={{display:'flex',flexDirection:'column',gap:9,marginBottom:18}}>
+            {MARK_STAGES.map((s,i)=>{
+              const done=i<stage, active=i===stage;
+              return (
+                <div key={i} style={{display:'flex',alignItems:'center',gap:10,
+                  opacity:done?0.65:active?1:0.4,transition:'opacity 0.3s'}}>
+                  <span style={{width:18,height:18,flexShrink:0,borderRadius:'50%',display:'flex',
+                    alignItems:'center',justifyContent:'center',
+                    background:done?(C.accent):'transparent',
+                    border:done?'none':`2px solid ${active?C.accent:C.border}`}}>
+                    {done
+                      ? <span style={{color:'#fff',fontSize:11,fontWeight:900,lineHeight:1}}>✓</span>
+                      : active
+                        ? <span style={{width:9,height:9,borderRadius:'50%',border:`2px solid ${C.accent}55`,
+                            borderTopColor:C.accent,display:'inline-block',animation:'rbp-spin 0.7s linear infinite'}}/>
+                        : null}
+                  </span>
+                  <span style={{fontSize:13,fontWeight:active?700:500,color:active?C.text:C.muted}}>{s}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{height:6,background:C.card2,borderRadius:3,overflow:'hidden'}}>
+            <div style={{height:'100%',width:`${estSecs?Math.min(96,Math.round((elapsed/estSecs)*100)):Math.round(((stage+1)/MARK_STAGES.length)*100)}%`,
+              background:C.accent,borderRadius:3,transition:'width 0.6s ease'}}/>
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between',gap:8,fontSize:11,color:C.subtle,marginTop:9,lineHeight:1.5}}>
+            <span>
+              {elapsed<3?'Reading your paper…'
+                :estSecs&&elapsed>estSecs+8?'Almost there - finishing the detail.'
+                :'Marking in detail, please keep this open.'}
+            </span>
+            <span style={{flexShrink:0,fontVariantNumeric:'tabular-nums',color:C.muted}}>{elapsed}s</span>
+          </div>
+        </div>
+      </div>
+    )}
 
     {/* Centered popup for any error or "couldn't complete" message - so it can't
         be missed the way a small inline line could. Driven by the err state, so
