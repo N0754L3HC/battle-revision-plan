@@ -28,6 +28,16 @@ async function getAccessToken() {
   return { token: token || null, uid: session?.user?.id || null, session };
 }
 
+// Client-facing profanity check for names students show each other (display
+// name, school, group). The DB trigger contains_banned_word is the real guard;
+// this just gives instant, friendly feedback before the write.
+const _BANNED_RE = /\b(niggers?|niggas?|niglets?|coons?|chinks?|gooks?|kikes?|spics?|wetbacks?|pakis?|ragheads?|towelheads?|beaners?|wogs?|golliwogs?|faggots?|fags?|dykes?|trann(y|ies)|cunts?|fuck(s|er|ers|ing)?|fuk|motherfuckers?|pussy|pussies|wankers?|wank|twats?|pricks?|sluts?|slags?|whores?|bitch(es)?|bastards?|bollocks?|arseholes?|assholes?|shit(s|e)?|piss|rape|rapists?|paedos?|pedos?|nonces?|molest|incest|porn|jizz|dildos?|hitler|nazis?|kkk)\b/;
+function nameLooksOffensive(txt) {
+  if (!txt) return false;
+  const s = String(txt).toLowerCase().replace(/[0134578@$]/g, c => ({'0':'o','1':'i','3':'e','4':'a','5':'s','7':'t','8':'b','@':'a','$':'s'}[c] || c));
+  return _BANNED_RE.test(s);
+}
+
 // ── Error boundary ─────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
   constructor(p) { super(p); this.state = { err: null }; }
@@ -6676,14 +6686,18 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
   },[uid,referralCode]);
 
   const saveSchool = async (name, optIn, yg) => {
+    if (nameLooksOffensive(name)) { addToast('Please use your real school name.','error'); return; }
     setSchoolSaving(true);
-    await supabase.from('user_profiles').update({school_name:name||null,school_opt_in:optIn,year_group:yg||null}).eq('id',uid);
+    const {error}=await supabase.from('user_profiles').update({school_name:name||null,school_opt_in:optIn,year_group:yg||null}).eq('id',uid);
     setSchoolSaving(false);
+    if (error) addToast('Please use your real school name.','error');
   };
   const saveName = async () => {
     const n = displayName.trim().slice(0,40);
+    if (nameLooksOffensive(n)) { addToast('Please choose a different display name.','error'); setDisplayName(''); return; }
     setDisplayName(n);
-    await supabase.from('user_profiles').update({display_name:n||null}).eq('id',uid);
+    const {error}=await supabase.from('user_profiles').update({display_name:n||null}).eq('id',uid);
+    if (error) { addToast('Please choose a different display name.','error'); setDisplayName(''); }
   };
 
   const referralProDays = (()=>{
@@ -9008,6 +9022,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
       if (a.type==='set_name') {
         const n = String(a.name||'').trim().replace(/\s+/g,' ').slice(0,40);
         if (!n) return {ok:false, message:'No name given'};
+        if (nameLooksOffensive(n)) return {ok:false, message:'That name is not allowed'};
         setDisplayName(n);
         if (uid && uid!=='anon') supabase.from('user_profiles').update({display_name:n}).eq('id',uid).then(()=>{},()=>{});
         return {ok:true, message:`Got it - I'll call you ${n} from now on.`};

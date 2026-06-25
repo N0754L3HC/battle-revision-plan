@@ -1033,6 +1033,79 @@ function ScalingPanel({ total=0 }) {
   );
 }
 
+// ── Moderation ──────────────────────────────────────────────────────────────
+// Mirrors the DB contains_banned_word guard so the console can surface anything
+// already in the data (or that slipped through a compound), and act on it.
+const MOD_RE = /\b(niggers?|niggas?|niglets?|coons?|chinks?|gooks?|kikes?|spics?|wetbacks?|pakis?|ragheads?|towelheads?|beaners?|wogs?|golliwogs?|faggots?|fags?|dykes?|trann(y|ies)|cunts?|fuck(s|er|ers|ing)?|fuk|motherfuckers?|pussy|pussies|wankers?|wank|twats?|pricks?|sluts?|slags?|whores?|bitch(es)?|bastards?|bollocks?|arseholes?|assholes?|shit(s|e)?|piss|rape|rapists?|paedos?|pedos?|nonces?|molest|incest|porn|jizz|dildos?|hitler|nazis?|kkk)\b/;
+function modFlag(txt) {
+  if (!txt) return false;
+  const s = String(txt).toLowerCase().replace(/[0134578@$]/g, c => ({'0':'o','1':'i','3':'e','4':'a','5':'s','7':'t','8':'b','@':'a','$':'s'}[c] || c));
+  return MOD_RE.test(s);
+}
+
+function ModerationPanel({ users=[], onOpenUser }) {
+  const [groups, setGroups] = useState(null);
+  const [cleared, setCleared] = useState({}); // id -> {name?,school?}
+  const [busy, setBusy] = useState('');
+  useEffect(()=>{ (async()=>{ const {data}=await supabase.rpc('admin_list_groups'); setGroups(data||[]); })(); },[]);
+
+  const flaggedUsers = users.filter(u => (modFlag(u.display_name) && !cleared[u.id]?.name) || (modFlag(u.school_name) && !cleared[u.id]?.school));
+  const clearName = async (u) => { setBusy(u.id+'n'); await supabase.rpc('admin_clear_display_name',{p_uid:u.id}); setCleared(c=>({...c,[u.id]:{...c[u.id],name:true}})); setBusy(''); };
+  const clearSchool = async (u) => { setBusy(u.id+'s'); await supabase.rpc('admin_clear_school_name',{p_uid:u.id}); setCleared(c=>({...c,[u.id]:{...c[u.id],school:true}})); setBusy(''); };
+  const renameG = async (g) => { const n=prompt('Rename group to:', g.name); if(n==null||!n.trim()) return; await supabase.rpc('admin_rename_group',{p_gid:g.id,p_name:n.trim()}); setGroups(gs=>gs.map(x=>x.id===g.id?{...x,name:n.trim().slice(0,40)}:x)); };
+  const deleteG = async (g) => { if(!confirm(`Delete the group "${g.name}" for everyone? This can't be undone.`)) return; await supabase.rpc('admin_delete_group',{p_gid:g.id}); setGroups(gs=>(gs||[]).filter(x=>x.id!==g.id)); };
+
+  const flaggedGroups = (groups||[]).filter(g=>modFlag(g.name));
+  const Lbl = ({children}) => <div style={{fontSize:9,letterSpacing:3,color:SEC,marginBottom:14,fontWeight:700}}>{children}</div>;
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:16}}>
+      <div style={{fontSize:12,color:MUT,lineHeight:1.6}}>
+        Names students show each other are blocked at the database, so new offensive display names, school names and group names can't be saved. This is the catch-all: anything already in the data (or a compound that slipped a word boundary) surfaces here to act on.
+      </div>
+
+      <div style={{...card,padding:20}}>
+        <Lbl>FLAGGED NAMES{flaggedUsers.length?` · ${flaggedUsers.length}`:''}</Lbl>
+        {flaggedUsers.length===0 ? (
+          <div style={{fontSize:12.5,color:MUT}}>No flagged display or school names. 🎉</div>
+        ) : flaggedUsers.map(u=>(
+          <div key={u.id} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 0',borderTop:`1px solid rgba(0,0,0,0.05)`}}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:13,color:TXT,fontWeight:600}}>{u.email}</div>
+              <div style={{fontSize:11,color:MUT,marginTop:2}}>
+                {modFlag(u.display_name)&&!cleared[u.id]?.name && <span style={{color:BAD}}>name: “{u.display_name}”  </span>}
+                {modFlag(u.school_name)&&!cleared[u.id]?.school && <span style={{color:BAD}}>school: “{u.school_name}”</span>}
+              </div>
+            </div>
+            {modFlag(u.display_name)&&!cleared[u.id]?.name && <button onClick={()=>clearName(u)} disabled={busy===u.id+'n'} style={btn(BAD,false)}>Clear name</button>}
+            {modFlag(u.school_name)&&!cleared[u.id]?.school && <button onClick={()=>clearSchool(u)} disabled={busy===u.id+'s'} style={btn(WARN,false)}>Clear school</button>}
+            {onOpenUser && <button onClick={()=>onOpenUser(u)} style={btn()}>View</button>}
+          </div>
+        ))}
+      </div>
+
+      <div style={{...card,padding:20}}>
+        <Lbl>STUDY GROUPS{groups?` · ${groups.length}`:''}{flaggedGroups.length?` · ${flaggedGroups.length} flagged`:''}</Lbl>
+        {groups===null ? <div style={{fontSize:12.5,color:MUT}}>Loading…</div>
+          : groups.length===0 ? <div style={{fontSize:12.5,color:MUT}}>No groups yet.</div>
+          : [...groups].sort((a,b)=>(modFlag(b.name)?1:0)-(modFlag(a.name)?1:0)).map(g=>{
+            const bad=modFlag(g.name);
+            return (
+              <div key={g.id} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 0',borderTop:`1px solid rgba(0,0,0,0.05)`}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,color:bad?BAD:TXT,fontWeight:600}}>{g.name}{bad?'  ⚠':''}</div>
+                  <div style={{fontSize:11,color:MUT,marginTop:2}}>{g.members} member{g.members===1?'':'s'} · by {g.creator_email||'unknown'} · {g.invite_code}</div>
+                </div>
+                <button onClick={()=>renameG(g)} style={btn()}>Rename</button>
+                <button onClick={()=>deleteG(g)} style={btn(BAD,false)}>Delete</button>
+              </div>
+            );
+          })}
+      </div>
+    </div>
+  );
+}
+
 // EXAM_SCHEDULE nests papers by board id ({subject:{boardId:[...]}}). The editor
 // works on flat rows, so flatten on load (tagging each row with its board id) and
 // re-nest on save, so the live app keeps per-board routing. Single-board / GCSE
@@ -1863,9 +1936,10 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
     {group:'Insights',items:[['overview','Overview'],['finance','Finance'],['ai','AI usage'],['analytics','Analytics']]},
     {group:'People',items:[['users','Users'],['waitlist','Pro waitlist'],['codes','Tester codes']]},
     {group:'Operations',items:[['exams','Exam schedule'],['resources','Resources'],['broadcast','Messaging'],['query','Data explorer'],['system','System']]},
+    {group:'Safety',items:[['moderation','Moderation']]},
     {group:'Launch',items:[['scaling','Scaling & upgrades']]},
   ];
-  const TITLES={overview:'Overview',finance:'Finance',ai:'AI usage & profit',analytics:'Analytics',users:'Users',waitlist:'Pro waitlist',codes:'Tester codes',exams:'Exam schedule',resources:'Resources',broadcast:'Messaging',query:'Data explorer',system:'System',scaling:'Scaling & upgrades'};
+  const TITLES={overview:'Overview',finance:'Finance',ai:'AI usage & profit',analytics:'Analytics',users:'Users',waitlist:'Pro waitlist',codes:'Tester codes',exams:'Exam schedule',resources:'Resources',broadcast:'Messaging',query:'Data explorer',system:'System',scaling:'Scaling & upgrades',moderation:'Moderation'};
 
   return (
     <>
@@ -2082,6 +2156,9 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
 
           {/* RESOURCES */}
           {tab==='resources'&&<ResourcesPanel/>}
+
+          {/* MODERATION */}
+          {tab==='moderation'&&<ModerationPanel users={users} onOpenUser={setSelected}/>}
 
           {/* SCALING & UPGRADES */}
           {tab==='scaling'&&<ScalingPanel total={stats.total}/>}

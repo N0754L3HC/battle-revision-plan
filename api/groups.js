@@ -36,6 +36,15 @@ function randomCode() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
 
+// Quick client-facing profanity check (mirrors the DB trigger contains_banned_word,
+// which is the real guard). Lets us return a friendly message before the insert.
+const BANNED_RE = /\b(niggers?|niggas?|niglets?|coons?|chinks?|gooks?|kikes?|spics?|wetbacks?|pakis?|ragheads?|towelheads?|beaners?|wogs?|golliwogs?|faggots?|fags?|dykes?|trann(y|ies)|cunts?|fuck(s|er|ers|ing)?|fuk|motherfuckers?|pussy|pussies|wankers?|wank|twats?|pricks?|sluts?|slags?|whores?|bitch(es)?|bastards?|bollocks?|arseholes?|assholes?|shit(s|e)?|piss|rape|rapists?|paedos?|pedos?|nonces?|molest|incest|porn|jizz|dildos?|hitler|nazis?|kkk)\b/;
+function nameLooksOffensive(txt) {
+  if (!txt) return false;
+  const s = String(txt).toLowerCase().replace(/[0134578@$]/g, c => ({'0':'o','1':'i','3':'e','4':'a','5':'s','7':'t','8':'b','@':'a','$':'s'}[c] || c));
+  return BANNED_RE.test(s);
+}
+
 export default async function handler(req, res) {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
     return res.status(503).json({ error: 'Server not configured', missing: { SUPABASE_URL: !process.env.SUPABASE_URL, SUPABASE_SERVICE_KEY: !process.env.SUPABASE_SERVICE_KEY } });
@@ -105,6 +114,7 @@ export default async function handler(req, res) {
   if (action === 'create') {
     const name = req.body?.name?.trim();
     if (!name || name.length < 2 || name.length > 40) return res.status(400).json({ error: 'Name must be 2–40 chars' });
+    if (nameLooksOffensive(name)) return res.status(400).json({ error: 'Please choose a different group name.' });
 
     // Check how many groups this user already owns. Free: 3; Pro/admin: 10.
     const { count } = await admin.from('study_groups')
@@ -130,7 +140,12 @@ export default async function handler(req, res) {
     const { data: group, error } = await admin.from('study_groups')
       .insert({ name, created_by: uid, invite_code })
       .select().single();
-    if (error) return res.status(500).json({ error: 'Failed to create group' });
+    if (error) {
+      if (error.code === '23514' || /banned_name/.test(error.message || '')) {
+        return res.status(400).json({ error: 'Please choose a different group name.' });
+      }
+      return res.status(500).json({ error: 'Failed to create group' });
+    }
 
     await admin.from('group_members').insert({ group_id: group.id, user_id: uid });
     return res.status(200).json({ group });
