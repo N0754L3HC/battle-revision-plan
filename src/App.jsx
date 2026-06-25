@@ -7445,6 +7445,7 @@ function LandingPage({ onGetStarted }) {
     success:'#4f7256',
   };
   const [showTerms, setShowTerms] = useState(false);
+  const [showGallery, setShowGallery] = useState(false);
   const ic = d => (
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{d}</svg>
   );
@@ -7453,40 +7454,49 @@ function LandingPage({ onGetStarted }) {
   // fits), the student's WRONG answer, and Caps re-working it in full. All
   // rendered live by RichText (real LaTeX, charts, graphs, code) - not images.
   const MARKER_SAMPLES = [
-    { tab:'Further Maths', subject:'Further Maths', paper:'Decision 1 · Shortest path', marks:'3 / 5', diagram:true,
-      question:`**Q4** Use Dijkstra's algorithm to find the shortest route from **S** to **T**.
-
-\`\`\`graph
-{"type":"graph","title":"","nodes":[{"id":"S","label":"S","x":0,"y":0},{"id":"A","label":"A","x":2,"y":1.3},{"id":"B","label":"B","x":2,"y":-1.3},{"id":"T","label":"T","x":4,"y":0}],"edges":[{"from":"S","to":"A","weight":4},{"from":"S","to":"B","weight":2,"highlight":true},{"from":"B","to":"A","weight":1,"highlight":true},{"from":"A","to":"T","weight":5,"highlight":true},{"from":"B","to":"T","weight":8}]}
-\`\`\``,
-      student:[
-        {text:'$S \\to A \\to T = 4 + 5 = 9$'},
-        {text:'Shortest route $= 9$', bad:true},
-      ],
-      caps:[
-        'Dijkstra from $S=0$. First labels: $B=2$, $A=4$.',
-        'From $B\\,(=2)$: update $A=\\min(4,\\;2+1)=3$ and $T=2+8=10$.',
-        'From $A\\,(=3)$: update $T=\\min(10,\\;3+5)=8$.',
-        'Shortest route $S \\to B \\to A \\to T$, length $\\mathbf{8}$ - the highlighted edges.',
-      ],
-      verdict:'You took the first route you spotted. Dijkstra forces you to check the via-B detour, which is shorter.' },
-
-    { tab:'Maths', subject:'Mathematics', paper:'Pure · Area between curves', marks:'2 / 5', diagram:true,
-      question:`**Q7** Find the exact area enclosed between $y = x^{2}$ and $y = 2x$.
+    { tab:'Maths', subject:'Mathematics', paper:'Pure · Integration by parts', marks:'2 / 7', diagram:true,
+      question:`**Q8** The diagram shows the curve $y = x^{2}e^{x}$. Find the **exact** area of the shaded region $R$ between the curve and the $x$-axis for $0 \\le x \\le 2$.
 
 \`\`\`chart
-{"type":"line","title":"","xLabel":"x","yLabel":"y","series":[{"name":"y = x²","points":[[0,0],[0.5,0.25],[1,1],[1.5,2.25],[2,4]]},{"name":"y = 2x","points":[[0,0],[1,2],[2,4]]}]}
+{"type":"line","title":"R = area under y = x²eˣ","xLabel":"x","yLabel":"y","series":[{"name":"y = x²eˣ","points":[[0,0],[0.5,0.41],[1,2.72],[1.5,10.08],[2,29.56]]}]}
 \`\`\``,
       student:[
-        {text:'$\\int_{0}^{2} x^{2}\\,dx = \\dfrac{8}{3}$', bad:true},
-        {text:'Area $= \\dfrac{8}{3}$'},
+        {text:'$\\int x^{2}e^{x}\\,dx = x^{2}e^{x}-\\int 2xe^{x}\\,dx = x^{2}e^{x}-2xe^{x}+C$', bad:true},
+        {text:'Area $=\\left[x^{2}e^{x}-2xe^{x}\\right]_{0}^{2}=(4e^{2}-4e^{2})-0=0$', bad:true},
       ],
       caps:[
-        'Curves meet where $x^{2}=2x \\Rightarrow x = 0,\\,2$.',
-        'On $[0,2]$ the line is above the curve, so integrate (top − bottom): $\\int_{0}^{2}(2x - x^{2})\\,dx$.',
-        '$=\\left[x^{2}-\\dfrac{x^{3}}{3}\\right]_{0}^{2}=4-\\dfrac{8}{3}=\\mathbf{\\dfrac{4}{3}}$.',
+        'Integrate by parts with $u=x^{2}$: $\\displaystyle\\int x^{2}e^{x}\\,dx = x^{2}e^{x}-\\int 2xe^{x}\\,dx$.',
+        'That remaining integral needs parts **again**: $\\displaystyle\\int 2xe^{x}\\,dx = 2xe^{x}-\\int 2e^{x}\\,dx = 2xe^{x}-2e^{x}$.',
+        'So $\\displaystyle\\int x^{2}e^{x}\\,dx = e^{x}\\!\\left(x^{2}-2x+2\\right)+C$.',
+        'Evaluate $0\\to 2$: $e^{2}(4-4+2)-e^{0}(0-0+2)=\\mathbf{2e^{2}-2}\\approx 12.78$.',
       ],
-      verdict:'You integrated just one curve. Area between two curves is the integral of the gap between them.' },
+      verdict:'You stopped after one integration by parts. The $\\int 2xe^{x}$ term needs parts a second time - dropping it collapsed the area to 0.' },
+
+    { tab:'Further Mech', subject:'Further Maths', paper:'Further Mechanics · Circular motion', marks:'1 / 6', diagram:false,
+      question:`**Q6** A particle of mass $0.5\\,\\text{kg}$ on a light string of length $0.8\\,\\text{m}$ moves in a complete vertical circle. At the **lowest** point its speed is $7\\,\\text{m s}^{-1}$. Find the tension at the **highest** point. $(g=9.8)$`,
+      student:[
+        {text:'At the top: $T=\\dfrac{mv^{2}}{r}=\\dfrac{0.5\\times 7^{2}}{0.8}=30.6\\,\\text{N}$', bad:true},
+      ],
+      caps:[
+        'The speed drops going up - use conservation of energy over the rise $2r=1.6\\,\\text{m}$.',
+        '$v_{\\text{top}}^{2}=v_{\\text{bot}}^{2}-4gr = 49 - 4(9.8)(0.8) = 17.64\\,\\text{m}^2\\text{s}^{-2}$.',
+        'At the top, tension **and** weight point to the centre: $T+mg=\\dfrac{mv_{\\text{top}}^{2}}{r}$.',
+        '$T = 0.5\\!\\left(\\dfrac{17.64}{0.8}-9.8\\right)=0.5(22.05-9.8)=\\mathbf{6.13\\,\\text{N}}$.',
+      ],
+      verdict:'Two slips: the top speed is lower than the bottom (energy), and at the top the weight adds to the central force.' },
+
+    { tab:'Decision', subject:'Further Maths', paper:'Decision 1 · Simplex', marks:'2 / 7', diagram:true,
+      question:`**Q5** Maximise $P = 3x + 2y$ subject to $x+y\\le 4$, $x+3y\\le 6$, $x,y\\ge 0$. Use the Simplex algorithm.`,
+      student:[
+        {text:'I pivoted on the $y$ column first (it looked simpler) and got $P = 4$ at $(0,2)$.', bad:true},
+      ],
+      caps:[
+        'Set up the tableau with slacks $s,t$. The most negative objective entry is under $x$, so **$x$ enters**:\n\n| basic | x | y | s | t | val |\n| --- | --- | --- | --- | --- | --- |\n| s | 1 | 1 | 1 | 0 | 4 |\n| t | 1 | 3 | 0 | 1 | 6 |\n| P | −3 | −2 | 0 | 0 | 0 |',
+        'Ratio test: $4/1=4$ vs $6/1=6$ → smallest is $4$, so **$s$ leaves**; pivot on that row.',
+        'No negative objective entries remain → optimal:\n\n| basic | x | y | s | t | val |\n| --- | --- | --- | --- | --- | --- |\n| x | 1 | 1 | 1 | 0 | 4 |\n| t | 0 | 2 | −1 | 1 | 2 |\n| P | 0 | 1 | 3 | 0 | 12 |',
+        'Read off $x=4,\\,y=0$, giving $\\mathbf{P=12}$ - not 4.',
+      ],
+      verdict:'Always bring in the column with the most negative objective coefficient ($x$ at $-3$), then ratio-test. Entering $y$ left you stuck at a worse vertex.' },
 
     { tab:'Physics', subject:'Physics', paper:'Mechanics · Projectiles', marks:'1 / 3', diagram:true,
       question:`**Q5** A ball is launched at $20\\,\\text{m s}^{-1}$ at $30^{\\circ}$ to the horizontal. Find its range. $(g=9.8)$
@@ -7545,6 +7555,145 @@ function LandingPage({ onGetStarted }) {
       ],
       verdict:'You retold the plot and spotted features. The top bands reward analysis of how language and context create meaning.' },
   ];
+
+  // One marked-answer card (question + diagram, wrong answer, Caps's full re-work).
+  const renderMarkerCard = (s) => (
+    <div key={s.subject} style={{background:C.bg, border:`1px solid ${C.border}`, borderRadius:14,
+      overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 16px 44px rgba(40,30,18,0.08)'}}>
+      <div style={{display:'flex', alignItems:'center', gap:11, padding:'13px 16px',
+        borderBottom:`1px solid ${C.border}`, background:C.card2}}>
+        <CapsMark size={24}/>
+        <div style={{flex:1, minWidth:0}}>
+          <div style={{fontSize:13.5, fontWeight:800, color:C.text, lineHeight:1.2}}>{s.subject}</div>
+          <div style={{fontSize:11, color:C.subtle, fontFamily:mono}}>{s.paper}</div>
+        </div>
+        <div style={{fontSize:12.5, fontWeight:800, fontFamily:mono, color:C.accent,
+          background:`${C.accent}14`, border:`1px solid ${C.accent}33`, borderRadius:7, padding:'4px 9px'}}>{s.marks}</div>
+      </div>
+      <div style={{padding:'16px 18px', display:'flex', flexDirection:'column', gap:14}}>
+        <RichText style={{fontSize:13.5, color:C.text, lineHeight:1.7}}>{s.question}</RichText>
+        <div style={{background:'rgba(239,68,68,0.06)', border:'1px solid rgba(239,68,68,0.28)', borderRadius:10, padding:'10px 12px'}}>
+          <div style={{fontSize:10, fontWeight:800, color:'#c0392b', textTransform:'uppercase', letterSpacing:0.5, marginBottom:7,
+            display:'flex', alignItems:'center', gap:6}}>
+            <span style={{width:14, height:14, borderRadius:'50%', background:'#ef4444', color:'#fff', fontSize:9, fontWeight:900,
+              display:'inline-flex', alignItems:'center', justifyContent:'center'}}>✕</span>
+            Student's answer
+          </div>
+          {s.student.map((ln,i)=>(
+            <div key={i} style={{display:'flex', gap:7, alignItems:'flex-start', marginBottom:i<s.student.length-1?4:0}}>
+              <RichText style={{flex:1, minWidth:0, fontSize:13, lineHeight:1.55, color:ln.bad?'#c0392b':C.muted,
+                fontWeight:ln.bad?600:400}}>{ln.text}</RichText>
+            </div>
+          ))}
+        </div>
+        <div style={{background:`${C.success}0f`, border:`1px solid ${C.success}33`, borderRadius:10, padding:'10px 12px'}}>
+          <div style={{fontSize:10, fontWeight:800, color:C.success, textTransform:'uppercase', letterSpacing:0.5, marginBottom:8,
+            display:'flex', alignItems:'center', gap:6}}>
+            <span style={{width:14, height:14, borderRadius:'50%', background:C.success, color:'#fff', fontSize:9, fontWeight:900,
+              display:'inline-flex', alignItems:'center', justifyContent:'center'}}>✓</span>
+            Caps re-worked it
+          </div>
+          {s.caps.map((step,i)=>(
+            <div key={i} style={{display:'flex', gap:8, alignItems:'flex-start', marginBottom:i<s.caps.length-1?7:0}}>
+              <span style={{flexShrink:0, fontSize:11, fontWeight:800, color:C.success, fontFamily:mono, marginTop:2, width:14, textAlign:'right'}}>{i+1}</span>
+              <RichText style={{flex:1, minWidth:0, fontSize:13, lineHeight:1.6, color:C.text}}>{step}</RichText>
+            </div>
+          ))}
+        </div>
+        <div style={{display:'flex', gap:8, alignItems:'flex-start', fontSize:12.5, color:C.muted, lineHeight:1.55,
+          borderTop:`1px solid ${C.border}`, paddingTop:12, marginTop:'auto'}}>
+          <span style={{flexShrink:0, color:C.accent, fontWeight:800}}>Caps:</span>
+          <span>{s.verdict}</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Lightweight mockups of the rest of the app, for the Gallery sheet.
+  const spark = (pts, col) => (
+    <svg width="100%" height="34" viewBox="0 0 120 34" preserveAspectRatio="none" style={{display:'block'}}>
+      <polyline points={pts.split(',').map((y,i)=>`${i*(120/(pts.split(',').length-1))},${34-(+y/100)*30-2}`).join(' ')}
+        fill="none" stroke={col} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+  const APP_SHOTS = [
+    { tag:'Analytics', title:'Projected results', desc:'Where each subject is heading on current form, not just where it is now.',
+      render:()=>(
+        <div style={{display:'flex', flexDirection:'column', gap:9}}>
+          {[['Further Maths','A','A*','#4f7256','18,30,28,44,52,70'],
+            ['Chemistry','C','B','#c2944a','22,30,26,40,38,52'],
+            ['Physics','B','A','#4f7256','30,34,40,38,52,60']].map(([n,now,proj,col,pts])=>(
+            <div key={n} style={{display:'flex', alignItems:'center', gap:12, background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:'10px 12px'}}>
+              <span style={{flex:1, fontSize:13, fontWeight:600, color:C.text}}>{n}</span>
+              <div style={{width:90}}>{spark(pts, col)}</div>
+              <span style={{fontSize:12, color:C.subtle, fontFamily:mono}}>{now}</span>
+              <span style={{fontSize:12, color:C.subtle}}>→</span>
+              <span style={{fontSize:14, fontWeight:800, color:col, fontFamily:mono, width:24, textAlign:'right'}}>{proj}</span>
+            </div>
+          ))}
+        </div>
+      ) },
+    { tag:'Analytics', title:'Readiness & trend', desc:'One score for how prepared you are, with the trajectory behind it.',
+      render:()=>(
+        <div>
+          <div style={{display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:9, marginBottom:11}}>
+            {[['Readiness','74',C.accent],['Avg score','78%',C.text],['Papers','24',C.text]].map(([l,v,c])=>(
+              <div key={l} style={{background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:'11px 12px'}}>
+                <div style={{fontSize:10.5, color:C.subtle, marginBottom:6}}>{l}</div>
+                <div style={{fontSize:22, fontWeight:800, color:c, fontFamily:mono, lineHeight:1}}>{v}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:'12px 14px'}}>
+            <div style={{fontSize:10.5, color:C.subtle, marginBottom:8}}>Score trend · last 8 papers</div>
+            {spark('40,48,44,55,52,63,68,78', C.accent)}
+          </div>
+        </div>
+      ) },
+    { tag:'Tracker', title:'Every paper, real grades', desc:'Log a mark, get the grade from official boundaries - and tag the mistakes.',
+      render:()=>(
+        <div style={{background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:'2px 14px'}}>
+          {[['Edexcel Pure 1','June 2022','64/75','A'],['AQA Chem P2','Specimen','58/100','C'],['OCR CS P1','June 2023','72/90','A']].map(([n,d,m,g],i)=>(
+            <div key={n} style={{display:'flex', alignItems:'center', gap:12, padding:'12px 0', borderTop:i?`1px solid ${C.border}`:'none'}}>
+              <div style={{flex:1, minWidth:0}}>
+                <div style={{fontSize:13, fontWeight:600, color:C.text}}>{n}</div>
+                <div style={{fontSize:11, color:C.subtle, fontFamily:mono}}>{d}</div>
+              </div>
+              <span style={{fontSize:12, color:C.muted, fontFamily:mono}}>{m}</span>
+              <span style={{fontSize:13, fontWeight:800, color:gradeColor(g), width:24, textAlign:'center'}}>{g}</span>
+            </div>
+          ))}
+        </div>
+      ) },
+    { tag:'Focus timer', title:'Time your revision', desc:'Pomodoro-style sessions logged against each subject so your hours count.',
+      render:()=>(
+        <div style={{display:'flex', alignItems:'center', gap:18, justifyContent:'center', padding:'10px 0'}}>
+          <svg width="104" height="104" viewBox="0 0 104 104">
+            <circle cx="52" cy="52" r="44" fill="none" stroke={C.border} strokeWidth="8"/>
+            <circle cx="52" cy="52" r="44" fill="none" stroke={C.accent} strokeWidth="8" strokeLinecap="round"
+              strokeDasharray={`${2*Math.PI*44*0.68} ${2*Math.PI*44}`} transform="rotate(-90 52 52)"/>
+            <text x="52" y="50" textAnchor="middle" fontSize="20" fontWeight="800" fill={C.text} fontFamily={mono}>17:08</text>
+            <text x="52" y="66" textAnchor="middle" fontSize="9" fill={C.subtle} fontFamily={font}>FOCUS</text>
+          </svg>
+          <div>
+            <div style={{fontSize:13, fontWeight:700, color:C.text, marginBottom:4}}>Chemistry · Rates</div>
+            <div style={{fontSize:12, color:C.muted, lineHeight:1.6}}>Session 3 of 4<br/>2h 10m logged today</div>
+          </div>
+        </div>
+      ) },
+    { tag:'Caps chat', title:'Ask Caps anything', desc:'Your companion answers grounded in your own papers, weak topics and exam dates.',
+      render:()=>(
+        <div style={{display:'flex', flexDirection:'column', gap:9}}>
+          <div style={{alignSelf:'flex-end', maxWidth:'82%', background:C.accent, color:'#fff', borderRadius:'12px 12px 3px 12px', padding:'9px 12px', fontSize:12.5, lineHeight:1.5}}>
+            What should I revise tonight?
+          </div>
+          <div style={{alignSelf:'flex-start', maxWidth:'88%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'12px 12px 12px 3px', padding:'10px 12px'}}>
+            <RichText style={{fontSize:12.5, color:C.text, lineHeight:1.6}}>{`Your weakest topic is **Chemistry · rates** (3 lost marks last paper). Do 30 mins on activation energy, then a timed 6-marker. Physics paper is in **9 days** - keep it warm with one mechanics question.`}</RichText>
+          </div>
+        </div>
+      ) },
+  ];
+
   const FEATURES = [
     { icon: ic(<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>),
       title: 'Past paper tracker',
@@ -7596,6 +7745,90 @@ function LandingPage({ onGetStarted }) {
     <div style={{minHeight:'100vh', background:C.bg, fontFamily:font, color:C.text}}>
       {showTerms && <TermsOfService onClose={()=>setShowTerms(false)}/>}
 
+      {/* ── Gallery sheet ──────────────────────────────────────────────── */}
+      {showGallery && (
+        <div style={{position:'fixed', inset:0, zIndex:300, background:C.bg, overflowY:'auto', fontFamily:font}}>
+          {/* sticky header */}
+          <div style={{position:'sticky', top:0, zIndex:5, background:C.nav, backdropFilter:'blur(16px)',
+            WebkitBackdropFilter:'blur(16px)', borderBottom:`1px solid ${C.border}`, height:56,
+            display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 20px'}}>
+            <div style={{display:'flex', alignItems:'center', gap:10}}>
+              <CapsMark size={26}/>
+              <span style={{fontFamily:display, fontSize:16, fontWeight:700, color:C.text}}>Gallery</span>
+            </div>
+            <div style={{display:'flex', alignItems:'center', gap:8}}>
+              <button onClick={()=>{setShowGallery(false); onGetStarted();}}
+                style={{padding:'7px 15px', background:C.accent, border:'none', borderRadius:6, color:'#fff',
+                  fontSize:13, fontWeight:700, fontFamily:font, cursor:'pointer'}}>Get started free</button>
+              <button onClick={()=>setShowGallery(false)} aria-label="Close gallery"
+                style={{width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center',
+                  background:'transparent', border:`1px solid ${C.border}`, borderRadius:8, color:C.muted,
+                  fontSize:18, cursor:'pointer', lineHeight:1}}>✕</button>
+            </div>
+          </div>
+
+          <div style={{maxWidth:1180, margin:'0 auto', padding:'40px 24px 100px'}}>
+            {/* intro */}
+            <div style={{textAlign:'center', maxWidth:680, margin:'0 auto 30px'}}>
+              <div style={{...type.eyebrow, color:C.accent, marginBottom:12}}>The AI marker · real output</div>
+              <h2 style={{fontFamily:display, fontWeight:600, fontSize:'clamp(26px, 3.6vw, 40px)', color:C.text,
+                margin:'0 0 12px', letterSpacing:'-0.03em'}}>
+                You get it wrong. Caps shows you right - in full.
+              </h2>
+              <p style={{...type.body, fontSize:15.5, color:C.muted, margin:0, lineHeight:1.6}}>
+                A hard past-paper question from each subject: the kind of answer students actually write,
+                then Caps re-working it step by step in your board's style. Everything below is rendered live -
+                real LaTeX, diagrams, networks and code, not screenshots.
+              </p>
+            </div>
+
+            {/* marker cards */}
+            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(350px, 1fr))', gap:16}}>
+              {MARKER_SAMPLES.map(renderMarkerCard)}
+            </div>
+
+            {/* everything else */}
+            <div style={{textAlign:'center', maxWidth:680, margin:'76px auto 26px'}}>
+              <div style={{...type.eyebrow, color:C.accent, marginBottom:12}}>Everything else it does</div>
+              <h2 style={{fontFamily:display, fontWeight:600, fontSize:'clamp(24px, 3.2vw, 36px)', color:C.text,
+                margin:'0 0 12px', letterSpacing:'-0.03em'}}>
+                The whole revision picture, in one place.
+              </h2>
+              <p style={{...type.body, fontSize:15, color:C.muted, margin:0, lineHeight:1.6}}>
+                Marking is one piece. Battle Plan also shows where your grades are heading, tracks every paper,
+                times your focus, and puts Caps on tap.
+              </p>
+            </div>
+            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(320px, 1fr))', gap:16}}>
+              {APP_SHOTS.map(shot=>(
+                <div key={shot.title} style={{background:C.surface, border:`1px solid ${C.border}`, borderRadius:14,
+                  overflow:'hidden', boxShadow:'0 16px 44px rgba(40,30,18,0.08)'}}>
+                  <div style={{display:'flex', alignItems:'center', gap:7, padding:'11px 14px', borderBottom:`1px solid ${C.border}`, background:C.card2}}>
+                    {['#ff5f57','#febc2e','#28c840'].map(c=><span key={c} style={{width:9, height:9, borderRadius:'50%', background:c}}/>)}
+                    <span style={{marginLeft:6, fontSize:10.5, fontWeight:800, color:C.accent, textTransform:'uppercase', letterSpacing:0.5}}>{shot.tag}</span>
+                  </div>
+                  <div style={{padding:'16px 16px 18px'}}>
+                    <div style={{fontSize:15, fontWeight:800, color:C.text, marginBottom:4}}>{shot.title}</div>
+                    <div style={{fontSize:12.5, color:C.muted, lineHeight:1.55, marginBottom:14}}>{shot.desc}</div>
+                    {shot.render()}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* footer CTA */}
+            <div style={{display:'flex', gap:12, marginTop:48, flexWrap:'wrap', alignItems:'center', justifyContent:'center'}}>
+              <button onClick={()=>{setShowGallery(false); onGetStarted();}}
+                style={{padding:'14px 28px', background:C.accent, border:'none', borderRadius:8, color:'#fff',
+                  fontSize:15, fontWeight:700, fontFamily:font, cursor:'pointer'}}>
+                Mark your first paper free
+              </button>
+              <span style={{fontSize:13.5, color:C.muted}}>3 free marks to try it, then Commander for unlimited. Estimates for revision, not official marks.</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Nav */}
       <nav style={{position:'fixed', top:0, left:0, right:0, zIndex:100,
         background:C.nav, backdropFilter:'blur(16px)',
@@ -7606,12 +7839,21 @@ function LandingPage({ onGetStarted }) {
           <CapsMark size={30}/>
           <span style={{fontFamily:display, fontSize:17, fontWeight:600, color:C.text, letterSpacing:'-0.01em'}}>Battle Plan</span>
         </div>
-        <button onClick={onGetStarted}
-          style={{padding:'7px 15px', background:'transparent', border:`1px solid ${C.border}`,
-            borderRadius:6, color:C.muted, fontSize:13, fontWeight:500,
-            fontFamily:font, cursor:'pointer'}}>
-          Sign in
-        </button>
+        <div style={{display:'flex', alignItems:'center', gap:8}}>
+          <button onClick={()=>setShowGallery(true)}
+            style={{display:'inline-flex', alignItems:'center', gap:7, padding:'7px 14px', background:C.accent,
+              border:`1px solid ${C.accent}`, borderRadius:6, color:'#fff', fontSize:13, fontWeight:700,
+              fontFamily:font, cursor:'pointer'}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            Gallery
+          </button>
+          <button onClick={onGetStarted}
+            style={{padding:'7px 15px', background:'transparent', border:`1px solid ${C.border}`,
+              borderRadius:6, color:C.muted, fontSize:13, fontWeight:500,
+              fontFamily:font, cursor:'pointer'}}>
+            Sign in
+          </button>
+        </div>
       </nav>
 
       {/* Hero - minimal, centred, type-led */}
@@ -7688,99 +7930,31 @@ function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
-      {/* AI marker gallery - all subjects at once: hard question + diagram,
-          the student's wrong answer, and Caps's full re-working. */}
-      <section style={{borderTop:`1px solid ${C.border}`, background:C.surface, marginTop:72}}>
-        <div style={{maxWidth:1180, margin:'0 auto', padding:'72px 24px 88px'}}>
-          <div style={{textAlign:'center', maxWidth:680, margin:'0 auto 8px'}}>
-            <div style={{...type.eyebrow, color:C.accent, marginBottom:12}}>The AI marker · see it in action</div>
-            <h2 style={{fontFamily:display, fontWeight:600, fontSize:'clamp(26px, 3.6vw, 42px)', color:C.text,
-              margin:'0 0 14px', letterSpacing:'-0.03em'}}>
-              You get it wrong. Caps shows you right - in full.
-            </h2>
-            <p style={{...type.body, fontSize:16, color:C.muted, margin:'0 auto 10px', lineHeight:1.6}}>
-              A real hard question from every subject: the kind of answer students actually write,
-              then Caps re-working it step by step in your board's style. Real maths, diagrams, networks and code.
-            </p>
-          </div>
-          <div style={{display:'flex', flexWrap:'wrap', justifyContent:'center', gap:8, marginBottom:36}}>
-            {['LaTeX maths','Curve & data charts','Decision-maths networks','Highlighted code + traces','Mark-scheme points','Essay AO levels'].map(t=>(
+      {/* Gallery teaser - opens the full Gallery sheet */}
+      <section style={{borderTop:`1px solid ${C.border}`, background:C.surface, marginTop:64}}>
+        <div style={{maxWidth:920, margin:'0 auto', padding:'68px 24px', textAlign:'center'}}>
+          <div style={{...type.eyebrow, color:C.accent, marginBottom:12}}>See it in action</div>
+          <h2 style={{fontFamily:display, fontWeight:600, fontSize:'clamp(26px, 3.6vw, 42px)', color:C.text,
+            margin:'0 0 14px', letterSpacing:'-0.03em'}}>
+            You get it wrong. Caps shows you right - in full.
+          </h2>
+          <p style={{...type.body, fontSize:16, color:C.muted, margin:'0 auto 22px', maxWidth:580, lineHeight:1.6}}>
+            A hard question from every subject - Further Mechanics, Decision Simplex, complex integrals and more -
+            with the answer students actually write and Caps re-working it step by step. Plus a look at the analytics,
+            tracker, timer and Caps chat.
+          </p>
+          <div style={{display:'flex', flexWrap:'wrap', justifyContent:'center', gap:8, marginBottom:26}}>
+            {['LaTeX maths','Curve & data charts','Decision networks','Code + traces','Mark-scheme points','Essay AO levels'].map(t=>(
               <span key={t} style={{fontSize:12, fontWeight:600, color:C.muted, background:C.bg,
                 border:`1px solid ${C.border}`, borderRadius:999, padding:'5px 12px'}}>{t}</span>
             ))}
           </div>
-
-          <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(360px, 1fr))', gap:16}}>
-            {MARKER_SAMPLES.map((s) => (
-              <div key={s.subject} style={{background:C.bg, border:`1px solid ${C.border}`, borderRadius:14,
-                overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 16px 44px rgba(40,30,18,0.08)'}}>
-                {/* card header */}
-                <div style={{display:'flex', alignItems:'center', gap:11, padding:'13px 16px',
-                  borderBottom:`1px solid ${C.border}`, background:C.card2}}>
-                  <CapsMark size={24}/>
-                  <div style={{flex:1, minWidth:0}}>
-                    <div style={{fontSize:13.5, fontWeight:800, color:C.text, lineHeight:1.2}}>{s.subject}</div>
-                    <div style={{fontSize:11, color:C.subtle, fontFamily:mono}}>{s.paper}</div>
-                  </div>
-                  <div style={{fontSize:12.5, fontWeight:800, fontFamily:mono, color:C.accent,
-                    background:`${C.accent}14`, border:`1px solid ${C.accent}33`, borderRadius:7, padding:'4px 9px'}}>{s.marks}</div>
-                </div>
-
-                <div style={{padding:'16px 18px', display:'flex', flexDirection:'column', gap:14}}>
-                  {/* question + diagram */}
-                  <RichText style={{fontSize:13.5, color:C.text, lineHeight:1.7}}>{s.question}</RichText>
-
-                  {/* student's wrong answer */}
-                  <div style={{background:'rgba(239,68,68,0.06)', border:'1px solid rgba(239,68,68,0.28)', borderRadius:10, padding:'10px 12px'}}>
-                    <div style={{fontSize:10, fontWeight:800, color:'#c0392b', textTransform:'uppercase', letterSpacing:0.5, marginBottom:7,
-                      display:'flex', alignItems:'center', gap:6}}>
-                      <span style={{width:14, height:14, borderRadius:'50%', background:'#ef4444', color:'#fff', fontSize:9, fontWeight:900,
-                        display:'inline-flex', alignItems:'center', justifyContent:'center'}}>✕</span>
-                      Student's answer
-                    </div>
-                    {s.student.map((ln,i)=>(
-                      <div key={i} style={{display:'flex', gap:7, alignItems:'flex-start', marginBottom:i<s.student.length-1?4:0}}>
-                        <RichText style={{flex:1, minWidth:0, fontSize:13, lineHeight:1.55, color:ln.bad?'#c0392b':C.muted,
-                          fontWeight:ln.bad?600:400}}>{ln.text}</RichText>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Caps's full re-working */}
-                  <div style={{background:`${C.success}0f`, border:`1px solid ${C.success}33`, borderRadius:10, padding:'10px 12px'}}>
-                    <div style={{fontSize:10, fontWeight:800, color:C.success, textTransform:'uppercase', letterSpacing:0.5, marginBottom:8,
-                      display:'flex', alignItems:'center', gap:6}}>
-                      <span style={{width:14, height:14, borderRadius:'50%', background:C.success, color:'#fff', fontSize:9, fontWeight:900,
-                        display:'inline-flex', alignItems:'center', justifyContent:'center'}}>✓</span>
-                      Caps re-worked it
-                    </div>
-                    {s.caps.map((step,i)=>(
-                      <div key={i} style={{display:'flex', gap:8, alignItems:'flex-start', marginBottom:i<s.caps.length-1?7:0}}>
-                        <span style={{flexShrink:0, fontSize:11, fontWeight:800, color:C.success, fontFamily:mono, marginTop:2, width:14, textAlign:'right'}}>{i+1}</span>
-                        <RichText style={{flex:1, minWidth:0, fontSize:13, lineHeight:1.6, color:C.text}}>{step}</RichText>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* verdict */}
-                  <div style={{display:'flex', gap:8, alignItems:'flex-start', fontSize:12.5, color:C.muted, lineHeight:1.55,
-                    borderTop:`1px solid ${C.border}`, paddingTop:12, marginTop:'auto'}}>
-                    <span style={{flexShrink:0, color:C.accent, fontWeight:800}}>Caps:</span>
-                    <span>{s.verdict}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{display:'flex', gap:12, marginTop:36, flexWrap:'wrap', alignItems:'center', justifyContent:'center'}}>
-            <button onClick={onGetStarted}
-              style={{padding:'13px 26px', background:C.accent, border:'none', borderRadius:8, color:'#fff',
-                fontSize:15, fontWeight:700, fontFamily:font, cursor:'pointer'}}>
-              Mark your first paper free
-            </button>
-            <span style={{fontSize:13.5, color:C.muted}}>3 free marks to try it, then Commander for unlimited. Estimates for revision, not official marks.</span>
-          </div>
+          <button onClick={()=>setShowGallery(true)}
+            style={{display:'inline-flex', alignItems:'center', gap:9, padding:'13px 26px', background:C.accent,
+              border:'none', borderRadius:8, color:'#fff', fontSize:15, fontWeight:700, fontFamily:font, cursor:'pointer'}}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            Open the gallery
+          </button>
         </div>
       </section>
 
