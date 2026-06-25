@@ -6709,6 +6709,13 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
   },[uid,referralCode]);
 
   const [nameNotice, setNameNotice] = useState(null); // {title,body} for the centred popup
+  // Local draft so an unsaved (possibly offensive) name never reaches the rest of
+  // the app (chat greeting / leaderboard) - it only commits to displayName on a
+  // validated Save. Kept in sync if the name changes elsewhere (e.g. Caps).
+  const [nameDraft, setNameDraft] = useState(displayName);
+  useEffect(()=>{ setNameDraft(displayName); },[displayName]);
+  const nameDirty = nameDraft.trim() !== (displayName||'').trim();
+
   const saveSchool = async (name, optIn, yg) => {
     if (nameLooksOffensive(name)) { setNameNotice({title:'Use your real school',body:"That doesn't look like a real school name. Please enter your actual school so it can appear on the leaderboard."}); return; }
     setSchoolSaving(true);
@@ -6717,11 +6724,12 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
     if (error) setNameNotice({title:'Use your real school',body:'That school name is not allowed. Please enter your actual school.'});
   };
   const saveName = async () => {
-    const n = displayName.trim().slice(0,40);
-    if (nameLooksOffensive(n)) { setNameNotice({title:'Choose another name',body:"That display name isn't allowed - it's how you appear to friends on leaderboards. Please pick a different one."}); setDisplayName(''); return; }
-    setDisplayName(n);
+    const n = nameDraft.trim().slice(0,40);
+    if (nameLooksOffensive(n)) { setNameNotice({title:'Choose another name',body:"That display name isn't allowed - it's how you appear to friends on leaderboards. Please pick a different one."}); return; }
     const {error}=await supabase.from('user_profiles').update({display_name:n||null}).eq('id',uid);
-    if (error) { setNameNotice({title:'Choose another name',body:"That display name isn't allowed. Please pick a different one."}); setDisplayName(''); }
+    if (error) { setNameNotice({title:'Choose another name',body:"That display name isn't allowed. Please pick a different one."}); return; }
+    setNameDraft(n); setDisplayName(n); // commit to the app only after a clean save
+    addToast('Name saved.','success');
   };
 
   const referralProDays = (()=>{
@@ -6964,10 +6972,17 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       {accountTab==='settings'&&<>
       <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:10,padding:'18px 20px'}}>
         <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5,marginBottom:8}}>Your name</div>
-        <input value={displayName} onChange={e=>setDisplayName(e.target.value)} onBlur={saveName}
-          placeholder="First name - so Caps can greet you"
-          style={{width:'100%',padding:'10px 12px',background:C.card2,border:`1px solid ${C.border}`,
-            borderRadius:8,color:C.text,fontSize:14,fontFamily:font,boxSizing:'border-box'}}/>
+        <div style={{display:'flex',gap:8}}>
+          <input value={nameDraft} onChange={e=>setNameDraft(e.target.value.slice(0,40))}
+            onKeyDown={e=>{ if(e.key==='Enter'&&nameDirty) saveName(); }}
+            placeholder="First name - so Caps can greet you"
+            style={{flex:1,minWidth:0,padding:'10px 12px',background:C.card2,border:`1px solid ${C.border}`,
+              borderRadius:8,color:C.text,fontSize:14,fontFamily:font,boxSizing:'border-box'}}/>
+          <button onClick={saveName} disabled={!nameDirty}
+            style={{flexShrink:0,padding:'10px 18px',borderRadius:8,border:'none',fontSize:13,fontWeight:700,fontFamily:font,
+              background:nameDirty?C.accent:C.card2,color:nameDirty?'#fff':C.subtle,
+              cursor:nameDirty?'pointer':'default'}}>Save</button>
+        </div>
         <div style={{fontSize:11,color:C.subtle,marginTop:7,lineHeight:1.5}}>Just your first name is fine. We don't ask for your age or date of birth.</div>
       </div>
       </>}
