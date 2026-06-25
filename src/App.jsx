@@ -2635,6 +2635,49 @@ function _renderChart(raw){
     return `<div style="margin:10px 0"><svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:auto;display:block">${svg}</svg>${legend}</div>`;
   }catch{ return null; }
 }
+
+// Node-edge graph/network renderer for Decision Maths (graphs, trees, networks,
+// MST/Kruskal/Prim, Dijkstra shortest path, critical-path activity networks).
+// Spec: {"type":"graph","directed":false,"title":"","nodes":[{"id":"A","label":"A","x":0,"y":0}],
+//        "edges":[{"from":"A","to":"B","weight":5,"highlight":true}]}. x/y optional (auto circular layout).
+function _renderGraph(raw){
+  let spec; try{ spec=JSON.parse(raw); }catch{ return null; }
+  if(!spec||typeof spec!=='object') return null;
+  const nodes=(Array.isArray(spec.nodes)?spec.nodes:[]).slice(0,40);
+  const edges=(Array.isArray(spec.edges)?spec.edges:[]).slice(0,80);
+  if(!nodes.length) return null;
+  const W=560,H=340,R=18,pad=40, directed=!!spec.directed, fin=n=>Number.isFinite(n);
+  const byId={}; nodes.forEach(n=>{ byId[String(n.id)]=n; });
+  try{
+    const haveXY = nodes.every(n=>fin(+n.x)&&fin(+n.y));
+    if(haveXY){
+      const xs=nodes.map(n=>+n.x),ys=nodes.map(n=>+n.y);
+      let xmin=Math.min(...xs),xmax=Math.max(...xs),ymin=Math.min(...ys),ymax=Math.max(...ys);
+      if(xmin===xmax)xmax=xmin+1; if(ymin===ymax)ymax=ymin+1;
+      nodes.forEach(n=>{ n._x=pad+((+n.x-xmin)/(xmax-xmin))*(W-2*pad); n._y=pad+((+n.y-ymin)/(ymax-ymin))*(H-2*pad); });
+    } else {
+      const cx=W/2,cy=H/2,rad=Math.min(W,H)/2-pad;
+      nodes.forEach((n,i)=>{ const a=(i/nodes.length)*2*Math.PI-Math.PI/2; n._x=cx+rad*Math.cos(a); n._y=cy+rad*Math.sin(a); });
+    }
+    const ACC='#b5735a',HI='#15803d'; let svg='';
+    if(directed) svg+=`<defs><marker id="rbpah" markerWidth="9" markerHeight="9" refX="7.5" refY="3" orient="auto"><path d="M0,0 L7.5,3 L0,6 Z" fill="#9b938b"/></marker><marker id="rbpahh" markerWidth="9" markerHeight="9" refX="7.5" refY="3" orient="auto"><path d="M0,0 L7.5,3 L0,6 Z" fill="${HI}"/></marker></defs>`;
+    edges.forEach(e=>{
+      const a=byId[String(e.from)],b=byId[String(e.to)]; if(!a||!b) return;
+      const hl=!!e.highlight; let ex=b._x,ey=b._y;
+      if(directed){ const dx=b._x-a._x,dy=b._y-a._y,len=Math.hypot(dx,dy)||1; ex=b._x-(dx/len)*R; ey=b._y-(dy/len)*R; }
+      svg+=`<line x1="${a._x.toFixed(1)}" y1="${a._y.toFixed(1)}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}" stroke="${hl?HI:'#9b938b'}" stroke-width="${hl?3:1.6}"${directed?` marker-end="url(#${hl?'rbpahh':'rbpah'})"`:''}/>`;
+      if(e.weight!=null&&e.weight!==''){ const mx=(a._x+b._x)/2,my=(a._y+b._y)/2;
+        svg+=`<rect x="${(mx-12).toFixed(1)}" y="${(my-9).toFixed(1)}" width="24" height="16" rx="3" fill="#fbf7ef" stroke="rgba(127,127,127,0.25)"/>`+
+             `<text x="${mx.toFixed(1)}" y="${(my+3).toFixed(1)}" font-size="10" fill="${hl?HI:'#574f48'}" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="${hl?700:400}">${_escHtml(e.weight)}</text>`; }
+    });
+    nodes.forEach(n=>{
+      svg+=`<circle cx="${n._x.toFixed(1)}" cy="${n._y.toFixed(1)}" r="${R}" fill="#fff" stroke="${ACC}" stroke-width="2"/>`+
+           `<text x="${n._x.toFixed(1)}" y="${(n._y+4).toFixed(1)}" font-size="12" fill="#2b2620" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="600">${_escHtml(n.label!=null?n.label:n.id)}</text>`;
+    });
+    const title=spec.title?`<div style="text-align:center;font-size:13px;font-weight:700;color:currentColor;margin-bottom:2px">${_escHtml(spec.title)}</div>`:'';
+    return `<div style="margin:10px 0">${title}<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:auto;display:block">${svg}</svg></div>`;
+  }catch{ return null; }
+}
 // Full renderer: markdown (bold/italic/code/headings/bullets/rule/TABLES) +
 // fenced CODE blocks (highlighted) + CHARTS (```chart JSON) + LaTeX. So Caps's
 // replies and the marker's feedback render cleanly across subjects.
@@ -2645,7 +2688,8 @@ function _renderRich(text,katex,hljs){
 
   // 1) fenced code blocks ```lang … ``` (and ```chart JSON → SVG graph)
   t=t.replace(/```([a-zA-Z0-9+#._-]*)\n?([\s\S]*?)```/g,(m,lang,code)=>{
-    if(/^(chart|graph)$/i.test(lang||'')){ const c=_renderChart(code.trim()); if(c) return stash(c,true); }
+    if(/^(graph|network)$/i.test(lang||'')){ const g=_renderGraph(code.trim()); if(g) return stash(g,true); }
+    if(/^chart$/i.test(lang||'')){ const c=_renderChart(code.trim()); if(c) return stash(c,true); }
     code=code.replace(/\n+$/,'');
     let inner;
     if(hljs){
@@ -6610,7 +6654,8 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
   // pro_waitlist capture (no charges) if you need to pause monetization.
   const BETA_WAITLIST = false;
   const [waitlistJoined, setWaitlistJoined] = useState(false);
-  const [upgradeKind, setUpgradeKind] = useState(null); // 'trial' | 'sub' - which checkout button is loading
+  const [upgradeKind, setUpgradeKind] = useState(null); // 'trial' | 'sub' | 'annual' - which checkout is loading
+  const [billing, setBilling] = useState('monthly'); // 'monthly' | 'annual' - subscription tab toggle
   useEffect(()=>{
     if (!BETA_WAITLIST || !uid) return;
     (async()=>{
@@ -6660,6 +6705,16 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       setUpgrading(false); setUpgradeKind(null);
     }
   };
+
+  // If they chose Commander (with a billing) in the onboarding plan picker,
+  // auto-start that checkout once on landing: yearly = direct, monthly = trial.
+  useEffect(()=>{
+    let bi; try { bi = sessionStorage.getItem('rbp_billing_intent'); sessionStorage.removeItem('rbp_billing_intent'); } catch {}
+    if (!bi || BETA_WAITLIST || isPro || !user?.email) return;
+    const t=setTimeout(()=>{ handleUpgrade(bi==='annual' ? {annual:true} : {trial:true}); }, 400);
+    return ()=>clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
 
   const handleManageBilling = async () => {
     if (!stripeCustomerId) return;
@@ -6836,41 +6891,38 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
                   cursor:upgrading||!user||waitlistJoined?'not-allowed':'pointer'}}>
                 {waitlistJoined ? "✓ You're on the waitlist" : (upgrading ? 'Adding you…' : 'Join the Commander waitlist')}
               </button>
-            ) : stripeCustomerId ? (
-              <>
-                <button onClick={()=>handleUpgrade({trial:false})} disabled={upgrading||!user}
-                  style={{width:'100%',padding:'11px',background:upgrading?C.card2:C.accent,
-                    border:`1px solid ${upgrading?C.border:C.accent}`,borderRadius:8,color:upgrading?C.muted:'#fff',
-                    fontSize:14,fontWeight:700,fontFamily:font,cursor:upgrading||!user?'not-allowed':'pointer',transition:'background 0.15s'}}>
-                  {(upgrading&&upgradeKind==='sub') ? 'Opening secure checkout…' : 'Upgrade to Commander - £8.99/mo'}
-                </button>
-                <button onClick={()=>handleUpgrade({annual:true})} disabled={upgrading||!user}
-                  style={{width:'100%',marginTop:8,padding:'10px',background:'transparent',
-                    border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,fontSize:13,fontWeight:600,
-                    fontFamily:font,cursor:upgrading||!user?'not-allowed':'pointer'}}>
-                  {(upgrading&&upgradeKind==='annual') ? 'Opening secure checkout…' : 'Or pay yearly - £69.99 (save ~£38)'}
-                </button>
-              </>
             ) : (
               <>
-                <button onClick={()=>handleUpgrade({trial:true})} disabled={upgrading||!user}
+                {/* Billing toggle, then one clear call to action */}
+                <div style={{display:'flex',gap:4,marginBottom:12,background:C.card2,borderRadius:9,padding:3,border:`1px solid ${C.border}`}}>
+                  {[['monthly','Monthly'],['annual','Yearly · save ~£38']].map(([k,l])=>(
+                    <button key={k} onClick={()=>setBilling(k)} style={{flex:1,padding:'7px',borderRadius:6,border:'none',cursor:'pointer',
+                      background:billing===k?C.accent:'transparent',color:billing===k?'#fff':C.muted,fontSize:12,fontWeight:700,fontFamily:font,transition:'all 0.12s'}}>{l}</button>
+                  ))}
+                </div>
+                <div style={{fontSize:22,fontWeight:800,color:C.accent,marginBottom:14}}>
+                  {billing==='annual' ? '£69.99/yr' : '£8.99/mo'}
+                  <span style={{fontSize:12,color:C.muted,fontWeight:500,marginLeft:8}}>
+                    {billing==='annual' ? 'about £5.83/mo, billed yearly' : (!stripeCustomerId ? '3-day free trial first' : '')}
+                  </span>
+                </div>
+                <button onClick={()=>handleUpgrade(billing==='annual'?{annual:true}:(stripeCustomerId?{trial:false}:{trial:true}))} disabled={upgrading||!user}
                   style={{width:'100%',padding:'11px',background:upgrading?C.card2:C.accent,
                     border:`1px solid ${upgrading?C.border:C.accent}`,borderRadius:8,color:upgrading?C.muted:'#fff',
                     fontSize:14,fontWeight:700,fontFamily:font,cursor:upgrading||!user?'not-allowed':'pointer',transition:'background 0.15s'}}>
-                  {(upgrading&&upgradeKind==='trial') ? 'Opening secure checkout…' : 'Start 3-day free trial'}
+                  {upgrading ? 'Opening secure checkout…'
+                    : billing==='annual' ? 'Get Commander, yearly'
+                    : stripeCustomerId ? 'Subscribe - £8.99/mo'
+                    : 'Start 3-day free trial'}
                 </button>
-                <button onClick={()=>handleUpgrade({trial:false})} disabled={upgrading||!user}
-                  style={{width:'100%',marginTop:8,padding:'10px',background:'transparent',
-                    border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,fontSize:13,fontWeight:600,
-                    fontFamily:font,cursor:upgrading||!user?'not-allowed':'pointer'}}>
-                  {(upgrading&&upgradeKind==='sub') ? 'Opening secure checkout…' : 'Or subscribe now - £8.99/mo (skip trial)'}
-                </button>
-                <button onClick={()=>handleUpgrade({annual:true})} disabled={upgrading||!user}
-                  style={{width:'100%',marginTop:8,padding:'10px',background:'transparent',
-                    border:`1px solid ${C.accent}55`,borderRadius:8,color:C.accent,fontSize:13,fontWeight:600,
-                    fontFamily:font,cursor:upgrading||!user?'not-allowed':'pointer'}}>
-                  {(upgrading&&upgradeKind==='annual') ? 'Opening secure checkout…' : 'Best value: pay yearly - £69.99 (~£5.83/mo)'}
-                </button>
+                {billing==='monthly' && !stripeCustomerId && (
+                  <button onClick={()=>handleUpgrade({trial:false})} disabled={upgrading||!user}
+                    style={{width:'100%',marginTop:8,padding:'9px',background:'transparent',
+                      border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,fontSize:12.5,fontWeight:600,
+                      fontFamily:font,cursor:upgrading||!user?'not-allowed':'pointer'}}>
+                    Skip the trial, subscribe now
+                  </button>
+                )}
               </>
             )}
           </>
@@ -8981,6 +9033,7 @@ function PlanPicker({ onComplete, isPro=false }) {
   const font = FONT_BODY;
   const C = { bg:'#f4eee3', surface:'#fbf7ef', border:'#e7ddcc', text:'#2b2620', muted:'#6f665b', accent:'#b5735a', gold:'#c2802e' };
   const [hover, setHover] = useState(null);
+  const [billing, setBilling] = useState('monthly'); // 'monthly' | 'annual'
   const cards = [RANKS.recruit, RANKS.commander];
 
   return (
@@ -9018,8 +9071,21 @@ function PlanPicker({ onComplete, isPro=false }) {
                     border:`1px solid ${C.gold}44`, borderRadius:5, padding:'3px 8px', letterSpacing:0.5 }}>PRO</span>}
                 </div>
                 <div style={{ fontSize:13, color:C.muted, marginBottom:10 }}>{r.tag}</div>
-                <div style={{ fontSize:24, fontWeight:800, color:isCmd?C.accent:C.text, marginBottom:isCmd?2:12 }}>{r.price}</div>
-                {isCmd && <div style={{ fontSize:12, color:C.muted, marginBottom:12 }}>or £69.99/year (~£5.83/mo)</div>}
+                {isCmd ? (
+                  <>
+                    <div style={{ display:'flex', gap:4, marginBottom:8, background:C.bg, borderRadius:8, padding:3, border:`1px solid ${C.border}` }}>
+                      {[['monthly','Monthly'],['annual','Yearly']].map(([k,l])=>(
+                        <button key={k} onClick={()=>setBilling(k)} style={{ flex:1, padding:'6px', borderRadius:6, border:'none',
+                          cursor:'pointer', background:billing===k?C.accent:'transparent', color:billing===k?'#fff':C.muted,
+                          fontSize:12, fontWeight:700, fontFamily:font }}>{l}{k==='annual'?' · save ~£38':''}</button>
+                      ))}
+                    </div>
+                    <div style={{ fontSize:24, fontWeight:800, color:C.accent, marginBottom:2 }}>{billing==='annual'?'£69.99/yr':'£8.99/mo'}</div>
+                    <div style={{ fontSize:12, color:C.muted, marginBottom:12 }}>{billing==='annual'?'about £5.83/mo, billed yearly':'3-day free trial, then £8.99/mo'}</div>
+                  </>
+                ) : (
+                  <div style={{ fontSize:24, fontWeight:800, color:C.text, marginBottom:12 }}>{r.price}</div>
+                )}
                 <p style={{ fontSize:13, color:C.muted, margin:'0 0 14px', lineHeight:1.5 }}>{r.blurb}</p>
                 <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:18, flex:1 }}>
                   {r.perks.map(p => (
@@ -9028,7 +9094,7 @@ function PlanPicker({ onComplete, isPro=false }) {
                     </div>
                   ))}
                 </div>
-                <button onClick={()=>onComplete(r.id)}
+                <button onClick={()=>onComplete(r.id, isCmd ? billing : undefined)}
                   style={{
                     width:'100%', padding:'12px', borderRadius:10, fontSize:14, fontWeight:700, fontFamily:font,
                     cursor:'pointer', transition:'all 0.15s',
@@ -9036,7 +9102,7 @@ function PlanPicker({ onComplete, isPro=false }) {
                     color: isCmd ? '#fff' : C.text,
                     border: `1.5px solid ${isCmd ? C.accent : C.border}`,
                   }}>
-                  {isCmd ? (isPro ? "I'm a Commander" : 'Become a Commander') : 'Start as a Recruit'}
+                  {isCmd ? (isPro ? "I'm a Commander" : (billing==='annual' ? 'Get Commander, yearly' : 'Start 3-day free trial')) : 'Start as a Recruit'}
                 </button>
               </div>
             );
@@ -9231,12 +9297,15 @@ export default function App() {
     setPhase(planChoice ? 'app' : 'plan-pick');
   }
 
-  function handlePlanDone(choice) {
+  function handlePlanDone(choice, billing) {
     setPlanChoice(choice);
     const uid=user?.id;
     if (uid) supabase.from('user_profiles').update({plan_choice:choice}).eq('id',uid).then(()=>{},()=>{});
-    // Commander → land them in Account → Subscription to complete checkout.
-    if (choice==='commander') { try { sessionStorage.setItem('rbp_plan_intent','commander'); } catch {} }
+    // Commander → land them in Account → Subscription and auto-start the chosen
+    // checkout (monthly = trial, annual = direct) so it's one flow from signup.
+    if (choice==='commander') {
+      try { sessionStorage.setItem('rbp_plan_intent','commander'); sessionStorage.setItem('rbp_billing_intent', billing||'monthly'); } catch {}
+    }
     setPhase('app');
   }
 

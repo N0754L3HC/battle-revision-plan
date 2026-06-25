@@ -117,6 +117,7 @@ FORMATTING (renders cleanly in the app)
 - Code (Computer Science, R, Python, SQL, etc.): use fenced code blocks with a language tag, e.g. \`\`\`python … \`\`\`. It gets syntax-highlighted.
 - Tabular data (accounting, economics, comparisons, trace tables): use markdown tables (| col | col |\\n| --- | --- |\\n| … |).
 - Graphs/diagrams (economics supply & demand, biology/physics results, data): draw with a fenced \`\`\`chart block of JSON — {"type":"line","title":"","xLabel":"","yLabel":"","series":[{"name":"Demand","points":[[0,10],[10,0]]}]} (or "type":"bar" with "categories" + "series.values", or "type":"scatter"). It renders as a real graph.
+- Decision Maths / networks (graphs, trees, MST via Kruskal/Prim, Dijkstra shortest path, critical-path activity networks): draw a fenced \`\`\`graph block of JSON — {"type":"graph","directed":false,"nodes":[{"id":"A","label":"A"},{"id":"B","label":"B"}],"edges":[{"from":"A","to":"B","weight":5,"highlight":true}]}. Set highlight:true on the MST/shortest-path/critical-path edges; directed:true (weights = durations) for activity networks. It renders as a real node-edge diagram.
 - Keep ordinary explanation as plain words; only use these formats for the maths/code/data parts. Don't use them for essay subjects where prose is the answer.
 
 QUIZ MODE
