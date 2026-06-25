@@ -96,6 +96,11 @@ USING THE CONTEXT
 - Don't dump the whole dataset back at them or read it out like a report. Pull the 1-2 things that matter for what they asked.
 - If a number isn't in context (e.g. they've logged no papers for a subject), say so honestly rather than inventing it.
 
+MEMORY — you remember students between chats
+- CONTEXT may include a "WHAT YOU REMEMBER ABOUT THIS STUDENT" list — durable facts from past conversations. Treat them as true and weave them in naturally (e.g. "how did your Chem mock on the 14th go?", "still aiming for Bristol Medicine?"). Don't recite the list back.
+- When the student shares something durable and useful for supporting them — a mock/exam date they mention, a target grade or university, a topic/subject they find hard or love, how they like to revise, or a circumstance affecting their study — quietly save it with a remember action so you have it next time.
+- Keep each memory short, factual and study-relevant (one sentence). Do NOT save: one-off chit-chat, anything sensitive (health, mental health, family problems), or any contact/identifying details. Never save the same fact twice. Don't announce "I'll remember that" — just remember and carry on.
+
 ACTIONS — you can DO things, not just talk
 - When it genuinely helps, propose concrete changes to the student's app. You never apply them yourself — the student taps "Apply" — so propose sensibly but freely.
 - To propose actions, end your reply with a fenced code block tagged caps-actions containing a JSON array, AFTER your normal prose. Example:
@@ -107,6 +112,7 @@ ACTIONS — you can DO things, not just talk
   - mark_topics: {"type","subject","level","topics":["short topic name",...]} — level is "red" (weak), "amber", or "green".
   - add_plan_task: {"type","subject","topic","day","duration_min"} — day is "today", "tomorrow", a weekday ("monday"), or YYYY-MM-DD. duration_min optional.
   - set_name: {"type","name"} — save what the student wants to be called (first name only, no titles). Use this the moment they tell you their name. It applies on its own, so just greet them by it naturally.
+  - remember: {"type","text"} — save a short durable fact about the student for future chats (see MEMORY above). It saves silently; no Apply button appears. Use sparingly for things genuinely worth recalling.
 - Match "subject" to one of their ACTUAL subjects from context. Never invent subjects, grades, or scores. Keep it to the few actions that matter (max 8).
 - If they say "plan my week" / "make me a schedule", give a short plan in prose AND the matching add_plan_task actions spread across days, weighting their weakest subjects and nearest exams.
 - You CANNOT log past-paper marks — if asked, tell them to add it in the Tracker.
@@ -149,11 +155,15 @@ Reply concisely, with empathy where due, and a clear next step when relevant.`;
 // Renders the full study-system snapshot the client sends into a compact,
 // model-readable text block. Falls back gracefully to the older thin shape so a
 // stale client never breaks. No PII is ever included (client strips it).
-function buildContext(ctx = {}) {
+function buildContext(ctx = {}, memories = []) {
   const lvl = ctx.examLevel === 'gcse' ? 'GCSE' : ctx.examLevel === 'aslevel' ? 'AS-Level' : 'A-Level';
   const lines = [];
   if (ctx.studentName) lines.push(`Student first name: ${String(ctx.studentName).slice(0, 40)}`);
   lines.push(`Exam level: ${lvl}`);
+  if (Array.isArray(memories) && memories.length) {
+    lines.push('WHAT YOU REMEMBER ABOUT THIS STUDENT (from past chats):');
+    for (const m of memories.slice(0, 25)) lines.push(`  - ${m}`);
+  }
 
   // ── RICH SHAPE ────────────────────────────────────────────────────────────
   if (Array.isArray(ctx.subjects) && ctx.subjects.length && typeof ctx.subjects[0] === 'object' && 'papers' in ctx.subjects[0]) {
@@ -221,17 +231,24 @@ function buildContext(ctx = {}) {
 // block stripped, plus a sanitised action list. Validation is defence-in-depth;
 // the client re-validates and maps to real subjects/topics before applying.
 function parseActions(text) {
-  if (!text) return { clean: text, actions: [] };
+  if (!text) return { clean: text, actions: [], memories: [] };
   const m = text.match(/```caps-actions\s*([\s\S]*?)```/i);
-  if (!m) return { clean: text, actions: [] };
+  if (!m) return { clean: text, actions: [], memories: [] };
   const clean = text.replace(m[0], '').trim();
   let arr;
-  try { arr = JSON.parse(m[1].trim()); } catch { return { clean, actions: [] }; }
-  if (!Array.isArray(arr)) return { clean, actions: [] };
+  try { arr = JSON.parse(m[1].trim()); } catch { return { clean, actions: [], memories: [] }; }
+  if (!Array.isArray(arr)) return { clean, actions: [], memories: [] };
 
   const gradeRe = /^(A\*|[A-E]|[1-9])$/;
   const out = [];
-  for (const a of arr.slice(0, 8)) {
+  const memories = [];
+  for (const a of arr.slice(0, 12)) {
+    // remember: handled server-side, never returned as a UI "Apply" action.
+    if (a && a.type === 'remember' && typeof a.text === 'string' && a.text.trim()) {
+      const t = a.text.trim().replace(/\s+/g, ' ').slice(0, 200);
+      if (t.length >= 4 && memories.length < 3) memories.push(t);
+      continue;
+    }
     if (!a || typeof a !== 'object') continue;
     if (a.type === 'set_target' && typeof a.subject === 'string' && a.grade != null && gradeRe.test(String(a.grade))) {
       out.push({ type: 'set_target', subject: a.subject.slice(0, 60), grade: String(a.grade) });
@@ -251,7 +268,7 @@ function parseActions(text) {
       if (name) out.push({ type: 'set_name', name });
     }
   }
-  return { clean, actions: out };
+  return { clean, actions: out, memories };
 }
 
 // Map our message format to Gemini's
@@ -477,8 +494,14 @@ export default async function handler(req, res) {
   // 3. Cap history to keep cost down + prevent prompt-stuffing
   const trimmed = messages.slice(-HISTORY_TURNS);
 
-  // 4. Build context block
-  const contextBlock = buildContext(context || {});
+  // 4. Build context block (incl. Caps's long-term memory of this student)
+  let memories = [];
+  try {
+    const { data: mems } = await admin.from('caps_memories')
+      .select('content').eq('user_id', uid).order('created_at', { ascending: false }).limit(25);
+    memories = (mems || []).map(r => r.content);
+  } catch { /* memory is best-effort */ }
+  const contextBlock = buildContext(context || {}, memories);
   const sys = SYSTEM_PROMPT.replace('{{CONTEXT}}', contextBlock);
   const contents = toGeminiContents(trimmed);
 
@@ -507,7 +530,25 @@ export default async function handler(req, res) {
       });
     }
     // Pull out any proposed actions (the student applies them client-side).
-    const { clean, actions } = parseActions(reply);
+    const { clean, actions, memories: newMemories } = parseActions(reply);
+
+    // Persist any new long-term memories Caps chose to keep (server-side, silent).
+    // Skip near-duplicates of what's already remembered; prune to the latest ~40.
+    if (Array.isArray(newMemories) && newMemories.length) {
+      const known = new Set(memories.map(s => s.toLowerCase()));
+      const fresh = newMemories.filter(t => !known.has(t.toLowerCase()));
+      if (fresh.length) {
+        try {
+          await admin.from('caps_memories').insert(fresh.map(content => ({ user_id: uid, content })));
+          const { data: all } = await admin.from('caps_memories')
+            .select('id').eq('user_id', uid).order('created_at', { ascending: false });
+          if (Array.isArray(all) && all.length > 40) {
+            const stale = all.slice(40).map(r => r.id);
+            await admin.from('caps_memories').delete().in('id', stale);
+          }
+        } catch (e) { console.error('caps_memories save error:', e?.message); }
+      }
+    }
     const replyText = (clean && clean.length) ? clean
       : (actions.length ? "Here's what I'd do — tap to apply." : reply);
     // Trim defensively — allow code blocks and short explanations but not essays

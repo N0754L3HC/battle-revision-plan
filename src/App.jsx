@@ -6582,6 +6582,28 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
 
   const [schoolName, setSchoolName] = useState('');
   const [schoolOptIn, setSchoolOptIn] = useState(false);
+
+  // What Caps remembers about this student (privacy: they can see + clear it).
+  const [capsMems, setCapsMems] = useState(null); // null = loading
+  useEffect(()=>{
+    let alive=true;
+    (async()=>{
+      if (!isSupabaseConfigured()||!uid) { if(alive) setCapsMems([]); return; }
+      const {data}=await supabase.from('caps_memories').select('id,content').eq('user_id',uid).order('created_at',{ascending:false});
+      if (alive) setCapsMems(data||[]);
+    })();
+    return ()=>{ alive=false; };
+  },[uid]);
+  const forgetMem = async (id) => {
+    await supabase.from('caps_memories').delete().eq('id',id);
+    setCapsMems(list=>(list||[]).filter(m=>m.id!==id));
+  };
+  const forgetAllMems = async () => {
+    if (!window.confirm('Make Caps forget everything it remembers about you? This cannot be undone.')) return;
+    await supabase.from('caps_memories').delete().eq('user_id',uid);
+    setCapsMems([]);
+    addToast('Caps has cleared its memory.','success');
+  };
   const [schoolSaving, setSchoolSaving] = useState(false);
   const [referralCount, setReferralCount] = useState(null);
   const [referralProUntil, setReferralProUntil] = useState(null);
@@ -7183,6 +7205,38 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
               left:analyticsConsent?23:3}}/>
           </button>
         </div>
+      </div>
+
+      {/* What Caps remembers - student can see + clear it */}
+      <div style={{background:C.tintCream,borderRadius:14,padding:'18px 20px'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,marginBottom:8}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:'uppercase',letterSpacing:0.5}}>What Caps remembers</div>
+          {Array.isArray(capsMems)&&capsMems.length>0&&(
+            <button onClick={forgetAllMems}
+              style={{flexShrink:0,background:'transparent',border:`1px solid ${C.border}`,color:C.muted,
+                cursor:'pointer',fontSize:11,padding:'4px 10px',borderRadius:6,fontFamily:font}}>Forget all</button>
+          )}
+        </div>
+        <div style={{fontSize:12,color:C.muted,lineHeight:1.6,marginBottom:capsMems&&capsMems.length?12:0}}>
+          As you chat, Caps keeps a few short notes so it can pick up where you left off (your mock dates, what you're aiming for, topics you find tricky). It's only for your companion, never shared, and you can remove anything here.
+        </div>
+        {capsMems===null ? (
+          <div style={{fontSize:12,color:C.subtle}}>Loading…</div>
+        ) : capsMems.length===0 ? (
+          <div style={{fontSize:12.5,color:C.subtle,lineHeight:1.6}}>Nothing yet - chat with Caps and it'll start remembering the useful bits.</div>
+        ) : (
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            {capsMems.map(m=>(
+              <div key={m.id} style={{display:'flex',alignItems:'flex-start',gap:10,background:C.card2,
+                borderRadius:9,padding:'9px 12px'}}>
+                <span style={{flex:1,minWidth:0,fontSize:12.5,color:C.text,lineHeight:1.5}}>{m.content}</span>
+                <button onClick={()=>forgetMem(m.id)} aria-label="Forget this"
+                  style={{flexShrink:0,background:'transparent',border:'none',color:C.subtle,cursor:'pointer',
+                    fontSize:15,lineHeight:1,padding:'0 2px'}}>✕</button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Your data - GDPR Article 20 (portability) + Article 17 (erasure) */}
