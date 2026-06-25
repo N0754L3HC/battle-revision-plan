@@ -97,7 +97,10 @@ function LoginScreen({onAuth}) {
     if (aE) { setLoading(false); setErr(aE.message); setStatus('idle'); return; }
     const {data:prof}=await supabase.from('user_profiles').select('*').eq('id',data.user.id).single();
     const isAdmin=prof?.is_admin===true;
-    if (!isAdmin) { await supabase.auth.signOut(); setLoading(false); setStatus('denied'); setTimeout(()=>setStatus('idle'),3000); return; }
+    // Local scope only: deny admin access without revoking this person's refresh
+    // token everywhere (a global signOut here was logging users out of the main
+    // app on every device/tab when a non-admin account touched the admin page).
+    if (!isAdmin) { await supabase.auth.signOut({ scope: 'local' }); setLoading(false); setStatus('denied'); setTimeout(()=>setStatus('idle'),3000); return; }
     setStatus('ok');
     setTimeout(()=>onAuth(data.user,{...prof,is_admin:true}),600);
   };
@@ -2054,7 +2057,10 @@ export default function AdminApp() {
         setAdminProfile(prof);
         setPhase('authed');
       } else {
-        await supabase.auth.signOut();
+        // A non-admin is logged in (e.g. a normal student who opened /hq). Just
+        // show the admin login - do NOT sign them out. A global signOut here was
+        // revoking their refresh token server-side and killing their main-app
+        // session on every device. The admin login below lets a real admin in.
         if (alive) setPhase('login');
       }
     }
@@ -2067,7 +2073,9 @@ export default function AdminApp() {
   },[]);
 
   const handleAuth=(user,prof)=>{ setAdminUser(user); setAdminProfile(prof); setPhase('authed'); };
-  const handleLogout=async()=>{ await supabase.auth.signOut(); setAdminUser(null); setAdminProfile(null); setPhase('login'); };
+  // Local scope: leaving the admin console shouldn't revoke the session on the
+  // admin's other devices / the main app elsewhere.
+  const handleLogout=async()=>{ await supabase.auth.signOut({ scope: 'local' }); setAdminUser(null); setAdminProfile(null); setPhase('login'); };
 
   if (phase==='init') return (
     <div style={{minHeight:'100vh',background:BG,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:mono,color:ACCENT,fontSize:11,letterSpacing:3}}>
