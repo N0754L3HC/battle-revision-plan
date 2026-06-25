@@ -39,6 +39,28 @@ function nameLooksOffensive(txt) {
   return _BANNED_SUB.test(s) || _BANNED_WB.test(s);
 }
 
+// Centred notice the user must acknowledge - used for name rejections so the
+// message is impossible to miss (a corner toast is too easy to scroll past).
+function CenterNotice({ title = 'Hold on', body, onClose, C, font }) {
+  return (
+    <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:520,background:'rgba(0,0,0,0.55)',
+      display:'flex',alignItems:'center',justifyContent:'center',padding:'24px 16px'}}>
+      <div onClick={e=>e.stopPropagation()} role="alertdialog" aria-modal="true" style={{width:'100%',maxWidth:360,
+        background:C.bg,border:`1px solid ${C.border}`,borderRadius:18,padding:'24px 22px',textAlign:'center',
+        boxShadow:'0 20px 60px rgba(0,0,0,0.4)',animation:'rbp-pop 0.2s ease'}}>
+        <div style={{width:48,height:48,borderRadius:'50%',margin:'0 auto 14px',background:'rgba(239,68,68,0.14)',
+          display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <span style={{fontSize:26,fontWeight:800,lineHeight:1,color:C.danger||'#ef4444'}}>!</span>
+        </div>
+        <div style={{fontSize:16.5,fontWeight:800,color:C.text,marginBottom:8,lineHeight:1.3}}>{title}</div>
+        <div style={{fontSize:13.5,color:C.muted,lineHeight:1.6,marginBottom:20}}>{body}</div>
+        <button onClick={onClose} style={{width:'100%',padding:'12px',background:C.accent,border:'none',borderRadius:11,
+          color:'#fff',fontSize:14,fontWeight:800,fontFamily:font,cursor:'pointer'}}>Got it</button>
+      </div>
+    </div>
+  );
+}
+
 // ── Error boundary ─────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
   constructor(p) { super(p); this.state = { err: null }; }
@@ -6686,19 +6708,20 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
     });
   },[uid,referralCode]);
 
+  const [nameNotice, setNameNotice] = useState(null); // {title,body} for the centred popup
   const saveSchool = async (name, optIn, yg) => {
-    if (nameLooksOffensive(name)) { addToast('Please use your real school name.','error'); return; }
+    if (nameLooksOffensive(name)) { setNameNotice({title:'Use your real school',body:"That doesn't look like a real school name. Please enter your actual school so it can appear on the leaderboard."}); return; }
     setSchoolSaving(true);
     const {error}=await supabase.from('user_profiles').update({school_name:name||null,school_opt_in:optIn,year_group:yg||null}).eq('id',uid);
     setSchoolSaving(false);
-    if (error) addToast('Please use your real school name.','error');
+    if (error) setNameNotice({title:'Use your real school',body:'That school name is not allowed. Please enter your actual school.'});
   };
   const saveName = async () => {
     const n = displayName.trim().slice(0,40);
-    if (nameLooksOffensive(n)) { addToast('Please choose a different display name.','error'); setDisplayName(''); return; }
+    if (nameLooksOffensive(n)) { setNameNotice({title:'Choose another name',body:"That display name isn't allowed - it's how you appear to friends on leaderboards. Please pick a different one."}); setDisplayName(''); return; }
     setDisplayName(n);
     const {error}=await supabase.from('user_profiles').update({display_name:n||null}).eq('id',uid);
-    if (error) { addToast('Please choose a different display name.','error'); setDisplayName(''); }
+    if (error) { setNameNotice({title:'Choose another name',body:"That display name isn't allowed. Please pick a different one."}); setDisplayName(''); }
   };
 
   const referralProDays = (()=>{
@@ -6919,6 +6942,8 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
+
+      {nameNotice && <CenterNotice title={nameNotice.title} body={nameNotice.body} onClose={()=>setNameNotice(null)} C={C} font={font}/>}
 
       {/* Sub-tab nav */}
       <div style={{display:'flex',gap:0,background:C.card2,borderRadius:9,padding:3,
@@ -8627,6 +8652,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   const [customising,   setCustomising]  = useState(false);
   const [companionDraft,setCompanionDraft] = useState(companion.name);
   const [companionChat, setCompanionChat]= useState(false);
+  const [companionNameNotice, setCompanionNameNotice] = useState(false);
   const [paperMarker, setPaperMarker]= useState(false);
   const [planBuilder, setPlanBuilder]= useState(false);
 
@@ -9468,6 +9494,9 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
       </button>
 
       {/* Companion modals */}
+      {companionNameNotice && <CenterNotice title="Choose another name"
+        body="That name isn't allowed for your companion. Please pick a different one."
+        onClose={()=>setCompanionNameNotice(false)} C={C} font={font}/>}
       {customising&&(
         <CompanionCustomiser
           companion={companion}
@@ -9476,7 +9505,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
           setCompanion={setCompanion}
           onSave={()=>{
             const nm=companionDraft.trim();
-            if(nameLooksOffensive(nm)){ addToast('Please choose a different name for your companion.','error'); return; }
+            if(nameLooksOffensive(nm)){ setCompanionNameNotice(true); return; }
             const c={...companion,name:nm||'Caps'};
             saveCompanion(c); setCustomising(false);
           }}

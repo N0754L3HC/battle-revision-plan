@@ -32,6 +32,7 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
   const [joining, setJoining]     = useState(false);
   const [expanded, setExpanded]   = useState(null);
 
+  const [groupNotice, setGroupNotice] = useState(''); // centred name-rejected popup
   // Report flow
   const [reportTarget, setReportTarget] = useState(null); // {type,id,label}
   const [reportReason, setReportReason] = useState('');
@@ -108,6 +109,8 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
       addToast(`Group "${d.group.name}" created`, 'success');
       load();
       setExpanded(d.group.id);
+    } else if (d.error && /different group name/i.test(d.error)) {
+      setGroupNotice("That group name isn't allowed - other students would see it. Please choose a different one.");
     } else {
       addToast(d.error || 'Failed to create group', 'error');
     }
@@ -575,6 +578,26 @@ export default function GroupsView({ user, scores = [], uid, C, font, addToast, 
           </div>
         )}
       </div>
+
+      {groupNotice && (
+        <div onClick={() => setGroupNotice('')}
+          style={{ position:'fixed', inset:0, zIndex:520, background:'rgba(0,0,0,0.55)',
+            display:'flex', alignItems:'center', justifyContent:'center', padding:'24px 16px' }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ width:'100%', maxWidth:360, background:C.bg, border:`1px solid ${C.border}`, borderRadius:18,
+              padding:'24px 22px', textAlign:'center', boxShadow:'0 20px 60px rgba(0,0,0,0.4)' }}>
+            <div style={{ width:48, height:48, borderRadius:'50%', margin:'0 auto 14px', background:'rgba(239,68,68,0.14)',
+              display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <span style={{ fontSize:26, fontWeight:800, color:C.danger||'#ef4444' }}>!</span>
+            </div>
+            <div style={{ fontSize:16.5, fontWeight:800, color:C.text, marginBottom:8 }}>Choose another name</div>
+            <div style={{ fontSize:13.5, color:C.muted, lineHeight:1.6, marginBottom:20 }}>{groupNotice}</div>
+            <button onClick={() => setGroupNotice('')}
+              style={{ width:'100%', padding:'12px', background:C.accent, border:'none', borderRadius:11, color:'#fff',
+                fontSize:14, fontWeight:800, fontFamily:font, cursor:'pointer' }}>Got it</button>
+          </div>
+        </div>
+      )}
 
       {reportTarget && (
         <div onClick={() => !reportBusy && setReportTarget(null)}
