@@ -7445,94 +7445,105 @@ function LandingPage({ onGetStarted }) {
     success:'#4f7256',
   };
   const [showTerms, setShowTerms] = useState(false);
-  const [galTab, setGalTab] = useState(0);
   const ic = d => (
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{d}</svg>
   );
 
-  // AI-marker showcase - real rendered output (LaTeX, charts, graphs, code,
-  // mark-scheme + AO marking) across subjects, rendered live by RichText.
+  // AI-marker showcase - a hard question per subject (with diagram where it
+  // fits), the student's WRONG answer, and Caps re-working it in full. All
+  // rendered live by RichText (real LaTeX, charts, graphs, code) - not images.
   const MARKER_SAMPLES = [
-    { tab:'Maths', subject:'Mathematics', paper:'Pure 1 · Differentiation', grade:'A',
-      cap:'LaTeX working + curve sketch',
-      body:`**Q6 (b)** Differentiate $y=\\dfrac{x^{2}}{x+1}$.
-
-You applied the quotient rule cleanly and reached $\\dfrac{dy}{dx}=\\dfrac{x^{2}+2x}{(x+1)^{2}}$ - full method and accuracy marks. Your curve matches:
-
-\`\`\`chart
-{"type":"line","title":"y = x² / (x+1)","xLabel":"x","yLabel":"y","series":[{"name":"y","points":[[0,0],[1,0.5],[2,1.33],[3,2.25],[4,3.2],[5,4.17]]}]}
-\`\`\``,
-      did:'Quotient rule applied cleanly, every line of working shown.',
-      improve:'State the restriction $x \\neq -1$ to secure the final mark.' },
-
-    { tab:'Further Maths', subject:'Further Maths', paper:'Decision 1 · Minimum spanning tree', grade:'A*',
-      cap:'Network / graph diagram',
-      body:`**Q3** Use Prim's algorithm from A to find the minimum spanning tree. Here is the correct tree (your chosen edges highlighted):
+    { tab:'Further Maths', subject:'Further Maths', paper:'Decision 1 · Shortest path', marks:'3 / 5', diagram:true,
+      question:`**Q4** Use Dijkstra's algorithm to find the shortest route from **S** to **T**.
 
 \`\`\`graph
-{"type":"graph","title":"Minimum spanning tree · weight 9","nodes":[{"id":"A","label":"A","x":0,"y":0},{"id":"B","label":"B","x":2,"y":-1.2},{"id":"C","label":"C","x":2,"y":1.2},{"id":"D","label":"D","x":4,"y":0}],"edges":[{"from":"A","to":"B","weight":3,"highlight":true},{"from":"A","to":"C","weight":5},{"from":"B","to":"C","weight":2,"highlight":true},{"from":"C","to":"D","weight":4,"highlight":true},{"from":"B","to":"D","weight":6}]}
-\`\`\`
+{"type":"graph","title":"","nodes":[{"id":"S","label":"S","x":0,"y":0},{"id":"A","label":"A","x":2,"y":1.3},{"id":"B","label":"B","x":2,"y":-1.3},{"id":"T","label":"T","x":4,"y":0}],"edges":[{"from":"S","to":"A","weight":4},{"from":"S","to":"B","weight":2,"highlight":true},{"from":"B","to":"A","weight":1,"highlight":true},{"from":"A","to":"T","weight":5,"highlight":true},{"from":"B","to":"T","weight":8}]}
+\`\`\``,
+      student:[
+        {text:'$S \\to A \\to T = 4 + 5 = 9$'},
+        {text:'Shortest route $= 9$', bad:true},
+      ],
+      caps:[
+        'Dijkstra from $S=0$. First labels: $B=2$, $A=4$.',
+        'From $B\\,(=2)$: update $A=\\min(4,\\;2+1)=3$ and $T=2+8=10$.',
+        'From $A\\,(=3)$: update $T=\\min(10,\\;3+5)=8$.',
+        'Shortest route $S \\to B \\to A \\to T$, length $\\mathbf{8}$ - the highlighted edges.',
+      ],
+      verdict:'You took the first route you spotted. Dijkstra forces you to check the via-B detour, which is shorter.' },
 
-Total weight $=3+2+4=9$ - correct.`,
-      did:'Correct edge order, no cycles formed.',
-      improve:'Write the order you added each edge to earn the working mark.' },
-
-    { tab:'Chemistry', subject:'Chemistry', paper:'Paper 2 · Rates of reaction', grade:'B',
-      cap:'Mark-scheme point marking',
-      body:`**6-mark "explain" question**, marked against the board's points:
-
-- ✓ Higher temperature gives particles more **kinetic energy**
-- ✓ More **frequent collisions** per second
-- ==Missing:== more particles now exceed the **activation energy** $E_a$
-
-Score: **4 / 6**.`,
-      did:'Two well-sequenced points using precise terms.',
-      improve:'Always link back to activation energy - the point most students drop.' },
-
-    { tab:'Comp Sci', subject:'Computer Science', paper:'Paper 1 · Algorithms', grade:'A',
-      cap:'Highlighted code + trace table',
-      body:`Your \`is_prime\` is logically correct - one efficiency win:
-
-\`\`\`python
-def is_prime(n):
-    if n < 2:
-        return False
-    for i in range(2, int(n**0.5) + 1):
-        if n % i == 0:
-            return False
-    return True
-\`\`\`
-
-Trace for $n = 9$:
-
-| i | n % i | result |
-| --- | --- | --- |
-| 2 | 1 | keep going |
-| 3 | 0 | not prime |`,
-      did:'Correct base cases and return logic.',
-      improve:'Loop to $\\sqrt{n}$, not $n$ - that is $O(\\sqrt{n})$ instead of $O(n)$.' },
-
-    { tab:'Economics', subject:'Economics', paper:'Paper 1 · Price controls', grade:'A',
-      cap:'Supply & demand diagram',
-      body:`Strong analysis of a **price ceiling**. The market you described, with the cap below equilibrium:
+    { tab:'Maths', subject:'Mathematics', paper:'Pure · Area between curves', marks:'2 / 5', diagram:true,
+      question:`**Q7** Find the exact area enclosed between $y = x^{2}$ and $y = 2x$.
 
 \`\`\`chart
-{"type":"line","title":"Price ceiling → shortage","xLabel":"Quantity","yLabel":"Price","series":[{"name":"Demand","points":[[0,10],[10,0]]},{"name":"Supply","points":[[0,0],[10,10]]}]}
-\`\`\`
+{"type":"line","title":"","xLabel":"x","yLabel":"y","series":[{"name":"y = x²","points":[[0,0],[0.5,0.25],[1,1],[1.5,2.25],[2,4]]},{"name":"y = 2x","points":[[0,0],[1,2],[2,4]]}]}
+\`\`\``,
+      student:[
+        {text:'$\\int_{0}^{2} x^{2}\\,dx = \\dfrac{8}{3}$', bad:true},
+        {text:'Area $= \\dfrac{8}{3}$'},
+      ],
+      caps:[
+        'Curves meet where $x^{2}=2x \\Rightarrow x = 0,\\,2$.',
+        'On $[0,2]$ the line is above the curve, so integrate (top − bottom): $\\int_{0}^{2}(2x - x^{2})\\,dx$.',
+        '$=\\left[x^{2}-\\dfrac{x^{3}}{3}\\right]_{0}^{2}=4-\\dfrac{8}{3}=\\mathbf{\\dfrac{4}{3}}$.',
+      ],
+      verdict:'You integrated just one curve. Area between two curves is the integral of the gap between them.' },
 
-You correctly identified the **excess demand** where the two lines diverge below the cap.`,
-      did:'Clear chain of reasoning to a shortage.',
-      improve:'Mark the exact shortage on the diagram for the final analysis mark.' },
+    { tab:'Physics', subject:'Physics', paper:'Mechanics · Projectiles', marks:'1 / 3', diagram:true,
+      question:`**Q5** A ball is launched at $20\\,\\text{m s}^{-1}$ at $30^{\\circ}$ to the horizontal. Find its range. $(g=9.8)$
 
-    { tab:'English', subject:'English Literature', paper:'Macbeth · AO breakdown', grade:'B',
-      cap:'Essay AO-level marking',
-      body:`Marked by Assessment Objective:
+\`\`\`chart
+{"type":"line","title":"","xLabel":"x (m)","yLabel":"height (m)","series":[{"name":"path","points":[[0,0],[8.8,3.8],[17.7,5.1],[26.5,3.8],[35.3,0]]}]}
+\`\`\``,
+      student:[
+        {text:'$R=\\dfrac{u^{2}\\sin\\theta}{g}=\\dfrac{400 \\times 0.5}{9.8}=20.4\\,\\text{m}$', bad:true},
+      ],
+      caps:[
+        'The range formula uses $\\sin 2\\theta$, not $\\sin\\theta$: $R=\\dfrac{u^{2}\\sin 2\\theta}{g}$.',
+        '$\\sin(2\\times 30^{\\circ})=\\sin 60^{\\circ}=0.866$.',
+        '$R=\\dfrac{400 \\times 0.866}{9.8}=\\mathbf{35.3\\,\\text{m}}$.',
+      ],
+      verdict:'Right method, wrong angle - range uses sin of double the angle. A very common dropped mark.' },
 
-**AO1 - Response** · a clear, well-argued line throughout.
-**AO2 - Language** · you analysed "*is this a dagger which I see before me*" well - ==push deeper into the verb choices.==
-**AO3 - Context** · one line on Jacobean kingship would lift this to the top band.`,
-      did:'Embedded a well-chosen quotation and analysed it.',
-      improve:'One precise contextual point moves this into Level 5.' },
+    { tab:'Comp Sci', subject:'Computer Science', paper:'Paper 1 · Recursion', marks:'2 / 4', diagram:false,
+      question:`**Q6** Write a function returning the $n$th Fibonacci number ($F_1=F_2=1$).`,
+      student:[
+        {text:'```python\ndef fib(n):\n    return fib(n-1) + fib(n-2)\n```', bad:true},
+      ],
+      caps:[
+        'There is no base case, so it recurses forever. Anchor it:',
+        '```python\ndef fib(n):\n    if n <= 2:\n        return 1\n    return fib(n - 1) + fib(n - 2)\n```',
+        'Trace for $n=4$:\n\n| call | returns |\n| --- | --- |\n| fib(4) | fib(3) + fib(2) |\n| fib(3) | fib(2) + fib(1) = 2 |\n| **fib(4)** | **3** |',
+      ],
+      verdict:'Your logic was right, but with no base case it never stops. Always anchor a recursion first.' },
+
+    { tab:'Economics', subject:'Economics', paper:'Paper 1 · Labour market', marks:'2 / 6', diagram:true,
+      question:`**Q3** Using a diagram, explain the effect of a minimum wage set **above** the equilibrium wage.
+
+\`\`\`chart
+{"type":"line","title":"","xLabel":"Quantity of labour","yLabel":"Wage","series":[{"name":"Demand","points":[[0,10],[10,0]]},{"name":"Supply","points":[[0,0],[10,10]]}]}
+\`\`\``,
+      student:[
+        {text:'A minimum wage raises pay, so more people are employed.', bad:true},
+      ],
+      caps:[
+        'Above equilibrium, the wage floor sits where the **supply** of labour exceeds **demand**.',
+        'Firms move up the demand curve and hire fewer workers, while more people want to work.',
+        'That gap is **excess supply of labour = unemployment**: better pay for those in work, fewer jobs overall.',
+      ],
+      verdict:'The diagram shows the opposite of your claim - a wage floor above equilibrium creates a labour surplus.' },
+
+    { tab:'English', subject:'English Literature', paper:'Macbeth · 30 marks', marks:'Level 2 / 5', diagram:false,
+      question:`**Q1** "Macbeth is a victim of fate." Explore how far you agree.`,
+      student:[
+        {text:'The witches say Macbeth will be king and he does become king, which shows fate. There are three witches and they speak in rhyme.', bad:true},
+      ],
+      caps:[
+        '**AO1** - take a clear line: he is *partly* fated, but his choices drive the tragedy.',
+        '**AO2** - analyse language: "*stars, hide your fires*" is an imperative showing **agency**, not fate.',
+        '**AO3** - add context: a Jacobean audience saw regicide as a chosen sin against the divine order.',
+        'Feature-spotting ("three witches, rhyme") earns little - **analyse the effect**, do not list devices.',
+      ],
+      verdict:'You retold the plot and spotted features. The top bands reward analysis of how language and context create meaning.' },
   ];
   const FEATURES = [
     { icon: ic(<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>),
@@ -7677,6 +7688,102 @@ You correctly identified the **excess demand** where the two lines diverge below
         </div>
       </section>
 
+      {/* AI marker gallery - all subjects at once: hard question + diagram,
+          the student's wrong answer, and Caps's full re-working. */}
+      <section style={{borderTop:`1px solid ${C.border}`, background:C.surface, marginTop:72}}>
+        <div style={{maxWidth:1180, margin:'0 auto', padding:'72px 24px 88px'}}>
+          <div style={{textAlign:'center', maxWidth:680, margin:'0 auto 8px'}}>
+            <div style={{...type.eyebrow, color:C.accent, marginBottom:12}}>The AI marker · see it in action</div>
+            <h2 style={{fontFamily:display, fontWeight:600, fontSize:'clamp(26px, 3.6vw, 42px)', color:C.text,
+              margin:'0 0 14px', letterSpacing:'-0.03em'}}>
+              You get it wrong. Caps shows you right - in full.
+            </h2>
+            <p style={{...type.body, fontSize:16, color:C.muted, margin:'0 auto 10px', lineHeight:1.6}}>
+              A real hard question from every subject: the kind of answer students actually write,
+              then Caps re-working it step by step in your board's style. Real maths, diagrams, networks and code.
+            </p>
+          </div>
+          <div style={{display:'flex', flexWrap:'wrap', justifyContent:'center', gap:8, marginBottom:36}}>
+            {['LaTeX maths','Curve & data charts','Decision-maths networks','Highlighted code + traces','Mark-scheme points','Essay AO levels'].map(t=>(
+              <span key={t} style={{fontSize:12, fontWeight:600, color:C.muted, background:C.bg,
+                border:`1px solid ${C.border}`, borderRadius:999, padding:'5px 12px'}}>{t}</span>
+            ))}
+          </div>
+
+          <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(360px, 1fr))', gap:16}}>
+            {MARKER_SAMPLES.map((s) => (
+              <div key={s.subject} style={{background:C.bg, border:`1px solid ${C.border}`, borderRadius:14,
+                overflow:'hidden', display:'flex', flexDirection:'column', boxShadow:'0 16px 44px rgba(40,30,18,0.08)'}}>
+                {/* card header */}
+                <div style={{display:'flex', alignItems:'center', gap:11, padding:'13px 16px',
+                  borderBottom:`1px solid ${C.border}`, background:C.card2}}>
+                  <CapsMark size={24}/>
+                  <div style={{flex:1, minWidth:0}}>
+                    <div style={{fontSize:13.5, fontWeight:800, color:C.text, lineHeight:1.2}}>{s.subject}</div>
+                    <div style={{fontSize:11, color:C.subtle, fontFamily:mono}}>{s.paper}</div>
+                  </div>
+                  <div style={{fontSize:12.5, fontWeight:800, fontFamily:mono, color:C.accent,
+                    background:`${C.accent}14`, border:`1px solid ${C.accent}33`, borderRadius:7, padding:'4px 9px'}}>{s.marks}</div>
+                </div>
+
+                <div style={{padding:'16px 18px', display:'flex', flexDirection:'column', gap:14}}>
+                  {/* question + diagram */}
+                  <RichText style={{fontSize:13.5, color:C.text, lineHeight:1.7}}>{s.question}</RichText>
+
+                  {/* student's wrong answer */}
+                  <div style={{background:'rgba(239,68,68,0.06)', border:'1px solid rgba(239,68,68,0.28)', borderRadius:10, padding:'10px 12px'}}>
+                    <div style={{fontSize:10, fontWeight:800, color:'#c0392b', textTransform:'uppercase', letterSpacing:0.5, marginBottom:7,
+                      display:'flex', alignItems:'center', gap:6}}>
+                      <span style={{width:14, height:14, borderRadius:'50%', background:'#ef4444', color:'#fff', fontSize:9, fontWeight:900,
+                        display:'inline-flex', alignItems:'center', justifyContent:'center'}}>✕</span>
+                      Student's answer
+                    </div>
+                    {s.student.map((ln,i)=>(
+                      <div key={i} style={{display:'flex', gap:7, alignItems:'flex-start', marginBottom:i<s.student.length-1?4:0}}>
+                        <RichText style={{flex:1, minWidth:0, fontSize:13, lineHeight:1.55, color:ln.bad?'#c0392b':C.muted,
+                          fontWeight:ln.bad?600:400}}>{ln.text}</RichText>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Caps's full re-working */}
+                  <div style={{background:`${C.success}0f`, border:`1px solid ${C.success}33`, borderRadius:10, padding:'10px 12px'}}>
+                    <div style={{fontSize:10, fontWeight:800, color:C.success, textTransform:'uppercase', letterSpacing:0.5, marginBottom:8,
+                      display:'flex', alignItems:'center', gap:6}}>
+                      <span style={{width:14, height:14, borderRadius:'50%', background:C.success, color:'#fff', fontSize:9, fontWeight:900,
+                        display:'inline-flex', alignItems:'center', justifyContent:'center'}}>✓</span>
+                      Caps re-worked it
+                    </div>
+                    {s.caps.map((step,i)=>(
+                      <div key={i} style={{display:'flex', gap:8, alignItems:'flex-start', marginBottom:i<s.caps.length-1?7:0}}>
+                        <span style={{flexShrink:0, fontSize:11, fontWeight:800, color:C.success, fontFamily:mono, marginTop:2, width:14, textAlign:'right'}}>{i+1}</span>
+                        <RichText style={{flex:1, minWidth:0, fontSize:13, lineHeight:1.6, color:C.text}}>{step}</RichText>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* verdict */}
+                  <div style={{display:'flex', gap:8, alignItems:'flex-start', fontSize:12.5, color:C.muted, lineHeight:1.55,
+                    borderTop:`1px solid ${C.border}`, paddingTop:12, marginTop:'auto'}}>
+                    <span style={{flexShrink:0, color:C.accent, fontWeight:800}}>Caps:</span>
+                    <span>{s.verdict}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{display:'flex', gap:12, marginTop:36, flexWrap:'wrap', alignItems:'center', justifyContent:'center'}}>
+            <button onClick={onGetStarted}
+              style={{padding:'13px 26px', background:C.accent, border:'none', borderRadius:8, color:'#fff',
+                fontSize:15, fontWeight:700, fontFamily:font, cursor:'pointer'}}>
+              Mark your first paper free
+            </button>
+            <span style={{fontSize:13.5, color:C.muted}}>3 free marks to try it, then Commander for unlimited. Estimates for revision, not official marks.</span>
+          </div>
+        </div>
+      </section>
+
       {/* Boards strip */}
       <section style={{maxWidth:1100, margin:'0 auto', padding:'44px 24px 8px', textAlign:'center'}}>
         <div style={{...type.eyebrow, color:C.subtle, marginBottom:16}}>Built for every major UK exam board</div>
@@ -7706,85 +7813,6 @@ You correctly identified the **excess demand** where the two lines diverge below
                 <p style={{...type.body, fontSize:14, color:C.muted, margin:0}}>{s.desc}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* AI marker showcase - live-rendered gallery across subjects */}
-      <section style={{borderTop:`1px solid ${C.border}`, background:C.surface}}>
-        <div style={{maxWidth:1080, margin:'0 auto', padding:'104px 24px'}}>
-          <div style={{...type.eyebrow, color:C.accent, marginBottom:14}}>The AI marker</div>
-          <h2 style={{fontFamily:display, fontWeight:600, fontSize:'clamp(26px, 3.4vw, 40px)', color:C.text,
-            margin:'0 0 14px', letterSpacing:'-0.03em', maxWidth:640}}>
-            Snap your answers. Get them marked like an examiner.
-          </h2>
-          <p style={{...type.body, fontSize:16, color:C.muted, margin:'0 0 14px', maxWidth:600, lineHeight:1.6}}>
-            Upload a photo, PDF or your typed working and Caps marks it in your exam board's style - an estimated
-            grade, the marks you earned and the exact step that wins the rest. It renders real maths, diagrams,
-            networks and code, not flat text.
-          </p>
-          <div style={{display:'flex', flexWrap:'wrap', gap:8, marginBottom:28}}>
-            {['Proper LaTeX maths','Charts & sketches','Decision-maths networks','Highlighted code & trace tables','Mark-scheme points','Essay AO levels'].map(t=>(
-              <span key={t} style={{fontSize:12, fontWeight:600, color:C.muted, background:C.bg,
-                border:`1px solid ${C.border}`, borderRadius:999, padding:'5px 12px'}}>{t}</span>
-            ))}
-          </div>
-
-          {/* Subject tabs */}
-          <div style={{display:'flex', gap:7, flexWrap:'wrap', marginBottom:16}}>
-            {MARKER_SAMPLES.map((s,i)=>(
-              <button key={s.tab} onClick={()=>setGalTab(i)}
-                style={{padding:'8px 14px', borderRadius:9, cursor:'pointer', fontFamily:font, fontSize:13, fontWeight:700,
-                  border:`1px solid ${galTab===i?C.accent:C.border}`,
-                  background:galTab===i?C.accent:C.bg, color:galTab===i?'#fff':C.muted, transition:'all 0.12s'}}>
-                {s.tab}
-              </button>
-            ))}
-          </div>
-
-          {/* Marked-answer card (browser window) */}
-          {(()=>{ const s=MARKER_SAMPLES[galTab]; return (
-            <div style={{background:C.bg, border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden',
-              boxShadow:'0 24px 60px rgba(40,30,18,0.12)'}}>
-              <div style={{display:'flex', alignItems:'center', gap:12, padding:'13px 18px',
-                borderBottom:`1px solid ${C.border}`, background:C.card2}}>
-                <CapsMark size={26}/>
-                <div style={{flex:1, minWidth:0}}>
-                  <div style={{fontSize:13.5, fontWeight:800, color:C.text, lineHeight:1.2}}>{s.subject}</div>
-                  <div style={{fontSize:11.5, color:C.subtle, fontFamily:mono}}>{s.paper}</div>
-                </div>
-                <div style={{textAlign:'right'}}>
-                  <div style={{fontSize:9.5, color:C.subtle, textTransform:'uppercase', letterSpacing:0.5, fontWeight:700}}>Estimated</div>
-                  <div style={{fontSize:20, fontWeight:900, color:gradeColor(s.grade), lineHeight:1, fontFamily:mono}}>{s.grade}</div>
-                </div>
-              </div>
-              <div style={{padding:'20px 22px'}}>
-                <RichText style={{fontSize:14.5, color:C.text, lineHeight:1.8}}>{s.body}</RichText>
-                <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))', gap:10, marginTop:18}}>
-                  <div style={{background:`${C.success}12`, border:`1px solid ${C.success}33`, borderRadius:10, padding:'11px 13px'}}>
-                    <div style={{fontSize:10, fontWeight:800, color:C.success, textTransform:'uppercase', letterSpacing:0.5, marginBottom:5}}>What you did well</div>
-                    <div style={{fontSize:13, color:C.text, lineHeight:1.55}}>{s.did}</div>
-                  </div>
-                  <div style={{background:`${C.accent}12`, border:`1px solid ${C.accent}33`, borderRadius:10, padding:'11px 13px'}}>
-                    <div style={{fontSize:10, fontWeight:800, color:C.accent, textTransform:'uppercase', letterSpacing:0.5, marginBottom:5}}>To improve</div>
-                    <RichText style={{fontSize:13, color:C.text, lineHeight:1.55}}>{s.improve}</RichText>
-                  </div>
-                </div>
-                <div style={{fontSize:11, color:C.subtle, marginTop:14, display:'flex', alignItems:'center', gap:7}}>
-                  <span style={{width:6, height:6, borderRadius:'50%', background:C.accent}}/>
-                  Showing: {s.cap} · estimate for revision, not an official mark
-                </div>
-              </div>
-            </div>
-          ); })()}
-
-          <div style={{display:'flex', gap:10, marginTop:26, flexWrap:'wrap', alignItems:'center'}}>
-            <button onClick={onGetStarted}
-              style={{padding:'12px 22px', background:C.accent, border:'none', borderRadius:8, color:'#fff',
-                fontSize:14, fontWeight:700, fontFamily:font, cursor:'pointer'}}>
-              Mark your first paper free
-            </button>
-            <span style={{fontSize:13, color:C.muted}}>3 free marks to try it, then Commander for unlimited.</span>
           </div>
         </div>
       </section>
