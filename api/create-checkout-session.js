@@ -6,7 +6,8 @@ import { createClient } from '@supabase/supabase-js';
 // with FUNCTION_INVOCATION_FAILED before any guard can run).
 let _stripe;
 const getStripe = () => (_stripe ??= new Stripe(process.env.STRIPE_SECRET_KEY));
-const PRO_PRICE_ID = process.env.STRIPE_PRO_PRICE_ID;
+const PRO_PRICE_ID = process.env.STRIPE_PRO_PRICE_ID;                 // monthly £8.99
+const PRO_PRICE_ID_ANNUAL = process.env.STRIPE_PRO_PRICE_ID_ANNUAL;   // yearly £69.99 (optional)
 const APP_URL = process.env.APP_URL ?? 'https://www.beattheexam.org';
 const TRIAL_DAYS = parseInt(process.env.TRIAL_DAYS ?? '3', 10);
 
@@ -33,11 +34,11 @@ async function getAuthUser(req) {
 
 // Checkout requires a price_… id. Accept a price id directly, or resolve a
 // product id (prod_…) to its active price. Cached after first lookup.
-let _resolvedPrice;
+const _resolvedPrice = {}; // keyed by input id, so monthly + annual don't collide
 async function resolvePriceId(stripe, id) {
   if (!id) return null;
   if (id.startsWith('price_')) return id;
-  if (_resolvedPrice) return _resolvedPrice;
+  if (_resolvedPrice[id]) return _resolvedPrice[id];
   if (id.startsWith('prod_')) {
     try {
       const product = await stripe.products.retrieve(id);
@@ -47,7 +48,7 @@ async function resolvePriceId(stripe, id) {
         const prices = await stripe.prices.list({ product: id, active: true, limit: 1 });
         pid = prices.data[0]?.id ?? null;
       }
-      _resolvedPrice = pid;
+      _resolvedPrice[id] = pid;
       return pid;
     } catch { return null; }
   }
@@ -72,8 +73,10 @@ export default async function handler(req, res) {
   const email  = user.email;
   if (!email) return res.status(400).json({ error: 'Account has no email' });
 
-  // Only the trial flag is read from the body; everything else comes from the JWT.
+  // Only the trial flag + plan choice are read from the body; everything else
+  // comes from the JWT.
   const wantTrial = req.body?.trial === true;
+  const wantAnnual = req.body?.plan === 'annual' && !!PRO_PRICE_ID_ANNUAL;
 
   // The customer is ALWAYS derived from the authenticated user's own profile —
   // the request body is never trusted to choose a Stripe customer.
@@ -110,13 +113,14 @@ export default async function handler(req, res) {
 
     // Stripe Checkout needs a PRICE id (price_…). If the env var was set to a
     // PRODUCT id (prod_…) by mistake, resolve it to the product's active price.
-    const priceId = await resolvePriceId(stripe, PRO_PRICE_ID);
+    const priceId = await resolvePriceId(stripe, wantAnnual ? PRO_PRICE_ID_ANNUAL : PRO_PRICE_ID);
     if (!priceId) return res.status(503).json({ error: 'No active price is configured for Pro. Set STRIPE_PRO_PRICE_ID to a price_… id.' });
 
     // Trial only when explicitly requested AND this customer has NEVER had any
     // subscription before. One trial per person; the required card blocks farming.
+    // The annual plan is a direct commitment, so no trial on it.
     const everSubscribed = existing.data.length > 0;
-    const applyTrial = wantTrial && !everSubscribed && TRIAL_DAYS > 0;
+    const applyTrial = wantTrial && !wantAnnual && !everSubscribed && TRIAL_DAYS > 0;
 
     const params = {
       mode: 'subscription',

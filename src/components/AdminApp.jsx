@@ -412,7 +412,7 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
   // (admin OR paid OR trialing OR active grant).
   const pro     = users.filter(u=>u.is_admin || ['active','pro','trialing'].includes(u.subscription_status) || isActiveGrant(u)).length;
   const cancelled=users.filter(u=>['canceled','cancelled','past_due'].includes(u.subscription_status)).length;
-  const mrr     = +(paying*6.99).toFixed(2);
+  const mrr     = +(paying*8.99).toFixed(2);
   const arr     = +(mrr*12).toFixed(0);
   const conv    = total?Math.round(paying/total*100):0;
 
@@ -515,7 +515,7 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
       <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:14}}>
         <Kpi v={paying} l="Paying subscribers" c='#b45309' sub={`${conv}% of users · ${trialing} on trial`}/>
         <Kpi v={pro} l="Pro access (total)" c='#b45309' sub={`${paying} paid · ${trialing} trial · ${grantPro} granted · ${adminPro} admin`}/>
-        <Kpi v={`£${mrr}`} l="MRR (est.)" c='#b45309' sub={`${paying} × £6.99 (paid only)`}/>
+        <Kpi v={`£${mrr}`} l="MRR (est.)" c='#b45309' sub={`${paying} × £8.99 (paid only)`}/>
         <Kpi v={`£${arr}`} l="ARR (est.)" c='#b45309' sub="MRR × 12"/>
       </div>
 
@@ -1409,7 +1409,7 @@ function AiUsagePanel({users=[]}) {
   const userRows=(rep.topUsers||[]).map(v=>{ const u=uFor(v.user_id); return {id:v.user_id,name:u?(u.display_name||u.email):'(unknown / deleted)',pro:isProFor(v.user_id),cost:Number(v.cost||0),calls:Number(v.calls||0),chat:Number(v.chat||0),marker:Number(v.marker||0),planner:Number(v.planner||0)}; });
 
   const paying=users.filter(u=>['pro','active'].includes(u.subscription_status)).length;
-  const mrrGBP=paying*6.99;
+  const mrrGBP=paying*8.99;
   const projMonthUSD=days===30?totalUSD:totalUSD*(30/days);
   const projMonthGBP=projMonthUSD*USD_GBP;
   const profitGBP=mrrGBP-projMonthGBP;
@@ -1438,7 +1438,7 @@ function AiUsagePanel({users=[]}) {
       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:10}}>
         <Kpi l={`AI spend · ${days}d`} v={$(totalUSD)} sub={`${tok(totalTok)} tokens · ${totalCalls} calls`} c={WARN}/>
         <Kpi l="Projected monthly spend" v={`£${projMonthGBP.toFixed(2)}`} sub={`${$(projMonthUSD)} / mo`}/>
-        <Kpi l="MRR (paying)" v={`£${mrrGBP.toFixed(2)}`} sub={`${paying} × £6.99`} c={OK}/>
+        <Kpi l="MRR (paying)" v={`£${mrrGBP.toFixed(2)}`} sub={`${paying} × £8.99`} c={OK}/>
         <Kpi l="Profit (est.)" v={`£${profitGBP.toFixed(2)}`} sub="MRR − projected AI cost" c={profitGBP>=0?OK:BAD}/>
       </div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:20}}>
@@ -1497,7 +1497,7 @@ function AiUsagePanel({users=[]}) {
 }
 
 function FinanceSection({users=[],waitlist=[]}) {
-  const PRICE=6.99;
+  const PRICE=8.99;
   const now=Date.now();
   const active   = users.filter(u=>['pro','active'].includes(u.subscription_status));
   const trialing = users.filter(u=>u.subscription_status==='trialing');
@@ -1812,7 +1812,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
               {v:`${stats.totalStudyHours}h`,l:'Study hours',c:OK},
               {v:stats.totalErrors,l:'Errors logged',c:WARN},
               {v:stats.avgReadiness,l:'Avg readiness',c:R(stats.avgReadiness)},
-              {v:`£${(stats.pro*6.99).toFixed(0)}`,l:'Est. MRR',c:ACCENT},
+              {v:`£${(stats.pro*8.99).toFixed(0)}`,l:'Est. MRR',c:ACCENT},
             ].map(({v,l,c},i)=>(
               <div key={l} style={{background:TINTS[(i+1)%3],borderRadius:12,padding:'14px 16px'}}>
                 <div style={{fontSize:24,fontWeight:700,color:c||TXT,lineHeight:1,letterSpacing:'-0.02em',fontFamily:numF}}>{v}</div>

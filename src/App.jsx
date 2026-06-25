@@ -6622,6 +6622,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
   const handleUpgrade = async (opts = {}) => {
     if (!user?.email) return;
     const trial = !!opts.trial;
+    const annual = !!opts.annual;
     if (BETA_WAITLIST) {
       setUpgrading(true); setUpgradeError('');
       const {error}=await supabase.from('pro_waitlist')
@@ -6633,7 +6634,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       addToast("You're on the list - we'll email you when Pro launches.", 'success');
       return;
     }
-    setUpgrading(true); setUpgradeKind(trial?'trial':'sub'); setUpgradeError('');
+    setUpgrading(true); setUpgradeKind(annual?'annual':trial?'trial':'sub'); setUpgradeError('');
     try {
       // The API derives userId/email from the verified JWT (it ignores the body
       // for security), so we MUST send the access token or it 401s.
@@ -6643,7 +6644,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
       const r = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: {'Content-Type':'application/json', Authorization:`Bearer ${token}`},
-        body: JSON.stringify({ trial }),
+        body: JSON.stringify({ trial, plan: annual ? 'annual' : 'monthly' }),
       });
       const d = await r.json();
       // Already a paying subscriber - don't open a second checkout (no double charge).
@@ -6815,7 +6816,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
                 ? "Commander isn't quite ready yet - payments aren't live during the beta. Join the waitlist and you'll be the first to know when it launches."
                 : (stripeCustomerId
                     ? "Upgrade to Commander to unlock email reports, AI companion chat, and more."
-                    : "Try Commander free for 3 days - email reports, AI companion chat, and more. A card is required; cancel anytime before day 3 and you won't be charged. £6.99/mo after.")}
+                    : "Try Commander free for 3 days - email reports, AI companion chat, and more. A card is required; cancel anytime before day 3 and you won't be charged. £8.99/mo after, or £69.99/year.")}
             </div>
             <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:14}}>
               {['Email exam schedule & weekly digest','Companion chat','Priority feature access'].map(f=>(
@@ -6836,12 +6837,20 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
                 {waitlistJoined ? "✓ You're on the waitlist" : (upgrading ? 'Adding you…' : 'Join the Commander waitlist')}
               </button>
             ) : stripeCustomerId ? (
-              <button onClick={()=>handleUpgrade({trial:false})} disabled={upgrading||!user}
-                style={{width:'100%',padding:'11px',background:upgrading?C.card2:C.accent,
-                  border:`1px solid ${upgrading?C.border:C.accent}`,borderRadius:8,color:upgrading?C.muted:'#fff',
-                  fontSize:14,fontWeight:700,fontFamily:font,cursor:upgrading||!user?'not-allowed':'pointer',transition:'background 0.15s'}}>
-                {upgrading ? 'Opening secure checkout…' : 'Upgrade to Commander - £6.99/mo'}
-              </button>
+              <>
+                <button onClick={()=>handleUpgrade({trial:false})} disabled={upgrading||!user}
+                  style={{width:'100%',padding:'11px',background:upgrading?C.card2:C.accent,
+                    border:`1px solid ${upgrading?C.border:C.accent}`,borderRadius:8,color:upgrading?C.muted:'#fff',
+                    fontSize:14,fontWeight:700,fontFamily:font,cursor:upgrading||!user?'not-allowed':'pointer',transition:'background 0.15s'}}>
+                  {(upgrading&&upgradeKind==='sub') ? 'Opening secure checkout…' : 'Upgrade to Commander - £8.99/mo'}
+                </button>
+                <button onClick={()=>handleUpgrade({annual:true})} disabled={upgrading||!user}
+                  style={{width:'100%',marginTop:8,padding:'10px',background:'transparent',
+                    border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,fontSize:13,fontWeight:600,
+                    fontFamily:font,cursor:upgrading||!user?'not-allowed':'pointer'}}>
+                  {(upgrading&&upgradeKind==='annual') ? 'Opening secure checkout…' : 'Or pay yearly - £69.99 (save ~£38)'}
+                </button>
+              </>
             ) : (
               <>
                 <button onClick={()=>handleUpgrade({trial:true})} disabled={upgrading||!user}
@@ -6854,7 +6863,13 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
                   style={{width:'100%',marginTop:8,padding:'10px',background:'transparent',
                     border:`1px solid ${C.border}`,borderRadius:8,color:C.muted,fontSize:13,fontWeight:600,
                     fontFamily:font,cursor:upgrading||!user?'not-allowed':'pointer'}}>
-                  {(upgrading&&upgradeKind==='sub') ? 'Opening secure checkout…' : 'Or subscribe now - £6.99/mo (skip trial)'}
+                  {(upgrading&&upgradeKind==='sub') ? 'Opening secure checkout…' : 'Or subscribe now - £8.99/mo (skip trial)'}
+                </button>
+                <button onClick={()=>handleUpgrade({annual:true})} disabled={upgrading||!user}
+                  style={{width:'100%',marginTop:8,padding:'10px',background:'transparent',
+                    border:`1px solid ${C.accent}55`,borderRadius:8,color:C.accent,fontSize:13,fontWeight:600,
+                    fontFamily:font,cursor:upgrading||!user?'not-allowed':'pointer'}}>
+                  {(upgrading&&upgradeKind==='annual') ? 'Opening secure checkout…' : 'Best value: pay yearly - £69.99 (~£5.83/mo)'}
                 </button>
               </>
             )}
@@ -7325,7 +7340,7 @@ function LandingPage({ onGetStarted }) {
   ];
 
   const FAQ = [
-    { q:'Is it actually free?', a:'Yes. As a Recruit you get everything you need to track papers and revise - free, forever, no card needed. Commander (£6.99/mo) is an optional upgrade for generous AI marking and unlimited companion chat.' },
+    { q:'Is it actually free?', a:'Yes. As a Recruit you get everything you need to track papers and revise - free, forever, no card needed. Commander (£8.99/mo, or £69.99/year) is an optional upgrade for generous AI marking and unlimited companion chat.' },
     { q:'Which exam boards do you support?', a:'AQA, Edexcel, OCR and WJEC, for A-Levels, AS-Levels and GCSEs across the main subjects.' },
     { q:'Is my data safe?', a:'Your revision data is stored securely and is never sold or used for ads. You can export it or permanently delete your account whenever you like.' },
     { q:'Do I have to log every single paper?', a:'No. Even a handful of papers gives you a grade trajectory and shows your weakest topics. Log as much or as little as you want.' },
@@ -7549,7 +7564,7 @@ function LandingPage({ onGetStarted }) {
             })}
           </div>
           <p style={{...type.body, fontSize:12, color:C.subtle, marginTop:18, lineHeight:1.6}}>
-            Commander includes a 3-day free trial - cancel any time before it ends and you won't be charged. Switch ranks whenever you like.
+            Commander includes a 3-day free trial - cancel any time before it ends and you won't be charged. Or pay yearly (£69.99, about £5.83/mo). Switch ranks whenever you like.
           </p>
         </div>
       </section>
@@ -8930,7 +8945,7 @@ function LevelPicker({ onComplete }) {
 // ── Subscription ranks ───────────────────────────────────────────────────────
 // User-facing tiers. Entitlement is still derived from subscription_status /
 // referral_pro_until (see tierOf in api/mark-paper.js) - these are the names +
-// the onboarding chooser. Recruit = free; Commander = Pro (£6.99/mo). The trial
+// the onboarding chooser. Recruit = free; Commander = Pro (£8.99/mo or £69.99/yr). The trial
 // and referral-week both grant Commander temporarily.
 const RANKS = {
   recruit: {
@@ -8945,7 +8960,7 @@ const RANKS = {
     ],
   },
   commander: {
-    id:'commander', name:'Commander', price:'£6.99/mo', tag:'For serious revision',
+    id:'commander', name:'Commander', price:'£8.99/mo', tag:'For serious revision',
     blurb:"Unlock the full arsenal - generous AI marking, unlimited Caps, and emailed battle reports.",
     perks:[
       'Everything in Recruit',
