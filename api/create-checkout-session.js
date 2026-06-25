@@ -17,11 +17,15 @@ const admin = createClient(
 );
 
 const rl = new Map();
+// Per-IP cap on checkout-session creation. 5/hour was tight enough that a user
+// (or the founder testing) retrying a few times tripped it; opening a checkout
+// is cheap and harmless, so allow a sensible number while still bounding abuse.
+const CHECKOUT_PER_HOUR = parseInt(process.env.CHECKOUT_PER_HOUR || '25', 10);
 function rateLimit(ip) {
   const now = Date.now();
   const entry = rl.get(ip) ?? { count: 0, reset: now + 3600000 };
   if (now > entry.reset) { entry.count = 0; entry.reset = now + 3600000; }
-  if (entry.count >= 5) return false;
+  if (entry.count >= CHECKOUT_PER_HOUR) return false;
   entry.count++; rl.set(ip, entry); return true;
 }
 
