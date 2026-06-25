@@ -228,19 +228,24 @@ export default async function handler(req, res) {
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
   const uid = user.id;
 
-  // Pro gate — same 3 signals as the rest of the app. Non-Pro users get ONE
-  // free mark per rolling 7 days (last_free_mark_at), so everyone can taste it.
+  // Pro gate — same 3 signals as the rest of the app.
   const { data: prof } = await admin.from('user_profiles')
-    .select('subscription_status,referral_pro_until,is_admin,last_free_mark_at').eq('id', uid).single();
+    .select('subscription_status,referral_pro_until,is_admin,free_marks_used').eq('id', uid).single();
   const isPro = prof?.is_admin
     || ['pro', 'trialing', 'active'].includes(prof?.subscription_status)
     || (prof?.referral_pro_until && new Date(prof.referral_pro_until).getTime() > Date.now());
 
-  // Free users get the tiered daily/monthly page allowance (TIER_CAPS.free, set
-  // by MARK_FREE_DAY / MARK_FREE_MONTH and enforced below via bump_mark_usage) —
-  // NOT a single mark per week. (Old weekly gate removed: it blocked free users
-  // for 7 days after one mark and overrode the daily allowance.)
+  // Free tier is a TASTE: a small lifetime number of marks (default 3), then
+  // upgrade. Tracked by user_profiles.free_marks_used (incremented on success
+  // below). Checked before the expensive Claude call so we never burn tokens
+  // for a user who's already over. Pro/trial/granted/admin are unaffected.
   const usingFreeMark = !isPro;
+  const FREE_MARK_LIFETIME = parseInt(process.env.FREE_MARK_LIFETIME || '3', 10);
+  if (usingFreeMark && (prof?.free_marks_used || 0) >= FREE_MARK_LIFETIME) {
+    return res.status(402).json({
+      error: `You've used your ${FREE_MARK_LIFETIME} free AI marks. Upgrade to Commander for unlimited marking.`,
+      code: 'free_limit' });
+  }
 
   if (!prof?.is_admin) {
     if (!take(userBucket, uid, MARK_HOUR_USER, HOUR)) return res.status(429).json({ error: `Marking limit reached (${MARK_HOUR_USER}/hour). Try again later.` });
@@ -398,7 +403,15 @@ export default async function handler(req, res) {
       actions.push({ type: 'add_plan_task', subject, topic: String(topic).slice(0, 120), day: 'today', duration_min: 45 });
     }
 
-    return res.status(200).json({ result: { ...result, estimatedPercent: pct }, actions, meta: { estimate: true, free: usingFreeMark } });
+    // Burn one lifetime free mark — only on success, so a failed mark never
+    // costs the user one. Atomic via RPC. Report the remaining count back.
+    let freeRemaining = null;
+    if (usingFreeMark) {
+      const { data: used } = await admin.rpc('increment_free_marks', { p_uid: uid });
+      if (typeof used === 'number') freeRemaining = Math.max(0, FREE_MARK_LIFETIME - used);
+    }
+
+    return res.status(200).json({ result: { ...result, estimatedPercent: pct }, actions, meta: { estimate: true, free: usingFreeMark, freeRemaining, freeLimit: FREE_MARK_LIFETIME } });
   } catch (err) {
     console.error('Mark-paper error:', err.status, err.message);
     if (err.status === 429) return res.status(200).json({ error: 'The marker is busy right now — try again in a minute.' });

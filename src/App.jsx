@@ -2810,6 +2810,8 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
   const [dailyUsed,setDailyUsed]=useState(null); // pages marked today (server-tracked)
   const [monthUsed,setMonthUsed]=useState(null); // pages marked this month (fair-use)
   const [caps,setCaps]=useState(null);           // tier allowance {day,month,req}
+  const FREE_MARK_LIFETIME=3;                     // free tier: this many marks ever (mirrors server)
+  const [freeMarksUsed,setFreeMarksUsed]=useState(null); // lifetime free marks used (free tier only)
   const MARK_STAGES=[
     'Reading the questions…',
     'Looking at your answers…',
@@ -2835,7 +2837,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
       const {data:{session}}=await supabase.auth.getSession();
       const uid=session?.user?.id; if(!uid) return;
       const {data}=await supabase.from('user_profiles')
-        .select('subscription_status,referral_pro_until,is_admin,mark_files_count,mark_files_date,mark_pages_month,mark_pages_month_key')
+        .select('subscription_status,referral_pro_until,is_admin,mark_files_count,mark_files_date,mark_pages_month,mark_pages_month_key,free_marks_used')
         .eq('id',uid).maybeSingle();
       if(!data) return;
       let t='free';
@@ -2844,6 +2846,7 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
       else if(data.subscription_status==='trialing') t='trial';
       else if(data.referral_pro_until&&new Date(data.referral_pro_until).getTime()>Date.now()) t='granted';
       setCaps(TIER_CAPS[t]);
+      setFreeMarksUsed(data.free_marks_used||0);
       const today=new Date().toISOString().slice(0,10), mk=new Date().toISOString().slice(0,7);
       setDailyUsed(data.mark_files_date===today?(data.mark_files_count||0):0);
       setMonthUsed(data.mark_pages_month_key===mk?(data.mark_pages_month||0):0);
@@ -2958,6 +2961,8 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
       if(!r.ok||d.error) throw new Error(d.error||'Marking failed');
       setResult(d.result); setActions(d.actions||[]);
       if(isPro){ setDailyUsed(u=>(u==null?0:u)+totalPages); setMonthUsed(u=>(u==null?0:u)+totalPages); } // reflect spend
+      // Free tier: reflect the lifetime mark just spent (server is source of truth).
+      if(d.meta&&typeof d.meta.freeRemaining==='number') setFreeMarksUsed(FREE_MARK_LIFETIME-d.meta.freeRemaining);
       if((d.actions||[]).length>0) setShowConfirm(true); // surface the log prompt front-and-centre
     }catch(e){setErr(e.message);}
     clearInterval(iv); clearInterval(et);
@@ -3019,12 +3024,22 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
         <div style={{fontSize:12,color:C.muted,lineHeight:1.6,marginBottom:12}}>
           Caps marks your own attempt in your board's style and gives an <b>estimated</b> grade (not an official result), then logs your paper, errors and a revision plan.
         </div>
-        {!isPro&&!result&&(
-          <div style={{fontSize:12,color:C.accent,background:C.accentSoft||`${C.accent}18`,border:`1px solid ${C.accent}33`,
-            borderRadius:8,padding:'9px 12px',marginBottom:14,lineHeight:1.5}}>
-            You get <b>1 free AI mark per week</b>. Upgrade to Pro for unlimited marking.
-          </div>
-        )}
+        {!isPro&&!result&&(()=>{
+          const left=freeMarksUsed==null?null:Math.max(0,FREE_MARK_LIFETIME-freeMarksUsed);
+          const out=left===0;
+          return (
+            <div style={{fontSize:12,color:out?(C.danger||'#ef4444'):C.accent,
+              background:out?'rgba(239,68,68,0.10)':(C.accentSoft||`${C.accent}18`),
+              border:`1px solid ${out?'rgba(239,68,68,0.35)':`${C.accent}33`}`,
+              borderRadius:8,padding:'9px 12px',marginBottom:14,lineHeight:1.5}}>
+              {left==null
+                ? <>You get <b>{FREE_MARK_LIFETIME} free AI marks</b>. Upgrade to Commander for unlimited marking.</>
+                : out
+                  ? <>You've used all <b>{FREE_MARK_LIFETIME}</b> free marks. <b>Upgrade to Commander</b> for unlimited AI marking.</>
+                  : <><b>{left} of {FREE_MARK_LIFETIME}</b> free AI mark{left===1?'':'s'} left. Upgrade to Commander for unlimited marking.</>}
+            </div>
+          );
+        })()}
         {isPro&&!result&&unlimited&&(
           <div style={{marginBottom:14,background:C.card2,borderRadius:10,padding:'9px 12px',fontSize:11.5,color:C.muted,fontWeight:600}}>
             Marking allowance · <span style={{color:C.accent,fontWeight:800}}>unlimited</span>
@@ -8491,7 +8506,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
     } catch { return {ok:false, message:'Could not apply'}; }
   };
 
-  const onMarkPaper=()=> setPaperMarker(true); // free users get 1 mark/week; backend enforces
+  const onMarkPaper=()=> setPaperMarker(true); // free users get 3 lifetime marks; backend enforces
   const onBuildPlan=()=> isPro ? setPlanBuilder(true) : addToast('AI study plans are a Pro feature - unlock it in Account → Settings.','info');
   const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse,isAS,analyticsConsent,setAnalyticsConsent,insNoted,setInsNoted,myPlan,setMyPlan,shareTheme,setShareTheme,shareAspect,setShareAspect,yearGroup,setYearGroup,displayName,setDisplayName,onMarkPaper,onBuildPlan};
 
