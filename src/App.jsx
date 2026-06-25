@@ -8,6 +8,26 @@ import CapsMark from './components/CapsMark';
 import { subjectsFromSelection, GCSE_CATALOG } from './data/subjects';
 import { BarChart3, PenLine, CalendarDays, ClipboardList, Trophy, Users, Timer, BookOpen, User, Sun, Moon, Lock, Pencil, GraduationCap, FileText, TrendingUp, Zap, Star, ArrowUpRight, Target, Shield, CheckCircle, Calendar, Search, Grid3x3, PanelLeftClose, PanelLeftOpen, UserPlus, Camera, Upload } from 'lucide-react';
 
+// ── Auth token helper ───────────────────────────────────────────────────────
+// Supabase access tokens expire after ~1 hour. A bare getSession() can come back
+// with no (or a stale) token if the tab has been open a while or the background
+// refresh hasn't fired yet, which used to surface as a misleading "Please sign in
+// again" even though the user is still logged in. Always try a refresh before
+// giving up so checkout / marking / email actions just work.
+async function getAccessToken() {
+  let { data: { session } } = await supabase.auth.getSession();
+  let token = session?.access_token;
+  // Refresh if missing, or if the token is within 60s of expiring.
+  const expSoon = session?.expires_at && (session.expires_at * 1000 - Date.now() < 60000);
+  if (!token || expSoon) {
+    try {
+      const { data } = await supabase.auth.refreshSession();
+      if (data?.session?.access_token) { token = data.session.access_token; session = data.session; }
+    } catch {}
+  }
+  return { token: token || null, uid: session?.user?.id || null, session };
+}
+
 // ── Error boundary ─────────────────────────────────────────────────────────
 class ErrorBoundary extends React.Component {
   constructor(p) { super(p); this.state = { err: null }; }
@@ -2926,10 +2946,8 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
     let s=0;
     const iv=setInterval(()=>{ s=Math.min(s+1,MARK_STAGES.length-1); setStage(s); }, 2200);
     try{
-      const {data:{session}}=await supabase.auth.getSession();
-      const token=session?.access_token;
-      const uid=session?.user?.id;
-      if(!token||!uid) throw new Error('Please sign in again.');
+      const {token,uid}=await getAccessToken();
+      if(!token||!uid) throw new Error('Your session expired. Refresh the page (or sign out and back in) and try again.');
       const attUrls=await uploadFiles(att,uid);
       const msUrls=await uploadFiles(msAtt,uid);
       const r=await fetch('/api/mark-paper',{method:'POST',
@@ -3340,11 +3358,11 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
     let serverActions = [];
     let serverHit = false; // did we actually reach the chat server with a real reply?
     try {
-      const {data:{session}} = await supabase.auth.getSession();
-      if (session) {
+      const {token} = await getAccessToken();
+      if (token) {
         const r = await fetch('/api/mascot-chat', {
           method:'POST',
-          headers:{'Content-Type':'application/json','Authorization':`Bearer ${session.access_token}`},
+          headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
           body: JSON.stringify({ messages: nextHistory.slice(-8), context: ctx }),
         });
         if (r.ok) {
@@ -6582,9 +6600,7 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
   // JWT, so the access token MUST be sent or they 401. Refreshes a stale token
   // and retries once on 401.
   const authedPost = async (path, body) => {
-    let { data: { session } } = await supabase.auth.getSession();
-    let token = session?.access_token;
-    if (!token) { const { data } = await supabase.auth.refreshSession(); token = data?.session?.access_token; }
+    let { token } = await getAccessToken();
     if (!token) throw new Error('Please sign out and back in, then try again.');
     const opts = t => ({
       method: 'POST', cache: 'no-store',
@@ -6683,9 +6699,8 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
     try {
       // The API derives userId/email from the verified JWT (it ignores the body
       // for security), so we MUST send the access token or it 401s.
-      const { data:{ session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      if (!token) throw new Error('Please sign in again to upgrade');
+      const { token } = await getAccessToken();
+      if (!token) throw new Error('Your session expired. Refresh the page and try again.');
       const r = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: {'Content-Type':'application/json', Authorization:`Bearer ${token}`},
@@ -6720,9 +6735,8 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
     if (!stripeCustomerId) return;
     setPortalLoading(true);
     try {
-      const { data:{ session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      if (!token) throw new Error('Please sign in again');
+      const { token } = await getAccessToken();
+      if (!token) throw new Error('Your session expired. Refresh the page and try again.');
       const r = await fetch('/api/billing-portal', {
         method: 'POST',
         headers: {'Content-Type':'application/json', Authorization:`Bearer ${token}`},
@@ -6747,9 +6761,8 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
     if (!ok) return;
     setCancelling(true); setUpgradeError(''); setCancelMsg('');
     try {
-      const { data:{ session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      if (!token) throw new Error('Please sign in again');
+      const { token } = await getAccessToken();
+      if (!token) throw new Error('Your session expired. Refresh the page and try again.');
       const r = await fetch('/api/billing-portal', {
         method: 'POST',
         headers: {'Content-Type':'application/json', Authorization:`Bearer ${token}`},
