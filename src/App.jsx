@@ -7545,7 +7545,8 @@ function LandingPage({ onGetStarted }) {
                       border:'1px solid #c2802e44', borderRadius:5, padding:'3px 8px', letterSpacing:0.5}}>PRO</span>}
                   </div>
                   <div style={{...type.body, fontSize:13, color:C.muted, marginBottom:12}}>{r.tag}</div>
-                  <div style={{fontFamily:display, fontSize:30, fontWeight:800, color:isCmd?C.accent:C.text, letterSpacing:'-0.02em', marginBottom:16}}>{r.price}</div>
+                  <div style={{fontFamily:display, fontSize:30, fontWeight:800, color:isCmd?C.accent:C.text, letterSpacing:'-0.02em', marginBottom:isCmd?4:16}}>{r.price}</div>
+                  {isCmd && <div style={{fontSize:12.5, color:C.muted, marginBottom:16}}>or <strong style={{color:C.text}}>£69.99/year</strong> (about £5.83/mo, save ~£38)</div>}
                   <div style={{display:'flex', flexDirection:'column', gap:9, marginBottom:24, flex:1}}>
                     {r.perks.map(p => (
                       <div key={p} style={{display:'flex', alignItems:'flex-start', gap:9, ...type.body, fontSize:14, color:C.text}}>
@@ -9017,7 +9018,8 @@ function PlanPicker({ onComplete, isPro=false }) {
                     border:`1px solid ${C.gold}44`, borderRadius:5, padding:'3px 8px', letterSpacing:0.5 }}>PRO</span>}
                 </div>
                 <div style={{ fontSize:13, color:C.muted, marginBottom:10 }}>{r.tag}</div>
-                <div style={{ fontSize:24, fontWeight:800, color:isCmd?C.accent:C.text, marginBottom:12 }}>{r.price}</div>
+                <div style={{ fontSize:24, fontWeight:800, color:isCmd?C.accent:C.text, marginBottom:isCmd?2:12 }}>{r.price}</div>
+                {isCmd && <div style={{ fontSize:12, color:C.muted, marginBottom:12 }}>or £69.99/year (~£5.83/mo)</div>}
                 <p style={{ fontSize:13, color:C.muted, margin:'0 0 14px', lineHeight:1.5 }}>{r.blurb}</p>
                 <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:18, flex:1 }}>
                   {r.perks.map(p => (
