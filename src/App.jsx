@@ -7445,9 +7445,95 @@ function LandingPage({ onGetStarted }) {
     success:'#4f7256',
   };
   const [showTerms, setShowTerms] = useState(false);
+  const [galTab, setGalTab] = useState(0);
   const ic = d => (
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{d}</svg>
   );
+
+  // AI-marker showcase - real rendered output (LaTeX, charts, graphs, code,
+  // mark-scheme + AO marking) across subjects, rendered live by RichText.
+  const MARKER_SAMPLES = [
+    { tab:'Maths', subject:'Mathematics', paper:'Pure 1 · Differentiation', grade:'A',
+      cap:'LaTeX working + curve sketch',
+      body:`**Q6 (b)** Differentiate $y=\\dfrac{x^{2}}{x+1}$.
+
+You applied the quotient rule cleanly and reached $\\dfrac{dy}{dx}=\\dfrac{x^{2}+2x}{(x+1)^{2}}$ - full method and accuracy marks. Your curve matches:
+
+\`\`\`chart
+{"type":"line","title":"y = x² / (x+1)","xLabel":"x","yLabel":"y","series":[{"name":"y","points":[[0,0],[1,0.5],[2,1.33],[3,2.25],[4,3.2],[5,4.17]]}]}
+\`\`\``,
+      did:'Quotient rule applied cleanly, every line of working shown.',
+      improve:'State the restriction $x \\neq -1$ to secure the final mark.' },
+
+    { tab:'Further Maths', subject:'Further Maths', paper:'Decision 1 · Minimum spanning tree', grade:'A*',
+      cap:'Network / graph diagram',
+      body:`**Q3** Use Prim's algorithm from A to find the minimum spanning tree. Here is the correct tree (your chosen edges highlighted):
+
+\`\`\`graph
+{"type":"graph","title":"Minimum spanning tree · weight 9","nodes":[{"id":"A","label":"A","x":0,"y":0},{"id":"B","label":"B","x":2,"y":-1.2},{"id":"C","label":"C","x":2,"y":1.2},{"id":"D","label":"D","x":4,"y":0}],"edges":[{"from":"A","to":"B","weight":3,"highlight":true},{"from":"A","to":"C","weight":5},{"from":"B","to":"C","weight":2,"highlight":true},{"from":"C","to":"D","weight":4,"highlight":true},{"from":"B","to":"D","weight":6}]}
+\`\`\`
+
+Total weight $=3+2+4=9$ - correct.`,
+      did:'Correct edge order, no cycles formed.',
+      improve:'Write the order you added each edge to earn the working mark.' },
+
+    { tab:'Chemistry', subject:'Chemistry', paper:'Paper 2 · Rates of reaction', grade:'B',
+      cap:'Mark-scheme point marking',
+      body:`**6-mark "explain" question**, marked against the board's points:
+
+- ✓ Higher temperature gives particles more **kinetic energy**
+- ✓ More **frequent collisions** per second
+- ==Missing:== more particles now exceed the **activation energy** $E_a$
+
+Score: **4 / 6**.`,
+      did:'Two well-sequenced points using precise terms.',
+      improve:'Always link back to activation energy - the point most students drop.' },
+
+    { tab:'Comp Sci', subject:'Computer Science', paper:'Paper 1 · Algorithms', grade:'A',
+      cap:'Highlighted code + trace table',
+      body:`Your \`is_prime\` is logically correct - one efficiency win:
+
+\`\`\`python
+def is_prime(n):
+    if n < 2:
+        return False
+    for i in range(2, int(n**0.5) + 1):
+        if n % i == 0:
+            return False
+    return True
+\`\`\`
+
+Trace for $n = 9$:
+
+| i | n % i | result |
+| --- | --- | --- |
+| 2 | 1 | keep going |
+| 3 | 0 | not prime |`,
+      did:'Correct base cases and return logic.',
+      improve:'Loop to $\\sqrt{n}$, not $n$ - that is $O(\\sqrt{n})$ instead of $O(n)$.' },
+
+    { tab:'Economics', subject:'Economics', paper:'Paper 1 · Price controls', grade:'A',
+      cap:'Supply & demand diagram',
+      body:`Strong analysis of a **price ceiling**. The market you described, with the cap below equilibrium:
+
+\`\`\`chart
+{"type":"line","title":"Price ceiling → shortage","xLabel":"Quantity","yLabel":"Price","series":[{"name":"Demand","points":[[0,10],[10,0]]},{"name":"Supply","points":[[0,0],[10,10]]}]}
+\`\`\`
+
+You correctly identified the **excess demand** where the two lines diverge below the cap.`,
+      did:'Clear chain of reasoning to a shortage.',
+      improve:'Mark the exact shortage on the diagram for the final analysis mark.' },
+
+    { tab:'English', subject:'English Literature', paper:'Macbeth · AO breakdown', grade:'B',
+      cap:'Essay AO-level marking',
+      body:`Marked by Assessment Objective:
+
+**AO1 - Response** · a clear, well-argued line throughout.
+**AO2 - Language** · you analysed "*is this a dagger which I see before me*" well - ==push deeper into the verb choices.==
+**AO3 - Context** · one line on Jacobean kingship would lift this to the top band.`,
+      did:'Embedded a well-chosen quotation and analysed it.',
+      improve:'One precise contextual point moves this into Level 5.' },
+  ];
   const FEATURES = [
     { icon: ic(<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>),
       title: 'Past paper tracker',
@@ -7467,6 +7553,9 @@ function LandingPage({ onGetStarted }) {
     { icon: ic(<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>),
       title: 'AI study companion',
       desc: 'Ask what to do next and get an answer grounded in your own papers, weak topics and exam dates.' },
+    { icon: ic(<><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5z"/><polyline points="14 2 14 8 20 8"/><path d="m9 15 2 2 4-4"/></>),
+      title: 'AI past-paper marker',
+      desc: "Snap or upload your answers and Caps marks them in your board's style - estimated grade, marks earned, and the exact step to fix. Renders real maths, diagrams, networks and code." },
   ];
 
   const TRUST_CHIPS = ['Free during beta', 'No credit card', 'A-Levels & GCSEs', 'No ads'];
@@ -7617,6 +7706,85 @@ function LandingPage({ onGetStarted }) {
                 <p style={{...type.body, fontSize:14, color:C.muted, margin:0}}>{s.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* AI marker showcase - live-rendered gallery across subjects */}
+      <section style={{borderTop:`1px solid ${C.border}`, background:C.surface}}>
+        <div style={{maxWidth:1080, margin:'0 auto', padding:'104px 24px'}}>
+          <div style={{...type.eyebrow, color:C.accent, marginBottom:14}}>The AI marker</div>
+          <h2 style={{fontFamily:display, fontWeight:600, fontSize:'clamp(26px, 3.4vw, 40px)', color:C.text,
+            margin:'0 0 14px', letterSpacing:'-0.03em', maxWidth:640}}>
+            Snap your answers. Get them marked like an examiner.
+          </h2>
+          <p style={{...type.body, fontSize:16, color:C.muted, margin:'0 0 14px', maxWidth:600, lineHeight:1.6}}>
+            Upload a photo, PDF or your typed working and Caps marks it in your exam board's style - an estimated
+            grade, the marks you earned and the exact step that wins the rest. It renders real maths, diagrams,
+            networks and code, not flat text.
+          </p>
+          <div style={{display:'flex', flexWrap:'wrap', gap:8, marginBottom:28}}>
+            {['Proper LaTeX maths','Charts & sketches','Decision-maths networks','Highlighted code & trace tables','Mark-scheme points','Essay AO levels'].map(t=>(
+              <span key={t} style={{fontSize:12, fontWeight:600, color:C.muted, background:C.bg,
+                border:`1px solid ${C.border}`, borderRadius:999, padding:'5px 12px'}}>{t}</span>
+            ))}
+          </div>
+
+          {/* Subject tabs */}
+          <div style={{display:'flex', gap:7, flexWrap:'wrap', marginBottom:16}}>
+            {MARKER_SAMPLES.map((s,i)=>(
+              <button key={s.tab} onClick={()=>setGalTab(i)}
+                style={{padding:'8px 14px', borderRadius:9, cursor:'pointer', fontFamily:font, fontSize:13, fontWeight:700,
+                  border:`1px solid ${galTab===i?C.accent:C.border}`,
+                  background:galTab===i?C.accent:C.bg, color:galTab===i?'#fff':C.muted, transition:'all 0.12s'}}>
+                {s.tab}
+              </button>
+            ))}
+          </div>
+
+          {/* Marked-answer card (browser window) */}
+          {(()=>{ const s=MARKER_SAMPLES[galTab]; return (
+            <div style={{background:C.bg, border:`1px solid ${C.border}`, borderRadius:14, overflow:'hidden',
+              boxShadow:'0 24px 60px rgba(40,30,18,0.12)'}}>
+              <div style={{display:'flex', alignItems:'center', gap:12, padding:'13px 18px',
+                borderBottom:`1px solid ${C.border}`, background:C.card2}}>
+                <CapsMark size={26}/>
+                <div style={{flex:1, minWidth:0}}>
+                  <div style={{fontSize:13.5, fontWeight:800, color:C.text, lineHeight:1.2}}>{s.subject}</div>
+                  <div style={{fontSize:11.5, color:C.subtle, fontFamily:mono}}>{s.paper}</div>
+                </div>
+                <div style={{textAlign:'right'}}>
+                  <div style={{fontSize:9.5, color:C.subtle, textTransform:'uppercase', letterSpacing:0.5, fontWeight:700}}>Estimated</div>
+                  <div style={{fontSize:20, fontWeight:900, color:gradeColor(s.grade), lineHeight:1, fontFamily:mono}}>{s.grade}</div>
+                </div>
+              </div>
+              <div style={{padding:'20px 22px'}}>
+                <RichText style={{fontSize:14.5, color:C.text, lineHeight:1.8}}>{s.body}</RichText>
+                <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))', gap:10, marginTop:18}}>
+                  <div style={{background:`${C.success}12`, border:`1px solid ${C.success}33`, borderRadius:10, padding:'11px 13px'}}>
+                    <div style={{fontSize:10, fontWeight:800, color:C.success, textTransform:'uppercase', letterSpacing:0.5, marginBottom:5}}>What you did well</div>
+                    <div style={{fontSize:13, color:C.text, lineHeight:1.55}}>{s.did}</div>
+                  </div>
+                  <div style={{background:`${C.accent}12`, border:`1px solid ${C.accent}33`, borderRadius:10, padding:'11px 13px'}}>
+                    <div style={{fontSize:10, fontWeight:800, color:C.accent, textTransform:'uppercase', letterSpacing:0.5, marginBottom:5}}>To improve</div>
+                    <RichText style={{fontSize:13, color:C.text, lineHeight:1.55}}>{s.improve}</RichText>
+                  </div>
+                </div>
+                <div style={{fontSize:11, color:C.subtle, marginTop:14, display:'flex', alignItems:'center', gap:7}}>
+                  <span style={{width:6, height:6, borderRadius:'50%', background:C.accent}}/>
+                  Showing: {s.cap} · estimate for revision, not an official mark
+                </div>
+              </div>
+            </div>
+          ); })()}
+
+          <div style={{display:'flex', gap:10, marginTop:26, flexWrap:'wrap', alignItems:'center'}}>
+            <button onClick={onGetStarted}
+              style={{padding:'12px 22px', background:C.accent, border:'none', borderRadius:8, color:'#fff',
+                fontSize:14, fontWeight:700, fontFamily:font, cursor:'pointer'}}>
+              Mark your first paper free
+            </button>
+            <span style={{fontSize:13, color:C.muted}}>3 free marks to try it, then Commander for unlimited.</span>
           </div>
         </div>
       </section>
