@@ -235,15 +235,11 @@ export default async function handler(req, res) {
     || ['pro', 'trialing', 'active'].includes(prof?.subscription_status)
     || (prof?.referral_pro_until && new Date(prof.referral_pro_until).getTime() > Date.now());
 
-  let usingFreeMark = false;
-  if (!isPro) {
-    const last = prof?.last_free_mark_at ? new Date(prof.last_free_mark_at).getTime() : 0;
-    if (Date.now() - last < 7 * DAY) {
-      const days = Math.ceil((7 * DAY - (Date.now() - last)) / DAY);
-      return res.status(402).json({ error: `You've used your free AI mark this week. Upgrade to Pro for unlimited marking, or come back in ${days} day${days===1?'':'s'}.`, code: 'free_used' });
-    }
-    usingFreeMark = true;
-  }
+  // Free users get the tiered daily/monthly page allowance (TIER_CAPS.free, set
+  // by MARK_FREE_DAY / MARK_FREE_MONTH and enforced below via bump_mark_usage) —
+  // NOT a single mark per week. (Old weekly gate removed: it blocked free users
+  // for 7 days after one mark and overrode the daily allowance.)
+  const usingFreeMark = !isPro;
 
   if (!prof?.is_admin) {
     if (!take(userBucket, uid, MARK_HOUR_USER, HOUR)) return res.status(429).json({ error: `Marking limit reached (${MARK_HOUR_USER}/hour). Try again later.` });
@@ -399,11 +395,6 @@ export default async function handler(req, res) {
     }
     for (const topic of (Array.isArray(result.suggestedTopicsToRevise) ? result.suggestedTopicsToRevise : []).slice(0, 6)) {
       actions.push({ type: 'add_plan_task', subject, topic: String(topic).slice(0, 120), day: 'today', duration_min: 45 });
-    }
-
-    // Consume the weekly free mark only on a successful result.
-    if (usingFreeMark) {
-      await admin.from('user_profiles').update({ last_free_mark_at: new Date().toISOString() }).eq('id', uid);
     }
 
     return res.status(200).json({ result: { ...result, estimatedPercent: pct }, actions, meta: { estimate: true, free: usingFreeMark } });
