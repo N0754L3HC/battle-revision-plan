@@ -1036,11 +1036,12 @@ function ScalingPanel({ total=0 }) {
 // ── Moderation ──────────────────────────────────────────────────────────────
 // Mirrors the DB contains_banned_word guard so the console can surface anything
 // already in the data (or that slipped through a compound), and act on it.
-const MOD_RE = /\b(niggers?|niggas?|niglets?|coons?|chinks?|gooks?|kikes?|spics?|wetbacks?|pakis?|ragheads?|towelheads?|beaners?|wogs?|golliwogs?|faggots?|fags?|dykes?|trann(y|ies)|cunts?|fuck(s|er|ers|ing)?|fuk|motherfuckers?|pussy|pussies|wankers?|wank|twats?|pricks?|sluts?|slags?|whores?|bitch(es)?|bastards?|bollocks?|arseholes?|assholes?|shit(s|e)?|piss|rape|rapists?|paedos?|pedos?|nonces?|molest|incest|porn|jizz|dildos?|hitler|nazis?|kkk)\b/;
+const MOD_SUB = /(nigger|nigga|niglet|faggot|wetback|beaner|golliwog|towelhead|raghead|bitch|fuck|shit|wank|twat|slut|whore|bollock|arsehole|asshole|pussy|jizz|dildo|paedo|molest)/;
+const MOD_WB  = /\b(coons?|chinks?|gooks?|kikes?|spics?|pakis?|wogs?|fags?|dykes?|trann(y|ies)|cunts?|fuk|pricks?|slags?|bastards?|piss|rape|rapists?|pedos?|nonces?|incest|porn|cum|anal|penis|hitler|nazis?|kkk)\b/;
 function modFlag(txt) {
   if (!txt) return false;
-  const s = String(txt).toLowerCase().replace(/[0134578@$]/g, c => ({'0':'o','1':'i','3':'e','4':'a','5':'s','7':'t','8':'b','@':'a','$':'s'}[c] || c));
-  return MOD_RE.test(s);
+  const s = String(txt).toLowerCase().replace(/[0134578@$!]/g, c => ({'0':'o','1':'i','3':'e','4':'a','5':'s','7':'t','8':'b','@':'a','$':'s','!':'i'}[c] || c));
+  return MOD_SUB.test(s) || MOD_WB.test(s);
 }
 
 function ModerationPanel({ users=[], onOpenUser }) {

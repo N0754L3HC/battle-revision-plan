@@ -38,11 +38,12 @@ function randomCode() {
 
 // Quick client-facing profanity check (mirrors the DB trigger contains_banned_word,
 // which is the real guard). Lets us return a friendly message before the insert.
-const BANNED_RE = /\b(niggers?|niggas?|niglets?|coons?|chinks?|gooks?|kikes?|spics?|wetbacks?|pakis?|ragheads?|towelheads?|beaners?|wogs?|golliwogs?|faggots?|fags?|dykes?|trann(y|ies)|cunts?|fuck(s|er|ers|ing)?|fuk|motherfuckers?|pussy|pussies|wankers?|wank|twats?|pricks?|sluts?|slags?|whores?|bitch(es)?|bastards?|bollocks?|arseholes?|assholes?|shit(s|e)?|piss|rape|rapists?|paedos?|pedos?|nonces?|molest|incest|porn|jizz|dildos?|hitler|nazis?|kkk)\b/;
+const BANNED_SUB = /(nigger|nigga|niglet|faggot|wetback|beaner|golliwog|towelhead|raghead|bitch|fuck|shit|wank|twat|slut|whore|bollock|arsehole|asshole|pussy|jizz|dildo|paedo|molest)/;
+const BANNED_WB  = /\b(coons?|chinks?|gooks?|kikes?|spics?|pakis?|wogs?|fags?|dykes?|trann(y|ies)|cunts?|fuk|pricks?|slags?|bastards?|piss|rape|rapists?|pedos?|nonces?|incest|porn|cum|anal|penis|hitler|nazis?|kkk)\b/;
 function nameLooksOffensive(txt) {
   if (!txt) return false;
-  const s = String(txt).toLowerCase().replace(/[0134578@$]/g, c => ({'0':'o','1':'i','3':'e','4':'a','5':'s','7':'t','8':'b','@':'a','$':'s'}[c] || c));
-  return BANNED_RE.test(s);
+  const s = String(txt).toLowerCase().replace(/[0134578@$!]/g, c => ({'0':'o','1':'i','3':'e','4':'a','5':'s','7':'t','8':'b','@':'a','$':'s','!':'i'}[c] || c));
+  return BANNED_SUB.test(s) || BANNED_WB.test(s);
 }
 
 export default async function handler(req, res) {
