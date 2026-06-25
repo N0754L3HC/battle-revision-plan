@@ -3106,7 +3106,6 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
               Only upload your own work or material you're allowed to share - please don't upload exam boards' official mark schemes or other copyrighted files you don't have the right to use. Files are sent securely to Caps to mark and deleted straight after - we don't keep them.
             </div>
 
-            {err&&<div style={{fontSize:12,color:C.danger||'#ef4444',marginBottom:10,lineHeight:1.5}}>{err}</div>}
             {busy ? (
               <div style={{background:C.card2,borderRadius:12,padding:'16px 18px'}}>
                 <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
@@ -3319,6 +3318,35 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
             <button onClick={()=>setShowConfirm(false)} style={{width:'100%',padding:'11px',background:'transparent',
               border:'none',borderRadius:10,color:C.muted,fontSize:12.5,fontWeight:600,fontFamily:font,cursor:'pointer'}}>
               Review the feedback first
+            </button>
+          </div>
+        </div>
+      );
+    })()}
+
+    {/* Centered popup for any error or "couldn't complete" message - so it can't
+        be missed the way a small inline line could. Driven by the err state, so
+        it covers validation, file/upload issues, session expiry and server errors. */}
+    {err&&(()=>{
+      const soft = /skipped|too large|max |pages|supported|Use an image|Pick a subject|Add a photo/i.test(err);
+      return (
+        <div onClick={()=>setErr('')} style={{position:'fixed',inset:0,zIndex:380,background:'rgba(0,0,0,0.55)',
+          display:'flex',alignItems:'center',justifyContent:'center',padding:'24px 16px'}}>
+          <div onClick={ev=>ev.stopPropagation()} role="alertdialog" aria-modal="true" style={{width:'100%',maxWidth:380,
+            background:C.bg,border:`1px solid ${C.border}`,borderRadius:18,padding:'22px',textAlign:'center',
+            animation:'rbp-pop 0.2s ease',boxShadow:'0 20px 60px rgba(0,0,0,0.35)'}}>
+            <div style={{width:46,height:46,borderRadius:'50%',margin:'0 auto 14px',
+              background:soft?(C.accentSoft||`${C.accent}1e`):'rgba(239,68,68,0.14)',
+              display:'flex',alignItems:'center',justifyContent:'center'}}>
+              <span style={{fontSize:24,fontWeight:800,lineHeight:1,color:soft?C.accent:(C.danger||'#ef4444')}}>!</span>
+            </div>
+            <div style={{fontSize:16,fontWeight:800,color:C.text,marginBottom:8,lineHeight:1.3}}>
+              {soft?'Check this first':"Couldn't complete that"}
+            </div>
+            <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginBottom:18}}>{err}</div>
+            <button onClick={()=>setErr('')} style={{width:'100%',padding:'12px',background:C.accent,border:'none',
+              borderRadius:11,color:'#fff',fontSize:14,fontWeight:800,fontFamily:font,cursor:'pointer'}}>
+              Got it
             </button>
           </div>
         </div>
