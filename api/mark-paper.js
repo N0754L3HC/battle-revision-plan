@@ -445,6 +445,12 @@ export default async function handler(req, res) {
     // Transient upstream blip that survived all retries (overload/gateway/network)
     // — reassure the student it's not their paper and a retry will likely work.
     if (err.status === 429 || RETRYABLE.has(err.status) || err.status === 0) {
+      // The pages were charged on attempt (anti-farming). A transient blip is
+      // NOT the student's fault, so give those pages back — they got no feedback.
+      if (pageUnits > 0) {
+        try { await admin.rpc('refund_mark_usage', { p_uid: uid, p_sub: pageUnits }); }
+        catch (e) { console.error('refund_mark_usage failed:', e?.message); }
+      }
       return res.status(503).json({
         error: 'Caps is overloaded right now, not a problem with your paper. Give it a few seconds and tap Mark again — your upload is fine.',
         code: 'busy' });
