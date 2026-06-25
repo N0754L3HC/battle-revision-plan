@@ -3521,7 +3521,9 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
           <CompanionAvatar skin={companion.skin} hair={companion.hair} hairStyle={companion.hairStyle} eyeColor={companion.eyeColor??0} outfitColor={companion.outfitColor??0} accessory={companion.accessory??0} mood={mood} size={40}/>
           <div style={{flex:1}}>
             <div style={{fontSize:14,fontWeight:700,color:C.text}}>{companion.name}</div>
-            <div style={{fontSize:11,color:C.muted}}>Your study companion</div>
+            <div style={{fontSize:11,color:C.success||'#22c55e',display:'flex',alignItems:'center',gap:5}}>
+              <span style={{width:6,height:6,borderRadius:'50%',background:C.success||'#22c55e',display:'inline-block'}}/>online
+            </div>
           </div>
           <button onClick={onClose}
             style={{background:'transparent',border:'none',color:C.muted,cursor:'pointer',fontSize:22,lineHeight:1,padding:'4px 8px'}}>×</button>
@@ -3531,14 +3533,22 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
           {messages.map((m,i)=>(
             <div key={i} style={{display:'flex',flexDirection:'column',gap:6,
               alignItems:m.from==='user'?'flex-end':'flex-start'}}>
-              <div style={{maxWidth:'84%',
-                borderRadius:m.from==='user'?'14px 14px 4px 14px':'14px 14px 14px 4px',
-                padding:'10px 14px',
-                background:m.from==='user'?C.accent:C.card2,
-                color:m.from==='user'?'#fff':C.text,
-                fontSize:13,lineHeight:1.6,wordBreak:'break-word'}}>
-                <RichText>{m.text}</RichText>
-              </div>
+              {m.from==='char' ? (
+                <div style={{display:'flex',gap:7,alignItems:'flex-end',maxWidth:'90%'}}>
+                  <div style={{flexShrink:0}}>
+                    <CompanionAvatar skin={companion.skin} hair={companion.hair} hairStyle={companion.hairStyle} eyeColor={companion.eyeColor??0} outfitColor={companion.outfitColor??0} accessory={companion.accessory??0} mood={mood} size={24}/>
+                  </div>
+                  <div style={{borderRadius:'14px 14px 14px 4px',padding:'10px 14px',background:C.card2,
+                    color:C.text,fontSize:13,lineHeight:1.6,wordBreak:'break-word'}}>
+                    <RichText>{m.text}</RichText>
+                  </div>
+                </div>
+              ) : (
+                <div style={{maxWidth:'84%',borderRadius:'14px 14px 4px 14px',padding:'10px 14px',
+                  background:C.accent,color:'#fff',fontSize:13,lineHeight:1.6,wordBreak:'break-word'}}>
+                  <RichText>{m.text}</RichText>
+                </div>
+              )}
               {Array.isArray(m.actions)&&m.actions.length>0&&(
                 <div style={{width:'100%',maxWidth:'92%',display:'flex',flexDirection:'column',gap:6}}>
                   {m.actions.map((a,j)=>(
@@ -3578,7 +3588,10 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
             </div>
           )}
           {sending&&(
-            <div style={{display:'flex',justifyContent:'flex-start'}}>
+            <div style={{display:'flex',gap:7,alignItems:'flex-end'}}>
+              <div style={{flexShrink:0}}>
+                <CompanionAvatar skin={companion.skin} hair={companion.hair} hairStyle={companion.hairStyle} eyeColor={companion.eyeColor??0} outfitColor={companion.outfitColor??0} accessory={companion.accessory??0} mood={mood} size={24}/>
+              </div>
               <div style={{borderRadius:'14px 14px 14px 4px',padding:'10px 14px',
                 background:C.card2,color:C.subtle,fontSize:13,fontStyle:'italic'}}>
                 {companion.name} is typing…
@@ -3589,25 +3602,23 @@ function CompanionChat({companion,subjects,scores,sessions,examSched,rag={},exam
         <div style={{padding:'4px 16px 0',fontSize:10,color:C.subtle,textAlign:'center',lineHeight:1.4}}>
           {companion.name} can make mistakes. Don't share personal info. If you're struggling, talk to someone real (Samaritans 116 123).
         </div>
-        <div style={{display:'flex',gap:8,padding:'10px 16px 12px',
+        <div style={{display:'flex',gap:8,padding:'10px 16px 12px',alignItems:'center',
           borderTop:`1px solid ${C.border}`,flexShrink:0}}>
           <input value={input} onChange={e=>setInput(e.target.value.slice(0,600))}
             onKeyDown={e=>e.key==='Enter'&&!sending&&send()}
-            placeholder={sending?'Sending…':`Message ${companion.name}...`}
+            placeholder={sending?'Sending…':`Ask ${companion.name} anything...`}
             maxLength={600}
             disabled={sending}
-            style={{flex:1,background:C.card2,border:`1px solid ${C.border}`,borderRadius:10,
-              padding:'10px 14px',color:C.text,fontSize:13,fontFamily:font,outline:'none',
+            style={{flex:1,background:C.card2,border:`1px solid ${C.border}`,borderRadius:999,
+              padding:'11px 16px',color:C.text,fontSize:13,fontFamily:font,outline:'none',
               opacity:sending?0.6:1}}/>
-          <button onClick={()=>send()} disabled={sending||!input.trim()}
-            style={{padding:'10px 18px',
+          <button onClick={()=>send()} disabled={sending||!input.trim()} aria-label="Send"
+            style={{flexShrink:0,width:40,height:40,borderRadius:'50%',display:'flex',
+              alignItems:'center',justifyContent:'center',
               background:sending||!input.trim()?C.card2:C.accent,
               border:sending||!input.trim()?`1px solid ${C.border}`:'none',
-              borderRadius:10,
-              color:sending||!input.trim()?C.subtle:'#fff',
-              fontSize:13,fontWeight:700,fontFamily:font,
               cursor:sending||!input.trim()?'not-allowed':'pointer'}}>
-            Send
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={sending||!input.trim()?C.subtle:'#fff'} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           </button>
         </div>
       </div>
