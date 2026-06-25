@@ -913,6 +913,126 @@ function ExamScheduleReminder({ onGoToExams }) {
   );
 }
 
+// ── Scaling & upgrades checklist ────────────────────────────────────────────
+// A living list of the infra/launch upgrades to do as the app grows. Items with
+// a numeric `when` light up "due" once total users crosses that count; "now"
+// items are launch-readiness tasks. Done-state is per-device (localStorage).
+const UPGRADES = [
+  { id:'stripe-webhook', when:'now', tier:'Launch blocker', cost:'free',
+    title:'Point the Stripe webhook at the www host',
+    why:"The endpoint must be https://www.beattheexam.org/api/stripe-webhook. The apex 308-redirects to www and Stripe doesn't follow redirects, so paid users silently never get marked Pro.",
+    action:'Stripe → Developers → Webhooks: set the www URL, copy its signing secret to Vercel STRIPE_WEBHOOK_SECRET, then resend any failed events.' },
+  { id:'leaked-pw', when:'now', tier:'Launch blocker', cost:'free',
+    title:'Turn on leaked-password protection',
+    why:'Supabase can reject passwords found in known breaches. It is currently off.',
+    action:'Supabase → Authentication → Policies: enable “Leaked password protection”.' },
+  { id:'oauth-brand', when:'now', tier:'Trust', cost:'free',
+    title:'Brand the Google sign-in screen',
+    why:'Add app name “Battle Plan” + logo so the consent screen looks legit (the supabase.co line itself needs the custom domain below).',
+    action:'Google Cloud → OAuth consent screen: set App name, logo, home page, and authorised domain beattheexam.org.' },
+  { id:'supabase-pro', when:200, tier:'Scale', cost:'~$25/mo',
+    title:'Upgrade Supabase to Pro',
+    why:'Free caps: 50k MAU, 500MB DB, 5GB egress/mo, 1-week log retention, and it can auto-pause. Pro lifts all of these and keeps logs/observability.',
+    action:'Supabase → Settings → Subscription: upgrade to Pro.' },
+  { id:'supabase-custom-domain', when:200, tier:'Scale', cost:'~$10/mo (needs Pro)',
+    title:'Add a custom auth domain',
+    why:'Removes the “denvsqnciiynklvsjxgn.supabase.co” line on Google sign-in (shows beattheexam.org instead). Bundle with the Pro upgrade.',
+    action:'Supabase → Custom Domains: add auth.beattheexam.org, then repoint the Google OAuth redirect URI to it.' },
+  { id:'vercel-pro', when:500, tier:'Scale', cost:'~$20/mo',
+    title:'Upgrade Vercel to Pro',
+    why:'Hobby caps: 100GB bandwidth/mo, 12 serverless functions (already AT the limit — a 13th /api file fails deploy), short timeouts, 1-hour log retention.',
+    action:'Vercel → Settings: upgrade the team to Pro.' },
+  { id:'resend', when:500, tier:'Scale', cost:'from ~$20/mo',
+    title:'Raise Resend email limits',
+    why:'Free tier is 3,000 emails/month and 100/day — weekly digests + exam reports will exceed this as users grow.',
+    action:'Resend → upgrade plan; confirm the sending domain stays verified.' },
+  { id:'ai-headroom', when:300, tier:'Scale', cost:'usage',
+    title:'Add AI spend headroom',
+    why:'Marker + chat run on Anthropic/Gemini. As paying users grow, top up credit and watch the “AI usage & profit” tab so cost stays under MRR.',
+    action:'Anthropic console → add billing/credit; tighten MARK_*/CHAT_* caps only if usage spikes.' },
+  { id:'rate-limits', when:1000, tier:'Scale', cost:'free',
+    title:'Revisit rate limits & abuse caps',
+    why:'The per-IP/user and global caps were sized for early traffic; revisit at real scale, and consider the Vercel Firewall.',
+    action:'Tune CHAT_*, MARK_*, CHECKOUT_PER_HOUR envs; enable Vercel WAF if needed.' },
+];
+const scalingDone = () => { try { return JSON.parse(localStorage.getItem('bp_scaling_done')||'[]'); } catch { return []; } };
+const dueCount = (total, done) => UPGRADES.filter(u => !done.includes(u.id) && (u.when==='now' || total>=u.when)).length;
+
+function ScalingReminder({ total, onGo }) {
+  const due = dueCount(total||0, scalingDone());
+  if (!due) return null;
+  return (
+    <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px 18px',marginBottom:12,
+      background:'rgba(194,113,79,0.10)',border:`1px solid ${ACCENT}55`,borderRadius:10}}>
+      <span style={{fontSize:18,flexShrink:0}}>🚀</span>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:13,fontWeight:800,color:TXT,marginBottom:3}}>{due} upgrade{due>1?'s':''} due</div>
+        <div style={{fontSize:12,color:MUT,lineHeight:1.6}}>At {total} users, some infra/launch upgrades are worth doing now. Open the checklist to see which and why.</div>
+      </div>
+      <button onClick={onGo} style={btn(ACCENT,false)}>OPEN CHECKLIST</button>
+    </div>
+  );
+}
+
+function ScalingPanel({ total=0 }) {
+  const [done, setDoneState] = useState(scalingDone());
+  const toggle = (id) => {
+    const next = done.includes(id) ? done.filter(x=>x!==id) : [...done, id];
+    setDoneState(next);
+    try { localStorage.setItem('bp_scaling_done', JSON.stringify(next)); } catch {}
+  };
+  const statusOf = (u) => done.includes(u.id) ? 'done' : (u.when==='now' || total>=u.when) ? 'due' : 'upcoming';
+  const order = { due:0, upcoming:1, done:2 };
+  const rows = [...UPGRADES].sort((a,b)=> order[statusOf(a)]-order[statusOf(b)]);
+  const due = dueCount(total, done);
+
+  return (
+    <div>
+      <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:16,flexWrap:'wrap'}}>
+        <div style={{background:'rgba(194,113,79,0.12)',borderRadius:12,padding:'12px 16px'}}>
+          <div style={{fontSize:24,fontWeight:700,color:ACCENT,lineHeight:1,fontFamily:numF}}>{total}</div>
+          <div style={{fontSize:12,color:MUT,marginTop:5}}>Total users</div>
+        </div>
+        <div style={{background:due?'rgba(251,191,36,0.12)':'rgba(34,197,94,0.10)',borderRadius:12,padding:'12px 16px'}}>
+          <div style={{fontSize:24,fontWeight:700,color:due?WARN:OK,lineHeight:1,fontFamily:numF}}>{due}</div>
+          <div style={{fontSize:12,color:MUT,marginTop:5}}>Due now</div>
+        </div>
+        <div style={{flex:1,minWidth:220,fontSize:12,color:MUT,lineHeight:1.6}}>
+          Things to upgrade as Battle Plan grows. Items light up <strong style={{color:WARN}}>Due</strong> once you pass the user count that makes them matter. Ticking them off is just a note to yourself (saved on this device).
+        </div>
+      </div>
+
+      <div style={{display:'flex',flexDirection:'column',gap:10}}>
+        {rows.map(u=>{
+          const st = statusOf(u);
+          const isDone = st==='done';
+          const badge = isDone ? {t:'Done', c:OK, bg:'rgba(34,197,94,0.12)'}
+            : st==='due' ? {t: u.when==='now'?'Do now':'Due', c:WARN, bg:'rgba(251,191,36,0.14)'}
+            : {t:`At ${u.when} users`, c:DIM, bg:'rgba(0,0,0,0.04)'};
+          return (
+            <div key={u.id} style={{...card,padding:'14px 16px',opacity:isDone?0.62:1,
+              border:`1px solid ${st==='due'?ACCENT+'44':BORDER}`}}>
+              <div style={{display:'flex',alignItems:'flex-start',gap:12}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:5}}>
+                    <span style={{fontSize:9,fontWeight:800,letterSpacing:0.5,textTransform:'uppercase',
+                      color:badge.c,background:badge.bg,borderRadius:5,padding:'2px 7px'}}>{badge.t}</span>
+                    <span style={{fontSize:9,fontWeight:700,letterSpacing:0.4,textTransform:'uppercase',color:DIM}}>{u.tier} · {u.cost}</span>
+                  </div>
+                  <div style={{fontSize:14,fontWeight:700,color:TXT,marginBottom:5,textDecoration:isDone?'line-through':'none'}}>{u.title}</div>
+                  <div style={{fontSize:12,color:MUT,lineHeight:1.6,marginBottom:6}}>{u.why}</div>
+                  <div style={{fontSize:12,color:TXT2,lineHeight:1.6}}><strong style={{color:ACCENT}}>Do:</strong> {u.action}</div>
+                </div>
+                <button onClick={()=>toggle(u.id)} style={btn(isDone?undefined:OK,false)}>{isDone?'Undo':'Mark done'}</button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // EXAM_SCHEDULE nests papers by board id ({subject:{boardId:[...]}}). The editor
 // works on flat rows, so flatten on load (tagging each row with its board id) and
 // re-nest on save, so the live app keeps per-board routing. Single-board / GCSE
@@ -1743,8 +1863,9 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
     {group:'Insights',items:[['overview','Overview'],['finance','Finance'],['ai','AI usage'],['analytics','Analytics']]},
     {group:'People',items:[['users','Users'],['waitlist','Pro waitlist'],['codes','Tester codes']]},
     {group:'Operations',items:[['exams','Exam schedule'],['resources','Resources'],['broadcast','Messaging'],['query','Data explorer'],['system','System']]},
+    {group:'Launch',items:[['scaling','Scaling & upgrades']]},
   ];
-  const TITLES={overview:'Overview',finance:'Finance',ai:'AI usage & profit',analytics:'Analytics',users:'Users',waitlist:'Pro waitlist',codes:'Tester codes',exams:'Exam schedule',resources:'Resources',broadcast:'Messaging',query:'Data explorer',system:'System'};
+  const TITLES={overview:'Overview',finance:'Finance',ai:'AI usage & profit',analytics:'Analytics',users:'Users',waitlist:'Pro waitlist',codes:'Tester codes',exams:'Exam schedule',resources:'Resources',broadcast:'Messaging',query:'Data explorer',system:'System',scaling:'Scaling & upgrades'};
 
   return (
     <>
@@ -1795,6 +1916,7 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
           <div style={{padding:'24px',maxWidth:1180,width:'100%',boxSizing:'border-box'}}>
           {tab==='overview'&&(<>
           <ExamScheduleReminder onGoToExams={()=>setTab('exams')}/>
+          <ScalingReminder total={stats.total} onGo={()=>setTab('scaling')}/>
           <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:10,marginBottom:10}}>
             {[
               {v:stats.total,l:'Total users'},
@@ -1960,6 +2082,9 @@ function Dashboard({adminUser,adminProfile,onLogout}) {
 
           {/* RESOURCES */}
           {tab==='resources'&&<ResourcesPanel/>}
+
+          {/* SCALING & UPGRADES */}
+          {tab==='scaling'&&<ScalingPanel total={stats.total}/>}
 
           {/* BROADCAST */}
           {tab==='broadcast'&&<BroadcastPanel users={users}/>}
