@@ -2823,8 +2823,8 @@ function RichText({children,style}){
 function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}),isPro=false,addToast=()=>{},C,font,onClose}) {
   ensureAnimStyles();
   const BOARDS=['AQA','Edexcel','OCR','OCR A','OCR B','WJEC / Eduqas','CIE / CAIE','Other'];
-  const [subject,setSubject]=useState(subjects[0]?.name||'');
-  const [board,setBoard]=useState(subjects[0]?.board||'AQA');
+  const [subject,setSubject]=useState(''); // start blank so the student picks deliberately (no wrong default)
+  const [board,setBoard]=useState('AQA');
   const [paperCode,setPaperCode]=useState('');
   const [answersText,setAnswersText]=useState('');
   const [markSchemeText,setMarkSchemeText]=useState('');
@@ -3109,7 +3109,8 @@ function PaperMarker({subjects=[],examLevel='alevel',applyAction=()=>({ok:false}
               <div style={{flex:1}}>
                 <label style={labelStyle}>Subject</label>
                 {subjects.length
-                  ? <select value={subject} onChange={e=>{setSubject(e.target.value); const s=subjects.find(x=>x.name===e.target.value); if(s?.board) setBoard(s.board);}} style={inputStyle}>
+                  ? <select value={subject} onChange={e=>{setSubject(e.target.value); const s=subjects.find(x=>x.name===e.target.value); if(s?.board) setBoard(s.board);}} style={{...inputStyle,color:subject?C.text:C.muted}}>
+                      <option value="" disabled>Select subject…</option>
                       {subjects.map(s=><option key={s.name} value={s.name}>{s.name}</option>)}
                     </select>
                   : <input value={subject} onChange={e=>setSubject(e.target.value)} placeholder="e.g. Physics" style={inputStyle}/>}
