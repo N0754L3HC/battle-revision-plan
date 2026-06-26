@@ -1,4 +1,23 @@
-export default function TermsOfService({ onClose }) {
+import { useEffect } from 'react';
+
+// Renders the single, authoritative legal document. Three modes:
+//  - modal (default): floating overlay with a Close button (used inside the app)
+//  - standalone: a full, publicly-reachable page at /terms or /privacy, so
+//    reviewers (Stripe, Google OAuth) and users can read it WITHOUT signing in.
+//  - focus="privacy": frames the same document as the Privacy Policy and jumps
+//    to the data-protection sections. One source of truth = no contradictory copy.
+export default function TermsOfService({ onClose, standalone = false, focus = null }) {
+  useEffect(() => {
+    if (!standalone) return;
+    document.title = focus === 'privacy'
+      ? 'Privacy Policy · Battle Plan'
+      : 'Terms of Service · Battle Plan';
+    if (focus === 'privacy') {
+      // Jump to the privacy/data-protection clauses on load.
+      const el = document.getElementById('privacy-section');
+      if (el) setTimeout(() => el.scrollIntoView({ behavior: 'auto', block: 'start' }), 0);
+    }
+  }, [standalone, focus]);
   const ACCENT = '#b5735a';
   const S = {
     overlay: {
@@ -36,18 +55,39 @@ export default function TermsOfService({ onClose }) {
   };
   const B = ({ children }) => <strong style={S.strong}>{children}</strong>;
 
+  // Standalone page styles: a real scrollable page rather than a fixed overlay.
+  const outer = standalone
+    ? { minHeight: '100vh', background: '#f6f1e7', padding: '24px 16px 60px',
+        display: 'flex', justifyContent: 'center',
+        fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }
+    : S.overlay;
+  const box = standalone ? { ...S.box, maxHeight: 'none', maxWidth: 760 } : S.box;
+  const body = standalone ? { ...S.body, overflowY: 'visible', flex: 'none' } : S.body;
+  const title = standalone
+    ? (focus === 'privacy' ? 'Privacy Policy' : 'Terms of Service')
+    : 'Terms of Service and Privacy Policy';
+  const linkBtn = { ...S.btn, background: 'transparent', color: ACCENT, border: `1px solid ${ACCENT}`, textDecoration: 'none' };
+
   return (
-    <div style={S.overlay} onClick={e => { if (e.target === e.currentTarget && onClose) onClose(); }}>
-      <div style={S.box}>
+    <div style={outer} onClick={e => { if (!standalone && e.target === e.currentTarget && onClose) onClose(); }}>
+      <div style={box}>
         <div style={S.header}>
           <div>
-            <span style={S.h1}>Terms of Service and Privacy Policy</span>
+            <span style={S.h1}>{title}</span>
             <div style={{ ...S.sub, marginTop: 3 }}>Battle Plan · beattheexam.org</div>
           </div>
           <span style={S.sub}>Effective and last revised: 22 June 2026</span>
         </div>
 
-        <div style={S.body}>
+        <div style={body}>
+          {standalone && focus === 'privacy' && (
+            <p style={{ ...S.p, fontSize: 10.5, color: '#6a6155', background: '#fbf7ef', border: '1px solid #efe7d8', borderRadius: 8, padding: '10px 12px' }}>
+              This is Battle Plan's <B>Privacy Policy</B>. Our privacy and data-protection
+              practices are set out in full below, in particular sections 11 to 17 (lawful
+              bases, recipients, storage, transfers, your rights) and section 16 (cookies).
+              They form part of, and should be read alongside, our <a href="/terms" style={{ color: ACCENT }}>Terms of Service</a>.
+            </p>
+          )}
           <p style={{ ...S.p, fontSize: 10, color: '#7a7064', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
             PLEASE READ THESE TERMS OF SERVICE AND PRIVACY POLICY (TOGETHER WITH ALL DOCUMENTS REFERRED TO HEREIN OR
             INCORPORATED HEREIN BY REFERENCE, COLLECTIVELY, THESE "TERMS") CAREFULLY AND IN THEIR ENTIRETY BEFORE
@@ -242,7 +282,7 @@ export default function TermsOfService({ onClose }) {
             through such functionality.
           </p>
 
-          <h2 style={S.h2}>11. Processing of Personal Data; Categories and Purposes</h2>
+          <h2 style={S.h2} id="privacy-section">11. Processing of Personal Data; Categories and Purposes</h2>
           <p style={S.p}>
             11.0. <B>Data Controller.</B> For the purposes of Applicable Data Protection Law, the controller responsible
             for the Processing of your Personal Data is Charis Muzenda, trading as Battle Plan, established in the United
@@ -453,7 +493,14 @@ export default function TermsOfService({ onClose }) {
           </p>
         </div>
 
-        {onClose && (
+        {standalone ? (
+          <div style={{ ...S.footer, justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+            <a href={focus === 'privacy' ? '/terms' : '/privacy'} style={linkBtn}>
+              {focus === 'privacy' ? 'Read the Terms of Service' : 'Read the Privacy Policy'}
+            </a>
+            <a href="/" style={S.btn}>Back to Battle Plan</a>
+          </div>
+        ) : onClose && (
           <div style={S.footer}>
             <button style={S.btn} onClick={onClose}>Close</button>
           </div>

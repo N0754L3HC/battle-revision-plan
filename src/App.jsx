@@ -8334,10 +8334,8 @@ function LandingPage({ onGetStarted }) {
             <span style={{...type.caption, color:C.subtle}}>Battle Plan · AQA · Edexcel · OCR · WJEC</span>
           </div>
           <div style={{display:'flex', alignItems:'center', gap:18, flexWrap:'wrap'}}>
-            <button onClick={()=>setShowTerms(true)} style={{background:'none', border:'none',
-              color:C.muted, fontSize:13, fontFamily:font, cursor:'pointer', padding:0}}>
-              Terms &amp; Privacy
-            </button>
+            <a href="/terms" style={{color:C.muted, fontSize:13, textDecoration:'none'}}>Terms</a>
+            <a href="/privacy" style={{color:C.muted, fontSize:13, textDecoration:'none'}}>Privacy</a>
             <a href="mailto:51r4h100@gmail.com" style={{color:C.muted, fontSize:13, textDecoration:'none'}}>Contact</a>
           </div>
         </div>
@@ -10021,6 +10019,12 @@ export default function App() {
       <div style={{fontSize:13,color:C.muted}}>Loading…</div>
     </div>
   );
+
+  // Public legal pages — reachable without an account (Stripe / Google OAuth
+  // reviewers and users can read them directly). Checked before splash/auth.
+  const legalPath = typeof window!=='undefined' ? window.location.pathname.replace(/\/+$/,'').toLowerCase() : '';
+  if (legalPath==='/terms')   return <ErrorBoundary><TermsOfService standalone/></ErrorBoundary>;
+  if (legalPath==='/privacy') return <ErrorBoundary><TermsOfService standalone focus="privacy"/></ErrorBoundary>;
 
   if (splash)               return <ErrorBoundary>{splashScreen}</ErrorBoundary>;
   if (phase==='loading')    return <ErrorBoundary>{loading}</ErrorBoundary>;
