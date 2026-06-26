@@ -29,11 +29,10 @@ The service is likely to be accessed by children (GCSE students are typically 14
 | Supabase | Database, auth, file storage | Check project region; SCCs where outside UK/EEA |
 | Vercel | App hosting / serverless | SCCs |
 | Stripe | Payment processing (Commander tier) | PCI-DSS; SCCs |
-| Anthropic (Claude) | AI marking & chat | SCCs; data not used for training (API) |
-| Google (Gemini) | AI chat fallback | SCCs |
+| Anthropic (Claude) | AI marking & chat (sole AI provider) | SCCs; API inputs not used for model training |
 | Resend | Transactional email | SCCs |
 
-> All AI providers are used via API; confirm in each provider's DPA that API inputs are not used for model training.
+> AI is Anthropic-only. The Google/Gemini chat fallback was removed on 2026-06-26 so children's chat data is never sent to a provider that may train on it. Confirm in Anthropic's DPA that API inputs are not used for model training.
 
 ## 5. Risks & mitigations
 | Risk | Likelihood | Mitigation |

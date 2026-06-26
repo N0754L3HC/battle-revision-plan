@@ -271,78 +271,20 @@ function parseActions(text) {
   return { clean, actions: out, memories };
 }
 
-// Map our message format to Gemini's
-function toGeminiContents(messages) {
+// Map our message format to the neutral {role, parts} shape callClaude consumes.
+function toModelContents(messages) {
   return messages.map(m => ({
     role: m.from === 'char' ? 'model' : 'user',
     parts: [{ text: String(m.text || '').slice(0, MSG_MAX_CHARS) }], // cap each msg
   }));
 }
 
-async function callGeminiModel({apiKey, model, systemPrompt, contents}) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-  const body = {
-    systemInstruction: { parts: [{ text: systemPrompt }] },
-    contents,
-    safetySettings: [
-      { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_LOW_AND_ABOVE' },
-      { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_LOW_AND_ABOVE' },
-      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_LOW_AND_ABOVE' },
-      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_LOW_AND_ABOVE' },
-    ],
-    generationConfig: { maxOutputTokens: 600, temperature: 0.7, topP: 0.9, topK: 40 },
-  };
-  const r = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!r.ok) {
-    const txt = await r.text();
-    const err = new Error(`Gemini ${r.status}: ${txt.slice(0, 200)}`);
-    err.status = r.status;
-    err.model = model;
-    throw err;
-  }
-  const d = await r.json();
-  if (d.promptFeedback?.blockReason) {
-    return { reply: null, blocked: true, reason: d.promptFeedback.blockReason, model };
-  }
-  const cand = d.candidates?.[0];
-  if (!cand) return { reply: null, blocked: true, reason: 'no_candidate', model };
-  if (cand.finishReason === 'SAFETY' || cand.finishReason === 'BLOCKLIST' || cand.finishReason === 'PROHIBITED_CONTENT') {
-    return { reply: null, blocked: true, reason: cand.finishReason, model };
-  }
-  const text = cand.content?.parts?.map(p => p.text).filter(Boolean).join('\n').trim();
-  if (!text) return { reply: null, blocked: true, reason: 'empty', model };
-  return { reply: text, blocked: false, model, usage: d.usageMetadata };
-}
-
-async function callGemini({systemPrompt, contents}) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error('GEMINI_API_KEY not configured');
-  // Primary: 2.5 Flash. Fallback on 429/quota: 2.5 Flash Lite (higher free-tier RPM).
-  const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
-  let lastErr = null;
-  for (const model of models) {
-    try {
-      return await callGeminiModel({apiKey, model, systemPrompt, contents});
-    } catch (e) {
-      lastErr = e;
-      // Only fall through on 429 (quota/rate) or 503 (service unavailable). Other errors are real.
-      if (e.status !== 429 && e.status !== 503) throw e;
-      console.warn(`Gemini ${model} ${e.status} — falling back to next model`);
-    }
-  }
-  throw lastErr;
-}
-
 // ─── Claude (Anthropic) ─────────────────────────────────────────────────────
-// Preferred when ANTHROPIC_API_KEY is set. Same return shape as callGemini.
+// Caps is Claude-only — see callLLM for why (children's-data / no-training).
 async function callClaude({ systemPrompt, contents }) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   const model = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5';
-  // Convert Gemini-style contents → Anthropic messages.
+  // Convert {role, parts} contents → Anthropic messages.
   const messages = contents.map(c => ({
     role: c.role === 'model' ? 'assistant' : 'user',
     content: c.parts.map(p => p.text).filter(Boolean).join('\n'),
@@ -374,26 +316,14 @@ async function callClaude({ systemPrompt, contents }) {
   return { reply: text, blocked: false, model, usage: d.usage };
 }
 
-// ─── Cost router ────────────────────────────────────────────────────────────
-// Cheap model (Gemini) for simple chat; Claude for anything that needs real
-// reasoning — plans, timetables, whole-system analysis, explanations, quizzes,
-// marking. Keeps spend down without dumbing down the moments that matter.
-const COMPLEX_RE = /\b(plan|timetable|schedule|revis|analys|analyz|assess|how am i|on track|projection|predict|target|strateg|quiz|explain|why|how do i|derive|prove|algorithm|big-?o|normalis|mark this|grade|feedback|improve|focus on|weak|what should i)\b/i;
-function pickModel({ text = '', context = {} }) {
-  const richContext = Array.isArray(context.subjects) && context.subjects.length >= 3;
-  const longMsg = text.length > 200;
-  return (COMPLEX_RE.test(text) || richContext || longMsg) ? 'claude' : 'gemini';
-}
-
-// Dispatch honoring the router. Falls back to whichever provider is configured
-// (so removing ANTHROPIC_API_KEY reverts everything to Gemini automatically).
-async function callLLM({ systemPrompt, contents, prefer }) {
-  const hasClaude = !!process.env.ANTHROPIC_API_KEY;
-  const hasGemini = !!process.env.GEMINI_API_KEY;
-  if (prefer === 'gemini' && hasGemini) return callGemini({ systemPrompt, contents });
-  if (prefer === 'claude' && hasClaude) return callClaude({ systemPrompt, contents });
-  if (hasClaude) return callClaude({ systemPrompt, contents });
-  return callGemini({ systemPrompt, contents });
+// ─── Model dispatch ─────────────────────────────────────────────────────────
+// Caps is CLAUDE-ONLY by design. No third-party fallback, so a student's chat
+// (which may include children's personal data) is only ever sent to Anthropic,
+// whose API terms do not use inputs to train models. Do not re-add a Gemini /
+// other-provider fallback without a paid DPA that bars training on the data.
+async function callLLM({ systemPrompt, contents }) {
+  if (!process.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY not configured');
+  return callClaude({ systemPrompt, contents });
 }
 
 // ─── Duplicate-request cache ────────────────────────────────────────────────
@@ -424,7 +354,7 @@ export default async function handler(req, res) {
 
   const admin = getAdmin();
   if (!admin) return res.status(503).json({ error: 'Server not configured — SUPABASE_URL or SUPABASE_SERVICE_KEY missing in env' });
-  if (!process.env.ANTHROPIC_API_KEY && !process.env.GEMINI_API_KEY) return res.status(503).json({ error: 'Chat not configured — set ANTHROPIC_API_KEY (preferred) or GEMINI_API_KEY in env' });
+  if (!process.env.ANTHROPIC_API_KEY) return res.status(503).json({ error: 'Chat not configured — set ANTHROPIC_API_KEY in env' });
 
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ?? req.socket?.remoteAddress ?? 'unknown';
   if (!rateLimitIp(ip)) return res.status(429).json({ error: 'Too many requests' });
@@ -455,7 +385,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: `Message too long (max ${MSG_MAX_CHARS} chars)` });
   }
 
-  // 1. CRISIS PRE-SCREEN — never call Gemini for these
+  // 1. CRISIS PRE-SCREEN — never call the model for these
   const crisis = detectCrisis(lastUserMsg.text);
   if (crisis) {
     return res.status(200).json({
@@ -465,7 +395,7 @@ export default async function handler(req, res) {
   }
 
   // 2. Daily caps via Supabase counter (atomic increment, single round-trip).
-  // Increments BEFORE Gemini call so a hammering attacker still consumes budget
+  // Increments BEFORE the model call so a hammering attacker still consumes budget
   // toward their own cap rather than slipping through. Admins exempt — they may
   // legitimately want to test/debug.
   if (!prof?.is_admin) {
@@ -503,7 +433,7 @@ export default async function handler(req, res) {
   } catch { /* memory is best-effort */ }
   const contextBlock = buildContext(context || {}, memories);
   const sys = SYSTEM_PROMPT.replace('{{CONTEXT}}', contextBlock);
-  const contents = toGeminiContents(trimmed);
+  const contents = toModelContents(trimmed);
 
   // 4b. Duplicate-request cache — identical re-sends / double-fired briefings
   // return the prior answer without re-billing the model.
@@ -511,15 +441,11 @@ export default async function handler(req, res) {
   const hit = cacheGet(ck);
   if (hit) return res.status(200).json({ ...hit, meta: { ...(hit.meta || {}), cached: true } });
 
-  // 4c. Cost router — cheap model for simple chat, Claude for reasoning.
-  const prefer = pickModel({ text: lastUserMsg.text, context: context || {} });
-
-  // 5. Call model
+  // 5. Call model (Claude only)
   try {
     const { reply, blocked, reason, model, usage } = await callLLM({
       systemPrompt: sys,
       contents,
-      prefer,
     });
     if (usage) await logAiUsage(admin, { uid, feature: 'chat', model, usageRaw: usage });
     if (blocked || !reply) {
@@ -555,16 +481,16 @@ export default async function handler(req, res) {
     const payload = {
       reply: replyText.slice(0, 1800),
       actions,
-      meta: { source: prefer },
+      meta: { source: 'claude', model },
     };
     cacheSet(ck, payload);
     return res.status(200).json(payload);
   } catch (err) {
     const msg = err?.message || '';
     console.error('Mascot chat error:', msg);
-    // 429 from Gemini = free-tier quota hit on every fallback model. Surface it
-    // explicitly so the user knows it's a quota issue and not a server bug.
-    if (err?.status === 429 || /(Gemini|Claude) 429/.test(msg)) {
+    // 429 = Anthropic rate/quota limit. Surface it explicitly so the user knows
+    // it's a temporary quota issue and not a server bug.
+    if (err?.status === 429 || /Claude 429/.test(msg)) {
       return res.status(200).json({
         reply: "I'm getting a lot of messages right now and hit a rate limit. Wait a minute and try again.",
         meta: { source: 'error', error: 'quota' },

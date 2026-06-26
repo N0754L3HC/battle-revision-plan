@@ -948,7 +948,7 @@ const UPGRADES = [
     action:'Resend → upgrade plan; confirm the sending domain stays verified.' },
   { id:'ai-headroom', when:300, tier:'Scale', cost:'usage',
     title:'Add AI spend headroom',
-    why:'Marker + chat run on Anthropic/Gemini. As paying users grow, top up credit and watch the “AI usage & profit” tab so cost stays under MRR.',
+    why:'Marker + chat run on Anthropic (Claude only). As paying users grow, top up credit and watch the “AI usage & profit” tab so cost stays under MRR.',
     action:'Anthropic console → add billing/credit; tighten MARK_*/CHAT_* caps only if usage spikes.' },
   { id:'rate-limits', when:1000, tier:'Scale', cost:'free',
     title:'Revisit rate limits & abuse caps',
