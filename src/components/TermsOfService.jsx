@@ -76,7 +76,7 @@ export default function TermsOfService({ onClose, standalone = false, focus = nu
             <span style={S.h1}>{title}</span>
             <div style={{ ...S.sub, marginTop: 3 }}>Battle Plan · beattheexam.org</div>
           </div>
-          <span style={S.sub}>Effective and last revised: 22 June 2026</span>
+          <span style={S.sub}>Effective and last revised: 26 June 2026</span>
         </div>
 
         <div style={body}>
@@ -230,6 +230,28 @@ export default function TermsOfService({ onClose, standalone = false, focus = nu
             relevant bill-payer. The holder of the payment instrument utilised shall be responsible for the
             corresponding charges. We reserve the right to revise pricing or feature composition prospectively, any
             such revision to take effect solely from the next ensuing renewal and never during a period already paid for.
+          </p>
+          <p style={S.p}>
+            6.6. <B>Free trials.</B> We may, at our discretion, offer a time-limited free or discounted introductory
+            trial of the enhanced features. Eligibility for any such trial may be limited to one trial per person or
+            per payment instrument, and we may withhold, decline, or revoke a trial where we reasonably suspect
+            abuse, manipulation, or repeat redemption. Where a trial requires a valid payment instrument to be placed
+            on file, you acknowledge and agree that, <B>unless you cancel before the trial period expires, the trial
+            shall automatically convert into a paid recurring subscription</B>, and the applicable fee, as displayed to
+            you prior to commencement, shall be charged to that instrument upon the conclusion of the trial and at
+            each subsequent renewal thereafter. You may cancel at any time before the end of the trial through the
+            billing-management facility within the Service (accessible via your Account), in which case no charge shall
+            be levied and your access to the enhanced features shall continue until the trial period expires.
+          </p>
+          <p style={S.p}>
+            6.7. <B>Refunds.</B> Save as expressly provided in Clause 6.4 or as required by any non-excludable
+            provision of Applicable Law, all fees are non-refundable, and we do not provide refunds, credits, or
+            pro-rated reimbursements in respect of partially elapsed billing periods, unused features, or periods
+            during which your account remained active but was not used. Upon cancellation you will retain access to the
+            enhanced features until the expiry of the period for which payment has already been rendered. Any refund or
+            credit granted at our discretion in a particular instance shall not constitute a waiver of these Terms or
+            of any obligation to pay fees properly due, nor create any entitlement to like treatment on any future
+            occasion.
           </p>
 
           <h2 style={S.h2}>7. Intellectual Property Rights</h2>
