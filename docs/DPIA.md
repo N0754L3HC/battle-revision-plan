@@ -48,4 +48,6 @@ The service is likely to be accessed by children (GCSE students are typically 14
 Residual risk is **low**. Processing is necessary, minimised, and privacy-protective by design. Outstanding actions: confirm processor regions/DPAs and SCCs; complete ICO registration; insert controller legal identity.
 
 ## 7. Sign-off
-Owner: ____________________   Date: __________
+Owner: **Charis Muzenda** (trading as Battle Plan)   Date: **26 June 2026**
+
+_Signed off by the controller. This lightweight DPIA is to be reviewed annually or on any material change to processing (new processor, new data category, or change of purpose)._
