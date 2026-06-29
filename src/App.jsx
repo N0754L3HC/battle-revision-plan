@@ -7109,6 +7109,14 @@ function Account({user,subjects,uid,dark,setDark,onSignOut,onResetSubjects,C,fon
                     Skip the trial, subscribe now
                   </button>
                 )}
+                {/* Plain-English subscription disclosure (trial-conversion transparency). */}
+                <div style={{fontSize:11,color:C.muted,lineHeight:1.55,marginTop:10}}>
+                  {billing==='annual'
+                    ? <>£69.99 is charged today for 12 months, then renews automatically each year at the then-current price until you cancel. Cancel anytime in your Account; no cancellation fee.</>
+                    : !stripeCustomerId
+                      ? <><b>Free for 3 days, then £8.99/mo.</b> Cancel anytime before the trial ends and you won't be charged a penny. We'll remind you before it ends. After that it renews automatically each month until you cancel. No cancellation fee.</>
+                      : <>£8.99/mo, renews automatically each month until you cancel. Cancel anytime in your Account; no cancellation fee.</>}
+                </div>
               </>
             )}
           </>
@@ -8598,6 +8606,18 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   const [toasts, setToasts] = useState([]);
   const [showTour, setShowTour] = useState(()=>!ls.get('rbp_tour_v1',false));
   const [aStarFlash, setAStarFlash] = useState(false);
+  // Free-trial-ending alert: load the trial end date while the user is trialing,
+  // so we can warn them before they're auto-charged (UK consumer-protection good
+  // practice / DMCCA reminder-notice direction; never against the law to remind).
+  const [trialEnd, setTrialEnd] = useState(null);
+  const [trialWarnDismissed, setTrialWarnDismissed] = useState(false);
+  useEffect(()=>{
+    if (subscriptionStatus!=='trialing' || !user?.id) { setTrialEnd(null); return; }
+    let alive=true;
+    supabase.from('user_profiles').select('trial_end').eq('id',user.id).maybeSingle()
+      .then(({data})=>{ if(alive) setTrialEnd(data?.trial_end ? new Date(data.trial_end).getTime() : null); });
+    return ()=>{ alive=false; };
+  },[subscriptionStatus,user?.id]);
   const addToast = (msg,type='info') => {
     const id=Date.now()+Math.random();
     setToasts(prev=>[...prev,{id,msg,type}]);
@@ -9080,8 +9100,32 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   const onBuildPlan=()=> isPro ? setPlanBuilder(true) : addToast('AI study plans are a Pro feature - unlock it in Account → Settings.','info');
   const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse,isAS,analyticsConsent,setAnalyticsConsent,insNoted,setInsNoted,myPlan,setMyPlan,shareTheme,setShareTheme,shareAspect,setShareAspect,yearGroup,setYearGroup,displayName,setDisplayName,onMarkPaper,onBuildPlan};
 
+  // Show the trial-ending warning once it's within ~48h (and not dismissed this session).
+  const trialHrsLeft = trialEnd ? (trialEnd - Date.now())/3600000 : null;
+  const showTrialWarn = subscriptionStatus==='trialing' && trialHrsLeft!=null && trialHrsLeft>0 && trialHrsLeft<=48 && !trialWarnDismissed;
+  const trialWhen = trialEnd ? new Date(trialEnd).toLocaleString('en-GB',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+  const trialRel = trialHrsLeft==null ? '' : trialHrsLeft<1 ? 'in under an hour'
+    : trialHrsLeft<24 ? `in about ${Math.round(trialHrsLeft)} hour${Math.round(trialHrsLeft)===1?'':'s'}`
+    : `in about ${Math.round(trialHrsLeft/24)} day${Math.round(trialHrsLeft/24)===1?'':'s'}`;
+
   return (
     <div style={{minHeight:'100vh',background:C.bg,fontFamily:font,color:C.text}}>
+      {/* ── Free-trial-ending banner (auto-charge transparency) ── */}
+      {showTrialWarn && (
+        <div style={{position:'sticky',top:0,zIndex:200,display:'flex',alignItems:'center',gap:12,
+          flexWrap:'wrap',padding:'10px 16px',background:C.accent,color:'#fff',
+          fontSize:13,fontWeight:600,fontFamily:font,boxShadow:'0 2px 10px rgba(0,0,0,0.12)'}}>
+          <span style={{flex:'1 1 240px',lineHeight:1.45}}>
+            Your free trial ends {trialRel} ({trialWhen}). You'll be charged <b>£8.99</b> then, unless you cancel before it ends.
+          </span>
+          <button onClick={()=>{ setView('account'); }} style={{padding:'7px 14px',borderRadius:7,border:'none',
+            background:'#fff',color:C.accent,fontSize:12.5,fontWeight:800,fontFamily:font,cursor:'pointer'}}>
+            Manage or cancel
+          </button>
+          <button onClick={()=>setTrialWarnDismissed(true)} aria-label="Dismiss" style={{background:'transparent',
+            border:'none',color:'#fff',fontSize:18,lineHeight:1,cursor:'pointer',padding:'0 4px',opacity:0.85}}>×</button>
+        </div>
+      )}
       {/* ── Speech bubble (desktop: right of sidebar, mobile: top-centre) ── */}
       {showBubble&&(
         <div style={{

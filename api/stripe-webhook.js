@@ -51,9 +51,13 @@ export default async function handler(req, res) {
         // Distinguish a free-trial sub from a paying one so usage can be capped
         // tighter for trials (they aren't paying yet). 'trialing' vs 'pro'.
         let _status = 'pro';
+        let _trialEnd = null; // ISO string of when the free trial converts to paid
         try {
           const sub0 = await getStripe().subscriptions.retrieve(session.subscription);
-          if (sub0?.status === 'trialing') _status = 'trialing';
+          if (sub0?.status === 'trialing') {
+            _status = 'trialing';
+            _trialEnd = sub0.trial_end ? new Date(sub0.trial_end * 1000).toISOString() : null;
+          }
         } catch (e) { console.error('checkout: subscription retrieve failed:', e.message); }
 
         // Record the surviving subscription FIRST, so that when the duplicate
@@ -64,6 +68,7 @@ export default async function handler(req, res) {
           stripe_customer_id: session.customer,
           subscription_status: _status,
           subscription_id: session.subscription,
+          trial_end: _trialEnd,
         }).eq('id', userId);
         if (error) console.error('Supabase update error (checkout.session.completed):', error.message);
 
@@ -96,6 +101,8 @@ export default async function handler(req, res) {
           const { error } = await supabase.from('user_profiles').update({
             subscription_status: sub.status === 'trialing' ? 'trialing' : 'pro',
             subscription_id: sub.id,
+            // Keep the trial end date fresh while trialing; clear it once paying.
+            trial_end: sub.status === 'trialing' && sub.trial_end ? new Date(sub.trial_end * 1000).toISOString() : null,
           }).eq('id', prof.id);
           if (error) console.error('Supabase update error (subscription.updated/active):', error.message);
         } else {
@@ -108,6 +115,7 @@ export default async function handler(req, res) {
           }
           const { error } = await supabase.from('user_profiles').update({
             subscription_status: 'free',
+            trial_end: null,
           }).eq('id', prof.id);
           if (error) console.error('Supabase update error (subscription.updated/inactive):', error.message);
         }
@@ -128,6 +136,7 @@ export default async function handler(req, res) {
         const { error } = await supabase.from('user_profiles').update({
           subscription_status: 'free',
           subscription_id: null,
+          trial_end: null,
         }).eq('id', prof.id);
         if (error) console.error('Supabase update error (subscription.deleted):', error.message);
         break;
