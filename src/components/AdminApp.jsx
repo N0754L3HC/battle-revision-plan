@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import CapsMark from './CapsMark';
-import { EXAM_SCHEDULE } from '../App';
+import { EXAM_SCHEDULE } from '../data/examSchedule';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 // Admin status is enforced server-side via user_profiles.is_admin (set via SQL).
@@ -415,6 +415,12 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
   // (admin OR paid OR trialing OR active grant).
   const pro     = users.filter(u=>u.is_admin || ['active','pro','trialing'].includes(u.subscription_status) || isActiveGrant(u)).length;
   const cancelled=users.filter(u=>['canceled','cancelled','past_due'].includes(u.subscription_status)).length;
+  // Webhook liveness: checkout writes stripe_customer_id via the webhook too, but
+  // customers with NO subscription_id ever recorded means Stripe deliveries are
+  // failing (e.g. endpoint URL pointing at the apex, which 308s). Surface it loud.
+  const withCustomer = users.filter(u=>u.stripe_customer_id).length;
+  const withSub     = users.filter(u=>u.subscription_id).length;
+  const webhookDead  = withCustomer>0 && withSub===0;
   const mrr     = +(paying*8.99).toFixed(2);
   const arr     = +(mrr*12).toFixed(0);
   const conv    = total?Math.round(paying/total*100):0;
@@ -515,6 +521,19 @@ function AnalyticsDashboard({users,referrals=[],groups=[],groupMembers=[]}) {
       </div>
 
       <div style={{fontSize:9,color:'#dc2626',letterSpacing:3,fontWeight:800,marginBottom:10,opacity:0.7}}>REVENUE</div>
+      {webhookDead && (
+        <div style={{...card,padding:'14px 16px',marginBottom:14,border:'1px solid #dc2626',background:'rgba(220,38,38,0.06)'}}>
+          <div style={{fontSize:11,fontWeight:800,color:'#dc2626',letterSpacing:1,marginBottom:6}}>⚠ STRIPE WEBHOOK NOT WRITING BACK</div>
+          <div style={{fontSize:12,color:TXT,lineHeight:1.6}}>
+            {withCustomer} user{withCustomer===1?'':'s'} reached Stripe checkout but <strong>no subscription has ever been recorded</strong>.
+            Deliveries are failing - check the endpoint URL is <strong>https://www.beattheexam.org/api/stripe-webhook</strong> (www, not apex),
+            the signing secret matches Vercel <strong>STRIPE_WEBHOOK_SECRET</strong>, and resend the failed events from the Stripe dashboard.
+          </div>
+        </div>
+      )}
+      {!webhookDead && withSub>0 && (
+        <div style={{fontSize:10,color:'#15803d',marginBottom:10}}>✓ Webhook healthy - {withSub} subscription{withSub===1?'':'s'} recorded ({withCustomer} checkout customer{withCustomer===1?'':'s'})</div>
+      )}
       <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:14}}>
         <Kpi v={paying} l="Paying subscribers" c='#b45309' sub={`${conv}% of users · ${trialing} on trial`}/>
         <Kpi v={pro} l="Pro access (total)" c='#b45309' sub={`${paying} paid · ${trialing} trial · ${grantPro} granted · ${adminPro} admin`}/>

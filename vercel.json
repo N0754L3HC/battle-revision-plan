@@ -13,7 +13,7 @@
     }
   ],
   "rewrites": [
-    { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/((?!api/|admin\\.html|assets|icons\\.svg|favicon|apple-touch).*)", "destination": "/index.html" }
+    { "source": "/hq", "destination": "/hq.html" },
+    { "source": "/((?!api/|hq\\.html|assets|icons\\.svg|favicon|apple-touch).*)", "destination": "/index.html" }
   ]
 }
