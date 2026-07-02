@@ -74,7 +74,24 @@ export default function Root() {
     const t=setTimeout(tick, 1500);
     return ()=>{ alive=false; clearTimeout(t); };
   },[user, isPro]);
-  useEffect(()=>{ const t=setTimeout(()=>setSplash(false),1500); return ()=>clearTimeout(t); },[]);
+  // Splash: hold a short minimum so Caps registers as a brand moment, then get
+  // out of the way the instant boot resolves. The old fixed 1.5s taxed every
+  // single visit; now a warm returning session clears in ~0.6s and slow boots
+  // still show the mascot (never a blank screen) up to a 4s safety cap.
+  const [splashMinDone,setSplashMinDone] = useState(false);
+  useEffect(()=>{
+    const min = setTimeout(()=>setSplashMinDone(true), 600);
+    const cap = setTimeout(()=>{ setSplashMinDone(true); setSplash(false); }, 4000);
+    return ()=>{ clearTimeout(min); clearTimeout(cap); };
+  },[]);
+  useEffect(()=>{ if (splashMinDone && phase!=='loading') setSplash(false); },[splashMinDone, phase]);
+  // Start downloading the destination chunk while the splash is still up, so the
+  // splash and the network run in parallel instead of back-to-back.
+  useEffect(()=>{
+    if (phase==='landing') import('./components/LandingPage.jsx');
+    else if (phase==='onboarding') import('./components/SubjectPicker.jsx');
+    else if (phase==='app'||phase==='level-pick'||phase==='plan-pick') appModule();
+  },[phase]);
 
   const dark = ls.get('rbp_dark',false);
   const C    = dark?T.dark:T.light;

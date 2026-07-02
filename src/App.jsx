@@ -1082,7 +1082,9 @@ function InstallPrompt({ C, font }) {
   if (!show) return null;
   return (
     <div style={{position:'fixed',left:0,right:0,bottom:0,zIndex:300,display:'flex',
-      justifyContent:'center',padding:'0 12px max(12px, env(safe-area-inset-bottom))',pointerEvents:'none'}}>
+      justifyContent:'center',
+      padding:window.innerWidth<640?'0 12px calc(64px + max(12px, env(safe-area-inset-bottom)))':'0 12px max(12px, env(safe-area-inset-bottom))',
+      pointerEvents:'none'}}>
       <div style={{pointerEvents:'auto',width:'100%',maxWidth:440,background:C.surface,
         border:`1px solid ${C.border}`,borderRadius:16,boxShadow:'0 12px 40px rgba(40,30,18,0.22)',
         padding:'14px 16px',fontFamily:font}}>
@@ -1125,8 +1127,10 @@ function ToastBar({toasts,dismiss,isMobile}) {
   ensureAnimStyles();
   if (!toasts.length) return null;
   return (
-    <div style={{position:'fixed',bottom:20,left:70,zIndex:300,
-      display:'flex',flexDirection:'column-reverse',gap:8,pointerEvents:'none'}}>
+    <div style={{position:'fixed',zIndex:300,
+      bottom:isMobile?'calc(66px + env(safe-area-inset-bottom))':20,
+      left:isMobile?12:70, right:isMobile?12:'auto',
+      display:'flex',flexDirection:'column-reverse',alignItems:isMobile?'center':'flex-start',gap:8,pointerEvents:'none'}}>
       {toasts.map(t=>(
         <div key={t.id} onClick={()=>dismiss(t.id)}
           style={{pointerEvents:'auto',maxWidth:300,borderRadius:10,padding:'10px 14px',
@@ -1146,7 +1150,7 @@ function ToastBar({toasts,dismiss,isMobile}) {
 // ── Onboarding walkthrough ─────────────────────────────────────────────────
 const TOUR_STEPS = [
   {Icon:FileText,  title:'Log your past papers',desc:"Hit the + button to record any past paper. Your scores, grades, and trends are tracked automatically."},
-  {Icon:Target,    title:'RAG topic tracker',desc:"Go to Resources → mark every spec topic as Red (needs work), Amber, or Green (confident). Your weakest areas surface automatically."},
+  {Icon:Target,    title:'RAG topic tracker',desc:"Go to Topics → mark every spec topic as Red (needs work), Amber, or Green (confident). Your weakest areas surface automatically."},
   {Icon:BarChart3, title:'Battle Readiness',desc:"Analytics combines your scores, paper count, and topic coverage into a single readiness score. Aim for 80+ before exam day."},
   {Icon:Timer,     title:'Study Timer',desc:"Pomodoro and free stopwatch - both track time per subject and sync across your devices so your streaks are always accurate."},
   {Icon:CalendarDays, title:'Exam countdown',desc:"Exams shows every paper with days remaining. Tap Send Schedule to email your full timetable to yourself."},
@@ -1166,7 +1170,7 @@ function Onboarding({onDone,setView,C,font}) {
   return (
     <div style={{position:'fixed',inset:0,zIndex:250,pointerEvents:'none',
       animation:'rbp-fade-in 0.3s ease'}}>
-      <div style={{position:'absolute',bottom:66,left:0,right:0,padding:'0 16px',
+      <div style={{position:'absolute',bottom:window.innerWidth<640?'calc(72px + env(safe-area-inset-bottom))':66,left:0,right:0,padding:'0 16px',
         display:'flex',justifyContent:'center',pointerEvents:'auto'}}>
         <div style={{width:'100%',maxWidth:480,background:C.surface,
           border:`1px solid ${C.accent}44`,borderRadius:16,padding:'20px',
@@ -3707,7 +3711,71 @@ function ShareReadinessCard({br, subjects, scores, C, font, shareTheme='dark', s
 }
 
 // ── Analytics ──────────────────────────────────────────────────────────────
-function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, onQuickLog, targets, setTargets, sessions=[], rag={}, isPro=false, onUpgrade, isGcse=false, isAS=false, insNoted=false, setInsNoted=()=>{}, shareTheme='dark', setShareTheme=()=>{}, shareAspect='landscape', setShareAspect=()=>{}}) {
+// ── Getting started (first week) ────────────────────────────────────────────
+// A new student's first screen used to be a dashboard of dashes. This gives
+// day one a path: five concrete steps that tick themselves off from real state.
+// Auto-hides once everything is done (or when dismissed).
+function GettingStarted({scores,sessions,rag,targets,uid,C,onQuickLog,go=()=>{},openCaps=()=>{}}) {
+  const [hidden,setHidden] = useState(()=>ls.get(`rbp_gs_hidden_${uid}`,false));
+  const [metCaps,setMetCaps] = useState(()=>ls.get(`rbp_met_caps_${uid}`,false));
+  useEffect(()=>{ const t=setInterval(()=>setMetCaps(ls.get(`rbp_met_caps_${uid}`,false)),2000); return ()=>clearInterval(t); },[uid]);
+  const steps = [
+    { id:'topics',  done:Object.keys(rag).length>0,     label:'Rate your topics red, amber, green',
+      sub:'Takes 2 minutes and powers everything else', cta:'Open Topics', act:()=>go('resources') },
+    { id:'targets', done:Object.keys(targets).length>0, label:'Set a target grade for each subject',
+      sub:'What are you chasing this year?', cta:'Set targets',
+      act:()=>{ document.getElementById('rbp-projected')?.scrollIntoView({behavior:'smooth',block:'center'}); } },
+    { id:'paper',   done:scores.length>0,               label:'Log a past paper or mock score',
+      sub:'Even a rough class test counts', cta:'Log one', act:onQuickLog },
+    { id:'timer',   done:sessions.length>0,             label:'Do one focus session with the timer',
+      sub:'25 minutes starts your streak', cta:'Start timer', act:()=>go('timer') },
+    { id:'caps',    done:metCaps,                        label:'Say hi to Caps',
+      sub:'Your study coach - ask it anything on your subjects', cta:'Open chat', act:openCaps },
+  ];
+  const doneCount = steps.filter(s=>s.done).length;
+  if (hidden || doneCount===steps.length) return null;
+  const next = steps.find(s=>!s.done);
+  return (
+    <div style={{background:C.tintCream,borderRadius:16,padding:'16px 18px',marginBottom:14}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+        <div style={{...type.eyebrow,color:C.accent}}>Get set up · {doneCount}/{steps.length}</div>
+        <button onClick={()=>{setHidden(true);ls.set(`rbp_gs_hidden_${uid}`,true);}}
+          style={{background:'none',border:'none',color:C.subtle,fontSize:12,cursor:'pointer',fontFamily:'inherit',padding:2}}>Hide</button>
+      </div>
+      <div style={{height:5,background:'rgba(0,0,0,0.07)',borderRadius:3,overflow:'hidden',marginBottom:14}}>
+        <div style={{height:'100%',width:`${Math.max(6,Math.round(doneCount/steps.length*100))}%`,background:C.accent,borderRadius:3,transition:'width 0.4s ease'}}/>
+      </div>
+      <div style={{display:'flex',flexDirection:'column',gap:2}}>
+        {steps.map(s=>(
+          <div key={s.id} style={{display:'flex',alignItems:'center',gap:12,padding:'8px 4px',
+            opacity:s.done?0.55:1}}>
+            <div style={{width:22,height:22,borderRadius:'50%',flexShrink:0,
+              background:s.done?(C.success||'#4f7256'):'transparent',
+              border:s.done?'none':`2px solid ${C.border}`,
+              display:'flex',alignItems:'center',justifyContent:'center'}}>
+              {s.done&&<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+            </div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:13.5,fontWeight:600,color:C.text,
+                textDecoration:s.done?'line-through':'none'}}>{s.label}</div>
+              {!s.done&&<div style={{fontSize:11.5,color:C.muted,marginTop:1}}>{s.sub}</div>}
+            </div>
+            {!s.done&&(
+              <button onClick={s.act} style={{flexShrink:0,padding:'6px 12px',borderRadius:8,
+                border:'none',cursor:'pointer',fontFamily:'inherit',fontSize:12,fontWeight:700,
+                background:s===next?C.accent:'rgba(0,0,0,0.06)',color:s===next?'#fff':C.text}}>
+                {s.cta}
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHEDULE, onQuickLog, targets, setTargets, sessions=[], rag={}, isPro=false, onUpgrade, isGcse=false, isAS=false, insNoted=false, setInsNoted=()=>{
+  ensureAnimStyles();}, shareTheme='dark', setShareTheme=()=>{}, shareAspect='landscape', setShareAspect=()=>{}, go=()=>{}, openCaps=()=>{}, syncLoaded=true}) {
   const SUBJ_COLORS  = Object.fromEntries(subjects.map(s=>[s.name,s.color]));
   const GRADE_BOUNDS = Object.fromEntries(subjects.map(s=>[s.name,s.gradeBoundaries]));
 
@@ -3808,6 +3876,22 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
         </p>
       </div>
 
+      {/* ── First-run sync: don't flash a "new user" dashboard while the cloud
+             merge is still in flight on a fresh device ── */}
+      {!syncLoaded && scores.length===0 && sessions.length===0 ? (
+        <div>
+          {[64,180,120].map((h,i)=>(
+            <div key={i} style={{height:h,borderRadius:14,marginBottom:12,
+              background:`linear-gradient(90deg, ${C.card2} 25%, ${C.surface} 50%, ${C.card2} 75%)`,
+              backgroundSize:'200% 100%',animation:'rbp-shimmer 1.3s linear infinite'}}/>
+          ))}
+          <div style={{...type.caption,color:C.subtle,textAlign:'center'}}>Syncing your data…</div>
+        </div>
+      ) : (<>
+
+      <GettingStarted scores={scores} sessions={sessions} rag={rag} targets={targets}
+        uid={uid} C={C} onQuickLog={onQuickLog} go={go} openCaps={openCaps}/>
+
       {/* ── KPI strip ─────────────────────────────────────────────────────── */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,marginBottom:12}}>
         {[
@@ -3827,7 +3911,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
       </div>
 
       {/* ── Projected results ─────────────────────────────────────────────── */}
-      <div style={{...cardSx,padding:'14px 16px',marginBottom:12}}>
+      <div id="rbp-projected" style={{...cardSx,padding:'14px 16px',marginBottom:12}}>
         <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:8,flexWrap:'wrap',marginBottom:12}}>
           <div style={{...type.eyebrow,color:C.subtle}}>Projected results</div>
           {ratedSubs>0&&(
@@ -4061,6 +4145,7 @@ function Analytics({subjects, scores, errors, uid, C, font, examSched=EXAM_SCHED
         shareAspect={shareAspect} setShareAspect={setShareAspect}/>}
 
       <InsuranceEligibilityCard scores={scores} uid={uid} C={C} font={font} noted={insNoted} setNoted={setInsNoted}/>
+      </>)}
     </div>
   );
 }
@@ -4246,9 +4331,9 @@ function Tracker({subjects,scores,setScores,errors,setErrors,uid,C,font,onMarkPa
                   <input value={scorePaper} onChange={e=>setScorePaper(e.target.value)}
                     placeholder="Paper name / year" style={{...iS,flex:'2 1 150px'}}/>
                   <input value={scoreGot} onChange={e=>setScoreGot(e.target.value)}
-                    placeholder="Score" type="number" style={{...iS,flex:'0 0 64px'}}/>
+                    placeholder="Score" type="number" inputMode="numeric" style={{...iS,flex:'0 0 64px'}}/>
                   <input value={scoreMax} onChange={e=>setScoreMax(e.target.value)}
-                    placeholder="/Max" type="number" style={{...iS,flex:'0 0 64px'}}/>
+                    placeholder="/Max" type="number" inputMode="numeric" style={{...iS,flex:'0 0 64px'}}/>
                   <button onClick={addScore} style={{background:C.accent,border:'none',color:'#fff',
                     padding:'8px 18px',borderRadius:6,cursor:'pointer',fontSize:13,fontWeight:600,fontFamily:'inherit'}}>
                     Log
@@ -6736,7 +6821,7 @@ function QuickLog({subjects,scores,setScores,uid,C,font,onClose,onSaved}){
             <div style={{position:'relative',marginBottom:14}}>
               <input type="number" min="0" max="100" value={pct}
                 onChange={e=>setPct(e.target.value)} onKeyDown={e=>e.key==='Enter'&&save()}
-                placeholder="e.g. 74" autoFocus
+                placeholder="e.g. 74" autoFocus inputMode="numeric" enterKeyHint="done"
                 style={{width:'100%',background:C.card2,border:`1px solid ${valid&&displayGrade?gradeColor(displayGrade)+'66':C.border}`,
                   borderRadius:10,padding:'14px 60px 14px 16px',color:C.text,
                   fontSize:24,fontWeight:700,fontFamily:font,outline:'none',boxSizing:'border-box',
@@ -6898,6 +6983,8 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
   const [customising,   setCustomising]  = useState(false);
   const [companionDraft,setCompanionDraft] = useState(companion.name);
   const [companionChat, setCompanionChat]= useState(false);
+  // Getting-started checklist: remember that the student has opened Caps once.
+  useEffect(()=>{ if (companionChat) ls.set(`rbp_met_caps_${uid}`,true); },[companionChat,uid]);
   const [companionNameNotice, setCompanionNameNotice] = useState(false);
   const [paperMarker, setPaperMarker]= useState(false);
   const [planBuilder, setPlanBuilder]= useState(false);
@@ -7042,7 +7129,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
     const localCompanion = ls.get(`rbp_companion_${uid}`,null);
     const localAch       = ls.get(`rbp_ach_${uid}`,[]);
     const localPlan      = ls.get(`rbp_my_plan_${uid}`,[]);
-    supabase.from('user_data').select('scores,errors,rag,targets,sessions,rag_notes,timetable,companion,achievements,my_plan').eq('user_id',user.id).eq('profile','me').single()
+    supabase.from('user_data').select('scores,errors,rag,targets,sessions,rag_notes,timetable,companion,achievements,my_plan').eq('user_id',user.id).eq('profile','me').maybeSingle()
       .then(({data})=>{
         let mergedScores    = localScores,
             mergedErrors    = localErrors,
@@ -7211,7 +7298,8 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
     {id:'resources',    label:'Topics',       Icon:BookOpen},
     {id:'account',      label:'Account',      Icon:User},
   ];
-  const sidebarW = sidebarOpen ? (isMobile ? 54 : 210) : 0;
+  // Phones use the bottom tab bar; the sidebar is tablet/desktop only.
+  const sidebarW = isMobile ? 0 : (sidebarOpen ? 210 : 0);
 
   // ── Caps actions: apply the changes Caps proposes in chat ──────────────────
   const matchSubject = (q) => {
@@ -7306,7 +7394,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
 
   const onMarkPaper=()=> setPaperMarker(true); // free users get 3 lifetime marks; backend enforces
   const onBuildPlan=()=> isPro ? setPlanBuilder(true) : addToast('AI study plans are a Pro feature - unlock it in Account → Settings.','info');
-  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse,isAS,analyticsConsent,setAnalyticsConsent,insNoted,setInsNoted,myPlan,setMyPlan,shareTheme,setShareTheme,shareAspect,setShareAspect,yearGroup,setYearGroup,displayName,setDisplayName,onMarkPaper,onBuildPlan};
+  const vp={subjects,scores,errors,uid,C,font,examSched,rag,setRag,targets,setTargets,ragNotes,setRagNotes,sessions,addToast,isPro,stripeCustomerId,referralCode,examLevel,isGcse,isAS,analyticsConsent,setAnalyticsConsent,insNoted,setInsNoted,myPlan,setMyPlan,shareTheme,setShareTheme,shareAspect,setShareAspect,yearGroup,setYearGroup,displayName,setDisplayName,onMarkPaper,onBuildPlan,go:setView,openCaps:()=>setCompanionChat(true),syncLoaded};
 
   // Show the trial-ending warning once it's within ~48h (and not dismissed this session).
   const trialHrsLeft = trialEnd ? (trialEnd - Date.now())/3600000 : null;
@@ -7451,7 +7539,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
       )}
 
       {/* ── Sidebar open button (shown when sidebar is closed) ── */}
-      {!sidebarOpen&&(
+      {!isMobile&&!sidebarOpen&&(
         <button onClick={toggleSidebar} style={{
           position:'fixed',left:8,top:'50%',transform:'translateY(-50%)',
           zIndex:200,padding:'8px 6px',
@@ -7463,83 +7551,15 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
         </button>
       )}
 
-      {/* ── SIDEBAR - always visible, narrow on phones, full on tablet/desktop ── */}
-      <aside style={{position:'fixed',left:0,top:0,bottom:0,
+      {/* ── SIDEBAR - tablet/desktop only (phones use the bottom tab bar) ── */}
+      {!isMobile&&<aside style={{position:'fixed',left:0,top:0,bottom:0,
         width:sidebarW,zIndex:100,overflow:'hidden',
         background:C.nav,backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
         borderRight:sidebarOpen?`1px solid ${C.border}`:'none',
-        display:'flex',flexDirection:'column',alignItems:isMobile?'center':'stretch',
+        display:'flex',flexDirection:'column',alignItems:'stretch',
         transition:'width 0.2s ease'}}>
 
-        {isMobile?(
-          /* ── NARROW (phone): icon strip ── */
-          <>
-            <div style={{paddingTop:10,paddingBottom:6,width:'100%',
-              display:'flex',flexDirection:'column',alignItems:'center',gap:3,
-              borderBottom:`1px solid ${C.border}`}}>
-              <div style={{position:'relative',cursor:'pointer'}} onClick={()=>setShowBubble(v=>!v)}>
-                <div style={{width:32,height:32,borderRadius:'50%',overflow:'hidden',
-                  border:`2px solid ${C.accent}`,background:C.surface,
-                  display:'flex',alignItems:'center',justifyContent:'center'}}>
-                  <CompanionAvatar
-                    skin={companion.skin} hair={companion.hair} hairStyle={companion.hairStyle}
-                    eyeColor={companion.eyeColor??0} outfitColor={companion.outfitColor??0}
-                    accessory={companion.accessory??0} mood={mood}
-                    pose={showBubble?'wave':'idle'} size={28}/>
-                </div>
-                <div style={{position:'absolute',bottom:-1,right:-1,width:8,height:8,borderRadius:'50%',
-                  background:{happy:'#22c55e',excited:'#fbbf24',worried:'#f97316',neutral:C.accent,sleepy:'#64748b'}[mood]||C.accent,
-                  border:`2px solid ${C.nav}`}}/>
-                {mascotNots.length>0&&(
-                  <div style={{position:'absolute',top:-2,right:-2,minWidth:14,height:14,
-                    borderRadius:7,background:'#ef4444',color:'#fff',fontSize:9,fontWeight:800,
-                    display:'flex',alignItems:'center',justifyContent:'center',padding:'0 3px',
-                    border:`2px solid ${C.nav}`,lineHeight:1}}>
-                    {mascotNots.length}
-                  </div>
-                )}
-              </div>
-              <button onClick={e=>{e.stopPropagation();setCompanionDraft(companion.name);setCustomising(true);}}
-                style={{padding:'1px 0',background:'transparent',border:'none',
-                  cursor:'pointer',color:C.muted,lineHeight:1,display:'flex',alignItems:'center'}}>
-                <Pencil size={11} strokeWidth={2}/>
-              </button>
-            </div>
-            <div style={{flex:1,overflowY:'auto',width:'100%'}}>
-              {DESKTOP_NAV.map(n=>(
-                <button key={n.id} onClick={()=>!n.comingSoon&&setView(n.id)} style={{
-                  width:'100%',display:'flex',flexDirection:'column',alignItems:'center',
-                  justifyContent:'center',padding:'8px 0',background:'transparent',border:'none',
-                  cursor:n.comingSoon?'default':'pointer',position:'relative',
-                  borderLeft:`3px solid ${view===n.id?C.accent:'transparent'}`,
-                  color:n.comingSoon?C.subtle:view===n.id?C.accent:C.muted,
-                  transition:'border-color 0.12s,color 0.12s'}}>
-                  <n.Icon size={17} strokeWidth={view===n.id?2:1.6}/>
-                  {n.comingSoon&&(
-                    <span style={{position:'absolute',top:3,right:2,fontSize:6,fontWeight:800,
-                      color:'#fbbf24',background:'rgba(251,191,36,0.15)',borderRadius:3,
-                      padding:'1px 3px',letterSpacing:0.2,lineHeight:1}}>SOON</span>
-                  )}
-                  {n.id==='achievements'&&unlockedIds.length>0&&(
-                    <span style={{position:'absolute',top:4,right:4,width:5,height:5,
-                      borderRadius:'50%',background:TIER_COLOR.gold}}/>
-                  )}
-                </button>
-              ))}
-            </div>
-            <div style={{padding:'8px 0',borderTop:`1px solid ${C.border}`,width:'100%',
-              display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
-              <button onClick={()=>{const n=!dark;setDark(n);ls.set('rbp_dark',n);}}
-                style={{padding:4,background:'transparent',border:'none',cursor:'pointer',color:C.muted,display:'flex',alignItems:'center'}}>
-                {dark?<Sun size={15} strokeWidth={1.8}/>:<Moon size={15} strokeWidth={1.8}/>}
-              </button>
-              <button onClick={toggleSidebar}
-                style={{padding:4,background:'transparent',border:'none',cursor:'pointer',color:C.muted,display:'flex',alignItems:'center'}}>
-                <PanelLeftClose size={15} strokeWidth={1.8}/>
-              </button>
-            </div>
-          </>
-        ):(
+        {(
           /* ── FULL (tablet/desktop): avatar + labels ── */
           <>
             <div style={{padding:'16px 14px 12px',borderBottom:`1px solid ${C.border}`,
@@ -7636,9 +7656,130 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
             </div>
           </>
         )}
-      </aside>
+      </aside>}
 
-      <main style={{marginLeft:sidebarW,padding:isMobile?'16px 12px':'28px 32px',minHeight:'100vh',transition:'margin-left 0.2s ease'}}>
+      {/* ── MOBILE: bottom tab bar + More sheet (thumb-first, like every app
+             students already live in). Sidebar never renders on phones. ── */}
+      {isMobile&&(()=>{
+        const MORE_VIEWS=['exams','achievements','timer','resources','account','friends'];
+        const moreActive = moreOpen||MORE_VIEWS.includes(view);
+        const TABS=[
+          {id:'analytics',label:'Home',   Icon:BarChart3},
+          {id:'tracker',  label:'Tracker',Icon:PenLine},
+          {id:'plan',     label:'Plan',   Icon:ClipboardList},
+          {id:'groups',   label:'Groups', Icon:Users},
+        ];
+        const MORE_TILES=[
+          {id:'exams',        label:'Exams',        Icon:CalendarDays},
+          {id:'timer',        label:'Timer',        Icon:Timer},
+          {id:'resources',    label:'Topics',       Icon:BookOpen},
+          {id:'achievements', label:'Awards',       Icon:Trophy, dot:unlockedIds.length>0},
+          {id:'account',      label:'Account',      Icon:User},
+          {id:'friends',      label:'Friends',      Icon:UserPlus, soon:true},
+        ];
+        return (
+          <>
+            {moreOpen&&(
+              <div onClick={()=>setMoreOpen(false)} style={{position:'fixed',inset:0,zIndex:105,
+                background:'rgba(0,0,0,0.35)',animation:'rbp-fade-in 0.15s ease'}}>
+                <div onClick={e=>e.stopPropagation()} style={{position:'absolute',left:0,right:0,
+                  bottom:'calc(54px + env(safe-area-inset-bottom))',
+                  background:C.surface,borderRadius:'20px 20px 0 0',padding:'10px 16px 16px',
+                  boxShadow:'0 -10px 40px rgba(0,0,0,0.25)',animation:'rbp-slide-up 0.22s ease'}}>
+                  <div style={{width:36,height:4,borderRadius:2,background:C.border,margin:'0 auto 12px'}}/>
+                  {/* Caps row */}
+                  <div style={{display:'flex',alignItems:'center',gap:12,padding:'2px 2px 12px',
+                    borderBottom:`1px solid ${C.border}`,marginBottom:12}}>
+                    <div style={{position:'relative',flexShrink:0}}>
+                      <CompanionAvatar skin={companion.skin} hair={companion.hair} hairStyle={companion.hairStyle}
+                        eyeColor={companion.eyeColor??0} outfitColor={companion.outfitColor??0}
+                        accessory={companion.accessory??0} mood={mood} pose="idle" size={46}/>
+                      {mascotNots.length>0&&(
+                        <span style={{position:'absolute',top:-2,right:-4,minWidth:15,height:15,borderRadius:8,
+                          background:'#ef4444',color:'#fff',fontSize:9,fontWeight:800,
+                          display:'flex',alignItems:'center',justifyContent:'center',padding:'0 4px',lineHeight:1}}>
+                          {mascotNots.length}</span>
+                      )}
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:14,fontWeight:700,color:C.text}}>{companion.name}</div>
+                      <div style={{fontSize:11.5,color:C.muted}}>
+                        {computeCoins(scores,sessions,companion?.spent_coins||0).available} 🪙
+                        {streakDays>0?` · ${streakDays}-day streak`:''}
+                      </div>
+                    </div>
+                    <button onClick={()=>{setMoreOpen(false);setCompanionDraft(companion.name);setCustomising(true);}}
+                      style={{fontSize:11.5,color:C.muted,background:'transparent',border:`1px solid ${C.border}`,
+                        borderRadius:8,padding:'7px 11px',fontFamily:font,cursor:'pointer',fontWeight:600}}>
+                      Customise</button>
+                    <button onClick={()=>{setMoreOpen(false); isPro?setCompanionChat(true):addToast('Companion chat is a Pro feature - unlock it in Account → Settings.','info');}}
+                      style={{fontSize:11.5,color:'#fff',background:C.accent,border:'none',
+                        borderRadius:8,padding:'8px 13px',fontFamily:font,cursor:'pointer',fontWeight:700,
+                        display:'flex',alignItems:'center',gap:5}}>
+                      Chat{!isPro&&<Lock size={10} strokeWidth={2.5}/>}</button>
+                  </div>
+                  {/* Destination tiles */}
+                  <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:12}}>
+                    {MORE_TILES.map(t=>(
+                      <button key={t.id} onClick={()=>{ if(t.soon) return; setView(t.id); setMoreOpen(false); }}
+                        style={{display:'flex',flexDirection:'column',alignItems:'center',gap:6,
+                          padding:'13px 4px',background:view===t.id?C.accentSoft:C.card2,border:'none',
+                          borderRadius:12,cursor:t.soon?'default':'pointer',fontFamily:font,position:'relative',
+                          color:t.soon?C.subtle:view===t.id?C.accent:C.text,opacity:t.soon?0.65:1}}>
+                        <t.Icon size={20} strokeWidth={1.8}/>
+                        <span style={{fontSize:11,fontWeight:600}}>{t.label}</span>
+                        {t.soon&&<span style={{position:'absolute',top:5,right:6,fontSize:7,fontWeight:800,
+                          color:'#b45309',background:'rgba(251,191,36,0.2)',borderRadius:3,padding:'1px 4px'}}>SOON</span>}
+                        {t.dot&&<span style={{position:'absolute',top:7,right:8,width:6,height:6,borderRadius:'50%',background:'#c2802e'}}/>}
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={()=>{const n=!dark;setDark(n);ls.set('rbp_dark',n);}}
+                    style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:8,
+                      padding:'11px 0',background:'transparent',border:`1px solid ${C.border}`,borderRadius:12,
+                      color:C.muted,fontFamily:font,fontSize:12.5,fontWeight:600,cursor:'pointer'}}>
+                    {dark?<Sun size={15} strokeWidth={1.8}/>:<Moon size={15} strokeWidth={1.8}/>}
+                    {dark?'Light mode':'Dark mode'}
+                  </button>
+                </div>
+              </div>
+            )}
+            <nav style={{position:'fixed',left:0,right:0,bottom:0,zIndex:110,
+              display:'flex',alignItems:'stretch',
+              background:C.nav,backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',
+              borderTop:`1px solid ${C.border}`,
+              paddingBottom:'env(safe-area-inset-bottom)'}}>
+              {TABS.map(n=>{
+                const active=view===n.id&&!moreOpen;
+                return (
+                  <button key={n.id} onClick={()=>{setView(n.id);setMoreOpen(false);}} style={{
+                    flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,
+                    padding:'8px 0 6px',background:'transparent',border:'none',cursor:'pointer',
+                    color:active?C.accent:C.muted,fontFamily:font}}>
+                    <n.Icon size={21} strokeWidth={active?2.1:1.7}/>
+                    <span style={{fontSize:10,fontWeight:active?700:500,letterSpacing:0.2}}>{n.label}</span>
+                  </button>
+                );
+              })}
+              <button onClick={()=>setMoreOpen(v=>!v)} style={{
+                flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3,
+                padding:'8px 0 6px',background:'transparent',border:'none',cursor:'pointer',position:'relative',
+                color:moreActive?C.accent:C.muted,fontFamily:font}}>
+                <Grid3x3 size={21} strokeWidth={moreActive?2.1:1.7}/>
+                <span style={{fontSize:10,fontWeight:moreActive?700:500,letterSpacing:0.2}}>More</span>
+                {mascotNots.length>0&&!moreOpen&&(
+                  <span style={{position:'absolute',top:4,right:'50%',marginRight:-18,minWidth:14,height:14,borderRadius:7,
+                    background:'#ef4444',color:'#fff',fontSize:9,fontWeight:800,
+                    display:'flex',alignItems:'center',justifyContent:'center',padding:'0 3px',lineHeight:1}}>
+                    {mascotNots.length}</span>
+                )}
+              </button>
+            </nav>
+          </>
+        );
+      })()}
+
+      <main style={{marginLeft:sidebarW,padding:isMobile?'16px 12px calc(86px + env(safe-area-inset-bottom))':'28px 32px',minHeight:'100vh',transition:'margin-left 0.2s ease'}}>
         <div style={{maxWidth:1040,margin:'0 auto',width:'100%'}}>
         {view==='analytics'    && <Analytics    {...vp} onQuickLog={()=>setQuickLogOpen(true)} onUpgrade={()=>setView('account')}/>}
         {view==='tracker'      && <Tracker      {...vp} setScores={setScores} setErrors={setErrors} uid={uid}/>}
@@ -7666,7 +7807,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
       )}
       <ToastBar toasts={toasts} dismiss={dismissToast} isMobile={isMobile}/>
       <InstallPrompt C={C} font={font}/>
-      {showTour&&<Onboarding onDone={doneTour} setView={setView} C={C} font={font}/>}
+      {showTour&&!moreOpen&&<Onboarding onDone={doneTour} setView={setView} C={C} font={font}/>}
       {aStarFlash&&(()=>{
         ensureAnimStyles();
         const particles=Array.from({length:20},(_,i)=>{
@@ -7720,7 +7861,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
       <button
         onClick={()=>setQuickLogOpen(true)}
         aria-label="Log a paper"
-        style={{position:'fixed',bottom:24,right:24,
+        style={{position:'fixed',bottom:isMobile?'calc(70px + env(safe-area-inset-bottom))':24,right:isMobile?16:24,
           width:52,height:52,borderRadius:'50%',background:C.accent,border:'none',
           color:'#fff',fontSize:30,fontWeight:300,cursor:'pointer',zIndex:90,
           boxShadow:`0 4px 20px ${C.accent}55`,display:'flex',alignItems:'center',
@@ -7734,7 +7875,7 @@ function RevisionPlan({user,selection,examLevel='alevel',onSignOut,onResetSubjec
       <button
         onClick={()=> isPro ? setCompanionChat(true) : addToast('Companion chat is a Pro feature - unlock it in Account → Settings.','info')}
         aria-label={`Chat with ${companion.name}`}
-        style={{position:'fixed',bottom:isMobile?84:88,right:isMobile?20:24,zIndex:91,
+        style={{position:'fixed',bottom:isMobile?'calc(132px + env(safe-area-inset-bottom))':88,right:isMobile?16:24,zIndex:91,
           display:'flex',alignItems:'center',gap:9,
           background:C.surface,border:`1px solid ${C.border}`,borderRadius:30,
           padding:isMobile?5:'5px 16px 5px 5px',cursor:'pointer',fontFamily:font,
@@ -7817,6 +7958,9 @@ function LevelPicker({ onComplete }) {
   const font = FONT_BODY;
   const C = { bg:'#f4eee3', surface:'#fbf7ef', border:'#e7ddcc', text:'#2b2620', muted:'#6f665b', accent:'#b5735a' };
   const [hover, setHover] = useState(null);
+  // Two-tap confirm: the choice is permanent, so a single stray tap must never
+  // commit it (with thousands of students onboarding, mis-taps are a certainty).
+  const [selected, setSelected] = useState(null);
 
   const options = [
     {
@@ -7872,11 +8016,11 @@ function LevelPicker({ onComplete }) {
                 key={opt.id}
                 onMouseEnter={() => setHover(opt.id)}
                 onMouseLeave={() => setHover(null)}
-                onClick={() => onComplete(opt.id)}
+                onClick={() => setSelected(opt.id)}
                 style={{
                   display:'flex', alignItems:'flex-start', gap:16, padding:'20px 22px',
-                  background: isHov ? `${C.accent}10` : C.surface,
-                  border: `2px solid ${isHov ? C.accent+'66' : C.border}`,
+                  background: selected===opt.id ? `${C.accent}14` : isHov ? `${C.accent}10` : C.surface,
+                  border: `2px solid ${selected===opt.id ? C.accent : isHov ? C.accent+'66' : C.border}`,
                   borderRadius:14, cursor:'pointer', textAlign:'left',
                   transition:'all 0.15s',
                 }}
@@ -7899,14 +8043,25 @@ function LevelPicker({ onComplete }) {
                   </div>
                 </div>
                 <div style={{
-                  fontSize:18, color: isHov ? C.accent : C.border,
+                  fontSize:18, color: selected===opt.id ? C.accent : isHov ? C.accent : C.border,
                   flexShrink:0, alignSelf:'center', transition:'color 0.15s',
-                }}>→</div>
+                }}>{selected===opt.id?'✓':'→'}</div>
               </button>
             );
           })}
         </div>
 
+        <button
+          disabled={!selected}
+          onClick={() => selected && onComplete(selected)}
+          style={{
+            width:'100%', padding:'15px 0', borderRadius:12, border:'none',
+            background: selected ? C.accent : C.border, color: selected ? '#fff' : C.muted,
+            fontSize:15, fontWeight:700, fontFamily:font,
+            cursor: selected ? 'pointer' : 'default', marginBottom:14, transition:'all 0.15s',
+          }}>
+          {selected ? `Confirm ${options.find(o=>o.id===selected)?.title} - this is permanent` : 'Pick one to continue'}
+        </button>
         <p style={{ fontSize:11, color:C.muted, textAlign:'center', margin:0 }}>
           Your choice is saved securely and cannot be changed after sign-up.
         </p>

@@ -213,7 +213,7 @@ export default function AuthGate({ onAuth }) {
           ) : (
             <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
               <input value={email} onChange={e=>setEmail(e.target.value)} type="email"
-                placeholder="Email address" autoComplete="email"
+                placeholder="Email address" autoComplete="email" name="email" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false}
                 onKeyDown={e=>e.key==='Enter'&&handleEmailAuth()}
                 style={{ width:'100%', padding:'12px 14px', background:C.inputBg,
                   border:`1px solid ${C.border}`, borderRadius:10, color:C.text,
@@ -221,7 +221,7 @@ export default function AuthGate({ onAuth }) {
               {emailMode !== 'reset' && (
                 <input value={password} onChange={e=>setPassword(e.target.value)} type="password"
                   placeholder={emailMode==='signup' ? 'Create password (8+ chars)' : 'Password'}
-                  autoComplete={emailMode==='signup'?'new-password':'current-password'}
+                  autoComplete={emailMode==='signup'?'new-password':'current-password'} name="password"
                   onKeyDown={e=>e.key==='Enter'&&handleEmailAuth()}
                   style={{ width:'100%', padding:'12px 14px', background:C.inputBg,
                     border:`1px solid ${C.border}`, borderRadius:10, color:C.text,
@@ -368,7 +368,7 @@ export default function AuthGate({ onAuth }) {
         ) : (
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
             <input value={email} onChange={e=>setEmail(e.target.value)} type="email"
-              placeholder="Email address" autoComplete="email"
+              placeholder="Email address" autoComplete="email" name="email" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false}
               onKeyDown={e=>e.key==='Enter'&&handleEmailAuth()}
               style={{ width:'100%', padding:'12px 14px', background:C.inputBg,
                 border:`1px solid ${C.border}`, borderRadius:10, color:C.text,
@@ -376,7 +376,7 @@ export default function AuthGate({ onAuth }) {
             {emailMode !== 'reset' && (
               <input value={password} onChange={e=>setPassword(e.target.value)} type="password"
                 placeholder={emailMode==='signup' ? 'Create password (8+ chars)' : 'Password'}
-                autoComplete={emailMode==='signup'?'new-password':'current-password'}
+                autoComplete={emailMode==='signup'?'new-password':'current-password'} name="password"
                 onKeyDown={e=>e.key==='Enter'&&handleEmailAuth()}
                 style={{ width:'100%', padding:'12px 14px', background:C.inputBg,
                   border:`1px solid ${C.border}`, borderRadius:10, color:C.text,

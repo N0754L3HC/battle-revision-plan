@@ -54,7 +54,7 @@ function PickSubjects({ selection, onChange, catalog, maxSubjects }) {
           Which subjects are you studying?
         </h2>
         <p style={{ fontSize: 13, color: colors.muted, margin: 0, fontFamily: font }}>
-          Select {maxSubjects <= 4 ? '2 to 4' : 'up to ' + maxSubjects} subjects. You can change these later.{' '}
+          Select {maxSubjects <= 4 ? '2 to 4' : '3 to ' + maxSubjects} subjects. You can change these later.{' '}
           <span style={{
             fontSize: 12, fontWeight: 600,
             color: atMax ? colors.accent : colors.muted,
@@ -529,7 +529,12 @@ export default function SubjectPicker({ user, onComplete, examLevel = 'alevel' }
               transition: 'all 0.15s',
             }}
           >
-            {saving ? 'Saving...' : step === 4 ? 'Start tracking' : 'Continue'}
+            {saving ? 'Saving...'
+              : canNext ? (step === 4 ? 'Start tracking' : 'Continue')
+              : step === 1 ? (selection.length < minSubjects ? `Pick ${minSubjects - selection.length} more subject${minSubjects - selection.length === 1 ? '' : 's'}` : 'Continue')
+              : step === 2 ? 'Pick a board for every subject'
+              : step === 3 ? 'Pick your year to continue'
+              : 'Tick the box above to continue'}
           </button>
         </div>
 
